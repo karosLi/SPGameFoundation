@@ -1,0 +1,21 @@
+{
+    "name": "SPF.L2Gameplay",
+    "rootNamespace": "SPF.L2Gameplay",
+    "references": [
+        "SPF.Contracts",
+        "SPF.L1Simulation",
+        "SPF.Runtime.Core",
+        "Unity.Collections",
+        "Unity.Mathematics",
+        "Unity.Burst"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

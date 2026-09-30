@@ -1,0 +1,19 @@
+{
+    "name": "SPF.Runtime.Core",
+    "rootNamespace": "SPF.Runtime.Core",
+    "references": [
+        "SPF.Contracts",
+        "Unity.Collections",
+        "Unity.Mathematics",
+        "Unity.Burst"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

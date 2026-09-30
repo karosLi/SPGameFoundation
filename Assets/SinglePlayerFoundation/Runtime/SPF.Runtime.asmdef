@@ -1,0 +1,23 @@
+{
+    "name": "SPF.Runtime",
+    "rootNamespace": "SPF.Runtime",
+    "references": [
+        "SPF.Contracts",
+        "SPF.L1Simulation",
+        "SPF.Runtime.Core",
+        "SPF.L2Gameplay",
+        "SPF.Presentation",
+        "Unity.Collections",
+        "Unity.Mathematics",
+        "Unity.Burst"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

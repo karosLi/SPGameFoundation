@@ -175,17 +175,19 @@ Tick N
 - **帧预算自适应**：若检测到连续超预算（热降频），自动降低 AI 频率 / 远景 LOD 频率，而不是降低模拟 tick。
 
 ```csharp
-// Contracts
+// Runtime.Core（SPF.Runtime.Scheduling）
 public interface ISimSystem
 {
     SimPhase Phase { get; }
-    int Order { get; }                                   // Phase 内顺序
-    void Declare(ref AccessBuilder access);              // 读写集
-    void OnCreate(in SystemContext ctx);
-    JobHandle Schedule(in SystemContext ctx, JobHandle deps);
-    void OnDestroy(in SystemContext ctx);
+    int Order { get; }                                         // Phase 内顺序
+    void Declare(AccessDeclaration access);                    // 读写集（构建时调用一次）
+    void OnCreate(SimWorld world);
+    JobHandle OnTick(in SimContext context, JobHandle dependency);
+    void OnDestroy(SimWorld world);
 }
 ```
+
+> 实现说明（M1）：`ISimSystem`、`SimContext` 依赖 `SimWorld`，因此放在 `Runtime.Core`；`Contracts` 只保留无依赖的基础类型（`EntityHandle`、`TableKey / ColumnKey<T> / ResourceKey<T>`、`SimPhase`、`TickTime`、`SimRandom`、`ParallelQueue<T>`）。`IGameplayModule` 在 `Runtime.Composition`。
 
 ### 2.4 Burst / 移动端注意事项
 
@@ -759,7 +761,7 @@ Tier B 的 CPU 成本预估：节点展开 + 剔除约 0.6 ms（工作线程）�
 
 | 里程碑 | 内容 | 验收 |
 | --- | --- | --- |
-| M1 基座骨架 | Contracts、asmdef、SimWorld、EntityRegistry、Tick 管线、命令缓冲、快照、Perf HUD | 空 tick 0 GC，Phase 耗时可视化 |
+| M1 基座骨架 ✅ | Contracts、asmdef、SimWorld、EntityRegistry、Tick 管线、命令缓冲、快照、Perf HUD | 空 tick 0 GC，Phase 耗时可视化 |
 | M2 L1 模拟 | Movement、Body（轨迹缓冲）、两级网格 + 查询、碰撞事件 | 60 蛇 × 300 节点网格重建 + 检测 < 2 ms（中端机） |
 | M3 渲染基座 | GPU 驱动管线（增量上传、C0~C3 Compute、Indirect Draw）+ Tier B 数据纹理降级、节点 / 条带两种蛇身、图集 | Tier A：上传 ≤ 50 KB/tick、渲染主线程 ≤ 0.3 ms；Tier B：GLES 3.0 真机 30 FPS；两 Tier 画面一致；半透明蛇无自身叠色 |
 | M4 贪吃蛇最小可玩 | 输入、吃食物、成长、死亡掉落、补充食物、相机 | 单 Region 可玩，60 FPS，0 GC |

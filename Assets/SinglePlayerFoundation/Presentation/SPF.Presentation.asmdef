@@ -1,0 +1,20 @@
+{
+    "name": "SPF.Presentation",
+    "rootNamespace": "SPF.Presentation",
+    "references": [
+        "SPF.Contracts",
+        "SPF.Runtime.Core",
+        "Unity.Collections",
+        "Unity.Mathematics",
+        "Unity.Burst"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

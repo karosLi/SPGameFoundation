@@ -1,0 +1,40 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace SPF.Runtime.Composition
+{
+    /// <summary>A playable mode: its modules plus session-wide simulation settings.</summary>
+    [CreateAssetMenu(menuName = "SPF/Mode Definition", fileName = "ModeDefinition")]
+    public sealed class ModeDefinition : ScriptableObject
+    {
+        [SerializeField] List<GameplayModuleAsset> m_Modules = new List<GameplayModuleAsset>();
+
+        [Header("Simulation")]
+        [SerializeField, Range(10, 60)] int m_TickRate = 30;
+        [SerializeField, Range(1, 8)] int m_MaxTicksPerFrame = 3;
+        [SerializeField, Min(64)] int m_DestroyQueueCapacity = 4096;
+
+        public IReadOnlyList<GameplayModuleAsset> Modules => m_Modules;
+
+        public SessionSettings Settings => new SessionSettings
+        {
+            TickRate = m_TickRate,
+            MaxTicksPerFrame = m_MaxTicksPerFrame,
+            DestroyQueueCapacity = m_DestroyQueueCapacity,
+        };
+    }
+
+    public struct SessionSettings
+    {
+        public int TickRate;
+        public int MaxTicksPerFrame;
+        public int DestroyQueueCapacity;
+
+        public static SessionSettings Default => new SessionSettings
+        {
+            TickRate = 30,
+            MaxTicksPerFrame = 3,
+            DestroyQueueCapacity = 4096,
+        };
+    }
+}

@@ -1,0 +1,19 @@
+{
+    "name": "SPF.L1Simulation",
+    "rootNamespace": "SPF.L1Simulation",
+    "references": [
+        "SPF.Contracts",
+        "Unity.Collections",
+        "Unity.Mathematics",
+        "Unity.Burst"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

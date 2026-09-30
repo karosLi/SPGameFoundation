@@ -757,20 +757,31 @@ Tier B 的 CPU 成本预估：节点展开 + 剔除约 0.6 ms（工作线程）�
 
 ---
 
-## 10. 迭代路线
+## 10. 迭代路线与实现状态
 
-| 里程碑 | 内容 | 验收 |
+| 里程碑 | 内容 | 状态 |
 | --- | --- | --- |
-| M1 基座骨架 ✅ | Contracts、asmdef、SimWorld、EntityRegistry、Tick 管线、命令缓冲、快照、Perf HUD | 空 tick 0 GC，Phase 耗时可视化 |
-| M2 L1 模拟 | Movement、Body（轨迹缓冲）、两级网格 + 查询、碰撞事件 | 60 蛇 × 300 节点网格重建 + 检测 < 2 ms（中端机） |
-| M3 渲染基座 | GPU 驱动管线（增量上传、C0~C3 Compute、Indirect Draw）+ Tier B 数据纹理降级、节点 / 条带两种蛇身、图集 | Tier A：上传 ≤ 50 KB/tick、渲染主线程 ≤ 0.3 ms；Tier B：GLES 3.0 真机 30 FPS；两 Tier 画面一致；半透明蛇无自身叠色 |
-| M4 贪吃蛇最小可玩 | 输入、吃食物、成长、死亡掉落、补充食物、相机 | 单 Region 可玩，60 FPS，0 GC |
-| M5 规则与 AI | ConfigBlob 烘焙、碰撞矩阵、Utility AI + Context Steering、冲刺 | 150 AI 蛇稳定对局 |
-| M6 地图衔接 | 7500 大地图 / 3750 小地图 Chunk、活跃窗口、模拟 LOD、PortalLink、RegionSnapshot | 大地图 ↔ 小地图切换无卡顿（切换帧 ≤ 1 帧预算），每张图 150 AI |
-| M7 扩展玩法 | Buff、技能、道具、飞行物 | 通过配置新增一个技能不改代码 |
-| M8 打磨 | 自适应性能、回放、性能基准、调试工具 | 低端机 30 FPS 稳定 |
+| M1 基座骨架 | Contracts、asmdef、SimWorld、EntityRegistry、Tick 管线、命令缓冲、快照、Perf HUD | ✅ 已实现，.NET 测试通过 |
+| M2 L1 模拟 | 轨迹缓冲、转向、两级网格（计数排序）、分块 | ✅ 已实现，网格与暴力法对拍 |
+| M3 渲染基座 | GPU 驱动（Compute + Indirect）+ GLES 3.0 数据纹理降级，节点 / 条带，半透明 | ✅ 已实现；Shader 需在 Unity 中验证 |
+| M4 贪吃蛇可玩 | 输入、吃、成长、死亡掉落、补充食物、相机、UI | ✅ 已实现 |
+| M5 规则与 AI | 配置烘焙、碰撞规则、效用 AI + 上下文避让、加速 | ✅ 已实现 |
+| M6 地图衔接 | 7500 / 3750 地图、窗口流式、LOD、传送门、非活动地图冻结 | ✅ 已实现 |
+| M7 扩展玩法 | Buff、技能、道具、飞行物 | ✅ 已实现 |
+| M8 打磨 | 自适应画质、回放、性能面板、CI | ✅ 已实现；真机性能待测 |
 
----
+### 10.1 实现与设计的差异（有意为之）
+
+| 设计 | 实现 | 原因 |
+| --- | --- | --- |
+| `ISimSystem` 放在 Contracts | 放在 `Runtime.Core` | 它依赖 `SimWorld`，Contracts 需保持零依赖 |
+| Presentation 只依赖 Contracts / Runtime.Core | 另依赖 L1（只读 `TrailState`） | GPU 轨迹镜像直接复用模拟的轨迹布局 |
+| 实例数据 16 B（half 打包） | 32 B（float4 + float4） | 避免 GLES 3.0 上 half 解包的 HLSLcc 兼容风险；GPU 驱动档实例在 GPU 生成，不占上传带宽 |
+| URP RendererFeature 中派发 Compute | 在 `LateUpdate` 直接 `Dispatch` + `Graphics.RenderMeshIndirect` | 同时兼容内置管线与 URP，零配置 |
+| 离开的 Region 压缩成 RegionSnapshot | 蛇保留在表中、按 `Region` 字段冻结；食物只存分块计数 | 无拷贝、切换更快；内存仍按上限预分配 |
+| AI 均匀分布全图 | 约 40% 新 AI 刷在玩家周围 120–500 的环带，漫游有概率向玩家聚拢 | 均匀分布时玩家视窗内平均只有 ~5 条蛇，测试显示 20 秒零交互 |
+| 数据纹理档一次绘制 | 每 4096 实例一页（每页一次绘制） | 每帧只上传用到的页，避免整张大纹理重传 |
+| 食物 GPU 池写间接参数 | 若平台不支持（创建失败）自动回退到 CPU 网格剔除 | DX11 等 API 对 Structured+IndirectArguments 组合有限制 |
 
 ## 11. 已确认决策汇总
 

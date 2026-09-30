@@ -1,88 +1,74 @@
 # SPGameFoundation
 
-Unity 2022.3 2D 单机小游戏基座（面向移动端）：数据导向模拟（SoA + Jobs + Burst）、网格碰撞与大 / 小地图衔接、GPU 驱动渲染、可插拔玩法模块。首个接入玩法：贪吃蛇。
+Unity 2022.3 2D 单机小游戏基座（面向移动端）+ 首个接入玩法：贪吃蛇。
 
-- 架构设计：[Docs/Architecture.md](Docs/Architecture.md)
-- 当前进度：**M1 基座骨架**
+- 数据导向模拟：自研 SoA 表 + C# Jobs + Burst，固定步长 30 Hz，确定性（同种子同输入 → 同结果）
+- 两级空间网格碰撞；7500×7500 大地图 + 3750×3750 小地图（传送门衔接，非活动地图冻结）
+- GPU 驱动渲染（Compute 展开蛇身 / 剔除食物 + Indirect Draw），GLES 3.0 自动降级到数据纹理路径
+- 节点 / 条带两种蛇身，不透明 / 半透明（同蛇等深度，不叠色）/ 叠加三种混合
+- 对局中 0 GC；AI（效用决策 + 上下文避让）、Buff、道具、技能飞行物、加速掉落、回放
 
-## 安装
+设计文档：[Docs/Architecture.md](Docs/Architecture.md)
 
-把 `Assets/SinglePlayerFoundation` 放进 Unity 2022.3 工程，并在 Package Manager 安装：
+## 快速开始
 
-| 包 | 版本 |
-| --- | --- |
-| `com.unity.burst` | 1.8.x |
-| `com.unity.collections` | 2.1.x |
-| `com.unity.mathematics` | 1.2.x |
-| `com.unity.test-framework` | 1.1.33+（运行测试） |
+1. 用 Unity **2022.3 LTS** 打开仓库根目录（`Packages/manifest.json` 已列出依赖）。
+2. 菜单 **SPF → Snake → Create Or Update Scene**，生成 `Assets/SnakeFoundation/Scenes/Snake.unity`。
+3. 打开场景，Play。
+   - 桌面：鼠标方向转向，左键 / 空格加速，右键 / E 发射；WASD 也可以
+   - 触屏：左半屏虚拟摇杆，右下 BOOST / FIRE 按钮
+   - F1：性能面板（各阶段耗时、实体数、GC、Draw Call）
 
-Player Settings 中开启 `Allow 'unsafe' Code` 不是必须的（各 asmdef 已单独开启）。
+也可以只放一个挂了 `SnakeGameBootstrap` 的空物体，其余（模拟、相机、渲染、UI、输入、自适应画质）运行时自动组装。
 
 ## 目录与程序集
 
 | 目录 | 程序集 | 内容 |
 | --- | --- | --- |
-| `Contracts/` | `SPF.Contracts` | `EntityHandle`、`TableKey` / `ColumnKey<T>` / `ResourceKey<T>`、`SimPhase`、`TickTime`、`SimRandom`、`ParallelQueue<T>` |
-| `Runtime/World/` + `Runtime/Scheduling/`（asmref） | `SPF.Runtime.Core` | `SimWorld`、`SimTable`、`EntityRegistry`、`DestroyQueue`、`SnapshotBuffer<T>`、`ISimSystem`、`TickPipeline`、`FixedStepClock` |
-| `L1Simulation/` `L2Gameplay/` `Presentation/` | `SPF.L1Simulation` 等 | 程序集已建立，内容在后续里程碑 |
-| `Runtime/Composition` `Session` `Diagnostics` | `SPF.Runtime` | `IGameplayModule`、`ModeDefinition`、`SimSession`、`SessionHost`、`PerfHud` |
-| `Samples/DriftSmoke/` | `SPF.Samples.DriftSmoke` | M1 冒烟模块 |
-| `Tests/EditMode/` | `SPF.Tests.EditMode` | EditMode 单元测试 |
+| `SinglePlayerFoundation/Contracts` | `SPF.Contracts` | 句柄、访问键、阶段、随机、并行队列、资源钩子 |
+| `SinglePlayerFoundation/L1Simulation` | `SPF.L1Simulation` | 轨迹 / 蛇身（Slab 池）、转向、两级网格、分块 |
+| `SinglePlayerFoundation/L2Gameplay` | `SPF.L2Gameplay` | Buff、成长曲线、头对头规则、分块种群、技能 / 道具定义 |
+| `SinglePlayerFoundation/Runtime/World`+`Scheduling` | `SPF.Runtime.Core` | SimWorld、SoA 表、注册表、事件队列、快照、Tick 管线、依赖追踪 |
+| `SinglePlayerFoundation/Runtime` | `SPF.Runtime` | 模块组装、Session、SessionHost、PerfHud |
+| `SinglePlayerFoundation/Presentation` | `SPF.Presentation` | 两档渲染：CircleBatch、PointCloud、ChainRenderer、Shader / Compute |
+| `SnakeFoundation/Runtime` | `SnakeFoundation.Runtime` | 贪吃蛇模块：配置、14 个系统、AI、地图衔接、回放 |
+| `SnakeFoundation/Presentation` | `SnakeFoundation.Presentation` | 相机、世界渲染器 |
+| `SnakeFoundation/Game` | `SnakeFoundation.Game` | 启动引导、UI、输入、自适应画质 |
+| `SnakeFoundation/Editor` | `SnakeFoundation.Editor` | 一键建场景、移动端 Player 设置、CI 入口 |
+| `*/Tests/EditMode`、`Tests/PlayMode` | 测试程序集 | 逻辑测试、UI 自动化 |
 
-> 若工程中 `SinglePlayerFoundation/` 根目录已有 `SnakeFoundation.Runtime.asmdef`，请移走：各层现在都有自己的 asmdef，贪吃蛇玩法将放在独立的 `SnakeFoundation.Runtime` 程序集中（M4）。
-
-## 跑起来看看（M1 冒烟场景）
-
-1. `Create → SPF → Samples → Drift Smoke Module`，数量设为 10000。
-2. `Create → SPF → Mode Definition`，把上一步的模块拖进 Modules。
-3. 场景中新建空物体，挂 `SessionHost`（指定 Mode Definition）、`PerfHud`、`DriftGizmoView`（指定 Host）。
-4. Play：HUD 显示 tick 频率、各 Phase 主线程耗时、同步等待时间、实体数量、每帧 GC 与 Draw Call；Scene 视图可看到点在移动。
-
-## 写一个玩法模块
-
-```csharp
-public static class FoodKeys
-{
-    public static readonly TableKey Food = new TableKey("Food");
-    public static readonly ColumnKey<float2> Position = new ColumnKey<float2>(Food, "Position");
-}
-
-public sealed class FoodModule : GameplayModuleAsset
-{
-    public override void DeclareData(WorldLayout layout) =>
-        layout.Table(FoodKeys.Food, capacity: 16384).Column(FoodKeys.Position);
-
-    public override void RegisterSystems(SystemRegistry registry) =>
-        registry.Add(new FoodDriftSystem());
-}
-
-sealed class FoodDriftSystem : SimSystemBase
-{
-    public override SimPhase Phase => SimPhase.Move;
-    public override void Declare(AccessDeclaration access) => access.Write(FoodKeys.Position);
-
-    public override JobHandle OnTick(in SimContext ctx, JobHandle dependency) =>
-        new DriftJob { Positions = ctx.Column(FoodKeys.Position), Dt = ctx.Time.DeltaTime }
-            .Schedule(ctx.Count(FoodKeys.Food), 256, dependency);
-}
-```
-
-规则：
-
-- **声明即依赖**：`Declare` 中声明读写的 Key，调度器据此自动串联 / 并行 Job；不声明任何 Key 的系统是屏障（等待之前全部工作）。
-- **结构变更只在 `ApplyCommands`**：创建实体用 `world.CreateEntity`；Job 中销毁实体写 `SimWorld.DestroyQueueKey` 的 `Writer`，下个 tick 开头统一执行（重复 / 过期句柄自动忽略，队列满时计数不崩溃）。
-- **主线程系统**（非 ApplyCommands 阶段）访问数据前需先 `dependency.Complete()`。
-- **表现只读快照**：`SnapshotBuffer<T>` 在 Snapshot 阶段写入，tick 结束时轮换，表现层在 `Previous` / `Current` 间按 `session.InterpolationAlpha` 插值。
-- **一次同步**：`SessionHost` 在 `Update` 中调度 tick、在 `LateUpdate` 中 `Complete`，模拟 Job 与其他脚本的 Update 并行；表现脚本应在更晚的执行顺序里读取快照。
+依赖方向由 asmdef 强制：Contracts ← L1 ← L2 ← 玩法；Presentation 只读模拟数据。
 
 ## 测试
 
-Unity：`Window → General → Test Runner → EditMode → Run All`。覆盖：
+| 方式 | 需要 | 覆盖 |
+| --- | --- | --- |
+| `Tools/DotnetHarness/run.sh` | .NET 8 | 按 asmdef 生成的工程 + Unity API 桩，编译全部程序集（分层与 Unity 一致），运行 EditMode 测试（55 个） |
+| Unity Test Runner（EditMode + PlayMode） | Unity 2022.3 | 以上 + 真实 Job / Burst + PlayMode UI 自动化（菜单、摇杆、加速、技能、死亡、重开、回菜单、换皮肤、传送门、1 分钟浸泡、两档渲染） |
+| GitHub Actions | 仓库 Secrets `UNITY_LICENSE` 或 `UNITY_EMAIL`+`UNITY_PASSWORD` | `harness.yml` 每次推送都跑；`unity.yml`（GameCI）有许可证时跑，并上传截图 |
 
-- 实体注册表（分配、回收代数、满载、清空）
-- 表的 swap-back 删除后句柄与列数据一致、销毁队列去重 / 溢出
-- 并行队列超容量安全丢弃
-- 系统按 Phase / Order 排序、声明式依赖下 Job 结果正确、快照轮换
-- 固定步长时钟（累积、丢帧）
-- 会话：种群稳定、同种子确定性、重开复用内存、Update/Sync 流程
-- **稳态 300 tick 零 GC 分配**（`Is.Not.AllocatingGCMemory`）
+.NET 测试工程只验证逻辑、确定性和我们自己代码路径的 GC；Burst 编译、Job 安全检查、Shader 编译与真实渲染需要在 Unity 中验证。
+
+## 写一个新玩法模块
+
+```csharp
+public sealed class MyModule : GameplayModuleAsset
+{
+    public override void DeclareData(WorldLayout layout) =>
+        layout.Table(MyKeys.Thing, 4096).Column(MyKeys.Position);
+
+    public override void RegisterSystems(SystemRegistry registry) =>
+        registry.Add(new MoveThingsSystem());
+}
+
+sealed class MoveThingsSystem : SimSystemBase
+{
+    public override SimPhase Phase => SimPhase.Move;
+    public override void Declare(AccessDeclaration access) => access.Write(MyKeys.Position);
+    public override JobHandle OnTick(in SimContext ctx, JobHandle dependency) =>
+        new MoveJob { Positions = ctx.Column(MyKeys.Position), Dt = ctx.Time.DeltaTime }
+            .Schedule(ctx.Count(MyKeys.Thing), 256, dependency);
+}
+```
+
+规则：在 `Declare` 中声明读写 → 调度器自动串联 / 并行 Job；结构变更（创建 / 销毁）只在 `ApplyCommands` 阶段；Job 中销毁用 `SimWorld.DestroyQueueKey` 的 Writer；主线程在 tick 进行中访问数据前先 `session.Sync()`。

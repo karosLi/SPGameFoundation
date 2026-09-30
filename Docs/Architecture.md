@@ -10,7 +10,10 @@
 > | --- | --- |
 > | 碰撞 | 单机**网格碰撞**（Spatial Grid），不做联机，但保留确定性回放 |
 > | 大地图 | **7500 × 7500** 世界单位 |
-> | 地图衔接 | 大地图通过**传送点衔接多个小地图**（PortalLink 为主，EdgeLink 保留） |
+> | 地图衔接 | 大地图通过**传送点衔接小地图**（PortalLink 为主，EdgeLink 保留） |
+> | 小地图 | 面积为大地图的 **1/4**，即 **3750 × 3750**（30 × 30 Chunk） |
+> | AI 规模 | 每张地图 **150 条 AI 蛇** |
+> | 兼容性 | **必须支持 GLES 3.0**（同时支持 Metal / Vulkan），渲染主路径按 GLES 3.0 能力设计 |
 > | 引擎 | **Unity 2022.3 LTS** + URP 14（2D Renderer） |
 > | 蛇身表现 | **节点精灵**与**连续条带**两种模式都要，可按皮肤切换 |
 > | 重点指标 | 计算性能、渲染带宽、GC、合批（见 §8 专项） |
@@ -261,22 +264,37 @@ WorldGraph
 ```
 
 - **无缝接壤（EdgeLink）**：两个 Region 在 WorldGraph 中拼成同一坐标空间，活跃窗口跨越边界时同时加载两侧 Chunk；网格与碰撞天然连续。
-- **传送衔接（PortalLink，主方案）**：7500 大地图上分布若干传送点，连接小地图（竞技场、Boss 房、奖励关，典型 300 ~ 800 单位见方）：
+- **传送衔接（PortalLink，主方案）**：7500 大地图上分布若干传送点，连接 **3750 × 3750** 的小地图：
   1. 预加载目标 Region 的 Chunk（异步、分帧）。
   2. 同步点执行 `Migrate` 命令：实体（蛇头 + 身体轨迹）坐标变换到目标 Region，身体轨迹整体平移。
   3. 相机与表现做过渡（淡入淡出 / 缩放）。
-  4. 源 Region 转为休眠 LOD，保留其状态以便返回。
+  4. 源 Region 写入 `RegionSnapshot` 冻结，保留其状态以便返回（见下文）。
 - **模拟 LOD**（按 Chunk 到玩家的距离）：
 
 | 等级 | 范围 | 模拟方式 |
 | --- | --- | --- |
 | Active | 活跃窗口 | 完整 tick：AI、移动、身体、碰撞 |
 | Near | 窗口外一圈 | 降频（1/2~1/4 tick）、粗碰撞（仅头对头、头对障碍） |
-| Dormant | 更远 / 非当前 Region | 统计化模拟：只维护数量与总质量，进入 Active 时按统计结果实例化 |
+| Dormant | 更远 | 统计化模拟：只维护数量与总质量，进入 Active 时按统计结果实例化 |
+| Frozen | 非当前 Region | 完全不模拟，只保存 `RegionSnapshot` |
 
-小地图即「单 Region、全部 Chunk 常驻 Active」的特例，用同一套代码。
+**小地图不是「小房间」**：3750 × 3750 本身就远大于活跃窗口（1024），因此小地图与大地图**完全走同一套机制**（Chunk、活跃窗口细网格、粗网格、模拟 LOD），只是 Region 参数不同：
 
-**小地图的内存策略**：各 Region 共用同一套实体表与网格内存（容量取最大值），切换时不重新分配；源 Region 的状态压缩为 `RegionSnapshot`（蛇 + 轨迹 + Chunk 统计），返回时恢复。传送期间预加载在 Warmup 中分帧完成，目标切换帧耗时 ≤ 1 帧预算。
+| 参数 | 大地图 | 小地图 |
+| --- | --- | --- |
+| 尺寸 | 7500 × 7500 | 3750 × 3750 |
+| Chunk | 60 × 60 = 3600 | 30 × 30 = 900 |
+| 粗网格 | 60 × 60 桶 | 30 × 30 桶 |
+| 细网格（活跃窗口） | 256 × 256 Cell | 256 × 256 Cell（共用内存） |
+| AI 蛇 | 150 | 150 |
+| 食物密度 / 元素表 | SpawnProfile A | SpawnProfile B（可更密集、更高价值） |
+
+**同一时刻只运行一个 Region**，另一个冻结：
+
+- 各 Region **共用同一套实体表、BodyStore、网格、渲染缓冲**（容量按两者最大值预分配），切换时不重新分配内存。
+- 离开的 Region 压缩为 `RegionSnapshot`：150 条蛇的头部状态 + 轨迹（按上限 150 × 1024 点 × 8 B ≈ 1.2 MB）+ 每 Chunk 食物统计（900~3600 × 8 B）。**食物实例不保存**，返回时按统计和种子重新展开。
+- 冻结期间可选「离线推进」：返回时按离开时长对 AI 蛇做一次粗略的统计推进（成长、死亡补员），避免世界完全静止。
+- 切换流程分帧进行：T-N 帧开始解压目标快照与预生成窗口内食物 → 切换帧只做「表数据交换 + 玩家迁移 + 相机过渡」，切换帧耗时 ≤ 1 帧预算。
 
 ---
 
@@ -429,29 +447,46 @@ BodyStore（全局 Slab）：NativeArray<float2> TrailPoints
 
 ## 7. 表现层（Presentation）
 
-### 7.1 总体流程
+### 7.1 总体流程（GLES 3.0 兼容主路径）
+
+GLES 3.0 **没有** Compute Shader、SSBO、`DrawIndirect`，因此 `RenderMeshIndirect` / `StructuredBuffer` / `GraphicsBuffer` 不能作为主路径。本方案采用在 GLES 3.0 / Metal / Vulkan 上**同一条代码路径**的方案：
+
+> **数据纹理（Data Texture）+ 静态索引网格（Index Mesh）+ 顶点纹理采样（VTF）**
 
 ```
-Simulation(30Hz)  ──P9 Snapshot Job──►  RenderBuffers（GPU，双份：Prev / Curr）
-                                            │
-Render Frame(60Hz) ── 只上传 alpha 常量 ────►  Vertex Shader 内插值 Prev→Curr
+Simulation(30Hz) ─P9 Snapshot/Cull Job─► Texture2D.GetPixelData<T>() 直接写入（NativeArray 视图）
+                                          │  Apply(false)  上传
+                                          ▼
+               DataTex_Prev / DataTex_Curr（RGBA32F / RGBAHalf，点采样，轮换）
+                                          │
+Render Frame(60Hz) ─ 设置 _InterpAlpha + _InstanceCount ─► Vertex Shader texelFetch → 插值 → 输出
+                                          ▲
+                   IndexMesh：预建 N 个四边形 / 多边形，顶点只带 (instanceId, corner)
 ```
 
-- **插值放到 GPU**：每个模拟 tick 只上传一次实例数据（Prev 与 Curr 两个缓冲轮换），渲染帧只更新一个 `_InterpAlpha` 常量。60 FPS 下上传量减半，主线程无插值循环。
-- **不为实体创建 GameObject / SpriteRenderer**：全部走程序化实例化绘制；只有 UI、少量特效与玩家挂点使用 GameObject。
-- **裁剪在 Job 中完成**：用细网格按相机 AABB（外扩最大半径）收集可见 Cell，只把可见实例压缩写入上传缓冲（Stream Compaction），并同时产出实例数写入 `IndirectArgs`。
+- **数据纹理**：每个实例 1~2 个 texel（位置、朝向、缩放、皮肤/颜色索引），Job 通过 `Texture2D.GetPixelData<T>(0)` 拿到 `NativeArray` 视图**直接写**，然后 `Apply(false, false)` 上传——零托管分配、无额外拷贝。GLES 3.0 保证支持浮点纹理的 `texelFetch` 点采样与顶点纹理采样。
+- **静态索引网格**：启动时按容量预建一个大网格（例如 32k 个八边形，32 位索引，GLES 3.0 支持），顶点属性只有 `instanceId + cornerId`；顶点着色器用 `instanceId` 去数据纹理取实例数据生成最终位置。
+- **可变实例数**：每帧通过 `Mesh.SetSubMesh(0, new SubMeshDescriptor(0, count * indicesPerInstance), MeshUpdateFlags.DontValidateIndices | DontRecalculateBounds | DontNotifyMeshUsers)` 只绘制前 `count` 个实例，不产生多余顶点处理；网格 bounds 设为极大值避免被剔除。
+- **插值放到 GPU**：每个模拟 tick 只写一次数据纹理（Prev / Curr 两张轮换），渲染帧只更新 `_InterpAlpha`。60 FPS 下上传量减半，主线程无插值循环。
+- **裁剪在 Job 中完成**：用细网格按相机 AABB（外扩最大半径）收集可见 Cell，只把可见实例连续写入数据纹理（Stream Compaction），得到 `count`。
+- **提交**：`Graphics.RenderMesh`（或 `CommandBuffer.DrawMesh`）+ 共享材质 + `MaterialPropertyBlock`（预分配、只改数值，不产生 GC）。
+- **不为实体创建 GameObject / SpriteRenderer**：只有 UI、少量特效与玩家挂点使用 GameObject。
+- **可选高端路径**：在支持 SSBO 的设备上可切到 `GraphicsBuffer` + `RenderMeshIndirect`，但接口与 shader 数据布局保持一致，**默认不启用**，避免两套路径的维护与测试成本。
 
-### 7.2 蛇身两种表现模式（均支持，按皮肤切换）
+纹理规格：宽固定 2048（GLES 3.0 最低保证尺寸），高按容量计算。例如 32k 节点 × 1 texel（RGBA32F）= 2048 × 16，仅 512 KB。
 
-| 模式 | 适用 | 实现 | 优缺点 |
+### 7.2 蛇身两种表现模式（均支持，按皮肤切换，均兼容 GLES 3.0）
+
+| 模式 | 适用 | 实现 | 特点 |
 | --- | --- | --- | --- |
-| **节点精灵（Sprite Node）** | 糖果、珠子、分节皮肤 | 每个可见节点一个实例，`RenderMeshIndirect` + 八边形紧凑网格 | 实现简单、皮肤多样；节点重叠导致 overdraw 较高 |
-| **连续条带（Strip）** | 平滑蛇皮、花纹贴图 | **GPU 程序化条带**：顶点着色器从 `StructuredBuffer<float2> TrailPoints` 读轨迹，按 `SV_VertexID` 生成左右两个顶点，一次 `RenderPrimitivesIndexed` 画完全部条带蛇 | CPU 零网格构建、无 overdraw 叠加；需要 SSBO 顶点读取 |
-| 条带降级路径 | 不支持顶点着色器读 SSBO 的 GLES 3.0 设备 | Burst Job 写 `Mesh.MeshDataArray` → `ApplyAndDisposeWritableMeshData`，所有条带蛇合并为 1 个 Mesh | 兼容性好，CPU 多约 0.3 ms |
+| **节点精灵（Sprite Node）** | 糖果、珠子、分节皮肤 | 每个可见节点 1 个实例，走 §7.1 实例路径（八边形索引网格） | 皮肤多样；节点重叠有 overdraw，靠不透明 + 深度前到后剔除 |
+| **连续条带（Strip）** | 平滑蛇皮、花纹贴图 | **GPU 条带**：轨迹点写入 `TrailTex`（RG32F，8 B/点），条带索引网格顶点带 `(stripSlot, pointIndex, side)`，顶点着色器 `texelFetch` 取前后两个轨迹点求切线，向左右偏移半径生成顶点 | CPU 零网格构建；无节点叠加；上传量最小 |
 
-- 两种模式共用同一份轨迹数据（`BodyStore`）与同一套 UV/颜色/皮肤索引，**蛇头统一用节点精灵实例绘制**。
+- 条带索引网格：预建 `MaxStripSnakes × MaxPointsPerStrip` 的三角带（例如 64 × 1024 点）；每条蛇的实际长度通过「超出长度的顶点塌缩为退化三角形」处理；远处或很短的蛇合并到少量槽位，槽位表同样放在数据纹理里。
+- **CPU 条带回退**（仅当某些 GLES 3.0 驱动的 VTF 表现异常时，按设备黑名单启用）：Burst Job 写 `Mesh.MeshDataArray` → `Mesh.ApplyAndDisposeWritableMeshData`，所有条带蛇合并为 1 个 Mesh，CPU 多约 0.3 ms。
+- 两种模式共用同一份轨迹数据（`BodyStore`）与同一套 UV / 颜色 / 皮肤索引；**蛇头统一用节点实例绘制**。
 - 皮肤 = 图集区域索引 + 调色参数 + 模式，放在实例数据里，不同皮肤**不切换材质**。
-- 条带的 UV 沿身长连续累积（`segmentIndex * spacing`），贴图可平铺花纹；头尾用渐细半径。
+- 条带 UV 沿身长连续累积（`pointIndex * spacing`），贴图可平铺花纹；头尾渐细半径。
 
 ### 7.3 Camera 与事件
 
@@ -512,19 +547,21 @@ Render Frame(60Hz) ── 只上传 alpha 常量 ────►  Vertex Shader 
 | 手段 | 效果 |
 | --- | --- |
 | 紧凑实例格式：`float2 pos + half rot + half scale + uint colorSkin`（16 B） | 相比 `Matrix4x4`（64 B）减少 75% |
-| 条带模式直接上传轨迹点 `float2`（8 B/点）而不是网格顶点 | 相比 CPU 建网格（2 顶点 × 24 B）减少 80%+ |
+| 条带模式直接上传轨迹点 `float2`（8 B/点，RG32F 纹理）而不是网格顶点 | 相比 CPU 建网格（2 顶点 × 24 B）减少 80%+ |
 | 仅每模拟 tick 上传一次，渲染帧 GPU 插值 | 60 FPS 下再减半 |
 | 只上传可见实例（Job 裁剪 + 压缩） | 与地图大小无关 |
-| `GraphicsBuffer.UsageFlags.LockBufferForWrite` + `LockBufferForWrite<T>()` 让 Job 直接写 GPU 可见内存 | 省掉一次 CPU 拷贝（不支持的平台回退 `SetData(NativeArray)`） |
+| Job 直接写 `Texture2D.GetPixelData<T>()` 返回的 NativeArray 视图，再 `Apply(false)` | 省掉一次 CPU 拷贝，GLES 3.0 可用，零 GC |
+| 数据纹理只上传有效行（按 `count` 计算高度，使用多张分级纹理或 `Texture2D.SetPixelData` 局部行） | 实例少时上传量随之下降 |
 | 静态内容（背景、障碍）只上传一次 | 每帧零上传 |
 
 估算：30k 节点 × 16 B + 5k 食物 × 16 B ≈ 560 KB / tick × 30 Hz ≈ 17 MB/s，远低于移动端可承受范围。
 
 **GPU 填充带宽**
-- **减少透明 overdraw**：圆形精灵使用**八边形紧凑网格**替代四边形，透明像素减少约 30%；身体节点用 **alpha test + 深度写入 + 前到后排序**（头部在前），被遮挡像素早期剔除。
+- **减少透明 overdraw**：圆形精灵使用**八边形紧凑网格**替代四边形，透明像素减少约 30%。
+- **身体节点默认不透明**：用八边形网格近似圆形（9 顶点，30k 节点 ≈ 27 万顶点 / 帧，顶点开销可控），**不透明 + 深度写入 + 前到后**（头部在前）绘制，被遮挡像素由 Early-Z / HSR 剔除；**不用 `discard`（alpha test）**，因为它会破坏 Apple / PowerVR 的 HSR 与部分 Mali 的 Early-Z。边缘锯齿用 **MSAA 2x**（TBDR 上 MSAA 在 tile 内解析，几乎不增加带宽）。只有软边 / 半透明皮肤才走混合队列。
 - 条带模式天然无节点叠加，是大体型蛇的首选；节点模式在蛇很长时可对屏幕外 / 被遮挡区域降采样节点（每 2 个画 1 个，半径略放大）。
-- 贴图：全部 **ASTC**（4×4 / 6×6），开启 mipmap，图集 ≤ 2048；背景用平铺小纹理 + UV 滚动，不用大图。
-- 渲染分辨率：URP Render Scale 0.75~0.85 + 动态分辨率（发热时下调）；关闭 HDR、MSAA 视情况 2x 或关闭。
+- 贴图：iOS 与支持的 Android 用 **ASTC**（6×6），GLES 3.0 设备保证支持的 **ETC2** 作为回退（Android App Bundle 按纹理压缩格式分发）；开启 mipmap，图集 ≤ 2048；背景用平铺小纹理 + UV 滚动，不用大图。
+- 渲染分辨率：URP Render Scale 0.75~0.85（GLES 3.0 低端机 0.7），发热时下调；关闭 HDR；MSAA 2x（低端机可关）。
 - 后处理：默认关闭；如需发光用预烘焙到贴图的伪 Bloom，不做全屏 Bloom。
 - 避免 Framebuffer Fetch 之外的多 Pass、避免 `Grab Pass`，减少 TBDR 的 load/store（相机 Clear 正确设置，避免 tile 回读）。
 
@@ -550,11 +587,11 @@ Render Frame(60Hz) ── 只上传 alpha 常量 ────►  Vertex Shader 
 | --- | --- | --- |
 | 背景 | 1 个平铺网格 | 1 |
 | 静态障碍 / 装饰 | Chunk 加载时合并为静态网格（每 Chunk 1 个，仅可见 Chunk） | 2~6 |
-| 食物 | `RenderMeshIndirect`，单材质 + 图集 | 1 |
-| 飞行物 / 道具 | `RenderMeshIndirect` | 1~2 |
-| 蛇身（节点模式，所有蛇） | `RenderMeshIndirect` | 1 |
-| 蛇身（条带模式，所有蛇） | `RenderPrimitivesIndexed`（GPU 条带） | 1 |
-| 蛇头 / 眼睛 / 名字底板 | `RenderMeshIndirect` | 1~2 |
+| 食物 | 数据纹理 + 索引网格，单材质 + 图集 | 1 |
+| 飞行物 / 道具 | 数据纹理 + 索引网格 | 1~2 |
+| 蛇身（节点模式，所有蛇） | 数据纹理 + 八边形索引网格（9 顶点 / 实例，32 位索引，每批 ≤ 32k 实例） | 1~2 |
+| 蛇身（条带模式，所有蛇） | TrailTex + 条带索引网格（GPU 条带） | 1 |
+| 蛇头 / 眼睛 / 名字底板 | 数据纹理 + 索引网格 | 1~2 |
 | 特效 | 池化粒子，共享 1~2 个材质（图集） | 2~4 |
 | UI | UGUI，图集化，分动静 Canvas | 5~10 |
 
@@ -573,8 +610,10 @@ Render Frame(60Hz) ── 只上传 alpha 常量 ────►  Vertex Shader 
 | Collections | 2.1.x（`NativeParallelMultiHashMap` 等已改名，本方案不依赖） |
 | Mathematics | 1.2.x |
 | URP | 14.x，2D Renderer；关闭 2D Lights（或只用 1 盏全局光） |
-| 渲染 API | `Graphics.RenderMeshIndirect`、`Graphics.RenderPrimitivesIndexed`、`GraphicsBuffer`（2022.3 均可用） |
-| Player | IL2CPP、ARM64、Incremental GC、Graphics API：iOS Metal / Android Vulkan 优先 + GLES3 回退 |
+| 渲染 API | `Graphics.RenderMesh` / `CommandBuffer.DrawMesh` + 数据纹理 VTF（GLES 3.0 主路径）；`Mesh.SetSubMesh` 控制实例数；`Texture2D.GetPixelData` 零拷贝写入 |
+| Shader | 目标 `#pragma target 3.0`（GLES 3.0），只用 `texelFetch` / `tex2Dlod` 点采样；不使用 Compute、SSBO、几何着色器 |
+| Player | IL2CPP、ARM64 + ARMv7（如需覆盖 GLES 3.0 老设备）、Incremental GC；Graphics API：iOS Metal；Android **Vulkan + OpenGLES3**（Vulkan 黑名单设备自动回退 GLES 3.0） |
+| 纹理压缩 | ASTC + ETC2 双格式（AAB Texture Compression Targeting） |
 | Stripping | Managed Stripping Level: High；`link.xml` 保留反射用到的类型 |
 | 不引入 | Entities、Entities Graphics（2022.3 下仍可用，但本方案不需要） |
 
@@ -606,17 +645,26 @@ Render Frame(60Hz) ── 只上传 alpha 常量 ────►  Vertex Shader 
 | --- | --- | --- |
 | M1 基座骨架 | Contracts、asmdef、SimWorld、EntityRegistry、Tick 管线、命令缓冲、快照、Perf HUD | 空 tick 0 GC，Phase 耗时可视化 |
 | M2 L1 模拟 | Movement、Body（轨迹缓冲）、两级网格 + 查询、碰撞事件 | 60 蛇 × 300 节点网格重建 + 检测 < 2 ms（中端机） |
-| M3 渲染基座 | 实例化渲染管线、GPU 插值、节点 / 条带两种蛇身、裁剪、图集 | 玩法层 Draw Call ≤ 12，上传 ≤ 1 MB/tick |
+| M3 渲染基座 | 数据纹理 + 索引网格渲染管线、GPU 插值、节点 / 条带两种蛇身、裁剪、图集 | GLES 3.0 真机通过；玩法层 Draw Call ≤ 12，上传 ≤ 1 MB/tick |
 | M4 贪吃蛇最小可玩 | 输入、吃食物、成长、死亡掉落、补充食物、相机 | 单 Region 可玩，60 FPS，0 GC |
 | M5 规则与 AI | ConfigBlob 烘焙、碰撞矩阵、Utility AI + Context Steering、冲刺 | 150 AI 蛇稳定对局 |
-| M6 地图衔接 | 7500 大地图 Chunk、活跃窗口、模拟 LOD、PortalLink 小地图、RegionSnapshot | 大地图 ↔ 小地图切换无卡顿（切换帧 ≤ 1 帧预算） |
+| M6 地图衔接 | 7500 大地图 / 3750 小地图 Chunk、活跃窗口、模拟 LOD、PortalLink、RegionSnapshot | 大地图 ↔ 小地图切换无卡顿（切换帧 ≤ 1 帧预算），每张图 150 AI |
 | M7 扩展玩法 | Buff、技能、道具、飞行物 | 通过配置新增一个技能不改代码 |
 | M8 打磨 | 自适应性能、回放、性能基准、调试工具 | 低端机 30 FPS 稳定 |
 
 ---
 
-## 11. 待定事项
+## 11. 已确认决策汇总
 
-1. 小地图的数量与典型尺寸（本方案按 300 ~ 800 单位见方、同时只激活一个小地图设计）。
-2. 全图 AI 蛇总数上限（本方案按 150 条，窗口内同时 ≤ 60 条估算）。
-3. 最低支持机型（决定条带模式是否需要 GLES 3.0 降级路径长期保留）。
+| 项 | 决定 |
+| --- | --- |
+| 碰撞 | 网格碰撞（两级网格） |
+| 大地图 | 7500 × 7500，60 × 60 Chunk |
+| 小地图 | 大地图面积 1/4，3750 × 3750，通过传送点衔接，同一时刻只运行一个 Region |
+| AI 规模 | 每张地图 150 条，活跃窗口内 ≤ 60 条 |
+| 引擎 | Unity 2022.3 LTS + URP 14 2D |
+| 蛇身表现 | 节点精灵 + 连续条带，按皮肤切换 |
+| 兼容 | GLES 3.0 为渲染主路径基线（数据纹理 + 索引网格 + VTF） |
+| 计算基座 | 自研 SoA + Jobs + Burst，不引入 Entities |
+
+> 注：「小地图是大地图的 1/4」按**面积**理解（边长减半）。若指边长 1/4（1875 × 1875），只需改 Region 参数，机制不变。

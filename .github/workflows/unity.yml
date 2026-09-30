@@ -1,7 +1,9 @@
 name: Unity tests (EditMode + PlayMode UI automation)
 
-# Runs the real Unity test suites with GameCI. Requires repository secrets:
-#   UNITY_LICENSE  (contents of the .ulf file)  and/or  UNITY_EMAIL + UNITY_PASSWORD (+ UNITY_SERIAL for Pro)
+# Runs the real Unity test suites in the official unityci/editor Docker image.
+# Repository secrets:
+#   Personal licence:  UNITY_LICENSE  (full contents of Unity_lic.ulf)
+#   Pro / Plus:        UNITY_SERIAL + UNITY_EMAIL + UNITY_PASSWORD
 # Without them the job is skipped (the .NET harness workflow still runs).
 on:
   push:
@@ -11,7 +13,7 @@ on:
 jobs:
   unity-tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
       UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
@@ -21,12 +23,21 @@ jobs:
       - name: Check licence secrets
         id: licence
         run: |
-          if [ -n "$UNITY_LICENSE" ] || [ -n "$UNITY_EMAIL" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "ok=false" >> "$GITHUB_OUTPUT"; echo "::notice::Unity licence secrets not set; skipping Unity tests."; fi
+          if [ -n "$UNITY_LICENSE" ] || [ -n "$UNITY_SERIAL" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::UNITY_LICENSE (Personal .ulf contents) or UNITY_SERIAL is not set — email/password alone cannot activate a Personal licence. Skipping Unity tests."
+          fi
 
       - uses: actions/checkout@v4
         if: steps.licence.outputs.ok == 'true'
-        with:
-          lfs: true
+
+      - name: Free disk space for the editor image
+        if: steps.licence.outputs.ok == 'true'
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL || true
+          df -h /
 
       - uses: actions/cache@v4
         if: steps.licence.outputs.ok == 'true'
@@ -37,18 +48,23 @@ jobs:
 
       - name: Run EditMode and PlayMode tests
         if: steps.licence.outputs.ok == 'true'
-        uses: game-ci/unity-test-runner@v4
-        id: tests
-        with:
-          testMode: all
-          githubToken: ${{ secrets.GITHUB_TOKEN }}
-          checkName: Unity test results
-          artifactsPath: Artifacts/TestResults
+        run: Tools/ci/unity-tests.sh
+
+      - name: Summary
+        if: always() && steps.licence.outputs.ok == 'true'
+        run: |
+          for f in Artifacts/*-results.xml; do
+            [ -f "$f" ] || continue
+            line=$(grep -m1 -o '<test-run[^>]*>' "$f" | grep -o 'result="[^"]*"\|total="[^"]*"\|passed="[^"]*"\|failed="[^"]*"\|skipped="[^"]*"' | tr '\n' ' ')
+            echo "$(basename "$f"): $line" | tee -a "$GITHUB_STEP_SUMMARY"
+            grep -o '<test-case [^>]*result="Failed"[^>]*>' "$f" | grep -o 'fullname="[^"]*"' | tee -a "$GITHUB_STEP_SUMMARY" || true
+          done
 
       - uses: actions/upload-artifact@v4
         if: always() && steps.licence.outputs.ok == 'true'
         with:
           name: unity-test-results
           path: |
-            ${{ steps.tests.outputs.artifactsPath }}
+            Artifacts/*.xml
+            Artifacts/*.log
             Artifacts/Screenshots

@@ -49,9 +49,16 @@ Shader 为无光照 CGPROGRAM，内置管线与 URP 均可用（URP 下走 SRPDe
 | --- | --- | --- |
 | `Tools/DotnetHarness/run.sh` | .NET 8 | 按 asmdef 生成的工程 + Unity API 桩，编译全部程序集（分层与 Unity 一致），运行 EditMode 测试（55 个） |
 | Unity Test Runner（EditMode + PlayMode） | Unity 2022.3 | 以上 + 真实 Job / Burst + PlayMode UI 自动化（菜单、摇杆、加速、技能、死亡、重开、回菜单、换皮肤、传送门、1 分钟浸泡、两档渲染） |
-| GitHub Actions | 仓库 Secrets `UNITY_LICENSE` 或 `UNITY_EMAIL`+`UNITY_PASSWORD` | `harness.yml` 每次推送都跑；`unity.yml`（GameCI）有许可证时跑，并上传截图 |
+| GitHub Actions | 仓库 Secrets `UNITY_LICENSE` 或 `UNITY_EMAIL`+`UNITY_PASSWORD` | `harness.yml` 每次推送都跑；`unity.yml`（GameCI Docker）手动触发 |
+| 自托管 Runner（`unity-self-hosted.yml`） | 本机 Unity 2022.3.62f2 + 标签 `unity` 的 Runner，仓库变量 `UNITY_SELF_HOSTED=true` | 每次推送在本机跑 EditMode + PlayMode，结果/日志作为 artifact 上传；已验证：EditMode 55/56（1 个 Explicit 跳过）、PlayMode 11/11，Burst 开启 |
 
 .NET 测试工程只验证逻辑、确定性和我们自己代码路径的 GC；Burst 编译、Job 安全检查、Shader 编译与真实渲染需要在 Unity 中验证。
+测试桩里的 `IJobParallelFor` 每次调度都以不同的排列顺序执行下标，用来暴露依赖并行写入顺序的代码（真实 Worker 线程顺序不确定）。
+
+自托管 Runner 注意事项（`Tools/ci/local-unity-tests.sh` 已自动处理）：
+- Apple Silicon 上若装的是 x64 Runner，它运行在 Rosetta 下，子进程 Unity 也会以 x86_64 运行，Burst JIT 代码会被 macOS 以 “Code Signature Invalid” 杀掉。脚本用 `arch -arm64` 原生启动 Unity；更推荐直接安装 `osx-arm64` 版 Runner。
+- Unity 被杀后残留的子进程会占住项目锁，脚本在每次运行前清理，并清空 `Library/BurstCache`。
+- 若 Unity 仍被信号杀掉，会以 `--burst-disable-compilation` 重跑一次，并打印崩溃原因与失败用例的消息/堆栈。
 
 ## 写一个新玩法模块
 

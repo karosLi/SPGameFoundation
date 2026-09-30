@@ -64,6 +64,13 @@ namespace SPF.Runtime.Scheduling
                 entry.System.OnCreate(world);
         }
 
+        /// <summary>
+        /// Diagnostics only: completes each system's jobs right after scheduling it so
+        /// <see cref="PipelineStats.SystemExecuteMs"/> gets per-system execution time. This removes
+        /// overlap between systems, so tick time is higher than in normal (pipelined) operation.
+        /// </summary>
+        public bool SerialProfiling { get; set; }
+
         public int SystemCount => m_Systems.Length;
         public ISimSystem GetSystem(int index) => m_Systems[index].System;
         public IReadOnlyList<string> GetAccessNames(int index) => m_Systems[index].Access.Names;
@@ -88,6 +95,12 @@ namespace SPF.Runtime.Scheduling
                 entry.Marker.Begin();
                 var dependency = m_Tracker.GetDependency(entry.Access);
                 var handle = entry.System.OnTick(context, dependency);
+                if (SerialProfiling)
+                {
+                    // Attribute worker time to this system: its jobs (still internally parallel) run now.
+                    handle.Complete();
+                    m_Stats.RecordExecute(i, Stopwatch.GetTimestamp() - start);
+                }
                 m_Tracker.Record(entry.Access, handle);
                 entry.Marker.End();
                 m_Stats.RecordSchedule(i, entry.System.Phase, Stopwatch.GetTimestamp() - start);

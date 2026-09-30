@@ -15,6 +15,8 @@ namespace SPF.Runtime.Scheduling
 
         readonly string[] m_SystemNames;
         readonly float[] m_SystemScheduleMs;
+        readonly double[] m_SystemExecuteMsTotal;
+        readonly long[] m_SystemExecuteSamples;
         readonly float[] m_PhaseScheduleMs = new float[SimPhases.Count];
         readonly float[] m_PhaseAccumulator = new float[SimPhases.Count];
 
@@ -22,6 +24,8 @@ namespace SPF.Runtime.Scheduling
         {
             m_SystemNames = systemNames;
             m_SystemScheduleMs = new float[systemNames.Length];
+            m_SystemExecuteMsTotal = new double[systemNames.Length];
+            m_SystemExecuteSamples = new long[systemNames.Length];
         }
 
         /// <summary>Main-thread cost of BeginTick (playback + scheduling).</summary>
@@ -39,6 +43,22 @@ namespace SPF.Runtime.Scheduling
         public string SystemName(int index) => m_SystemNames[index];
         public float SystemScheduleMs(int index) => m_SystemScheduleMs[index];
         public float PhaseScheduleMs(SimPhase phase) => m_PhaseScheduleMs[(int)phase];
+
+        /// <summary>Mean schedule + execution time of a system, recorded only with <see cref="TickPipeline.SerialProfiling"/>.</summary>
+        public double SystemExecuteMs(int index) =>
+            m_SystemExecuteSamples[index] == 0 ? 0.0 : m_SystemExecuteMsTotal[index] / m_SystemExecuteSamples[index];
+
+        internal void RecordExecute(int systemIndex, long elapsedTicks)
+        {
+            m_SystemExecuteMsTotal[systemIndex] += elapsedTicks * s_TicksToMs;
+            m_SystemExecuteSamples[systemIndex]++;
+        }
+
+        public void ClearExecuteTimes()
+        {
+            Array.Clear(m_SystemExecuteMsTotal, 0, m_SystemExecuteMsTotal.Length);
+            Array.Clear(m_SystemExecuteSamples, 0, m_SystemExecuteSamples.Length);
+        }
 
         internal void RecordSchedule(int systemIndex, SimPhase phase, long elapsedTicks)
         {
@@ -69,6 +89,7 @@ namespace SPF.Runtime.Scheduling
             Array.Clear(m_SystemScheduleMs, 0, m_SystemScheduleMs.Length);
             Array.Clear(m_PhaseScheduleMs, 0, m_PhaseScheduleMs.Length);
             Array.Clear(m_PhaseAccumulator, 0, m_PhaseAccumulator.Length);
+            ClearExecuteTimes();
             ScheduleMs = SyncWaitMs = TickWallMs = 0f;
             TickCount = 0;
         }

@@ -40,4 +40,5 @@ jobs:
           path: |
             Artifacts/*.xml
             Artifacts/*.log
+            Artifacts/*.txt
             Artifacts/Screenshots

@@ -82,7 +82,28 @@ namespace Unity.Jobs
     public interface IJob { void Execute(); }
     public interface IJobParallelFor { void Execute(int index); }
     public static class IJobExtensions { public static JobHandle Schedule<T>(this T job, JobHandle dependsOn = default) where T : struct, IJob { job.Execute(); return default; } }
-    public static class IJobParallelForExtensions { public static JobHandle Schedule<T>(this T job, int arrayLength, int innerloopBatchCount, JobHandle dependsOn = default) where T : struct, IJobParallelFor { for (int i = 0; i < arrayLength; i++) job.Execute(i); return default; } }
+    public static class IJobParallelForExtensions
+    {
+        static uint s_Call;
+
+        // Real worker threads run iterations in an unpredictable order. Each schedule here visits the
+        // indices in a different permutation (i -> (a*i + b) mod n, gcd(a, n) = 1) so code that
+        // depends on parallel write order fails deterministically in the harness. Allocation-free.
+        public static JobHandle Schedule<T>(this T job, int arrayLength, int innerloopBatchCount, JobHandle dependsOn = default) where T : struct, IJobParallelFor
+        {
+            if (arrayLength <= 0) return default;
+            uint call = ++s_Call;
+            uint n = (uint)arrayLength;
+            uint a = (call * 2654435761u) % n | 1u;
+            while (Gcd(a, n) != 1u) a += 2u;
+            uint b = (call * 40503u) % n;
+            for (uint i = 0; i < n; i++)
+                job.Execute((int)(((ulong)a * i + b) % n));
+            return default;
+        }
+
+        static uint Gcd(uint x, uint y) { while (y != 0) { uint t = x % y; x = y; y = t; } return x; }
+    }
 }
 namespace Unity.Burst
 {

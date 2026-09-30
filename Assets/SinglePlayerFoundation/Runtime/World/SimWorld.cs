@@ -116,14 +116,24 @@ namespace SPF.Runtime.World
             return true;
         }
 
-        /// <summary>Applies queued destroys. Stale or duplicate handles are ignored.</summary>
+        /// <summary>
+        /// Applies queued destroys. Stale or duplicate handles are ignored. Parallel jobs push in
+        /// thread-dependent order, so the queue is sorted first: swap-back row moves and handle reuse
+        /// then depend only on which entities died, keeping the simulation deterministic.
+        /// </summary>
         internal void PlaybackDestroys()
         {
-            var queue = m_DestroyQueue.Queue;
-            int count = queue.Count;
-            for (int i = 0; i < count; i++)
-                DestroyEntity(queue[i]);
+            var items = m_DestroyQueue.Queue.AsArray();
+            items.Sort(new HandleOrder());
+            for (int i = 0; i < items.Length; i++)
+                DestroyEntity(items[i]);
             m_DestroyQueue.RecordAndClear();
+        }
+
+        struct HandleOrder : IComparer<EntityHandle>
+        {
+            public int Compare(EntityHandle a, EntityHandle b) =>
+                a.Index != b.Index ? a.Index.CompareTo(b.Index) : a.Generation.CompareTo(b.Generation);
         }
 
         internal void Sync()

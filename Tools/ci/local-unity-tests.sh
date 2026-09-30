@@ -37,6 +37,23 @@ diagnose_kill() {
   fi
 }
 
+# Prints name, message and stack trace of every failed test case in an NUnit results file.
+print_failures() {
+  [ -f "$1" ] || return 0
+  perl -0777 -ne '
+    while (/<test-case\b([^>]*result="Failed"[^>]*)>(.*?)<\/test-case>/gs) {
+      my ($attrs, $body) = ($1, $2);
+      my ($name) = $attrs =~ /fullname="([^"]*)"/;
+      my ($msg) = $body =~ /<message><!\[CDATA\[(.*?)\]\]><\/message>/s;
+      my ($st) = $body =~ /<stack-trace><!\[CDATA\[(.*?)\]\]><\/stack-trace>/s;
+      my ($out) = $body =~ /<output><!\[CDATA\[(.*?)\]\]><\/output>/s;
+      $st = join("\n", grep { defined } (split /\n/, ($st // ""))[0..11]);
+      $out = join("\n", grep { defined } (split /\n/, ($out // ""))[-15..-1]);
+      print "::error title=Test failed::$name\n--- FAILED: $name\n", ($msg // ""), "\n", $st, "\n";
+      print "--- output (tail):\n$out\n" if $out;
+    }' "$1"
+}
+
 run() {
   local platform=$1 tag=$2; shift 2
   echo "::group::${platform} tests${tag:+ ($tag)}"
@@ -60,6 +77,7 @@ run() {
     echo "----- last 150 lines of ${log} -----"; tail -n 150 "$log" || true
     [ $code -ge 128 ] && diagnose_kill
   fi
+  print_failures "$PROJECT/$A/${platform}${tag:+-$tag}-results.xml"
   return $code
 }
 

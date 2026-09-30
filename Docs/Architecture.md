@@ -13,7 +13,9 @@
 > | 地图衔接 | 大地图通过**传送点衔接小地图**（PortalLink 为主，EdgeLink 保留） |
 > | 小地图 | **面积**为大地图的 **1/4**（边长减半），即 **3750 × 3750**（30 × 30 Chunk） |
 > | AI 规模 | 每张地图 **150 条 AI 蛇** |
-> | 兼容性 | **必须支持 GLES 3.0**（同时支持 Metal / Vulkan），渲染主路径按 GLES 3.0 能力设计 |
+> | 渲染 | **GPU 驱动渲染**（Compute 剔除 / 展开 + Indirect Draw），Metal / Vulkan / GLES 3.1+ 为主路径 |
+> | 皮肤 | 支持**半透明蛇皮肤**（整蛇统一透明度，自身重叠不叠色） |
+> | 兼容性 | **必须支持 GLES 3.0**：自动降级到「数据纹理 + 索引网格」路径，数据布局与 Shader 逻辑共用 |
 > | 引擎 | **Unity 2022.3 LTS** + URP 14（2D Renderer） |
 > | 蛇身表现 | **节点精灵**与**连续条带**两种模式都要，可按皮肤切换 |
 > | 重点指标 | 计算性能、渲染带宽、GC、合批（见 §8 专项） |
@@ -26,7 +28,7 @@
 | --- | --- |
 | 帧率 | 中端机（骁龙 7 系 / A13）稳定 60 FPS，低端机 30 FPS 可降级 |
 | 规模（贪吃蛇基准） | 全图 AI 蛇 150，活跃窗口内 ≤ 60；可见身体节点 30k；活跃食物 10k；飞行物 500 |
-| 渲染 | 玩法层 Draw Call ≤ 12，总计 ≤ 40；上传 ≤ 1 MB / tick；透明 overdraw 受控 |
+| 渲染 | GPU 驱动；玩法层 Draw Call ≤ 12（固定），总计 ≤ 40；上传 Tier A ≤ 50 KB / tick、Tier B ≤ 1 MB / tick；透明 overdraw 受控 |
 | 模拟 CPU 预算 | 主线程 ≤ 3 ms，工作线程总计 ≤ 6 ms / tick |
 | GC | 进入对局后 **0 GC Alloc / 帧** |
 | 内存 | 模拟数据 ≤ 32 MB，预分配 + 池化，对局中不扩容或极少扩容 |
@@ -161,7 +163,7 @@ Tick N
  ├─ P6  Collision          (Job)    宽相位 + 窄相位 → 碰撞事件流
  ├─ P7  Resolve            (Job)    规则层：击杀、吃、拾取、伤害、Buff
  ├─ P8  Spawn & Replenish  (Job)    食物补充、死亡掉落、飞行物发射 → 写命令缓冲
- ├─ P9  Snapshot           (Job)    写表现快照（双缓冲）
+ ├─ P9  Snapshot           (Job)    写表现增量包（GPU 驱动）/ 可见实例（Tier B）
  └─ Sync                   (主线程) Complete，交换快照，派发主线程事件（音效/VFX/UI）
 ```
 
@@ -447,48 +449,149 @@ BodyStore（全局 Slab）：NativeArray<float2> TrailPoints
 
 ## 7. 表现层（Presentation）
 
-### 7.1 总体流程（GLES 3.0 兼容主路径）
+### 7.1 总体思路：GPU 驱动渲染
 
-GLES 3.0 **没有** Compute Shader、SSBO、`DrawIndirect`，因此 `RenderMeshIndirect` / `StructuredBuffer` / `GraphicsBuffer` 不能作为主路径。本方案采用在 GLES 3.0 / Metal / Vulkan 上**同一条代码路径**的方案：
-
-> **数据纹理（Data Texture）+ 静态索引网格（Index Mesh）+ 顶点纹理采样（VTF）**
+**CPU 只负责「把模拟状态的增量搬到 GPU」和「发起固定数量的 Dispatch / Draw」；剔除、LOD、蛇身节点展开、插值、实例压缩、绘制参数全部在 GPU 上完成，CPU 不读回。**
 
 ```
-Simulation(30Hz) ─P9 Snapshot/Cull Job─► Texture2D.GetPixelData<T>() 直接写入（NativeArray 视图）
-                                          │  Apply(false)  上传
-                                          ▼
-               DataTex_Prev / DataTex_Curr（RGBA32F / RGBAHalf，点采样，轮换）
-                                          │
-Render Frame(60Hz) ─ 设置 _InterpAlpha + _InstanceCount ─► Vertex Shader texelFetch → 插值 → 输出
-                                          ▲
-                   IndexMesh：预建 N 个四边形 / 多边形，顶点只带 (instanceId, corner)
+┌──────── CPU（Burst Job，每模拟 tick 30Hz） ────────┐
+│ P9 Snapshot：写「增量包」而不是整帧实例           │
+│   · SnakeHeader[150]（头位置、朝向、半径、轨迹环形区间、皮肤…）   │
+│   · TrailDelta（本 tick 新增的轨迹点，每蛇通常 0~2 个）          │
+│   · FoodDelta / PropDelta（新增 / 删除的少量元素）                │
+│   · Projectile[≤500]（全量，量小）                               │
+└──────────────┬────────────────────────────────────┘
+               │ 1 次上传（LockBufferForWrite / SetData）
+┌──────────────▼──────────── GPU（每渲染帧 60Hz） ───────────────────┐
+│ C0 Apply Deltas   ：把增量散写进常驻 GPU 镜像（TrailMirror / FoodPool）│
+│ C1 Snake Expand   ：按插值后的头部位置，沿轨迹采样身体节点 / 条带簇     │
+│                      + 视锥剔除 + LOD（按屏幕尺寸降采样节点）          │
+│ C2 Element Cull   ：食物 / 道具 / 飞行物视锥剔除 + 压缩                │
+│ C3 Build Args     ：写 IndirectDrawIndexedArgs（实例数由 GPU 原子累加）│
+│ Draw ×N           ：RenderMeshIndirect / RenderPrimitivesIndexedIndirect│
+└──────────────────────────────────────────────────────────────────────┘
 ```
 
-- **数据纹理**：每个实例 1~2 个 texel（位置、朝向、缩放、皮肤/颜色索引），Job 通过 `Texture2D.GetPixelData<T>(0)` 拿到 `NativeArray` 视图**直接写**，然后 `Apply(false, false)` 上传——零托管分配、无额外拷贝。GLES 3.0 保证支持浮点纹理的 `texelFetch` 点采样与顶点纹理采样。
-- **静态索引网格**：启动时按容量预建一个大网格（例如 32k 个八边形，32 位索引，GLES 3.0 支持），顶点属性只有 `instanceId + cornerId`；顶点着色器用 `instanceId` 去数据纹理取实例数据生成最终位置。
-- **可变实例数**：每帧通过 `Mesh.SetSubMesh(0, new SubMeshDescriptor(0, count * indicesPerInstance), MeshUpdateFlags.DontValidateIndices | DontRecalculateBounds | DontNotifyMeshUsers)` 只绘制前 `count` 个实例，不产生多余顶点处理；网格 bounds 设为极大值避免被剔除。
-- **插值放到 GPU**：每个模拟 tick 只写一次数据纹理（Prev / Curr 两张轮换），渲染帧只更新 `_InterpAlpha`。60 FPS 下上传量减半，主线程无插值循环。
-- **裁剪在 Job 中完成**：用细网格按相机 AABB（外扩最大半径）收集可见 Cell，只把可见实例连续写入数据纹理（Stream Compaction），得到 `count`。
-- **提交**：`Graphics.RenderMesh`（或 `CommandBuffer.DrawMesh`）+ 共享材质 + `MaterialPropertyBlock`（预分配、只改数值，不产生 GC）。
-- **不为实体创建 GameObject / SpriteRenderer**：只有 UI、少量特效与玩家挂点使用 GameObject。
-- **可选高端路径**：在支持 SSBO 的设备上可切到 `GraphicsBuffer` + `RenderMeshIndirect`，但接口与 shader 数据布局保持一致，**默认不启用**，避免两套路径的维护与测试成本。
+与 CPU 驱动相比的收益：
 
-纹理规格：宽固定 2048（GLES 3.0 最低保证尺寸），高按容量计算。例如 32k 节点 × 1 texel（RGBA32F）= 2048 × 16，仅 512 KB。
+| 项 | CPU 驱动（旧） | GPU 驱动（新） |
+| --- | --- | --- |
+| 身体节点展开 / 剔除 | CPU Job 遍历 30k 节点 | GPU 并行，CPU 为 0 |
+| 每 tick 上传 | 所有可见实例（~560 KB） | **仅增量**（头部 150 × 32 B + 新轨迹点 + 食物增删 + 飞行物 ≈ **20~30 KB**） |
+| 插值 | 上传 Prev/Curr 两份 | 只插值 150 个头部与轨迹进度，节点沿轨迹重新采样，**天然平滑** |
+| 主线程提交 | 数据纹理 Apply + 若干 Draw | 1 次上传 + 3~4 次 Dispatch + ~8 次 Indirect Draw，≤ 0.3 ms |
+| CPU 读回 | 无 | 无（仅 Debug 统计用 `AsyncGPUReadback`） |
 
-### 7.2 蛇身两种表现模式（均支持，按皮肤切换，均兼容 GLES 3.0）
+### 7.2 GPU 常驻数据（GraphicsBuffer）
+
+| Buffer | 内容 | 大小（活跃 Region） | 更新方式 |
+| --- | --- | --- | --- |
+| `SnakeHeaderBuf` | 150 × {headPrev, headCurr, dirPrev/Curr, radius, trailStart, trailCap, trailHead, trailCount, spacing, skin, flags} | ~10 KB | 每 tick 全量 |
+| `TrailMirrorBuf` | 与 CPU `BodyStore` 一一对应的轨迹点池（`float2`） | 150 × 1024 × 8 B ≈ 1.2 MB | 每 tick 只写新增点（C0 散写）；Slab 重新分配时整段重传（罕见） |
+| `FoodPoolBuf` | 活跃窗口内食物（pos, radius, kind, value） | 16k × 16 B = 256 KB | 增删增量；窗口滚动时整 Chunk 批量写 |
+| `ProjectileBuf` | 飞行物 | 500 × 16 B | 每 tick 全量 |
+| `VisibleXxxBuf` | 剔除后的实例（节点 / 食物 / 飞行物 / 头） | 按上限预分配 | GPU 写，GPU 读 |
+| `IndirectArgsBuf` | `GraphicsBuffer.IndirectDrawIndexedArgs` × 层数 | < 1 KB | GPU 写 |
+| `DeltaUploadBuf` | 本 tick 所有增量（统一格式 `{target, index, payload}`） | ≤ 64 KB | CPU 每 tick 1 次上传 |
+
+- **单次上传**：所有增量打包进 `DeltaUploadBuf`，CPU 侧用 `GraphicsBuffer.UsageFlags.LockBufferForWrite` 让 Burst Job 直接写（不支持时 `SetData(NativeArray)`），GPU 用一次 C0 Dispatch 散写到各常驻 Buffer。避免多次 `SetData` 小块调用的驱动开销。
+- **三缓冲**：上传 Buffer 按帧轮换 3 份，避免 CPU 写正在被 GPU 读的内存造成同步等待。
+- **CPU 仍是唯一真相源**：GPU 镜像只用于表现；Region 切换 / Slab 重排 / 调试时可整体重建。
+
+### 7.3 Compute Pass 设计
+
+**C1 Snake Expand（核心）**
+- 一个线程组处理一条蛇的一段（64 个节点为一个「簇」）。先用簇的包围盒（由簇首尾轨迹点 + 半径得出）做视锥剔除，整簇不可见直接跳过。
+- 节点位置：用本帧插值后的「头部行进距离」在轨迹上按固定间距采样，所以 30Hz 模拟下 60/120 FPS 身体依旧顺滑，不需要为每个节点存 Prev/Curr。
+- **节点模式**：可见节点写入 `VisibleNodeBuf`；LOD：屏幕半径 < 阈值时每 2 个节点取 1 个并放大半径，远景节点数减半。
+- **条带模式**：只输出「可见簇列表」，由条带顶点着色器直接读 `TrailMirrorBuf` 生成左右顶点（一个簇 = 固定 64 段三角带，索引网格预建），不写中间顶点缓冲。
+- 深度值 `z = f(snakeRank, nodeIndex)` 在此计算，保证大蛇 / 玩家蛇压在上面，同一批内完成排序。
+
+**C2 Element Cull**
+- 食物 / 道具 / 飞行物 / 蛇头按实例视锥剔除，写入各自 `Visible*Buf`。
+- 压缩方式：**组内 `groupshared` 原子计数 + 每组 1 次全局 `InterlockedAdd`** 取得写入偏移。不依赖 Wave Intrinsics（移动端支持不稳定），也不用 `AppendStructuredBuffer`（部分 Mali 驱动性能差）。
+
+**C3 Build Args**
+- 1 个线程把各层实例数写入 `IndirectArgsBuf`（`indexCountPerInstance`、`instanceCount`），并在需要时把节点实例数拆成多批。
+
+**移动端 Compute 约束**
+- 线程组大小 64（Mali / Adreno / Apple 通用最佳点），每帧 Dispatch ≤ 4 个，减少 Compute ↔ Graphics 屏障与管线切换。
+- 只在 **URP ScriptableRendererFeature** 中用同一个 `CommandBuffer` 顺序执行 Dispatch 与 Draw（`cmd.DispatchCompute` → `cmd.DrawMeshInstancedIndirect` / `cmd.DrawProceduralIndirect`），保证执行顺序且只插一次屏障。
+- 不使用异步 Compute（移动端普遍不支持），不使用 `AsyncGPUReadback` 参与逻辑。
+- Buffer 用 `StructuredBuffer` / `ByteAddressBuffer`，避免 `RWTexture` 格式兼容问题；所有 Buffer 在 Session Warmup 时一次性创建。
+
+### 7.4 能力分级（Tier）与 GLES 3.0 降级
+
+GPU 驱动依赖 Compute + 顶点阶段读取 SSBO + Indirect Draw，GLES 3.0 不具备，且部分 GLES 3.1 的 Mali 老驱动**顶点阶段可用 SSBO 数量为 0**。启动时按能力选择 Tier：
+
+| Tier | 判定 | 渲染路径 |
+| --- | --- | --- |
+| **A：GPU Driven** | `SystemInfo.supportsComputeShaders` && `SystemInfo.maxComputeBufferInputsVertex >= 4` && 非黑名单 | §7.1 ~ §7.3 全部 |
+| **B：Data Texture（降级）** | GLES 3.0 或 Tier A 判定失败 / 黑名单设备 | CPU Burst Job 做剔除 + 节点展开，写入数据纹理（`Texture2D.GetPixelData` 零拷贝），静态索引网格 + 顶点纹理采样（VTF），`Mesh.SetSubMesh` 控制实例数 |
+
+**共用部分，避免两套维护**：
+- 实例数据结构（16 B 紧凑格式）、轨迹数据格式、皮肤 / 图集 / 颜色编码完全一致。
+- Shader 用同一份 HLSL，数据读取封装成 `FetchInstance(id)` / `FetchTrail(i)`，Tier A 宏展开为 `StructuredBuffer` 读取，Tier B 展开为 `texelFetch`。
+- 同一套索引网格（八边形节点网格、64 段条带簇网格）。
+- 剔除 / 展开算法的 Burst 版本与 HLSL 版本共用测试用例（同一输入对比输出实例集合）。
+
+Tier B 的 CPU 成本预估：节点展开 + 剔除约 0.6 ms（工作线程），上传约 300~500 KB / tick，仍满足预算；低端 GLES 3.0 机型目标 30 FPS。
+
+### 7.5 蛇身两种表现模式（两种 Tier 均支持，按皮肤切换）
 
 | 模式 | 适用 | 实现 | 特点 |
 | --- | --- | --- | --- |
-| **节点精灵（Sprite Node）** | 糖果、珠子、分节皮肤 | 每个可见节点 1 个实例，走 §7.1 实例路径（八边形索引网格） | 皮肤多样；节点重叠有 overdraw，靠不透明 + 深度前到后剔除 |
-| **连续条带（Strip）** | 平滑蛇皮、花纹贴图 | **GPU 条带**：轨迹点写入 `TrailTex`（RG32F，8 B/点），条带索引网格顶点带 `(stripSlot, pointIndex, side)`，顶点着色器 `texelFetch` 取前后两个轨迹点求切线，向左右偏移半径生成顶点 | CPU 零网格构建；无节点叠加；上传量最小 |
+| **节点精灵（Sprite Node）** | 糖果、珠子、分节皮肤 | 每个可见节点 1 个实例（八边形索引网格，9 顶点） | 皮肤多样；重叠节点靠不透明 + 深度前到后剔除 |
+| **连续条带（Strip）** | 平滑蛇皮、花纹贴图 | 可见簇列表 + 64 段条带簇网格，顶点着色器读轨迹点求切线并左右偏移半径 | CPU 零网格构建；无节点叠加；上传量最小 |
 
-- 条带索引网格：预建 `MaxStripSnakes × MaxPointsPerStrip` 的三角带（例如 64 × 1024 点）；每条蛇的实际长度通过「超出长度的顶点塌缩为退化三角形」处理；远处或很短的蛇合并到少量槽位，槽位表同样放在数据纹理里。
-- **CPU 条带回退**（仅当某些 GLES 3.0 驱动的 VTF 表现异常时，按设备黑名单启用）：Burst Job 写 `Mesh.MeshDataArray` → `Mesh.ApplyAndDisposeWritableMeshData`，所有条带蛇合并为 1 个 Mesh，CPU 多约 0.3 ms。
-- 两种模式共用同一份轨迹数据（`BodyStore`）与同一套 UV / 颜色 / 皮肤索引；**蛇头统一用节点实例绘制**。
-- 皮肤 = 图集区域索引 + 调色参数 + 模式，放在实例数据里，不同皮肤**不切换材质**。
+- 两种模式共用同一份轨迹数据；**蛇头统一用节点实例绘制**。
+- 皮肤 = 图集区域索引 + 调色参数 + 模式，放在实例 / 蛇头数据里，不同皮肤**不切换材质**。
 - 条带 UV 沿身长连续累积（`pointIndex * spacing`），贴图可平铺花纹；头尾渐细半径。
 
-### 7.3 Camera 与事件
+### 7.6 半透明蛇皮肤
+
+**目标效果**：整条蛇呈现统一的透明度（像一层半透明胶片），**自身节点重叠处不变深**；不同蛇之间、蛇与地面 / 食物之间正常透出。
+
+**难点**
+1. 节点 / 条带相互重叠，直接 Alpha 混合会在重叠处叠色变深，蛇身出现「一串珠子」的深色斑。
+2. 蛇之间需要从后往前的混合顺序，而 GPU 驱动的原子压缩输出顺序不确定。
+3. 半透明无法使用 Early-Z / HSR 剔除，overdraw 直接变成带宽成本。
+4. Stencil 方案行不通：一次 Indirect Draw 内无法按实例改 Stencil Ref（移动端基本不支持 Shader Stencil Export）。
+
+**方案：同蛇等深度 + 严格小于测试（Equal-Depth Self-Occlusion）**
+
+| 规则 | 说明 |
+| --- | --- |
+| 同一条蛇的所有节点 / 条带顶点使用**同一个深度值 `z_s`** | `z_s` 由蛇的绘制顺序决定，越靠前越小 |
+| 半透明 Pass：`ZTest Less`、`ZWrite On`、`Blend SrcAlpha OneMinusSrcAlpha`（或预乘 Alpha） | 同一条蛇在同一像素只有**第一个**写入者通过（后续同深度 `Less` 失败），重叠处只混合一次 |
+| 蛇内顺序：**头 → 尾** | 头部节点先写，重叠处显示的是更靠前的节点，符合视觉 |
+| 蛇间顺序：**从后往前**（按 `snakeRank`，玩家蛇最后） | 后画的蛇 `z` 更小，能通过深度测试并正确混合在前一条蛇之上 |
+| 蛇头作为该蛇实例流的第一个实例（同一网格，图集取蛇头区域） | 头与身体属于同一「半透明整体」；眼睛等装饰在其后单独画 |
+
+该方案**一次 Draw 覆盖所有半透明蛇**，不需要离屏 RT（移动端 TBDR 上切 RT 会带来整屏 load/store 带宽），也不需要 Stencil。条带模式同理：三角带按头 → 尾顺序输出，整条带同一 `z_s`，蛇盘绕自身时也不会叠色。
+
+**渲染顺序**
+
+```
+背景 → 地面装饰 → 食物 / 道具 → 不透明蛇（前→后，ZWrite）→ 半透明蛇（蛇间后→前，蛇内头→尾，等深度）→ 飞行物 / 特效 → UI
+```
+
+**GPU 驱动下的「有序压缩」**
+- 原子累加的压缩顺序不确定，半透明层改用**有序压缩**：C1 先按簇（64 节点）做可见性判定写标志 → 单线程组对所有半透明簇（≤ 150 蛇 × 16 簇 = 2400 项）做前缀和，得到按「蛇绘制顺序 → 簇顺序」排列的写入偏移 → 再写节点实例。额外成本：1 次小 Dispatch，< 0.05 ms。
+- 蛇的绘制顺序由 CPU 每 tick 对 150 条蛇排序一次（Burst，微秒级），写入 `SnakeHeader.drawOrder`，GPU 不做排序。
+- GPU 按 API 顺序执行同一 Draw 内的图元混合与深度测试（各图形 API 均保证），因此实例顺序即混合顺序。
+- 不透明层仍用无序原子压缩（深度测试保证正确性）。
+
+**性能控制**
+- 半透明蛇不享受 HSR，同屏预算：**半透明可见蛇 ≤ 30 条**（可配）。超出时，离镜头较远的半透明蛇使用皮肤配置的 `OpaqueFallback`（预混背景色的不透明版本），近处保持半透明。
+- 半透明皮肤优先使用**条带模式**（节点模式重叠多，深度测试虽避免叠色，但被拒绝的片元仍消耗光栅化）。
+- 使用**预乘 Alpha**，便于与发光类皮肤（Additive）在同一 Shader 内切换，不拆材质。
+- Tier B（GLES 3.0）方案完全相同：CPU Job 本身按顺序写实例，天然有序。
+- 低端机质量档可把半透明预算降为 10 条，或整体切换为 `OpaqueFallback`。
+
+**皮肤配置新增字段**：`BlendMode（Opaque / Translucent / Additive）`、`Alpha`、`OpaqueFallbackColor`、`PreferStrip`。
+
+### 7.7 Camera 与事件
 
 - **Camera**：跟随 + 体型缩放（视野随质量对数增长）、Region 切换过渡、屏幕震动（事件驱动）。
 - **事件到表现**：Sync 点把本 tick 事件拷贝到主线程预分配数组，派发给 VFX / 音效 / UI 适配器（均对象池复用）。
@@ -503,7 +606,8 @@ Render Frame(60Hz) ─ 设置 _InterpAlpha + _InstanceCount ─► Vertex Shader
 | --- | --- |
 | 模拟主线程（调度 + Sync + 命令应用） | ≤ 1.5 ms / tick |
 | 模拟工作线程总和 | ≤ 6 ms / tick（30 Hz，均摊 ≤ 3 ms / 帧） |
-| 渲染主线程（提交 + 上传） | ≤ 1.5 ms / 帧 |
+| 渲染主线程（提交 + 上传） | Tier A ≤ 0.3 ms / 帧；Tier B ≤ 1.5 ms / 帧 |
+| GPU Compute（C0~C3） | ≤ 1 ms / 帧（中端机） |
 | Draw Call（含 UI） | **≤ 40**，玩法层 ≤ 12 |
 | SetPass Call | ≤ 15 |
 | 每 tick CPU→GPU 上传 | ≤ 1 MB（约 30 MB/s） |
@@ -546,19 +650,28 @@ Render Frame(60Hz) ─ 设置 _InterpAlpha + _InstanceCount ─► Vertex Shader
 
 | 手段 | 效果 |
 | --- | --- |
-| 紧凑实例格式：`float2 pos + half rot + half scale + uint colorSkin`（16 B） | 相比 `Matrix4x4`（64 B）减少 75% |
-| 条带模式直接上传轨迹点 `float2`（8 B/点，RG32F 纹理）而不是网格顶点 | 相比 CPU 建网格（2 顶点 × 24 B）减少 80%+ |
-| 仅每模拟 tick 上传一次，渲染帧 GPU 插值 | 60 FPS 下再减半 |
-| 只上传可见实例（Job 裁剪 + 压缩） | 与地图大小无关 |
-| Job 直接写 `Texture2D.GetPixelData<T>()` 返回的 NativeArray 视图，再 `Apply(false)` | 省掉一次 CPU 拷贝，GLES 3.0 可用，零 GC |
-| 数据纹理只上传有效行（按 `count` 计算高度，使用多张分级纹理或 `Texture2D.SetPixelData` 局部行） | 实例少时上传量随之下降 |
+| 手段（Tier A：GPU 驱动） | 效果 |
+| --- | --- |
+| **GPU 常驻镜像 + 只传增量**：轨迹只传新增点，食物只传增删 | 上传量与「变化量」成正比，而不是与实例数成正比 |
+| 所有增量打包成 1 个 `DeltaUploadBuf`，Job 经 `LockBufferForWrite` 直接写 | 1 次上传、无额外 CPU 拷贝、零 GC |
+| 身体节点由 GPU 从轨迹展开 | 30k 节点实例数据**不上传** |
+| 插值只针对 150 个蛇头 | 不需要 Prev/Curr 两份实例数据 |
 | 静态内容（背景、障碍）只上传一次 | 每帧零上传 |
 
-估算：30k 节点 × 16 B + 5k 食物 × 16 B ≈ 560 KB / tick × 30 Hz ≈ 17 MB/s，远低于移动端可承受范围。
+| 手段（Tier B：GLES 3.0 降级） | 效果 |
+| --- | --- |
+| 紧凑实例格式 16 B（vs `Matrix4x4` 64 B） | 减少 75% |
+| 只上传可见实例（CPU Job 剔除 + 压缩） | 与地图大小无关 |
+| Job 直接写 `Texture2D.GetPixelData<T>()` 视图，再 `Apply(false)` | 省一次拷贝，零 GC |
+| 每 tick 上传一次，GPU 插值 | 60 FPS 下减半 |
+
+估算：
+- Tier A：150 × 32 B 头部 + ~300 个新轨迹点 × 8 B + 食物增删 ~200 × 16 B + 500 飞行物 × 16 B ≈ **20 KB / tick ≈ 0.6 MB/s**。
+- Tier B：30k 节点 × 16 B + 5k 食物 × 16 B ≈ 560 KB / tick ≈ 17 MB/s。
 
 **GPU 填充带宽**
 - **减少透明 overdraw**：圆形精灵使用**八边形紧凑网格**替代四边形，透明像素减少约 30%。
-- **身体节点默认不透明**：用八边形网格近似圆形（9 顶点，30k 节点 ≈ 27 万顶点 / 帧，顶点开销可控），**不透明 + 深度写入 + 前到后**（头部在前）绘制，被遮挡像素由 Early-Z / HSR 剔除；**不用 `discard`（alpha test）**，因为它会破坏 Apple / PowerVR 的 HSR 与部分 Mali 的 Early-Z。边缘锯齿用 **MSAA 2x**（TBDR 上 MSAA 在 tile 内解析，几乎不增加带宽）。只有软边 / 半透明皮肤才走混合队列。
+- **身体节点默认不透明**（半透明皮肤见 §7.6）：用八边形网格近似圆形（9 顶点，30k 节点 ≈ 27 万顶点 / 帧，顶点开销可控），**不透明 + 深度写入 + 前到后**（头部在前）绘制，被遮挡像素由 Early-Z / HSR 剔除；**不用 `discard`（alpha test）**，因为它会破坏 Apple / PowerVR 的 HSR 与部分 Mali 的 Early-Z。边缘锯齿用 **MSAA 2x**（TBDR 上 MSAA 在 tile 内解析，几乎不增加带宽）。只有半透明皮肤走混合队列，并通过同蛇等深度避免自身重叠叠色（§7.6）。
 - 条带模式天然无节点叠加，是大体型蛇的首选；节点模式在蛇很长时可对屏幕外 / 被遮挡区域降采样节点（每 2 个画 1 个，半径略放大）。
 - 贴图：iOS 与支持的 Android 用 **ASTC**（6×6），GLES 3.0 设备保证支持的 **ETC2** 作为回退（Android App Bundle 按纹理压缩格式分发）；开启 mipmap，图集 ≤ 2048；背景用平铺小纹理 + UV 滚动，不用大图。
 - 渲染分辨率：URP Render Scale 0.75~0.85（GLES 3.0 低端机 0.7），发热时下调；关闭 HDR；MSAA 2x（低端机可关）。
@@ -587,17 +700,19 @@ Render Frame(60Hz) ─ 设置 _InterpAlpha + _InstanceCount ─► Vertex Shader
 | --- | --- | --- |
 | 背景 | 1 个平铺网格 | 1 |
 | 静态障碍 / 装饰 | Chunk 加载时合并为静态网格（每 Chunk 1 个，仅可见 Chunk） | 2~6 |
-| 食物 | 数据纹理 + 索引网格，单材质 + 图集 | 1 |
-| 飞行物 / 道具 | 数据纹理 + 索引网格 | 1~2 |
-| 蛇身（节点模式，所有蛇） | 数据纹理 + 八边形索引网格（9 顶点 / 实例，32 位索引，每批 ≤ 32k 实例） | 1~2 |
-| 蛇身（条带模式，所有蛇） | TrailTex + 条带索引网格（GPU 条带） | 1 |
-| 蛇头 / 眼睛 / 名字底板 | 数据纹理 + 索引网格 | 1~2 |
+| 食物 | Tier A：`DrawMeshInstancedIndirect`；Tier B：数据纹理 + 索引网格 | 1 |
+| 飞行物 / 道具 | 同上 | 1~2 |
+| 蛇身（节点模式，所有蛇） | Tier A：Indirect，实例数由 GPU 写入；Tier B：八边形索引网格（32 位索引，每批 ≤ 32k） | 1~2 |
+| 蛇身（半透明，所有半透明蛇，节点 + 条带各 1） | 有序压缩后的 Indirect Draw，等深度自遮挡 | 1~2 |
+| 蛇身（条带模式，所有蛇） | Tier A：`DrawProceduralIndirect`（可见簇 × 64 段）；Tier B：TrailTex + 条带索引网格 | 1 |
+| 蛇头 / 眼睛 / 名字底板 | 同食物 | 1~2 |
 | 特效 | 池化粒子，共享 1~2 个材质（图集） | 2~4 |
 | UI | UGUI，图集化，分动静 Canvas | 5~10 |
 
 - **材质统一**：每一层一个材质；皮肤、颜色、帧动画都通过「图集索引 + 实例颜色」区分，**不产生新材质实例**（禁止运行时 `renderer.material` 访问）。
 - **排序不拆批**：蛇之间的前后关系（大蛇压小蛇 / 玩家置顶）通过实例深度值 `z = f(layer, snakeRank, segmentIndex)` 在同一批内由深度测试完成，而不是按蛇拆 Draw Call。
-- **不依赖 SRP Batcher 解决数量问题**：SRP Batcher 只降低 SetPass 成本，不合并 Draw Call；大批量对象一律程序化实例化。
+- **不依赖 SRP Batcher 解决数量问题**：SRP Batcher 只降低 SetPass 成本，不合并 Draw Call；大批量对象一律 GPU 驱动的 Indirect 实例化。
+- **Draw Call 数固定**：GPU 驱动下 Draw 数量在 Session 开始时就确定（每层 1 个 Indirect Draw，不可见时 `instanceCount = 0`），CPU 提交成本与场景内容无关。
 - **不使用 SpriteRenderer 动态合批**：动态合批每帧 CPU 顶点变换，数量大时反而更慢。
 - 名字文字：玩家名用 SDF 字体图集实例化（每字符一个实例）或只显示附近 N 条蛇的名字，避免每条蛇一个 TMP 对象。
 - 验证：Frame Debugger 与 `UnityStats.drawCalls` 纳入 Perf HUD，超过预算报警。
@@ -610,8 +725,9 @@ Render Frame(60Hz) ─ 设置 _InterpAlpha + _InstanceCount ─► Vertex Shader
 | Collections | 2.1.x（`NativeParallelMultiHashMap` 等已改名，本方案不依赖） |
 | Mathematics | 1.2.x |
 | URP | 14.x，2D Renderer；关闭 2D Lights（或只用 1 盏全局光） |
-| 渲染 API | `Graphics.RenderMesh` / `CommandBuffer.DrawMesh` + 数据纹理 VTF（GLES 3.0 主路径）；`Mesh.SetSubMesh` 控制实例数；`Texture2D.GetPixelData` 零拷贝写入 |
-| Shader | 目标 `#pragma target 3.0`（GLES 3.0），只用 `texelFetch` / `tex2Dlod` 点采样；不使用 Compute、SSBO、几何着色器 |
+| 渲染 API（Tier A） | `ComputeShader` + `GraphicsBuffer`（`Structured` / `IndirectArguments`，`LockBufferForWrite`）；URP `ScriptableRendererFeature` 中 `cmd.DispatchCompute` + `cmd.DrawMeshInstancedIndirect` / `cmd.DrawProceduralIndirect`；`GraphicsBuffer.IndirectDrawIndexedArgs` |
+| 渲染 API（Tier B） | `CommandBuffer.DrawMesh` + 数据纹理 VTF；`Mesh.SetSubMesh` 控制实例数；`Texture2D.GetPixelData` 零拷贝写入 |
+| Shader | 同一份 HLSL，`#pragma multi_compile _ SPF_GPU_DRIVEN`：Tier A `#pragma target 4.5`（Compute / SSBO），Tier B `#pragma target 3.0`（`texelFetch` 点采样）；不使用几何着色器、Wave Intrinsics |
 | Player | IL2CPP、ARM64 + ARMv7（如需覆盖 GLES 3.0 老设备）、Incremental GC；Graphics API：iOS Metal；Android **Vulkan + OpenGLES3**（Vulkan 黑名单设备自动回退 GLES 3.0） |
 | 纹理压缩 | ASTC + ETC2 双格式（AAB Texture Compression Targeting） |
 | Stripping | Managed Stripping Level: High；`link.xml` 保留反射用到的类型 |
@@ -645,7 +761,7 @@ Render Frame(60Hz) ─ 设置 _InterpAlpha + _InstanceCount ─► Vertex Shader
 | --- | --- | --- |
 | M1 基座骨架 | Contracts、asmdef、SimWorld、EntityRegistry、Tick 管线、命令缓冲、快照、Perf HUD | 空 tick 0 GC，Phase 耗时可视化 |
 | M2 L1 模拟 | Movement、Body（轨迹缓冲）、两级网格 + 查询、碰撞事件 | 60 蛇 × 300 节点网格重建 + 检测 < 2 ms（中端机） |
-| M3 渲染基座 | 数据纹理 + 索引网格渲染管线、GPU 插值、节点 / 条带两种蛇身、裁剪、图集 | GLES 3.0 真机通过；玩法层 Draw Call ≤ 12，上传 ≤ 1 MB/tick |
+| M3 渲染基座 | GPU 驱动管线（增量上传、C0~C3 Compute、Indirect Draw）+ Tier B 数据纹理降级、节点 / 条带两种蛇身、图集 | Tier A：上传 ≤ 50 KB/tick、渲染主线程 ≤ 0.3 ms；Tier B：GLES 3.0 真机 30 FPS；两 Tier 画面一致；半透明蛇无自身叠色 |
 | M4 贪吃蛇最小可玩 | 输入、吃食物、成长、死亡掉落、补充食物、相机 | 单 Region 可玩，60 FPS，0 GC |
 | M5 规则与 AI | ConfigBlob 烘焙、碰撞矩阵、Utility AI + Context Steering、冲刺 | 150 AI 蛇稳定对局 |
 | M6 地图衔接 | 7500 大地图 / 3750 小地图 Chunk、活跃窗口、模拟 LOD、PortalLink、RegionSnapshot | 大地图 ↔ 小地图切换无卡顿（切换帧 ≤ 1 帧预算），每张图 150 AI |
@@ -664,5 +780,7 @@ Render Frame(60Hz) ─ 设置 _InterpAlpha + _InstanceCount ─► Vertex Shader
 | AI 规模 | 每张地图 150 条，活跃窗口内 ≤ 60 条 |
 | 引擎 | Unity 2022.3 LTS + URP 14 2D |
 | 蛇身表现 | 节点精灵 + 连续条带，按皮肤切换 |
-| 兼容 | GLES 3.0 为渲染主路径基线（数据纹理 + 索引网格 + VTF） |
+| 渲染 | GPU 驱动渲染（Tier A：Compute 展开 / 剔除 + Indirect Draw） |
+| 半透明皮肤 | 同蛇等深度 + `ZTest Less`，蛇间后→前、蛇内头→尾，GPU 有序压缩；同屏半透明蛇 ≤ 30 条 |
+| 兼容 | GLES 3.0 等设备自动降级到 Tier B（数据纹理 + 索引网格 + VTF），数据布局与 Shader 共用 |
 | 计算基座 | 自研 SoA + Jobs + Burst，不引入 Entities |

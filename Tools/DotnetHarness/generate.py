@@ -59,7 +59,7 @@ def main():
   <PropertyGroup><TargetFramework>net8.0</TargetFramework><AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   <EnableDefaultCompileItems>false</EnableDefaultCompileItems><NoWarn>{NOWARN}</NoWarn></PropertyGroup>
   <ItemGroup>
-    <Compile Include="{MATH_SRC}/**/*.cs" Exclude="{MATH_SRC}/math_unity_conversion.cs" />
+    <Compile Include="{MATH_SRC}/**/*.cs" />
     <ProjectReference Include="../UnityStubs/UnityStubs.csproj" />
   </ItemGroup>
 </Project>

@@ -3,6 +3,17 @@
 > Unity 2D 单机小游戏基座：高性能计算基座（数据导向 + Jobs + Burst）、网格碰撞与大/小地图衔接、规则与配置、共享层、玩法适配与接入。首个接入玩法：贪吃蛇（SnakeFoundation）。
 >
 > 目标平台：移动端（iOS / Android，IL2CPP，ARM64）。
+>
+> **已确认的约束**
+>
+> | 项 | 决定 |
+> | --- | --- |
+> | 碰撞 | 单机**网格碰撞**（Spatial Grid），不做联机，但保留确定性回放 |
+> | 大地图 | **7500 × 7500** 世界单位 |
+> | 地图衔接 | 大地图通过**传送点衔接多个小地图**（PortalLink 为主，EdgeLink 保留） |
+> | 引擎 | **Unity 2022.3 LTS** + URP 14（2D Renderer） |
+> | 蛇身表现 | **节点精灵**与**连续条带**两种模式都要，可按皮肤切换 |
+> | 重点指标 | 计算性能、渲染带宽、GC、合批（见 §8 专项） |
 
 ---
 
@@ -11,7 +22,8 @@
 | 维度 | 目标 |
 | --- | --- |
 | 帧率 | 中端机（骁龙 7 系 / A13）稳定 60 FPS，低端机 30 FPS 可降级 |
-| 规模（贪吃蛇基准） | 同屏活跃蛇 100+，身体节点总数 30k+，食物 10k+，飞行物 500+ |
+| 规模（贪吃蛇基准） | 全图 AI 蛇 150，活跃窗口内 ≤ 60；可见身体节点 30k；活跃食物 10k；飞行物 500 |
+| 渲染 | 玩法层 Draw Call ≤ 12，总计 ≤ 40；上传 ≤ 1 MB / tick；透明 overdraw 受控 |
 | 模拟 CPU 预算 | 主线程 ≤ 3 ms，工作线程总计 ≤ 6 ms / tick |
 | GC | 进入对局后 **0 GC Alloc / 帧** |
 | 内存 | 模拟数据 ≤ 32 MB，预分配 + 池化，对局中不扩容或极少扩容 |
@@ -123,7 +135,7 @@ SimWorld
 ├── SpatialIndex              # 空间网格（每 tick 重建或增量）
 ├── EventStreams              # 碰撞/吃/死亡/生成等事件（NativeStream）
 ├── CommandBuffer             # 延迟的创建/销毁/迁移
-├── ConfigDatabase            # 只读 Blob 配置
+├── ConfigDatabase            # 只读 ConfigBlob 配置
 └── RandomState               # 每实体/每系统种子化 Random
 ```
 
@@ -174,7 +186,7 @@ public interface ISimSystem
 
 - 全部热路径 `[BurstCompile(FloatMode = FloatMode.Fast, FloatPrecision = FloatPrecision.Low)]`（需确定性回放的系统用 `Deterministic` 另行标注）。
 - 只用 `Unity.Mathematics`（`float2`、`math.*`），避免 `Vector2`。
-- 禁止在 Job 中使用托管对象；配置用 `BlobAssetReference` 或 `NativeArray` 只读。
+- 禁止在 Job 中使用托管对象；配置用自研只读 Blob（一块连续 `UnsafeUtility.Malloc` 内存 + 偏移指针，不依赖 Entities 包）或只读 `NativeArray`。
 - 数据类型压缩：颜色/种类用 `byte`，角度可用 `half`，表现快照位置用 `float2`（不压缩，避免抖动）。
 - `NativeArray` 使用 `NativeArrayOptions.UninitializedMemory` 创建临时缓冲。
 - IL2CPP + Burst AOT，Android 开 ARM64 + `Burst Target: ARMV8A_AARCH64`。
@@ -185,22 +197,28 @@ public interface ISimSystem
 
 > 需求中的「网络碰撞」按「**网格碰撞**（Spatial Grid）」理解：单机场景，核心是高效的空间划分与跨地图衔接。
 
-### 3.1 世界坐标与分块
+### 3.1 世界坐标与分块（按 7500 × 7500 定标）
 
-```
-WorldCoord = ChunkCoord(int2) + Local(float2, 0..ChunkSize)
-```
+单位约定：1 世界单位 ≈ 1 米；蛇身半径 0.5 ~ 4；镜头可视范围约 40 ~ 120 单位宽（随体型缩放）。
 
-- **Chunk**：固定大小（如 64×64 世界单位），是加载、生成、LOD、补充食物的基本单位。
-- **大地图**：由大量 Chunk 组成，只有「活跃窗口」内的 Chunk 参与完整模拟。
-- **浮点精度**：模拟使用「以活跃窗口原点为基准」的相对坐标（Floating Origin），窗口移动时整体平移（rebase），保证超大地图在移动端 float 精度下无抖动。
+| 参数 | 取值 | 说明 |
+| --- | --- | --- |
+| ChunkSize | **125** | 7500 / 125 = **60 × 60 = 3600 个 Chunk**，整除无残块 |
+| 细网格 CellSize | **4**（2 的幂倍数可调） | ≈ 2 × 常见碰撞半径 |
+| 活跃窗口 | **1024 × 1024 单位 = 256 × 256 Cell** | 覆盖镜头 + 两侧余量；Cell 头数组 256 KB |
+| 粗网格 | 每个 Chunk 一个桶（60 × 60） | 给 Near / Dormant LOD 的远距离 AI 使用 |
+
+- **Chunk** 是加载、生成、LOD、食物补充的基本单位。
+- **坐标**：7500 量级下 float 精度约 0.0005，**不需要 Floating Origin**，直接用全局 `float2`，省掉 rebase 成本（小地图各自独立坐标系）。
+- **全图细网格不可行**：7500 / 4 = 1875² ≈ 350 万 Cell，仅头数组就 14 MB 且每帧清零昂贵，因此采用「**活跃窗口细网格 + 全图粗网格**」两级结构（见 §3.2）。
+- **食物不做全图实例化**：若全图按每 100 m² 一颗，约 56 万颗，内存与补充成本不可接受。只有 Active / Near Chunk 内实例化食物；Dormant Chunk 只保存「食物数量 + 总价值」，激活时按种子确定性地展开。
+- **AI 蛇全图存在**（如 150 条），但只有活跃窗口内的走完整模拟，其余按 LOD 降频（§3.4）。
 
 ### 3.2 空间网格（L1Simulation/Spatial）
 
-采用**滚动环形稠密网格（Rolling Toroidal Grid）+ 计数排序**：
+采用**两级网格：活跃窗口稠密细网格 + 全图粗网格，均用计数排序构建**：
 
-- 网格覆盖活跃窗口，尺寸 `W×H` 个 Cell（2 的幂，便于取模），`cellSize ≈ 2 × 常见碰撞体半径`。
-- Cell 寻址：`(cx & (W-1), cy & (H-1))`，窗口滚动时不需要重建内存，只需清理新进入的列/行。
+- 细网格覆盖活跃窗口，`256 × 256` Cell，`cellSize = 4`；Cell 下标 = `(cx - originX) + (cy - originY) * 256`，越界即归入粗网格。
 - 每 tick 重建（数据量 3~5 万级，重建比增量维护更快、无碎片）：
   1. `ComputeCellJob`（并行）：每个碰撞体算 cellIndex。
   2. `CountJob`：直方图（每线程局部计数后归并，避免原子竞争）。
@@ -209,6 +227,8 @@ WorldCoord = ChunkCoord(int2) + Local(float2, 0..ChunkSize)
 - 查询：`ForEachInCircle / ForEachInAABB / Raycast`（DDA 遍历网格），全部 Burst 静态函数。
 - 大物体（半径 > cellSize）写入多 Cell 或走独立的「大物体列表」。
 - 静态障碍单独一张**静态网格**，只在 Chunk 加载时构建。
+- **粗网格（全图 60 × 60 Chunk 桶）**：窗口外的蛇只以「头 + 每 N 个节点抽样」写入粗网格，供 Near LOD 做头对头 / 头对障碍的粗碰撞和 AI 远距离感知；同样用计数排序构建，数据量很小。
+- 窗口跟随玩家滚动（带迟滞，移动超过 1 个 Chunk 才滚动）。因为细网格每 tick 全量重建（256 KB 计数数组清零 < 0.02 ms），滚动只需更新窗口原点，无增量维护成本；落在窗口外的实体自动归入粗网格。
 
 碰撞层（Layer）：`SnakeHead / SnakeBody / Food / Projectile / Prop / Obstacle / Trigger`，按层分开排序或在 entry 中带 layer mask，查询时按 mask 过滤。
 
@@ -241,7 +261,7 @@ WorldGraph
 ```
 
 - **无缝接壤（EdgeLink）**：两个 Region 在 WorldGraph 中拼成同一坐标空间，活跃窗口跨越边界时同时加载两侧 Chunk；网格与碰撞天然连续。
-- **传送衔接（PortalLink）**：大地图进入小地图（竞技场、Boss 房、奖励关）：
+- **传送衔接（PortalLink，主方案）**：7500 大地图上分布若干传送点，连接小地图（竞技场、Boss 房、奖励关，典型 300 ~ 800 单位见方）：
   1. 预加载目标 Region 的 Chunk（异步、分帧）。
   2. 同步点执行 `Migrate` 命令：实体（蛇头 + 身体轨迹）坐标变换到目标 Region，身体轨迹整体平移。
   3. 相机与表现做过渡（淡入淡出 / 缩放）。
@@ -256,6 +276,8 @@ WorldGraph
 
 小地图即「单 Region、全部 Chunk 常驻 Active」的特例，用同一套代码。
 
+**小地图的内存策略**：各 Region 共用同一套实体表与网格内存（容量取最大值），切换时不重新分配；源 Region 的状态压缩为 `RegionSnapshot`（蛇 + 轨迹 + Chunk 统计），返回时恢复。传送期间预加载在 Warmup 中分帧完成，目标切换帧耗时 ≤ 1 帧预算。
+
 ---
 
 ## 4. 规则与配置
@@ -263,11 +285,11 @@ WorldGraph
 ### 4.1 配置管线
 
 ```
-ScriptableObject（策划编辑，Editor）  →  Bake  →  ConfigDatabase（BlobAsset，只读，Burst 可读）
+ScriptableObject（策划编辑，Editor）  →  Bake  →  ConfigDatabase（ConfigBlob，只读，Burst 可读）
          ↑ 可选：表格(CSV/Excel) 导入
 ```
 
-- 所有运行时配置在 Session 开始时烘焙为 `BlobAssetReference<ConfigBlob>`（或一组只读 `NativeArray`），Job 中直接访问，零托管开销。
+- 所有运行时配置在 Session 开始时烘焙为自研 `ConfigBlob`（连续非托管内存 + 相对偏移，Burst 直接读），Job 中直接访问，零托管开销。
 - 配置按 ID 引用（`ConfigId<T>` 强类型整数），不在运行时用字符串。
 - 分层覆盖：`Default → Mode → Region → Difficulty`，烘焙时合并。
 - Editor 下支持热重载：修改 SO → 重新烘焙 → 下一 tick 生效（便于调参）。
@@ -407,38 +429,174 @@ BodyStore（全局 Slab）：NativeArray<float2> TrailPoints
 
 ## 7. 表现层（Presentation）
 
-- **快照双缓冲**：P9 写 `Snapshot[N]`，渲染帧在 `Snapshot[N-1]` 与 `Snapshot[N]` 之间按 `alpha` 插值，模拟 30Hz 也能 60/120 FPS 平滑显示。
-- **渲染方案**：
-  - 食物/飞行物/身体节点：`Graphics.RenderMeshInstanced`（或 `BatchRendererGroup`）+ GPU Instancing，材质用 Atlas + 实例属性（颜色、UV 偏移、缩放），一个 DrawCall 画数千个。
-  - 蛇身可选「节点精灵实例化」或「Job 生成连续条带 Mesh」（`Mesh.MeshDataArray` + `ApplyAndDisposeWritableMeshData`，Burst 生成顶点）。
-  - 不为每个实体创建 GameObject；只为玩家蛇头、UI 挂点等少量对象使用 GameObject。
-- **裁剪**：利用空间网格按相机 AABB 取可见 Cell，只提交可见实例。
-- **Camera**：跟随 + 体型缩放（蛇越大视野越大）、Region 切换过渡、屏幕震动（事件驱动）。
-- **事件到表现**：Sync 点把本 tick 事件拷贝为主线程列表，派发给 VFX / 音效 / UI 适配器（对象池复用）。
+### 7.1 总体流程
+
+```
+Simulation(30Hz)  ──P9 Snapshot Job──►  RenderBuffers（GPU，双份：Prev / Curr）
+                                            │
+Render Frame(60Hz) ── 只上传 alpha 常量 ────►  Vertex Shader 内插值 Prev→Curr
+```
+
+- **插值放到 GPU**：每个模拟 tick 只上传一次实例数据（Prev 与 Curr 两个缓冲轮换），渲染帧只更新一个 `_InterpAlpha` 常量。60 FPS 下上传量减半，主线程无插值循环。
+- **不为实体创建 GameObject / SpriteRenderer**：全部走程序化实例化绘制；只有 UI、少量特效与玩家挂点使用 GameObject。
+- **裁剪在 Job 中完成**：用细网格按相机 AABB（外扩最大半径）收集可见 Cell，只把可见实例压缩写入上传缓冲（Stream Compaction），并同时产出实例数写入 `IndirectArgs`。
+
+### 7.2 蛇身两种表现模式（均支持，按皮肤切换）
+
+| 模式 | 适用 | 实现 | 优缺点 |
+| --- | --- | --- | --- |
+| **节点精灵（Sprite Node）** | 糖果、珠子、分节皮肤 | 每个可见节点一个实例，`RenderMeshIndirect` + 八边形紧凑网格 | 实现简单、皮肤多样；节点重叠导致 overdraw 较高 |
+| **连续条带（Strip）** | 平滑蛇皮、花纹贴图 | **GPU 程序化条带**：顶点着色器从 `StructuredBuffer<float2> TrailPoints` 读轨迹，按 `SV_VertexID` 生成左右两个顶点，一次 `RenderPrimitivesIndexed` 画完全部条带蛇 | CPU 零网格构建、无 overdraw 叠加；需要 SSBO 顶点读取 |
+| 条带降级路径 | 不支持顶点着色器读 SSBO 的 GLES 3.0 设备 | Burst Job 写 `Mesh.MeshDataArray` → `ApplyAndDisposeWritableMeshData`，所有条带蛇合并为 1 个 Mesh | 兼容性好，CPU 多约 0.3 ms |
+
+- 两种模式共用同一份轨迹数据（`BodyStore`）与同一套 UV/颜色/皮肤索引，**蛇头统一用节点精灵实例绘制**。
+- 皮肤 = 图集区域索引 + 调色参数 + 模式，放在实例数据里，不同皮肤**不切换材质**。
+- 条带的 UV 沿身长连续累积（`segmentIndex * spacing`），贴图可平铺花纹；头尾用渐细半径。
+
+### 7.3 Camera 与事件
+
+- **Camera**：跟随 + 体型缩放（视野随质量对数增长）、Region 切换过渡、屏幕震动（事件驱动）。
+- **事件到表现**：Sync 点把本 tick 事件拷贝到主线程预分配数组，派发给 VFX / 音效 / UI 适配器（均对象池复用）。
 
 ---
 
-## 8. 移动端性能专项
+## 8. 性能专项：计算性能 / 渲染带宽 / GC / 合批
 
-| 项 | 措施 |
+### 8.1 预算总表（中端机 60 FPS，一帧 16.6 ms）
+
+| 项 | 预算 |
 | --- | --- |
-| CPU | Burst + SoA + 计数排序网格；AI 分时切片；远景 LOD；Job 批量大小调优 |
-| GC | 全部 Native 容器预分配；事件/命令缓冲复用；表现层对象池；禁用 LINQ/闭包/装箱于热路径 |
-| 线程 | `JobsUtility.JobWorkerCount` 按大小核调整（通常 = 大核数），避免与渲染线程争抢 |
-| 发热 | 自适应质量：检测帧时/温度（`AdaptivePerformance` 可选）→ 降 AI 频率、降粒子、降渲染分辨率，不降模拟 tick |
-| 渲染 | 实例化 + Atlas + 少材质；2D 光照可选关闭；SRP Batcher（URP 2D） |
-| 内存 | 容量上限由 ModeDefinition 声明；Slab 分级减少碎片；Restart 复用内存 |
-| 加载 | Chunk 分帧加载；Burst 预热（Warmup 阶段跑一次空 tick） |
-| 度量 | 统一 `ProfilerMarker`；内置 Perf HUD（tick 耗时、各 Phase 耗时、实体数）；性能测试用 `Unity.PerformanceTesting` 固定场景基准 |
+| 模拟主线程（调度 + Sync + 命令应用） | ≤ 1.5 ms / tick |
+| 模拟工作线程总和 | ≤ 6 ms / tick（30 Hz，均摊 ≤ 3 ms / 帧） |
+| 渲染主线程（提交 + 上传） | ≤ 1.5 ms / 帧 |
+| Draw Call（含 UI） | **≤ 40**，玩法层 ≤ 12 |
+| SetPass Call | ≤ 15 |
+| 每 tick CPU→GPU 上传 | ≤ 1 MB（约 30 MB/s） |
+| GC Alloc | 对局中 **0 B / 帧** |
+| 可见实例 | 节点 ≤ 30k、食物 ≤ 5k、飞行物 ≤ 500 |
+
+### 8.2 计算性能
+
+**数据布局**
+- SoA + 冷热分离：热列（Position、Heading、Speed、Radius）与冷列（皮肤、统计、名字 ID）分开，系统只触碰需要的列，提升缓存命中。
+- 位置按 `float2` 连续存储；Burst 对 SoA 连续循环可自动 SIMD（NEON 4 路）。需要时手写 `float4` 一次处理两个点。
+- 碰撞网格 `SortedEntries` 冗余存 `position/radius/owner/layer`（16~20 字节），窄相位只读这一块连续内存，不回表查询。
+- 句柄查找只在事件处理时发生，热循环中只用稠密下标。
+
+**算法**
+- 距离比较全部用平方，避免 `sqrt`；方向归一化用 `math.rsqrt`（Low 精度）。
+- 只有主动体发起查询（蛇头、飞行物），被动体（身体、食物）只入网格。
+- 自身身体与颈部 K 个节点跳过；同一 Cell 内按 layer mask 过滤。
+- 计数排序构建网格：每线程局部直方图 + 前缀和，无原子、无 HashMap，**不使用 `NativeParallelMultiHashMap`**（移动端开销大、内存随机访问）。
+- 身体更新 O(1)：只写入新轨迹点，节点位置按需采样。
+- AI 决策分时切片（每条 AI 每 4~8 tick 决策一次）；避让探针每 tick 但只查 3~5 条射线。
+- 模拟 LOD：窗口外 Near 蛇 1/4 频率、只进粗网格；Dormant 仅统计。
+
+**Job 调度**
+- 每 tick Job 数控制在 ~20 个以内，合并小 Job（如 Move + Trail 写入合为一个 Job）。
+- `IJobParallelFor` 的 batch 取 64~256；数据量 < 512 用单线程 `IJob`。
+- `JobHandle.ScheduleBatchedJobs()` 尽早提交，主线程同时做渲染提交；只在 Sync 点 `Complete()`。
+- Worker 数设为大核数（通常 3~4），避免小核拖尾与渲染线程争抢。
+- Burst：`FloatMode.Fast` + `FloatPrecision.Low`；`[NoAlias]`、`[ReadOnly]`、`[WriteOnly]` 标注齐全；Release 关闭 Safety Checks / Leak Detection。
+
+**内存**
+- 所有表、网格、事件流、上传缓冲在 Session Warmup 时一次性按上限分配（`Allocator.Persistent`），对局中不扩容。
+- 每 tick 临时数据用复用的 Persistent 缓冲，**不在热路径使用 `Allocator.TempJob`**（避免分配器开销与 4 帧泄漏警告）。
+
+### 8.3 渲染带宽
+
+带宽分两部分：**CPU → GPU 上传带宽**、**GPU 显存 / 像素填充带宽**（移动端 TBDR 架构最敏感）。
+
+**上传带宽**
+
+| 手段 | 效果 |
+| --- | --- |
+| 紧凑实例格式：`float2 pos + half rot + half scale + uint colorSkin`（16 B） | 相比 `Matrix4x4`（64 B）减少 75% |
+| 条带模式直接上传轨迹点 `float2`（8 B/点）而不是网格顶点 | 相比 CPU 建网格（2 顶点 × 24 B）减少 80%+ |
+| 仅每模拟 tick 上传一次，渲染帧 GPU 插值 | 60 FPS 下再减半 |
+| 只上传可见实例（Job 裁剪 + 压缩） | 与地图大小无关 |
+| `GraphicsBuffer.UsageFlags.LockBufferForWrite` + `LockBufferForWrite<T>()` 让 Job 直接写 GPU 可见内存 | 省掉一次 CPU 拷贝（不支持的平台回退 `SetData(NativeArray)`） |
+| 静态内容（背景、障碍）只上传一次 | 每帧零上传 |
+
+估算：30k 节点 × 16 B + 5k 食物 × 16 B ≈ 560 KB / tick × 30 Hz ≈ 17 MB/s，远低于移动端可承受范围。
+
+**GPU 填充带宽**
+- **减少透明 overdraw**：圆形精灵使用**八边形紧凑网格**替代四边形，透明像素减少约 30%；身体节点用 **alpha test + 深度写入 + 前到后排序**（头部在前），被遮挡像素早期剔除。
+- 条带模式天然无节点叠加，是大体型蛇的首选；节点模式在蛇很长时可对屏幕外 / 被遮挡区域降采样节点（每 2 个画 1 个，半径略放大）。
+- 贴图：全部 **ASTC**（4×4 / 6×6），开启 mipmap，图集 ≤ 2048；背景用平铺小纹理 + UV 滚动，不用大图。
+- 渲染分辨率：URP Render Scale 0.75~0.85 + 动态分辨率（发热时下调）；关闭 HDR、MSAA 视情况 2x 或关闭。
+- 后处理：默认关闭；如需发光用预烘焙到贴图的伪 Bloom，不做全屏 Bloom。
+- 避免 Framebuffer Fetch 之外的多 Pass、避免 `Grab Pass`，减少 TBDR 的 load/store（相机 Clear 正确设置，避免 tile 回读）。
+
+### 8.4 GC（对局中 0 分配）
+
+**规则**
+- 模拟与渲染热路径只用 `NativeArray` / `UnsafeList` / 结构体；不使用 `List<T>` 扩容、LINQ、闭包 Lambda、`foreach` 接口枚举、装箱、`string` 拼接、协程、`params`。
+- 事件派发用预分配结构体数组 + 接口实现类（注册时分配一次），**不用 C# `event` / 委托链动态增删**。
+- 对象池：VFX、音效、UI 条目、飘字全部池化，Warmup 预填。
+- UI：排行榜 / 分数 2~5 Hz 刷新；数字文本用 TMP `SetText(format, value)`（无分配重载）或预生成数字字符串表；动态与静态 UI 分 Canvas。
+- `Physics2D` 不使用（碰撞完全自研），避免 Collider 与回调分配。
+- 开启 **Incremental GC** 作为兜底；Session 开始前 `GC.Collect()` 一次，清理加载期垃圾。
+
+**保障**
+- 自动化测试：跑 600 tick，断言 `GC.GetAllocatedBytesForCurrentThread()` 增量为 0（EditMode 与 PlayMode 各一份）。
+- Profiler Marker 覆盖每个 Phase；CI 中出现 GC Alloc 视为失败。
+
+### 8.5 合批
+
+**原则：玩法层每一类可见对象 = 1 次 Draw Call，与数量无关。**
+
+| 层（渲染顺序） | 绘制方式 | Draw Call |
+| --- | --- | --- |
+| 背景 | 1 个平铺网格 | 1 |
+| 静态障碍 / 装饰 | Chunk 加载时合并为静态网格（每 Chunk 1 个，仅可见 Chunk） | 2~6 |
+| 食物 | `RenderMeshIndirect`，单材质 + 图集 | 1 |
+| 飞行物 / 道具 | `RenderMeshIndirect` | 1~2 |
+| 蛇身（节点模式，所有蛇） | `RenderMeshIndirect` | 1 |
+| 蛇身（条带模式，所有蛇） | `RenderPrimitivesIndexed`（GPU 条带） | 1 |
+| 蛇头 / 眼睛 / 名字底板 | `RenderMeshIndirect` | 1~2 |
+| 特效 | 池化粒子，共享 1~2 个材质（图集） | 2~4 |
+| UI | UGUI，图集化，分动静 Canvas | 5~10 |
+
+- **材质统一**：每一层一个材质；皮肤、颜色、帧动画都通过「图集索引 + 实例颜色」区分，**不产生新材质实例**（禁止运行时 `renderer.material` 访问）。
+- **排序不拆批**：蛇之间的前后关系（大蛇压小蛇 / 玩家置顶）通过实例深度值 `z = f(layer, snakeRank, segmentIndex)` 在同一批内由深度测试完成，而不是按蛇拆 Draw Call。
+- **不依赖 SRP Batcher 解决数量问题**：SRP Batcher 只降低 SetPass 成本，不合并 Draw Call；大批量对象一律程序化实例化。
+- **不使用 SpriteRenderer 动态合批**：动态合批每帧 CPU 顶点变换，数量大时反而更慢。
+- 名字文字：玩家名用 SDF 字体图集实例化（每字符一个实例）或只显示附近 N 条蛇的名字，避免每条蛇一个 TMP 对象。
+- 验证：Frame Debugger 与 `UnityStats.drawCalls` 纳入 Perf HUD，超过预算报警。
+
+### 8.6 Unity 2022.3 依赖与设置
+
+| 项 | 版本 / 设置 |
+| --- | --- |
+| Burst | 1.8.x |
+| Collections | 2.1.x（`NativeParallelMultiHashMap` 等已改名，本方案不依赖） |
+| Mathematics | 1.2.x |
+| URP | 14.x，2D Renderer；关闭 2D Lights（或只用 1 盏全局光） |
+| 渲染 API | `Graphics.RenderMeshIndirect`、`Graphics.RenderPrimitivesIndexed`、`GraphicsBuffer`（2022.3 均可用） |
+| Player | IL2CPP、ARM64、Incremental GC、Graphics API：iOS Metal / Android Vulkan 优先 + GLES3 回退 |
+| Stripping | Managed Stripping Level: High；`link.xml` 保留反射用到的类型 |
+| 不引入 | Entities、Entities Graphics（2022.3 下仍可用，但本方案不需要） |
+
+### 8.7 发热与自适应
+
+检测连续帧超预算或温度等级升高（可选 `Adaptive Performance`）时，按顺序降级：
+1. 降 AI 决策频率、Near LOD 频率；
+2. 降特效数量；
+3. 降 Render Scale；
+4. 节点模式蛇身降采样。
+
+**不降模拟 tick**，保证手感一致。
 
 ---
 
 ## 9. 可测试性与工具
 
 - **EditMode 单元测试**：L1（网格正确性、身体采样、转向）、L2（规则矩阵、Buff 汇总）直接在无场景 World 上跑。
-- **确定性回放**：记录 `seed + 每 tick 输入`，可复现任意 bug；同时作为回归测试（校验若干 tick 后的状态 hash）。
-- **性能基准**：`100 蛇 × 300 节点 + 10k 食物` 固定场景，CI 记录各 Phase 耗时。
-- **调试可视化**：Gizmos 绘制网格占用、AI 探针、碰撞事件、Chunk LOD 等级。
+- **GC 测试**：长时间 tick 断言零分配（§8.4）。
+- **确定性回放**：记录 `seed + 每 tick 输入`，同一设备 / 同一构建可复现 bug；回归测试校验若干 tick 后的状态 hash。
+- **性能基准**：`150 蛇（窗口内 60）× 300 节点 + 10k 食物` 固定场景，记录各 Phase 耗时、Draw Call、上传字节数。
+- **调试可视化**：Gizmos 绘制网格占用、AI 探针、碰撞事件、Chunk LOD 等级、活跃窗口。
 
 ---
 
@@ -446,20 +604,19 @@ BodyStore（全局 Slab）：NativeArray<float2> TrailPoints
 
 | 里程碑 | 内容 | 验收 |
 | --- | --- | --- |
-| M1 基座骨架 | Contracts、asmdef、SimWorld、EntityRegistry、Tick 管线、命令缓冲、快照 | 空 tick 0 GC，Phase 调度可视化 |
-| M2 L1 模拟 | Movement、Body（轨迹缓冲）、Spatial 网格 + 查询、碰撞事件 | 100 蛇 × 300 节点网格重建 + 检测 < 2 ms（中端机） |
-| M3 贪吃蛇最小可玩 | 输入、吃食物、成长、死亡掉落、补充食物、实例化渲染、相机 | 单 Region 可玩，60 FPS |
-| M4 规则与 AI | ConfigDatabase 烘焙、碰撞矩阵、Utility AI + Context Steering、冲刺 | 100 AI 蛇稳定对局 |
-| M5 地图衔接 | Chunk、活跃窗口、Floating Origin、模拟 LOD、EdgeLink / PortalLink | 大地图 ↔ 小地图无缝/传送切换无卡顿 |
-| M6 扩展玩法 | Buff、技能、道具、飞行物 | 通过配置新增一个技能不改代码 |
-| M7 打磨 | 自适应性能、回放、性能 CI、调试工具 | 低端机 30 FPS 稳定 |
+| M1 基座骨架 | Contracts、asmdef、SimWorld、EntityRegistry、Tick 管线、命令缓冲、快照、Perf HUD | 空 tick 0 GC，Phase 耗时可视化 |
+| M2 L1 模拟 | Movement、Body（轨迹缓冲）、两级网格 + 查询、碰撞事件 | 60 蛇 × 300 节点网格重建 + 检测 < 2 ms（中端机） |
+| M3 渲染基座 | 实例化渲染管线、GPU 插值、节点 / 条带两种蛇身、裁剪、图集 | 玩法层 Draw Call ≤ 12，上传 ≤ 1 MB/tick |
+| M4 贪吃蛇最小可玩 | 输入、吃食物、成长、死亡掉落、补充食物、相机 | 单 Region 可玩，60 FPS，0 GC |
+| M5 规则与 AI | ConfigBlob 烘焙、碰撞矩阵、Utility AI + Context Steering、冲刺 | 150 AI 蛇稳定对局 |
+| M6 地图衔接 | 7500 大地图 Chunk、活跃窗口、模拟 LOD、PortalLink 小地图、RegionSnapshot | 大地图 ↔ 小地图切换无卡顿（切换帧 ≤ 1 帧预算） |
+| M7 扩展玩法 | Buff、技能、道具、飞行物 | 通过配置新增一个技能不改代码 |
+| M8 打磨 | 自适应性能、回放、性能基准、调试工具 | 低端机 30 FPS 稳定 |
 
 ---
 
-## 11. 待确认问题
+## 11. 待定事项
 
-1. 「网络碰撞」是否确实指**网格碰撞**？若未来有联机需求，需要提前把模拟改为全确定性（定点数或严格浮点）并设计状态同步，本方案已按「固定步长 + 种子随机 + 输入回放」预留。
-2. 大地图规模上限（如 20k × 20k 单位？），以及小地图是「接壤」为主还是「传送」为主？
-3. Unity 版本与渲染管线（建议 Unity 2022.3 LTS / 6 LTS + URP 2D）。
-4. 美术表现：蛇身是节点精灵还是连续条带？影响 Presentation/Snakes 方案选择。
-5. 是否需要支持 Unity Entities（团队已有经验时可评估替换 `Runtime.Core`）。
+1. 小地图的数量与典型尺寸（本方案按 300 ~ 800 单位见方、同时只激活一个小地图设计）。
+2. 全图 AI 蛇总数上限（本方案按 150 条，窗口内同时 ≤ 60 条估算）。
+3. 最低支持机型（决定条带模式是否需要 GLES 3.0 降级路径长期保留）。

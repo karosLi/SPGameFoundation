@@ -18,17 +18,37 @@ namespace SPF.Runtime.Session
 
         public SimSession Session { get; private set; }
 
+        /// <summary>Raised after a session was created (from the serialized mode or <see cref="Initialize"/>).</summary>
+        public event System.Action<SimSession> SessionCreated;
+
         void Awake()
         {
-            if (m_Mode == null)
+            // A host added from code has no mode yet; it is initialised explicitly.
+            if (m_Mode != null && Session == null)
+                Initialize(m_Mode, m_Seed, m_StartOnAwake);
+        }
+
+        void Start()
+        {
+            if (Session == null)
             {
                 Debug.LogError("SessionHost has no ModeDefinition.", this);
                 enabled = false;
-                return;
             }
-            Session = SimSession.Create(m_Mode, m_Seed);
-            if (m_StartOnAwake)
+        }
+
+        /// <summary>Creates the session from code (bootstraps, tests). Disposes a previous session.</summary>
+        public SimSession Initialize(ModeDefinition mode, uint seed, bool start = true)
+        {
+            Session?.Dispose();
+            m_Mode = mode;
+            m_Seed = seed;
+            Session = SimSession.Create(mode, seed);
+            if (start)
                 Session.Start();
+            enabled = true;
+            SessionCreated?.Invoke(Session);
+            return Session;
         }
 
         void Update() => Session?.Update(Time.deltaTime);

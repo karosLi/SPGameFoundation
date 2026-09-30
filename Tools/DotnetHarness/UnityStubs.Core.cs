@@ -108,6 +108,7 @@ namespace UnityEngine
         public bool activeSelf { get; private set; } = true;
         public bool activeInHierarchy => activeSelf;
         public int layer { get; set; }
+        public string tag { get; set; } = "Untagged";
         public void SetActive(bool v) => activeSelf = v;
         public T AddComponent<T>() where T : Component => (T)AddComponent(typeof(T));
         public Component AddComponent(Type t)

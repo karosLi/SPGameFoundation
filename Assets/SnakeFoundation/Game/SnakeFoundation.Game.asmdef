@@ -1,0 +1,33 @@
+{
+    "name": "SnakeFoundation.Game",
+    "rootNamespace": "SnakeFoundation.Game",
+    "references": [
+        "SPF.Contracts",
+        "SPF.L1Simulation",
+        "SPF.Runtime.Core",
+        "SPF.Runtime",
+        "SPF.Presentation",
+        "SnakeFoundation.Runtime",
+        "SnakeFoundation.Presentation",
+        "UnityEngine.UI",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.Collections",
+        "Unity.Mathematics",
+        "Unity.Burst"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.render-pipelines.universal",
+            "expression": "14.0.0",
+            "define": "SPF_URP"
+        }
+    ],
+    "noEngineReferences": false
+}

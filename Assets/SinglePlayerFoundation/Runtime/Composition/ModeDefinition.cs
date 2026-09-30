@@ -16,6 +16,18 @@ namespace SPF.Runtime.Composition
 
         public IReadOnlyList<GameplayModuleAsset> Modules => m_Modules;
 
+        /// <summary>Builds a mode in code (bootstraps and tests).</summary>
+        public static ModeDefinition Create(IEnumerable<GameplayModuleAsset> modules, SessionSettings settings)
+        {
+            var mode = CreateInstance<ModeDefinition>();
+            mode.name = "ModeDefinition (runtime)";
+            mode.m_Modules = new List<GameplayModuleAsset>(modules);
+            mode.m_TickRate = settings.TickRate;
+            mode.m_MaxTicksPerFrame = settings.MaxTicksPerFrame;
+            mode.m_DestroyQueueCapacity = settings.DestroyQueueCapacity;
+            return mode;
+        }
+
         public SessionSettings Settings => new SessionSettings
         {
             TickRate = m_TickRate,

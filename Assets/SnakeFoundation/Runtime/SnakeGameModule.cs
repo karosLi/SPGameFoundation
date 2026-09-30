@@ -76,11 +76,13 @@ namespace SnakeFoundation
             layout.Resource(SnakeKeys.Feedback, new EventQueue<FeedbackEvent>(cap.EventQueue));
             layout.Resource(SnakeKeys.RemovedItems, new EventQueue<int2>(cap.EventQueue));
             layout.Resource(SnakeKeys.Signal, new Signals());
+            layout.Resource(SnakeKeys.Replay, new ReplayBuffer(30 * 60 * 20));
         }
 
         public override void RegisterSystems(SystemRegistry registry)
         {
             registry
+                .Add(new ReplaySystem())
                 .Add(new LifecycleSystem())
                 .Add(new RegionSystem())
                 .Add(new PopulationSystem())

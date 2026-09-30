@@ -20,6 +20,12 @@ namespace SPF.Runtime.Diagnostics
         [SerializeField] bool m_Visible = true;
         [SerializeField] int m_FontSize = 22;
 
+        public SessionHost Host
+        {
+            get => m_Host;
+            set => m_Host = value;
+        }
+
         readonly StringBuilder m_Text = new StringBuilder(2048);
         readonly GUIContent m_Content = new GUIContent(string.Empty);
         Vector2 m_ContentSize;

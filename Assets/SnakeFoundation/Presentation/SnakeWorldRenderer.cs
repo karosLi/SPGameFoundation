@@ -72,6 +72,9 @@ namespace SnakeFoundation.Presentation
             public float4 Color;
         }
 
+        /// <summary>Call after the world was reset: GPU mirrors are rebuilt from scratch.</summary>
+        public void ResetCaches() => m_Chains?.Invalidate();
+
         void OnDisable() => Release();
         void OnDestroy() => Release();
 

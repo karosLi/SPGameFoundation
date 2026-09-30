@@ -64,7 +64,7 @@ namespace SnakeFoundation
         public int LeaderboardCount { get; internal set; }
 
         /// <summary>Incremented whenever any UI-facing value above changes.</summary>
-        public int Version { get; internal set; }
+        public int Version { get; set; }
 
         public void OnReset()
         {

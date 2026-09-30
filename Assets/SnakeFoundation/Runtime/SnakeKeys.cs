@@ -55,6 +55,7 @@ namespace SnakeFoundation
         /// <summary>Chunk bookkeeping for items removed by jobs: x = 0 food / 1 prop, y = chunk.</summary>
         public static readonly ResourceKey<EventQueue<int2>> RemovedItems = new ResourceKey<EventQueue<int2>>("Snake.RemovedItems");
         public static readonly ResourceKey<SnakeQuality> Quality = new ResourceKey<SnakeQuality>("Snake.Quality");
+        public static readonly ResourceKey<ReplayBuffer> Replay = new ResourceKey<ReplayBuffer>("Snake.Replay");
         public static readonly ResourceKey<Signals> Signal = new ResourceKey<Signals>("Snake.Signals");
     }
 }

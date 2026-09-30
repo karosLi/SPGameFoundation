@@ -33,8 +33,34 @@ diagnose_kill() {
   ips=$(ls -t "$HOME"/Library/Logs/DiagnosticReports/Unity*.ips 2>/dev/null | head -n 1)
   if [ -n "$ips" ] && [ $(( $(date +%s) - $(stat -f %m "$ips") )) -lt 600 ]; then
     echo "----- $ips (termination info) -----"
-    grep -iE '"(termination|exception|signal|indicator|codes|namespace|type)"|reason' "$ips" | head -n 30 || true
+    grep -iE '"(termination|exception)"' "$ips" | cut -c1-400 | head -n 10 || true
+    # Which binary did code signing reject? Map the faulting address to a loaded image, then codesign it.
+    local img
+    img=$(python3 - "$ips" <<'PY' 2>/dev/null
+import json, re, sys
+text = open(sys.argv[1]).read()
+body = json.loads(text[text.index('\n') + 1:])
+m = re.search(r'at (0x[0-9a-fA-F]+)', body.get('exception', {}).get('subtype', ''))
+addr = int(m.group(1), 16) if m else None
+found = None
+for im in body.get('usedImages', []):
+    base, size = im.get('base', 0), im.get('size', 0)
+    if addr is not None and base <= addr < base + size:
+        found = im.get('path') or im.get('name')
+print(found or '')
+for im in body.get('usedImages', []):
+    p = im.get('path', '')
+    if 'burst' in p.lower():
+        print('burst image loaded: ' + p, file=sys.stderr)
+PY
+)
+    echo "faulting image: ${img:-<address not inside any loaded image (JIT/anonymous memory)>}"
+    if [ -n "$img" ] && [ -f "$img" ]; then
+      codesign -dvvv "$img" 2>&1 | head -n 12 || true
+      codesign --verify --verbose=2 "$img" 2>&1 | head -n 5 || true
+    fi
   fi
+  echo "macOS: $(sw_vers -productVersion 2>/dev/null) ($(uname -m))"
 }
 
 # Prints name, message and stack trace of every failed test case in an NUnit results file.
@@ -81,6 +107,19 @@ run() {
   return $code
 }
 
+# A SIGKILLed editor can leave child processes (asset import workers, shader compilers) that keep
+# the project lock; the next editor would then abort with "another Unity instance is running".
+kill_leftover_editors() {
+  local pids
+  pids=$(pgrep -f -- "-projectPath $PROJECT" 2>/dev/null || true)
+  if [ -n "$pids" ]; then
+    echo "Stopping leftover Unity processes for this project: $pids"
+    kill $pids 2>/dev/null || true; sleep 3
+    kill -9 $pids 2>/dev/null || true; sleep 1
+  fi
+  rm -f Temp/UnityLockfile 2>/dev/null || true
+}
+
 # Burst's editor cache persists in Library/ between runs (checkout uses clean: false); a stale or
 # badly signed cached library gets the editor SIGKILLed by macOS code signing at startup.
 clear_burst_cache() {
@@ -95,10 +134,12 @@ clear_burst_cache() {
 # editor's Burst JIT libraries fail code signing, which is an editor/OS problem, not a test failure.
 run_platform() {
   local platform=$1; shift
+  kill_leftover_editors
   clear_burst_cache
   run "$platform" "" "$@"; local code=$?
   if [ $code -ge 128 ]; then
     echo "::warning title=Burst editor killed::${platform}: editor SIGKILLed with Burst enabled (see termination info); results below are from a Burst-disabled run"
+    kill_leftover_editors
     run "$platform" noburst "$@" --burst-disable-compilation; code=$?
   fi
   return $code

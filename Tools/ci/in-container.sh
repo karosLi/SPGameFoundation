@@ -8,11 +8,20 @@ mkdir -p "$A"
 mkdir -p ~/.cache/unity3d ~/.local/share/unity3d/Unity
 if [ -n "${UNITY_LICENSE:-}" ]; then
   LIC=~/.local/share/unity3d/Unity/Unity_lic.ulf
-  printf '%s' "$UNITY_LICENSE" > "$LIC"
+  # Secrets pasted in a browser get CRLF line endings; the signed .ulf must be byte-exact (GameCI does the same).
+  echo "$UNITY_LICENSE" | tr -d '\r' > "$LIC"
+  echo "Licence file: $(wc -c < "$LIC") bytes, $(grep -c . "$LIC") lines"
   # The licensing client only accepts a .ulf that is imported explicitly.
   unity-editor -batchmode -nographics -quit -manualLicenseFile "$LIC" -logFile "$A/activation.log"
-  echo "Licence: .ulf import exit $?"
+  CODE=$?
+  echo "Licence: .ulf import exit $CODE"
   grep -iE "licen[cs]e|entitlement|error" "$A/activation.log" | tail -n 25 || true
+  if [ $CODE -ne 0 ] && [ -n "${UNITY_EMAIL:-}" ]; then
+    echo "Retrying with account sign-in"
+    unity-editor -batchmode -nographics -quit -username "$UNITY_EMAIL" -password "$UNITY_PASSWORD" -logFile "$A/activation-login.log"
+    echo "Licence: sign-in exit $?"
+    grep -iE "licen[cs]e|entitlement|error" "$A/activation-login.log" | tail -n 25 || true
+  fi
 elif [ -n "${UNITY_SERIAL:-}" ]; then
   unity-editor -batchmode -nographics -quit -serial "$UNITY_SERIAL" -username "$UNITY_EMAIL" -password "$UNITY_PASSWORD" -logFile "$A/activation.log"
   echo "Licence: serial activation exit $?"

@@ -103,7 +103,7 @@ namespace SnakeFoundation.Systems
                         ThreatDistSq = d2;
                     }
                 }
-                else if (other < Mass * 0.7f && d2 < PreyDistSq && (entry.Data & GridSystem.ProtectedBit) == 0)
+                else if (other < Mass * 0.7f && d2 < PreyDistSq && (entry.Data & GridBits.ProtectedBit) == 0)
                 {
                     Prey = entry.Owner;
                     PreyDistSq = d2;
@@ -133,7 +133,7 @@ namespace SnakeFoundation.Systems
             }
         }
 
-        [BurstCompile(FloatMode = FloatMode.Fast)]
+        [BurstCompile(FloatMode = FloatMode.Fast, CompileSynchronously = true)]
         struct DecisionJob : IJobParallelFor
         {
             [ReadOnly] public NativeArray<float2> Head;
@@ -231,7 +231,7 @@ namespace SnakeFoundation.Systems
             }
         }
 
-        [BurstCompile(FloatMode = FloatMode.Fast)]
+        [BurstCompile(FloatMode = FloatMode.Fast, CompileSynchronously = true)]
         struct SteerJob : IJobParallelFor
         {
             const int Directions = 12;

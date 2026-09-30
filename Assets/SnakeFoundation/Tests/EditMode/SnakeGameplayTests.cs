@@ -102,6 +102,49 @@ namespace SnakeFoundation.Tests
             Assert.AreEqual(-1, t.Row(light));
         }
 
+        /// <summary>
+        /// Head-on outcome must not depend on approach direction or row order: touching heads also overlap
+        /// each other's neck nodes, and the contact used to be classified by whichever cell was scanned first.
+        /// </summary>
+        [TestCase(0, false)] [TestCase(90, false)] [TestCase(180, false)] [TestCase(270, false)]
+        [TestCase(0, true)] [TestCase(90, true)] [TestCase(180, true)] [TestCase(270, true)]
+        [TestCase(45, false)] [TestCase(225, true)]
+        public void HeadOnOutcomeIsIndependentOfDirection(int degrees, bool lightFirst)
+        {
+            // Heads start already overlapping deeply (as after a boost or a diagonal brush), so each head
+            // also overlaps the other snake's first neck nodes on the very first contact tick.
+            const float Gap = 1.2f;
+            using var t = new SnakeTestWorld();
+            float a = math.radians(degrees);
+            float2 dir = new float2(math.cos(a), math.sin(a));
+            // Just past a 4-unit cell boundary: for 180/270 degrees the light head lands right above the
+            // boundary and its neck in the cell before it, which a cell-order scan visits first.
+            float2 origin = new float2(41.5f, 41.5f);
+            EntityHandle heavy, light;
+            if (lightFirst)
+            {
+                light = t.SpawnAI(origin + dir * Gap, -dir, 20f);
+                heavy = t.SpawnAI(origin, dir, 80f);
+            }
+            else
+            {
+                heavy = t.SpawnAI(origin, dir, 80f);
+                light = t.SpawnAI(origin + dir * Gap, -dir, 20f);
+            }
+            foreach (var h in new[] { heavy, light })
+            {
+                int row = t.Row(h);
+                var info = t.World.Column(SnakeKeys.Info)[row];
+                info.Flags &= ~SnakeFlags.AI;
+                t.World.Column(SnakeKeys.Info).Set(row, info);
+                t.World.Column(SnakeKeys.Control).Set(row, new SnakeControl { TargetDirection = h == heavy ? dir : -dir });
+            }
+            t.Step(20);
+            Assert.GreaterOrEqual(t.Row(heavy), 0, "the heavier snake wins a head-on collision");
+            Assert.AreEqual(-1, t.Row(light));
+            Assert.AreEqual(1, t.World.Column(SnakeKeys.Info)[t.Row(heavy)].Kills);
+        }
+
         [Test]
         public void ShieldAbsorbsOneLethalHit()
         {

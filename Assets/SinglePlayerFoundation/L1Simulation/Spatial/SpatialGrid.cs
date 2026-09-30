@@ -8,13 +8,31 @@ using Unity.Mathematics;
 
 namespace SPF.L1.Spatial
 {
-    /// <summary>One circle registered in a grid. Owner / Data are free for the producer (e.g. snake row / node index).</summary>
+    /// <summary>
+    /// One circle registered in a grid: 16 bytes, so four entries fill a 64-byte cache line exactly and an
+    /// entry is one 128-bit load. <see cref="Owner"/> and <see cref="Data"/> are free for the producer
+    /// (e.g. snake row / node index) and are packed into one word: each must be in [0, 65535].
+    /// </summary>
     public struct GridEntry
     {
+        public const int MaxOwner = 0xFFFF;
+        public const int MaxData = 0xFFFF;
+
         public float2 Position;
         public float Radius;
-        public int Owner;
-        public int Data;
+        uint m_OwnerData;
+
+        public int Owner
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] get => (int)(m_OwnerData & 0xFFFFu);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] set => m_OwnerData = (m_OwnerData & 0xFFFF0000u) | ((uint)value & 0xFFFFu);
+        }
+
+        public int Data
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] get => (int)(m_OwnerData >> 16);
+            [MethodImpl(MethodImplOptions.AggressiveInlining)] set => m_OwnerData = (m_OwnerData & 0xFFFFu) | ((uint)value << 16);
+        }
     }
 
     /// <summary>Callback for grid queries; return false to stop the query early.</summary>
@@ -36,13 +54,13 @@ namespace SPF.L1.Spatial
         NativeArray<int> m_StagingCount;
         NativeArray<GridEntry> m_Entries;
         NativeArray<int> m_CellStart;
-        NativeArray<int> m_CellOf;
         NativeArray<int> m_Stats;
 
         public SpatialGrid(int2 dimensions, float cellSize, int capacity)
         {
             if (math.any(dimensions <= 0)) throw new ArgumentOutOfRangeException(nameof(dimensions));
             if (cellSize <= 0f) throw new ArgumentOutOfRangeException(nameof(cellSize));
+            if (capacity > GridEntry.MaxOwner + 1) throw new ArgumentOutOfRangeException(nameof(capacity), "entry owners are 16-bit");
             Dimensions = dimensions;
             CellSize = cellSize;
             int cells = dimensions.x * dimensions.y;
@@ -50,7 +68,6 @@ namespace SPF.L1.Spatial
             m_StagingCount = new NativeArray<int>(1, Allocator.Persistent);
             m_Entries = new NativeArray<GridEntry>(capacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             m_CellStart = new NativeArray<int>(cells + 1, Allocator.Persistent);
-            m_CellOf = new NativeArray<int>(capacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             m_Stats = new NativeArray<int>(StatCount, Allocator.Persistent);
         }
 
@@ -105,7 +122,6 @@ namespace SPF.L1.Spatial
                 StagingCount = m_StagingCount,
                 Entries = m_Entries,
                 CellStart = m_CellStart,
-                CellOf = m_CellOf,
                 Stats = m_Stats,
                 Origin = Origin,
                 InvCellSize = 1f / CellSize,
@@ -128,18 +144,22 @@ namespace SPF.L1.Spatial
             if (m_StagingCount.IsCreated) m_StagingCount.Dispose();
             if (m_Entries.IsCreated) m_Entries.Dispose();
             if (m_CellStart.IsCreated) m_CellStart.Dispose();
-            if (m_CellOf.IsCreated) m_CellOf.Dispose();
             if (m_Stats.IsCreated) m_Stats.Dispose();
         }
 
-        [BurstCompile]
+        /// <summary>
+        /// Counting sort by cell: count, inclusive prefix sum, then a reverse scatter that decrements each
+        /// cell's end cursor. Iterating entries backwards keeps the order within a cell stable (staging
+        /// order), and the cursors end up exactly at each cell's start, so no restore pass or per-entry
+        /// cell cache is needed: two passes over the cells and two over the entries.
+        /// </summary>
+        [BurstCompile(CompileSynchronously = true)]
         struct BuildJob : IJob
         {
             [ReadOnly] public NativeArray<GridEntry> Staging;
             public NativeArray<int> StagingCount;
             public NativeArray<GridEntry> Entries;
             public NativeArray<int> CellStart;
-            public NativeArray<int> CellOf;
             public NativeArray<int> Stats;
             public float2 Origin;
             public float InvCellSize;
@@ -149,47 +169,56 @@ namespace SPF.L1.Spatial
             {
                 int count = math.min(StagingCount[0], Staging.Length);
                 int cells = Dimensions.x * Dimensions.y;
-                for (int c = 0; c <= cells; c++)
+                for (int c = 0; c < cells; c++)
                     CellStart[c] = 0;
 
-                // Pass 1: cell of each entry and per-cell counts (stored shifted by one).
+                // Pass 1: per-cell counts.
                 int dropped = 0;
                 float maxRadius = 0f;
                 for (int i = 0; i < count; i++)
                 {
                     var e = Staging[i];
-                    int2 cell = (int2)math.floor((e.Position - Origin) * InvCellSize);
-                    if (math.any(cell < 0) || math.any(cell >= Dimensions))
+                    int index = CellIndex(e.Position);
+                    if (index < 0)
                     {
-                        CellOf[i] = -1;
                         dropped++;
                         continue;
                     }
-                    int index = cell.y * Dimensions.x + cell.x;
-                    CellOf[i] = index;
-                    CellStart[index + 1]++;
+                    CellStart[index]++;
                     maxRadius = math.max(maxRadius, e.Radius);
                 }
 
-                // Pass 2: prefix sum.
-                for (int c = 1; c <= cells; c++)
-                    CellStart[c] += CellStart[c - 1];
-
-                // Pass 3: stable scatter. CellStart[c] is used as the write cursor, then restored.
-                for (int i = 0; i < count; i++)
+                // Pass 2: inclusive prefix sum -> CellStart[c] = end of cell c.
+                int running = 0;
+                for (int c = 0; c < cells; c++)
                 {
-                    int index = CellOf[i];
-                    if (index < 0) continue;
-                    Entries[CellStart[index]++] = Staging[i];
+                    running += CellStart[c];
+                    CellStart[c] = running;
                 }
-                for (int c = cells; c > 0; c--)
-                    CellStart[c] = CellStart[c - 1];
-                CellStart[0] = 0;
+                CellStart[cells] = running;
+
+                // Pass 3: reverse stable scatter; afterwards CellStart[c] = start of cell c.
+                for (int i = count - 1; i >= 0; i--)
+                {
+                    var e = Staging[i];
+                    int index = CellIndex(e.Position);
+                    if (index < 0) continue;
+                    Entries[--CellStart[index]] = e;
+                }
 
                 Stats[StatEntryCount] = count - dropped;
                 Stats[StatDropped] = dropped;
                 Stats[StatMaxRadiusBits] = math.asint(maxRadius);
                 StagingCount[0] = 0;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            int CellIndex(float2 position)
+            {
+                int2 cell = (int2)math.floor((position - Origin) * InvCellSize);
+                if (math.any(cell < 0) || math.any(cell >= Dimensions))
+                    return -1;
+                return cell.y * Dimensions.x + cell.x;
             }
         }
     }

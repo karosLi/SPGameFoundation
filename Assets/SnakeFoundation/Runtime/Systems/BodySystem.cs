@@ -42,7 +42,7 @@ namespace SnakeFoundation.Systems
             }.Schedule(context.Count(SnakeKeys.Snake), 16, dependency);
         }
 
-        [BurstCompile(FloatMode = FloatMode.Fast)]
+        [BurstCompile(FloatMode = FloatMode.Fast, CompileSynchronously = true)]
         struct BodyJob : IJobParallelFor
         {
             [ReadOnly] public NativeArray<float2> Head;

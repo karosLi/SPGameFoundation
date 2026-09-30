@@ -10,18 +10,24 @@ using Unity.Mathematics;
 
 namespace SnakeFoundation.Systems
 {
-    /// <summary>
-    /// SpatialBuild phase: fills and sorts the three grids.
-    /// Body grid (window): every body node of snakes overlapping the window; Data = node index,
-    /// with <see cref="ProtectedBit"/> set for invulnerable snakes. Item grid (window): food then props
-    /// (Data 0 / 1). Head grid (whole region, coarse): one entry per active snake.
-    /// Staging is filled at deterministic offsets so the sorted grids are identical run to run.
-    /// </summary>
-    sealed class GridSystem : SimSystemBase
+    /// <summary>Bit layout of <see cref="GridEntry.Data"/> for snake entries (16 bits available).</summary>
+    static class GridBits
     {
-        public const int ProtectedBit = 1 << 30;
+        /// <summary>Set on entries of invulnerable snakes.</summary>
+        public const int ProtectedBit = 1 << 15;
+        /// <summary>Node index of a body entry (0 = head).</summary>
         public const int NodeMask = ProtectedBit - 1;
+    }
 
+    /// <summary>
+    /// SpatialBuild phase, body grid (window): every body node of snakes overlapping the window;
+    /// Data = node index with <see cref="GridBits.ProtectedBit"/> for invulnerable snakes.
+    /// Staging is filled at deterministic offsets so the sorted grid is identical run to run.
+    /// The item and head grids are separate systems with narrow access declarations, so they are
+    /// built in parallel with AI / movement instead of waiting for the body update.
+    /// </summary>
+    sealed class BodyGridSystem : SimSystemBase
+    {
         NativeArray<int> m_NodeOffsets;
         NativeArray<int> m_NodeCounts;
 
@@ -30,8 +36,7 @@ namespace SnakeFoundation.Systems
         public override void Declare(AccessDeclaration access) => access
             .Read(SnakeKeys.Snake).Read(SnakeKeys.Head).Read(SnakeKeys.Trail).Read(SnakeKeys.Radius)
             .Read(SnakeKeys.Info).Read(SnakeKeys.Bounds).Read(SnakeKeys.Bodies)
-            .Read(SnakeKeys.FoodPosition).Read(SnakeKeys.FoodInfo).Read(SnakeKeys.PropPosition).Read(SnakeKeys.PropInfo)
-            .Write(SnakeKeys.BodyGrid).Write(SnakeKeys.ItemGrid).Write(SnakeKeys.HeadGrid);
+            .Write(SnakeKeys.BodyGrid);
 
         public override void OnCreate(SimWorld world)
         {
@@ -53,8 +58,6 @@ namespace SnakeFoundation.Systems
             int activeRegion = world.Resource(SnakeKeys.Game).ActiveRegion;
             int snakes = context.Count(SnakeKeys.Snake);
             var bodyGrid = world.Resource(SnakeKeys.BodyGrid);
-            var itemGrid = world.Resource(SnakeKeys.ItemGrid);
-            var headGrid = world.Resource(SnakeKeys.HeadGrid);
 
             var layout = new LayoutBodyJob
             {
@@ -86,38 +89,10 @@ namespace SnakeFoundation.Systems
                 Staging = bodyGrid.Staging,
                 Settings = config.Settings,
             }.Schedule(snakes, 8, layout);
-            var bodyBuilt = bodyGrid.ScheduleBuild(fillBody);
-
-            int foodCount = context.Count(SnakeKeys.Food);
-            int propCount = context.Count(SnakeKeys.Prop);
-            var fillItems = new FillItemsJob
-            {
-                FoodPosition = context.Column(SnakeKeys.FoodPosition),
-                FoodInfo = context.Column(SnakeKeys.FoodInfo),
-                PropPosition = context.Column(SnakeKeys.PropPosition),
-                PropInfo = context.Column(SnakeKeys.PropInfo),
-                FoodCount = foodCount,
-                Staging = itemGrid.Staging,
-            }.Schedule(math.min(foodCount + propCount, itemGrid.Capacity), 256, dependency);
-            var setItemCount = new SetCountJob { Count = itemGrid.StagingCount, Value = math.min(foodCount + propCount, itemGrid.Capacity) }.Schedule(fillItems);
-            var itemsBuilt = itemGrid.ScheduleBuild(setItemCount);
-
-            var fillHeads = new FillHeadsJob
-            {
-                Head = context.Column(SnakeKeys.Head),
-                Radius = context.Column(SnakeKeys.Radius),
-                Info = context.Column(SnakeKeys.Info),
-                Staging = headGrid.Staging,
-                StagingCount = headGrid.StagingCount,
-                SnakeCount = snakes,
-                ActiveRegion = activeRegion,
-            }.Schedule(dependency);
-            var headsBuilt = headGrid.ScheduleBuild(fillHeads);
-
-            return JobHandle.CombineDependencies(bodyBuilt, itemsBuilt, headsBuilt);
+            return bodyGrid.ScheduleBuild(fillBody);
         }
 
-        [BurstCompile]
+        [BurstCompile(CompileSynchronously = true)]
         struct LayoutBodyJob : IJob
         {
             [ReadOnly] public NativeArray<float2> Head;
@@ -157,7 +132,7 @@ namespace SnakeFoundation.Systems
             }
         }
 
-        [BurstCompile(FloatMode = FloatMode.Fast)]
+        [BurstCompile(FloatMode = FloatMode.Fast, CompileSynchronously = true)]
         struct FillBodyJob : IJobParallelFor
         {
             [ReadOnly] public NativeArray<float2> Head;
@@ -180,7 +155,7 @@ namespace SnakeFoundation.Systems
                 float2 head = Head[i];
                 var trail = Trail[i];
                 float gap = math.length(head - trail.Last);
-                int flags = Info[i].Protection > 0f ? ProtectedBit : 0;
+                int flags = Info[i].Protection > 0f ? GridBits.ProtectedBit : 0;
                 for (int n = 0; n < count; n++)
                 {
                     Staging[offset + n] = new GridEntry
@@ -193,8 +168,38 @@ namespace SnakeFoundation.Systems
                 }
             }
         }
+    }
 
-        [BurstCompile]
+    /// <summary>SpatialBuild phase, item grid (window): food then props (Data 0 / 1). Food only changes on the main thread.</summary>
+    sealed class ItemGridSystem : SimSystemBase
+    {
+        public override SimPhase Phase => SimPhase.SpatialBuild;
+
+        public override void Declare(AccessDeclaration access) => access
+            .Read(SnakeKeys.Food).Read(SnakeKeys.FoodPosition).Read(SnakeKeys.FoodInfo)
+            .Read(SnakeKeys.Prop).Read(SnakeKeys.PropPosition).Read(SnakeKeys.PropInfo)
+            .Write(SnakeKeys.ItemGrid);
+
+        public override JobHandle OnTick(in SimContext context, JobHandle dependency)
+        {
+            var itemGrid = context.World.Resource(SnakeKeys.ItemGrid);
+            int foodCount = context.Count(SnakeKeys.Food);
+            int propCount = context.Count(SnakeKeys.Prop);
+            int total = math.min(foodCount + propCount, itemGrid.Capacity);
+            var fillItems = new FillItemsJob
+            {
+                FoodPosition = context.Column(SnakeKeys.FoodPosition),
+                FoodInfo = context.Column(SnakeKeys.FoodInfo),
+                PropPosition = context.Column(SnakeKeys.PropPosition),
+                PropInfo = context.Column(SnakeKeys.PropInfo),
+                FoodCount = foodCount,
+                Staging = itemGrid.Staging,
+            }.Schedule(total, 256, dependency);
+            var setItemCount = new SetCountJob { Count = itemGrid.StagingCount, Value = total }.Schedule(fillItems);
+            return itemGrid.ScheduleBuild(setItemCount);
+        }
+
+        [BurstCompile(CompileSynchronously = true)]
         struct FillItemsJob : IJobParallelFor
         {
             [ReadOnly] public NativeArray<float2> FoodPosition;
@@ -218,15 +223,42 @@ namespace SnakeFoundation.Systems
             }
         }
 
-        [BurstCompile]
+        [BurstCompile(CompileSynchronously = true)]
         struct SetCountJob : IJob
         {
             public NativeArray<int> Count;
             public int Value;
             public void Execute() => Count[0] = Value;
         }
+    }
 
-        [BurstCompile]
+    /// <summary>SpatialBuild phase, head grid (whole region, coarse): one entry per active snake.</summary>
+    sealed class HeadGridSystem : SimSystemBase
+    {
+        public override SimPhase Phase => SimPhase.SpatialBuild;
+
+        public override void Declare(AccessDeclaration access) => access
+            .Read(SnakeKeys.Snake).Read(SnakeKeys.Head).Read(SnakeKeys.Radius).Read(SnakeKeys.Info)
+            .Write(SnakeKeys.HeadGrid);
+
+        public override JobHandle OnTick(in SimContext context, JobHandle dependency)
+        {
+            var world = context.World;
+            var headGrid = world.Resource(SnakeKeys.HeadGrid);
+            var fillHeads = new FillHeadsJob
+            {
+                Head = context.Column(SnakeKeys.Head),
+                Radius = context.Column(SnakeKeys.Radius),
+                Info = context.Column(SnakeKeys.Info),
+                Staging = headGrid.Staging,
+                StagingCount = headGrid.StagingCount,
+                SnakeCount = context.Count(SnakeKeys.Snake),
+                ActiveRegion = world.Resource(SnakeKeys.Game).ActiveRegion,
+            }.Schedule(dependency);
+            return headGrid.ScheduleBuild(fillHeads);
+        }
+
+        [BurstCompile(CompileSynchronously = true)]
         struct FillHeadsJob : IJob
         {
             [ReadOnly] public NativeArray<float2> Head;
@@ -244,7 +276,7 @@ namespace SnakeFoundation.Systems
                 {
                     var info = Info[i];
                     if (info.Region != ActiveRegion || info.Has(SnakeFlags.Dead)) continue;
-                    Staging[n++] = new GridEntry { Position = Head[i], Radius = Radius[i], Owner = i, Data = info.Protection > 0f ? ProtectedBit : 0 };
+                    Staging[n++] = new GridEntry { Position = Head[i], Radius = Radius[i], Owner = i, Data = info.Protection > 0f ? GridBits.ProtectedBit : 0 };
                 }
                 StagingCount[0] = n;
             }

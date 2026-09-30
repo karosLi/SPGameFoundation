@@ -43,13 +43,20 @@ namespace SnakeFoundation.Systems
                 Settings = config.Settings,
                 Region = config.Regions[game.ActiveRegion],
                 ActiveRegion = game.ActiveRegion,
+                // Heads within EdgeMargin of an open window side could touch bodies just outside the
+                // window, which the grid does not contain; treat them as far (no collisions) instead of
+                // letting them pass through. Sides on the region wall are not inset: walls still kill.
                 WindowMin = grid.Origin,
                 WindowMax = grid.Origin + grid.Size,
+                EdgeMargin = WindowEdgeMargin,
                 DeltaTime = context.Time.DeltaTime,
             }.Schedule(context.Count(SnakeKeys.Snake), 32, dependency);
         }
 
-        [BurstCompile(FloatMode = FloatMode.Fast)]
+        /// <summary>Larger than any contact reach (hit radius + largest node radius, eat range, magnet).</summary>
+        public const float WindowEdgeMargin = 12f;
+
+        [BurstCompile(FloatMode = FloatMode.Fast, CompileSynchronously = true)]
         struct MoveJob : IJobParallelFor
         {
             [ReadOnly] public NativeArray<SnakeControl> Control;
@@ -68,6 +75,7 @@ namespace SnakeFoundation.Systems
             public int ActiveRegion;
             public float2 WindowMin;
             public float2 WindowMax;
+            public float EdgeMargin;
             public float DeltaTime;
 
             public void Execute(int i)
@@ -112,7 +120,9 @@ namespace SnakeFoundation.Systems
                     info.Flags &= ~SnakeFlags.Boosting;
                 }
 
-                bool inWindow = math.all(head >= WindowMin) && math.all(head < WindowMax);
+                float2 innerMin = math.select(WindowMin + EdgeMargin, WindowMin, WindowMin <= Region.Min);
+                float2 innerMax = math.select(WindowMax - EdgeMargin, WindowMax, WindowMax >= Region.Max);
+                bool inWindow = math.all(head >= innerMin) && math.all(head < innerMax);
                 if (inWindow)
                 {
                     info.Flags |= SnakeFlags.InWindow;

@@ -17,6 +17,11 @@ namespace SnakeFoundation
     {
         public PlayerCommand Command;
         public bool Start;
+        /// <summary>
+        /// Simulation-affecting quality knob in effect this tick. The adaptive quality controller changes
+        /// it from frame timings, which are not reproducible, so it is part of the recorded input.
+        /// </summary>
+        public byte AIDecisionIntervalTicks;
     }
 
     /// <summary>
@@ -106,17 +111,24 @@ namespace SnakeFoundation
             {
                 var replay = context.World.Resource(SnakeKeys.Replay);
                 var game = context.World.Resource(SnakeKeys.Game);
+                var quality = context.World.Resource(SnakeKeys.Quality);
                 int tick = (int)context.Time.Tick;
                 switch (replay.Mode)
                 {
                     case ReplayMode.Record:
-                        replay.Write(tick, new ReplayFrame { Command = game.Command, Start = game.StartRequested });
+                        replay.Write(tick, new ReplayFrame
+                        {
+                            Command = game.Command,
+                            Start = game.StartRequested,
+                            AIDecisionIntervalTicks = (byte)System.Math.Clamp(quality.AIDecisionIntervalTicks, 1, 255),
+                        });
                         break;
                     case ReplayMode.Play:
                         if (replay.TryRead(tick, out var frame))
                         {
                             game.Command = frame.Command;
                             if (frame.Start) game.RequestStart();
+                            quality.AIDecisionIntervalTicks = System.Math.Max(1, (int)frame.AIDecisionIntervalTicks);
                         }
                         break;
                 }

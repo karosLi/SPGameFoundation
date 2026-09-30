@@ -157,7 +157,13 @@ run_platform() {
   clear_burst_cache
   run "$platform" "" "$@"; local code=$?
   if [ $code -ge 128 ]; then
-    echo "::warning title=Burst editor killed::${platform}: editor SIGKILLed with Burst enabled (see termination info); results below are from a Burst-disabled run"
+    # Intermittent editor-side crashes (e.g. inside the Burst compiler itself) get one more try as-is.
+    echo "::warning title=Editor crashed::${platform}: editor killed by signal $((code - 128)); retrying once with Burst"
+    kill_leftover_editors
+    run "$platform" "" "$@"; code=$?
+  fi
+  if [ $code -ge 128 ]; then
+    echo "::warning title=Burst editor killed::${platform}: editor killed by signal $((code - 128)) with Burst enabled (see termination info); results below are from a Burst-disabled run"
     kill_leftover_editors
     run "$platform" noburst "$@" --burst-disable-compilation; code=$?
   fi

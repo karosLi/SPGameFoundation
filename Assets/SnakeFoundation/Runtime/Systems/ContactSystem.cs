@@ -66,6 +66,12 @@ namespace SnakeFoundation.Systems
             return JobHandle.CombineDependencies(contacts, projectiles);
         }
 
+        /// <summary>
+        /// Picks the overlapping body entry closest to its owner's head (lowest node index, then lowest row).
+        /// A head touching another head also overlaps that snake's first few neck nodes, so stopping at
+        /// the first entry in cell order would make head-on vs body classification depend on direction.
+        /// Stops early only once another snake's head (node 0) of the lowest possible row is found.
+        /// </summary>
         struct FirstOtherBody : IGridVisitor
         {
             public int Self;
@@ -74,11 +80,15 @@ namespace SnakeFoundation.Systems
 
             public bool Visit(in GridEntry entry)
             {
-                if (entry.Owner == Self || (entry.Data & GridSystem.ProtectedBit) != 0)
+                if (entry.Owner == Self || (entry.Data & GridBits.ProtectedBit) != 0)
                     return true;
-                Other = entry.Owner;
-                Node = entry.Data & GridSystem.NodeMask;
-                return false;
+                int node = entry.Data & GridBits.NodeMask;
+                if (Other < 0 || node < Node || (node == Node && entry.Owner < Other))
+                {
+                    Other = entry.Owner;
+                    Node = node;
+                }
+                return !(Node == 0 && Other == 0);
             }
         }
 
@@ -99,7 +109,7 @@ namespace SnakeFoundation.Systems
             }
         }
 
-        [BurstCompile(FloatMode = FloatMode.Fast)]
+        [BurstCompile(FloatMode = FloatMode.Fast, CompileSynchronously = true)]
         struct SnakeContactJob : IJobParallelFor
         {
             [ReadOnly] public NativeArray<float2> Head;
@@ -149,6 +159,7 @@ namespace SnakeFoundation.Systems
             }
         }
 
+        /// <summary>Earliest body hit along the projectile's sweep (then lowest row), independent of cell order.</summary>
         struct FirstSweptHit : IGridVisitor
         {
             public float2 From, To;
@@ -156,19 +167,27 @@ namespace SnakeFoundation.Systems
             public int OwnerId;
             [ReadOnly] public NativeArray<SnakeInfo> Info;
             public int Hit;
+            public float HitT;
 
             public bool Visit(in GridEntry entry)
             {
-                if ((entry.Data & GridSystem.ProtectedBit) != 0 || Info[entry.Owner].Id == OwnerId)
+                if ((entry.Data & GridBits.ProtectedBit) != 0 || Info[entry.Owner].Id == OwnerId)
                     return true;
                 if (!GeoMath.SweptCircleHits(From, To, Radius, entry.Position, entry.Radius))
                     return true;
-                Hit = entry.Owner;
-                return false;
+                float2 d = To - From;
+                float lenSq = math.lengthsq(d);
+                float t = lenSq > 1e-8f ? math.saturate(math.dot(entry.Position - From, d) / lenSq) : 0f;
+                if (Hit < 0 || t < HitT || (t == HitT && entry.Owner < Hit))
+                {
+                    Hit = entry.Owner;
+                    HitT = t;
+                }
+                return true;
             }
         }
 
-        [BurstCompile(FloatMode = FloatMode.Fast)]
+        [BurstCompile(FloatMode = FloatMode.Fast, CompileSynchronously = true)]
         struct ProjectileJob : IJobParallelFor
         {
             [ReadOnly] public NativeArray<EntityHandle> Handles;

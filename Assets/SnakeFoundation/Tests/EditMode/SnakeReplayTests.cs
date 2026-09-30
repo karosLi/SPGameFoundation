@@ -35,6 +35,10 @@ namespace SnakeFoundation.Tests
                         Boost = i % 40 < 8,
                         Skill = i % 60 == 0,
                     };
+                    // The adaptive quality controller may change the AI decision rate mid-run
+                    // (frame-time driven, not reproducible); the replay must carry it.
+                    if (i == 80) a.World.Resource(SnakeKeys.Quality).AIDecisionIntervalTicks = 12;
+                    if (i == 170) a.World.Resource(SnakeKeys.Quality).AIDecisionIntervalTicks = 1;
                     a.Step();
                 }
                 recording = replay.ToArray();

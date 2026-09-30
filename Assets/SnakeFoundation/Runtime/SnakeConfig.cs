@@ -133,7 +133,8 @@ namespace SnakeFoundation
         public sealed class CapacitySection
         {
             public int Snakes = 320;
-            public int Food = 20000;
+            [Tooltip("Worst case: small map, density 1.4 x 150 per chunk over ~100 window chunks = 21k")]
+            public int Food = 24000;
             public int Props = 512;
             public int Projectiles = 512;
             public int AverageTrailPoints = 768;
@@ -141,6 +142,8 @@ namespace SnakeFoundation
             public int BodyGridEntries = 65536;
             public int GridCells = 256;
             public float GridCellSize = 4f;
+            [Tooltip("Item grid cell size; the item grid covers the same window as the body grid with fewer, larger cells (items are small and static, eat / food-scan queries are wide)")]
+            public float ItemGridCellSize = 8f;
             public float ChunkSize = 125f;
             public int EventQueue = 4096;
         }

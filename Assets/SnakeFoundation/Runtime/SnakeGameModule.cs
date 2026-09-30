@@ -61,7 +61,8 @@ namespace SnakeFoundation
 
             var cells = new int2(cap.GridCells);
             layout.Resource(SnakeKeys.BodyGrid, new SpatialGrid(cells, cap.GridCellSize, cap.BodyGridEntries));
-            layout.Resource(SnakeKeys.ItemGrid, new SpatialGrid(cells, cap.GridCellSize, cap.Food + cap.Props));
+            var itemCells = (int2)math.ceil((float2)cells * cap.GridCellSize / cap.ItemGridCellSize);
+            layout.Resource(SnakeKeys.ItemGrid, new SpatialGrid(itemCells, cap.ItemGridCellSize, cap.Food + cap.Props));
             // Coarse grid over the largest region: one cell per chunk.
             float2 largest = 0f;
             for (int i = 0; i < runtime.Regions.Length; i++) largest = math.max(largest, runtime.Regions[i].Size);
@@ -93,7 +94,9 @@ namespace SnakeFoundation
                 .Add(new AISystem())
                 .Add(new MovementSystem())
                 .Add(new BodySystem())
-                .Add(new GridSystem())
+                .Add(new BodyGridSystem())
+                .Add(new ItemGridSystem())
+                .Add(new HeadGridSystem())
                 .Add(new ContactSystem())
                 .Add(new ResolveSystem());
         }

@@ -99,7 +99,7 @@ namespace SnakeFoundation.Systems
             }.Schedule(dependency);
         }
 
-        [BurstCompile(FloatMode = FloatMode.Fast)]
+        [BurstCompile(FloatMode = FloatMode.Fast, CompileSynchronously = true)]
         struct ResolveJob : IJob
         {
             [ReadOnly] public NativeArray<EntityHandle> SnakeHandles;

@@ -1,0 +1,32 @@
+{
+    "name": "SnakeFoundation.Tests.PlayMode",
+    "rootNamespace": "SnakeFoundation.Tests.PlayMode",
+    "references": [
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "UnityEngine.UI",
+        "SPF.Contracts",
+        "SPF.L1Simulation",
+        "SPF.Runtime.Core",
+        "SPF.Runtime",
+        "SPF.Presentation",
+        "SnakeFoundation.Runtime",
+        "SnakeFoundation.Presentation",
+        "SnakeFoundation.Game",
+        "Unity.Collections",
+        "Unity.Mathematics"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -1,0 +1,54 @@
+name: Unity tests (EditMode + PlayMode UI automation)
+
+# Runs the real Unity test suites with GameCI. Requires repository secrets:
+#   UNITY_LICENSE  (contents of the .ulf file)  and/or  UNITY_EMAIL + UNITY_PASSWORD (+ UNITY_SERIAL for Pro)
+# Without them the job is skipped (the .NET harness workflow still runs).
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  unity-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+    steps:
+      - name: Check licence secrets
+        id: licence
+        run: |
+          if [ -n "$UNITY_LICENSE" ] || [ -n "$UNITY_EMAIL" ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "ok=false" >> "$GITHUB_OUTPUT"; echo "::notice::Unity licence secrets not set; skipping Unity tests."; fi
+
+      - uses: actions/checkout@v4
+        if: steps.licence.outputs.ok == 'true'
+        with:
+          lfs: true
+
+      - uses: actions/cache@v4
+        if: steps.licence.outputs.ok == 'true'
+        with:
+          path: Library
+          key: Library-${{ hashFiles('Packages/manifest.json', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: Library-
+
+      - name: Run EditMode and PlayMode tests
+        if: steps.licence.outputs.ok == 'true'
+        uses: game-ci/unity-test-runner@v4
+        id: tests
+        with:
+          testMode: all
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          checkName: Unity test results
+          artifactsPath: Artifacts/TestResults
+
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.licence.outputs.ok == 'true'
+        with:
+          name: unity-test-results
+          path: |
+            ${{ steps.tests.outputs.artifactsPath }}
+            Artifacts/Screenshots

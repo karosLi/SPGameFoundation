@@ -88,6 +88,7 @@ namespace UnityEngine
         public Vector2 offsetMin { get; set; }
         public Vector2 offsetMax { get; set; }
         public Rect rect => new Rect(0, 0, sizeDelta.x, sizeDelta.y);
+        public void GetWorldCorners(Vector3[] corners) { }
     }
 
     public class GameObject : Object
@@ -174,6 +175,7 @@ namespace UnityEngine
         public static bool isBatchMode => true;
         public static RuntimePlatform platform => RuntimePlatform.LinuxEditor;
         public static string persistentDataPath => System.IO.Path.GetTempPath();
+        public static string dataPath => System.IO.Path.GetTempPath();
         public static void Quit() { }
     }
 

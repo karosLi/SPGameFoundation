@@ -122,3 +122,20 @@ namespace UnityEngine.TestTools.Constraints
         }
     }
 }
+
+namespace UnityEngine.TestTools
+{
+    [AttributeUsage(AttributeTargets.Method)] public sealed class UnityTestAttribute : Attribute { }
+    [AttributeUsage(AttributeTargets.Method)] public sealed class UnitySetUpAttribute : Attribute { }
+    [AttributeUsage(AttributeTargets.Method)] public sealed class UnityTearDownAttribute : Attribute { }
+    public static class LogAssert
+    {
+        public static void NoUnexpectedReceived() { }
+        public static void Expect(UnityEngine.LogType t, string m) { }
+        public static bool ignoreFailingMessages { get; set; }
+    }
+}
+namespace UnityEngine
+{
+    public enum LogType { Error, Assert, Warning, Log, Exception }
+}

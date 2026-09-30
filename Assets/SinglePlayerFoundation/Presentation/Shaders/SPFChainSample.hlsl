@@ -8,22 +8,36 @@ float2 SPFTrailPoint(StructuredBuffer<float2> trail, ChainHeader h, uint globalI
 }
 
 // Position at arc distance s behind the (interpolated) head.
+// Single exit point: early returns trigger "potentially uninitialized variable" in FXC/Metal.
 float2 SPFSampleChain(StructuredBuffer<float2> trail, ChainHeader h, float alpha, float s)
 {
     float headArc = lerp(h.arcPrev, h.arcCurr, alpha);
     float2 head = lerp(h.headPrev, h.headCurr, alpha);
     float2 last = SPFTrailPoint(trail, h, h.newest);
     float a = headArc - s;
+    float2 result = head;
     if (a >= 0.0)
-        return headArc > 1e-5 ? lerp(last, head, a / headArc) : head;
-    float along = -a / h.spacing;
-    uint k = (uint)along;
-    uint maxK = h.count > 0 ? h.count - 1 : 0;
-    if (k >= maxK)
-        return SPFTrailPoint(trail, h, h.newest - maxK);
-    float2 p0 = SPFTrailPoint(trail, h, h.newest - k);
-    float2 p1 = SPFTrailPoint(trail, h, h.newest - k - 1);
-    return lerp(p0, p1, along - k);
+    {
+        if (headArc > 1e-5)
+            result = lerp(last, head, a / headArc);
+    }
+    else
+    {
+        float along = -a / h.spacing;
+        uint k = (uint)along;
+        uint maxK = h.count > 0 ? h.count - 1 : 0;
+        if (k >= maxK)
+        {
+            result = SPFTrailPoint(trail, h, h.newest - maxK);
+        }
+        else
+        {
+            float2 p0 = SPFTrailPoint(trail, h, h.newest - k);
+            float2 p1 = SPFTrailPoint(trail, h, h.newest - k - 1);
+            result = lerp(p0, p1, along - k);
+        }
+    }
+    return result;
 }
 
 float SPFChainLength(StructuredBuffer<float2> trail, ChainHeader h, float alpha)

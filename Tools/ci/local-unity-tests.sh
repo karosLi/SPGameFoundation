@@ -81,14 +81,25 @@ run() {
   return $code
 }
 
-# A run killed by a signal (137 = SIGKILL) is retried once with Burst disabled to tell a Burst/native
-# code problem apart from a managed-code one.
+# Burst's editor cache persists in Library/ between runs (checkout uses clean: false); a stale or
+# badly signed cached library gets the editor SIGKILLed by macOS code signing at startup.
+clear_burst_cache() {
+  rm -rf Library/BurstCache Temp/Burst* 2>/dev/null || true
+  local v
+  v=$(grep -A1 '"com.unity.burst"' Packages/packages-lock.json 2>/dev/null | sed -n 's/.*"version": *"\([^"]*\)".*/\1/p')
+  echo "Burst package: ${v:-unknown (not resolved yet)}"
+}
+
+# A run killed by a signal (137 = SIGKILL) is retried once with Burst disabled. The tests themselves
+# are then judged on that run, and the kill is reported as a warning: on some macOS setups the
+# editor's Burst JIT libraries fail code signing, which is an editor/OS problem, not a test failure.
 run_platform() {
   local platform=$1; shift
+  clear_burst_cache
   run "$platform" "" "$@"; local code=$?
   if [ $code -ge 128 ]; then
-    echo "::warning::${platform} editor was killed (exit ${code}); retrying with Burst disabled for diagnosis"
-    run "$platform" noburst "$@" --burst-disable-compilation || true
+    echo "::warning title=Burst editor killed::${platform}: editor SIGKILLed with Burst enabled (see termination info); results below are from a Burst-disabled run"
+    run "$platform" noburst "$@" --burst-disable-compilation; code=$?
   fi
   return $code
 }

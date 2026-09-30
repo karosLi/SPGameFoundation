@@ -96,6 +96,7 @@ namespace SnakeFoundation.Game.UI
                 HudPanel.gameObject.SetActive(game.Flow == GameFlow.Playing);
                 GameOverPanel.gameObject.SetActive(game.Flow == GameFlow.GameOver);
                 m_ShownVersion = -1;
+                m_NextRefresh = 0f; // a new screen must show its text immediately, not after the throttle
             }
 
             if (!force && (game.Version == m_ShownVersion || Time.unscaledTime < m_NextRefresh))

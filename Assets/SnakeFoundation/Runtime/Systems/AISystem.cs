@@ -235,6 +235,61 @@ namespace SnakeFoundation.Systems
         struct SteerJob : IJobParallelFor
         {
             const int Directions = 12;
+            const float StepCos = 0.8660254f;   // cos(360 / Directions degrees)
+            const float StepSin = 0.5f;         // sin(360 / Directions degrees)
+
+            /// <summary>Fixed-size per-snake scratch (direction + one scalar per candidate), no allocation.</summary>
+            struct DirectionSet
+            {
+                float4 m_X0, m_X1, m_X2, m_Y0, m_Y1, m_Y2, m_V0, m_V1, m_V2;
+
+                public void Set(int k, float2 dir, float value)
+                {
+                    int lane = k & 3;
+                    switch (k >> 2)
+                    {
+                        case 0: m_X0[lane] = dir.x; m_Y0[lane] = dir.y; m_V0[lane] = value; break;
+                        case 1: m_X1[lane] = dir.x; m_Y1[lane] = dir.y; m_V1[lane] = value; break;
+                        default: m_X2[lane] = dir.x; m_Y2[lane] = dir.y; m_V2[lane] = value; break;
+                    }
+                }
+
+                public float2 Dir(int k)
+                {
+                    int lane = k & 3;
+                    switch (k >> 2)
+                    {
+                        case 0: return new float2(m_X0[lane], m_Y0[lane]);
+                        case 1: return new float2(m_X1[lane], m_Y1[lane]);
+                        default: return new float2(m_X2[lane], m_Y2[lane]);
+                    }
+                }
+
+                public float Value(int k)
+                {
+                    int lane = k & 3;
+                    switch (k >> 2)
+                    {
+                        case 0: return m_V0[lane];
+                        case 1: return m_V1[lane];
+                        default: return m_V2[lane];
+                    }
+                }
+
+                /// <summary>Unvisited candidate with the highest value (lowest k on ties).</summary>
+                public int NextByValue(int visitedMask)
+                {
+                    int bestK = -1;
+                    float bestValue = float.MinValue;
+                    for (int k = 0; k < Directions; k++)
+                    {
+                        if ((visitedMask & (1 << k)) != 0) continue;
+                        float v = Value(k);
+                        if (v > bestValue) { bestValue = v; bestK = k; }
+                    }
+                    return bestK;
+                }
+            }
 
             [ReadOnly] public NativeArray<float2> Head;
             [ReadOnly] public NativeArray<float2> Heading;
@@ -265,27 +320,55 @@ namespace SnakeFoundation.Systems
                 float2 desired = math.normalizesafe(ai.Target - head, heading);
                 bool inWindow = Bodies.Covers(head);
 
-                float2 best = desired;
-                float bestScore = float.MinValue;
-                float2 safest = heading;
-                float leastDanger = float.MaxValue;
                 float near = radius * 2f + speed * 0.25f;
                 float far = radius * 2f + speed * 0.8f;
                 float2 wallMin = Region.Min + radius * 2f, wallMax = Region.Max - radius * 2f;
 
+                // Candidate directions: heading rotated by (k - Directions/2) * step, built by incremental
+                // rotation (one sincos per snake instead of one per direction).
+                var dirs = new DirectionSet();
+                float2 dir = -heading;                          // k = 0 is straight back (-180 degrees)
                 for (int k = 0; k < Directions; k++)
                 {
-                    float angle = (k - Directions / 2) * (2f * math.PI / Directions);
-                    float2 dir = GeoMath.Rotate(heading, angle);
-                    float interest = 0.75f * math.max(0f, math.dot(dir, desired)) + 0.25f * math.max(0f, math.dot(dir, heading));
-                    float danger = math.max(Probe(i, head + dir * near, radius, wallMin, wallMax, inWindow) ? 1f : 0f,
-                                            Probe(i, head + dir * far, radius, wallMin, wallMax, inWindow) ? 0.6f : 0f);
-                    float score = interest - danger * 1.5f;
-                    if (score > bestScore) { bestScore = score; best = dir; }
-                    if (danger < leastDanger) { leastDanger = danger; safest = dir; }
+                    dirs.Set(k, dir, 0.75f * math.max(0f, math.dot(dir, desired)) + 0.25f * math.max(0f, math.dot(dir, heading)));
+                    dir = math.normalize(new float2(dir.x * StepCos - dir.y * StepSin, dir.x * StepSin + dir.y * StepCos));
+                }
+
+                // score = interest - 1.5 * danger <= interest, so directions are probed in descending
+                // interest and probing stops once no remaining direction can beat the best score. The
+                // result equals a full scan (ties keep the lower k), but far fewer grid queries run:
+                // usually only the first one or two directions are probed.
+                float2 best = desired;
+                float bestScore = float.MinValue;
+                int bestK = int.MaxValue;
+                int probed = 0;                                   // bit k set = danger[k] known
+                var danger = new DirectionSet();
+                for (int step = 0; step < Directions; step++)
+                {
+                    int k = dirs.NextByValue(probed);
+                    float interest = dirs.Value(k);
+                    if (interest < bestScore)
+                        break;
+                    float d = Danger(i, head, dirs.Dir(k), near, far, radius, wallMin, wallMax, inWindow);
+                    danger.Set(k, float2.zero, d);
+                    probed |= 1 << k;
+                    float score = interest - d * 1.5f;
+                    if (score > bestScore || (score == bestScore && k < bestK)) { bestScore = score; best = dirs.Dir(k); bestK = k; }
                 }
                 if (bestScore < -0.5f)
+                {
+                    // Everything probed is dangerous: fall back to the least dangerous direction overall.
+                    float leastDanger = float.MaxValue;
+                    float2 safest = heading;
+                    for (int k = 0; k < Directions; k++)
+                    {
+                        float d = (probed & (1 << k)) != 0
+                            ? danger.Value(k)
+                            : Danger(i, head, dirs.Dir(k), near, far, radius, wallMin, wallMax, inWindow);
+                        if (d < leastDanger) { leastDanger = d; safest = dirs.Dir(k); }
+                    }
                     best = safest;
+                }
 
                 bool boost = false;
                 bool skill = false;
@@ -301,6 +384,13 @@ namespace SnakeFoundation.Systems
                 }
 
                 Control[i] = new SnakeControl { TargetDirection = best, Boost = boost, UseSkill = skill };
+            }
+
+            float Danger(int self, float2 head, float2 dir, float near, float far, float radius, float2 wallMin, float2 wallMax, bool inWindow)
+            {
+                if (Probe(self, head + dir * near, radius, wallMin, wallMax, inWindow))
+                    return 1f;
+                return Probe(self, head + dir * far, radius, wallMin, wallMax, inWindow) ? 0.6f : 0f;
             }
 
             bool Probe(int self, float2 point, float radius, float2 wallMin, float2 wallMax, bool inWindow)

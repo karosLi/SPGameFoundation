@@ -84,7 +84,9 @@ namespace SPF.Presentation
 
             for (int p = 0; p * PageSize < count; p++)
             {
-                var page = m_Pages[p] ??= new Page(TextureWidth, PageSize);
+                // Pages hold at most what the batch can ever need, so small batches (heads, eyes)
+                // upload and vertex-process a few hundred discs instead of a full 4096-disc page.
+                var page = m_Pages[p] ??= new Page(TextureWidth, math.min(PageSize, Capacity - p * PageSize));
                 int n = math.min(PageSize, count - p * PageSize);
                 page.Upload(m_Instances, p * PageSize, n);
                 rp.matProps = page.Properties;
@@ -112,7 +114,9 @@ namespace SPF.Presentation
 
             public Page(int width, int instances)
             {
-                int height = instances * 2 / width;
+                // 2 texels per instance; narrow pages for small batches, height rounded up.
+                width = math.min(width, math.ceilpow2(instances * 2));
+                int height = (instances * 2 + width - 1) / width;
                 m_Texture = new Texture2D(width, height, TextureFormat.RGBAFloat, false, true)
                 {
                     filterMode = FilterMode.Point,
@@ -130,15 +134,14 @@ namespace SPF.Presentation
             public Mesh Mesh { get; }
             public MaterialPropertyBlock Properties { get; }
 
+            /// <summary>
+            /// <see cref="InstanceData"/> is exactly two texels (x, y, radius, depth) + (color), so the
+            /// upload is one native memcpy into the texture's CPU copy instead of a per-field loop.
+            /// </summary>
             public void Upload(NativeArray<InstanceData> source, int start, int count)
             {
                 var texels = m_Texture.GetPixelData<float4>(0);
-                for (int i = 0; i < count; i++)
-                {
-                    var d = source[start + i];
-                    texels[i * 2] = new float4(d.Position, d.Radius, d.Depth);
-                    texels[i * 2 + 1] = d.Color;
-                }
+                NativeArray<float4>.Copy(source.Reinterpret<float4>(InstanceData.Stride), start * 2, texels, 0, count * 2);
                 // Unused slots collapse to zero-radius discs (the mesh stays static and non-readable).
                 for (int i = count; i < m_LastCount; i++)
                     texels[i * 2] = float4.zero;

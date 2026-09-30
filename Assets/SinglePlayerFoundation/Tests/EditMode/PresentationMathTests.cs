@@ -80,5 +80,35 @@ namespace SPF.Tests.EditMode
             Assert.AreEqual(RowDelta.Stride, System.Runtime.InteropServices.Marshal.SizeOf<RowDelta>());
             Assert.AreEqual(TrailDelta.Stride, System.Runtime.InteropServices.Marshal.SizeOf<TrailDelta>());
         }
+
+        [Test]
+        public void InstanceDataIsExactlyTwoDataTextureTexels()
+        {
+            // CircleBatch pages memcpy instances straight into RGBA32F texels: (x, y, radius, depth), (color).
+            var instances = new Unity.Collections.NativeArray<InstanceData>(1, Unity.Collections.Allocator.Temp);
+            try
+            {
+                instances[0] = new InstanceData(new float2(1, 2), 3, 4, new float4(5, 6, 7, 8));
+                var texels = instances.Reinterpret<float4>(InstanceData.Stride);
+                Assert.AreEqual(2, texels.Length);
+                Assert.AreEqual(new float4(1, 2, 3, 4), texels[0]);
+                Assert.AreEqual(new float4(5, 6, 7, 8), texels[1]);
+            }
+            finally
+            {
+                instances.Dispose();
+            }
+        }
+
+        [Test]
+        public void GridEntryIsSixteenBytesAndPacksOwnerAndData()
+        {
+            Assert.AreEqual(16, System.Runtime.InteropServices.Marshal.SizeOf<SPF.L1.Spatial.GridEntry>());
+            var e = new SPF.L1.Spatial.GridEntry { Owner = 65535, Data = 0x8000 | 1234 };
+            Assert.AreEqual(65535, e.Owner);
+            Assert.AreEqual(0x8000 | 1234, e.Data);
+            e.Owner = 7;
+            Assert.AreEqual(0x8000 | 1234, e.Data, "setting the owner keeps the data");
+        }
     }
 }

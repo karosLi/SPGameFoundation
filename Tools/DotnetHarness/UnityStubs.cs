@@ -38,6 +38,20 @@ namespace Unity.Collections
             if (length > src.len || length > dst.len) throw new ArgumentOutOfRangeException();
             Buffer.MemoryCopy(src.m_Ptr, dst.m_Ptr, (long)dst.len * System.Runtime.CompilerServices.Unsafe.SizeOf<T>(), (long)length * System.Runtime.CompilerServices.Unsafe.SizeOf<T>());
         }
+        public static void Copy(NativeArray<T> src, int srcIndex, NativeArray<T> dst, int dstIndex, int length)
+        {
+            if (srcIndex < 0 || dstIndex < 0 || length < 0 || srcIndex + length > src.len || dstIndex + length > dst.len) throw new ArgumentOutOfRangeException();
+            int size = System.Runtime.CompilerServices.Unsafe.SizeOf<T>();
+            Buffer.MemoryCopy(src.m_Ptr + (long)srcIndex * size, dst.m_Ptr + (long)dstIndex * size, (long)(dst.len - dstIndex) * size, (long)length * size);
+        }
+        public NativeArray<U> Reinterpret<U>(int expectedTypeSize) where U : struct
+        {
+            int tSize = System.Runtime.CompilerServices.Unsafe.SizeOf<T>(), uSize = System.Runtime.CompilerServices.Unsafe.SizeOf<U>();
+            if (tSize != expectedTypeSize) throw new InvalidOperationException("Reinterpret: type size mismatch");
+            long bytes = (long)len * tSize;
+            if (bytes % uSize != 0) throw new InvalidOperationException("Reinterpret: length not a multiple of the target size");
+            return new NativeArray<U> { m_Ptr = m_Ptr, len = (int)(bytes / uSize) };
+        }
         public T[] ToArray() { var r = new T[len]; for (int i = 0; i < len; i++) r[i] = this[i]; return r; }
         public void CopyFrom(T[] src) { for (int i = 0; i < src.Length; i++) this[i] = src[i]; }
         public void CopyFrom(NativeArray<T> src) => Copy(src, this, src.Length);

@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using SPF.Contracts;
 using Unity.Mathematics;
+using UnityEngine.TestTools.Constraints;
 using Is = UnityEngine.TestTools.Constraints.Is;
 
 namespace SnakeFoundation.Tests

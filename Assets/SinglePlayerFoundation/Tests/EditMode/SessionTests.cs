@@ -3,6 +3,7 @@ using SPF.Runtime.Composition;
 using SPF.Runtime.Session;
 using SPF.Samples.DriftSmoke;
 using UnityEngine;
+using UnityEngine.TestTools.Constraints;
 using Is = UnityEngine.TestTools.Constraints.Is;
 
 namespace SPF.Tests.EditMode

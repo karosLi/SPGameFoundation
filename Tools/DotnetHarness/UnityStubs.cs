@@ -104,21 +104,32 @@ namespace Unity.Profiling
 }
 namespace UnityEngine.TestTools.Constraints
 {
+    // Mirrors the Unity Test Framework API: Is.AllocatingGCMemory() plus the
+    // ConstraintExpression extension (Is.Not.AllocatingGCMemory()) that needs
+    // `using UnityEngine.TestTools.Constraints;`.
     public class Is : NUnit.Framework.Is
     {
-        public static new NotHelper Not => new NotHelper();
-        public class NotHelper { public NUnit.Framework.Constraints.IResolveConstraint AllocatingGCMemory() => new NoAllocConstraint(); }
-        class NoAllocConstraint : NUnit.Framework.Constraints.Constraint
+        public static AllocatingGCMemoryConstraint AllocatingGCMemory() => new AllocatingGCMemoryConstraint();
+    }
+    public static class ConstraintExtensions
+    {
+        public static AllocatingGCMemoryConstraint AllocatingGCMemory(this NUnit.Framework.Constraints.ConstraintExpression chain)
         {
-            public override NUnit.Framework.Constraints.ConstraintResult ApplyTo<TActual>(TActual actual)
-            {
-                var action = (NUnit.Framework.TestDelegate)(object)actual;
-                long before = GC.GetAllocatedBytesForCurrentThread();
-                action();
-                long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-                Description = "no GC allocation (allocated " + allocated + " bytes)";
-                return new NUnit.Framework.Constraints.ConstraintResult(this, allocated, allocated == 0);
-            }
+            var c = new AllocatingGCMemoryConstraint();
+            chain.Append(c);
+            return c;
+        }
+    }
+    public class AllocatingGCMemoryConstraint : NUnit.Framework.Constraints.Constraint
+    {
+        public override NUnit.Framework.Constraints.ConstraintResult ApplyTo<TActual>(TActual actual)
+        {
+            var action = (NUnit.Framework.TestDelegate)(object)actual;
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            action();
+            long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+            Description = "allocates GC memory (allocated " + allocated + " bytes)";
+            return new NUnit.Framework.Constraints.ConstraintResult(this, allocated, allocated > 0);
         }
     }
 }

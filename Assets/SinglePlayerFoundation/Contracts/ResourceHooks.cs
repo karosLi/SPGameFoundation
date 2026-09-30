@@ -1,4 +1,4 @@
-namespace SPF.Runtime.World
+namespace SPF.Contracts
 {
     /// <summary>Resource hook called at the end of every tick, after all jobs completed (main thread).</summary>
     public interface ISyncResource

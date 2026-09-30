@@ -1,4 +1,5 @@
 using System;
+using SPF.Contracts;
 using Unity.Collections;
 
 namespace SPF.Runtime.World

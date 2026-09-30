@@ -22,3 +22,6 @@
 *.aab
 *.unitypackage
 crashlytics-build.properties
+Tools/DotnetHarness/.gen/
+
+Tools/DotnetHarness/.deps/

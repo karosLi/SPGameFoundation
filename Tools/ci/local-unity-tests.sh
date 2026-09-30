@@ -19,20 +19,62 @@ if [ -z "$EDITOR" ]; then
   echo "::error::Unity $VERSION not found. Install it with Unity Hub or set UNITY_EDITOR_PATH."; exit 1
 fi
 echo "Unity: $EDITOR"
-A=Artifacts; mkdir -p "$A"
+A=Artifacts; rm -rf "$A"; mkdir -p "$A"
 PROJECT="$(pwd)"
 
+# Prints why the OS killed the editor (memory pressure, code signing, ...) on macOS.
+diagnose_kill() {
+  [ "$(uname)" = Darwin ] || return 0
+  echo "----- macOS kernel/system log mentioning Unity (last 3 min) -----"
+  log show --last 3m --style compact --predicate \
+    '(eventMessage CONTAINS[c] "unity") AND (eventMessage CONTAINS[c] "kill" OR eventMessage CONTAINS[c] "jetsam" OR eventMessage CONTAINS[c] "memorystatus" OR eventMessage CONTAINS[c] "codesign" OR eventMessage CONTAINS[c] "code sign" OR eventMessage CONTAINS[c] "signature")' \
+    2>/dev/null | tail -n 40 || true
+  local ips
+  ips=$(ls -t "$HOME"/Library/Logs/DiagnosticReports/Unity*.ips 2>/dev/null | head -n 1)
+  if [ -n "$ips" ] && [ $(( $(date +%s) - $(stat -f %m "$ips") )) -lt 600 ]; then
+    echo "----- $ips (termination info) -----"
+    grep -iE '"(termination|exception|signal|indicator|codes|namespace|type)"|reason' "$ips" | head -n 30 || true
+  fi
+}
+
 run() {
-  local platform=$1; shift
-  echo "::group::${platform} tests"
+  local platform=$1 tag=$2; shift 2
+  echo "::group::${platform} tests${tag:+ ($tag)}"
   "$EDITOR" -batchmode "$@" -projectPath "$PROJECT" -runTests -testPlatform "$platform" \
-    -testResults "$PROJECT/$A/${platform}-results.xml" -logFile "$PROJECT/$A/${platform}.log"
-  local code=$?
-  echo "exit code ${code} (0 = passed, 2 = test failures, other = editor error)"
+    -testResults "$PROJECT/$A/${platform}${tag:+-$tag}-results.xml" -logFile "$PROJECT/$A/${platform}${tag:+-$tag}.log" &
+  local pid=$! peak=0 rss
+  # Sample the editor's resident memory so a runaway allocation is visible even if the OS kills it.
+  while kill -0 $pid 2>/dev/null; do
+    rss=$(ps -o rss= -p $pid 2>/dev/null | tr -d ' ')
+    if [ -n "$rss" ] && [ "$rss" -gt "$peak" ]; then peak=$rss; fi
+    sleep 1
+  done
+  wait $pid; local code=$?
+  echo "exit code ${code} (0 = passed, 2 = test failures, other = editor error); peak RSS $((peak / 1024)) MB"
   echo "::endgroup::"
-  [ $code -ne 0 ] && { echo "----- last 150 lines of ${platform}.log -----"; tail -n 150 "$A/${platform}.log" || true; }
+  if [ $code -ne 0 ]; then
+    local log="$A/${platform}${tag:+-$tag}.log"
+    echo "----- test progress in ${log} -----"; grep -F '[SPF-TEST]' "$log" | tail -n 15 || true
+    echo "----- errors/exceptions in ${log} -----"
+    grep -nE 'error CS|Exception|Crash|Received signal|Stacktrace|Assertion failed|Failed' "$log" | grep -v 'Failed to read NSDictionary' | head -n 60 || true
+    echo "----- last 150 lines of ${log} -----"; tail -n 150 "$log" || true
+    [ $code -ge 128 ] && diagnose_kill
+  fi
   return $code
 }
-run editmode -nographics; EDIT=$?
-run playmode; PLAY=$?
+
+# A run killed by a signal (137 = SIGKILL) is retried once with Burst disabled to tell a Burst/native
+# code problem apart from a managed-code one.
+run_platform() {
+  local platform=$1; shift
+  run "$platform" "" "$@"; local code=$?
+  if [ $code -ge 128 ]; then
+    echo "::warning::${platform} editor was killed (exit ${code}); retrying with Burst disabled for diagnosis"
+    run "$platform" noburst "$@" --burst-disable-compilation || true
+  fi
+  return $code
+}
+
+run_platform editmode -nographics; EDIT=$?
+run_platform playmode; PLAY=$?
 [ $EDIT -eq 0 ] && [ $PLAY -eq 0 ]

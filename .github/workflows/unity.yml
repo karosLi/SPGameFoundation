@@ -4,10 +4,10 @@ name: Unity tests (EditMode + PlayMode UI automation)
 # Repository secrets:
 #   Personal licence:  UNITY_LICENSE  (full contents of Unity_lic.ulf)
 #   Pro / Plus:        UNITY_SERIAL + UNITY_EMAIL + UNITY_PASSWORD
-# Without them the job is skipped (the .NET harness workflow still runs).
+# Note: a Personal licence file (.ulf) created by Unity Hub is bound to the machine that activated it and
+# is rejected here ("TimeStamp validation failed"). Personal users: use unity-self-hosted.yml instead.
+# Manual trigger only, so pushes don't show a red check while no cloud-usable licence is configured.
 on:
-  push:
-  pull_request:
   workflow_dispatch:
 
 jobs:

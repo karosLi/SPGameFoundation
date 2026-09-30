@@ -89,22 +89,39 @@ namespace SPF.L1.Body
             math.length(head - trail.Last) + math.max(trail.Count - 1, 0) * spacing;
 
         /// <summary>Position at arc distance <paramref name="distance"/> behind the head.</summary>
-        public static float2 SampleBehind(in TrailState trail, NativeArray<float2> points, float2 head, float distance, float spacing)
-        {
-            float headGap = math.length(head - trail.Last);
-            if (distance <= headGap)
-                return headGap > 1e-6f ? math.lerp(head, trail.Last, distance / headGap) : head;
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float2 SampleBehind(in TrailState trail, NativeArray<float2> points, float2 head, float distance, float spacing) =>
+            SampleAtArc(trail, points, head, math.length(head - trail.Last), distance, spacing);
 
-            float along = (distance - headGap) / spacing;
+        /// <summary>
+        /// General form used for interpolation: <paramref name="headArc"/> is the head's arc position
+        /// relative to the newest point (the head gap for the current tick; can be negative for an
+        /// interpolated head that lies before the newest point).
+        /// </summary>
+        public static float2 SampleAtArc(in TrailState trail, NativeArray<float2> points, float2 head, float headArc, float distance, float spacing)
+        {
+            float a = headArc - distance;
+            if (a >= 0f)
+                return headArc > 1e-6f ? math.lerp(trail.Last, head, a / headArc) : head;
+
+            float along = -a / spacing;
             int k = (int)along;
             int maxK = trail.Count - 1;
             uint newest = trail.Pushed - 1;
             if (k >= maxK)
                 return points[trail.Slot(newest - (uint)math.max(maxK, 0))];
-            float2 a = points[trail.Slot(newest - (uint)k)];
-            float2 b = points[trail.Slot(newest - (uint)k - 1)];
-            return math.lerp(a, b, along - k);
+            float2 p0 = points[trail.Slot(newest - (uint)k)];
+            float2 p1 = points[trail.Slot(newest - (uint)k - 1)];
+            return math.lerp(p0, p1, along - k);
         }
+
+        /// <summary>
+        /// Arc position of the previous tick's head relative to the current newest point, so renderers
+        /// can interpolate between ticks: lerp(PrevArc, currentGap, alpha).
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float PreviousArc(uint pushedBefore, float gapBefore, uint pushedAfter, float spacing) =>
+            gapBefore - (pushedAfter - pushedBefore) * spacing;
 
         /// <summary>Number of body nodes (including the head) for a node spacing.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

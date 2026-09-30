@@ -53,11 +53,19 @@ namespace SPF.Runtime.World
 
             public TableKey Key { get; }
             public int Capacity { get; internal set; }
+            public bool TrackChanges { get; private set; }
 
             internal TableSpec(TableKey key, int capacity)
             {
                 Key = key;
                 Capacity = capacity;
+            }
+
+            /// <summary>Record changed rows (see <see cref="SimTable.Changes"/>).</summary>
+            public TableSpec TrackChangedRows()
+            {
+                TrackChanges = true;
+                return this;
             }
 
             public TableSpec Column<T>(ColumnKey<T> key) where T : unmanaged

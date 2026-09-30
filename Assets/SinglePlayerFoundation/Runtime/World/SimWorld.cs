@@ -41,6 +41,8 @@ namespace SPF.Runtime.World
                 var table = new SimTable(spec.Key, m_Tables.Count, spec.Capacity);
                 foreach (var addColumn in spec.ColumnFactories)
                     addColumn(table);
+                if (spec.TrackChanges)
+                    table.EnableChangeTracking();
                 m_Tables.Add(table);
                 m_TablesByKey.Add(spec.Key.Id, table);
                 totalCapacity += spec.Capacity;

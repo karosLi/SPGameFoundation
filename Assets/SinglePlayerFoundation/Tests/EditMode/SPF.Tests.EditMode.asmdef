@@ -6,6 +6,7 @@
         "UnityEditor.TestRunner",
         "SPF.Contracts",
         "SPF.Runtime.Core",
+        "SPF.L1Simulation",
         "SPF.Runtime",
         "SPF.Samples.DriftSmoke",
         "Unity.Collections",

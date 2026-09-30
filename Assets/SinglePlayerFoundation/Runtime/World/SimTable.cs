@@ -16,6 +16,8 @@ namespace SPF.Runtime.World
         readonly List<IColumn> m_ColumnList = new List<IColumn>();
         NativeArray<EntityHandle> m_Handles;
 
+        ChangeLog m_Changes;
+
         public TableKey Key { get; }
         public int TableIndex { get; }
         public int Capacity { get; }
@@ -31,6 +33,21 @@ namespace SPF.Runtime.World
             Capacity = capacity;
             m_Handles = new NativeArray<EntityHandle>(capacity, Allocator.Persistent);
         }
+
+        /// <summary>
+        /// Rows created, removed or moved since the last <see cref="ChangeLog.Clear"/>, when change tracking
+        /// is enabled for the table (used to update GPU mirrors incrementally). Null otherwise.
+        /// </summary>
+        public ChangeLog Changes => m_Changes;
+
+        internal void EnableChangeTracking()
+        {
+            if (m_Changes == null)
+                m_Changes = new ChangeLog(Capacity);
+        }
+
+        /// <summary>Marks a row whose data changed outside of structural operations (main thread).</summary>
+        public void MarkChanged(int row) => m_Changes?.Mark(row);
 
         internal void AddColumn<T>(ColumnKey<T> key) where T : unmanaged
         {
@@ -60,6 +77,7 @@ namespace SPF.Runtime.World
                 return -1;
             int row = Count++;
             m_Handles[row] = handle;
+            m_Changes?.Mark(row);
             for (int i = 0; i < m_ColumnList.Count; i++)
                 m_ColumnList[i].Reset(row);
             return row;
@@ -73,6 +91,7 @@ namespace SPF.Runtime.World
         {
             int last = Count - 1;
             Count = last;
+            m_Changes?.Mark(row);
             if (row == last)
                 return EntityHandle.Null;
 
@@ -82,7 +101,11 @@ namespace SPF.Runtime.World
             return m_Handles[row];
         }
 
-        internal void Clear() => Count = 0;
+        internal void Clear()
+        {
+            Count = 0;
+            m_Changes?.MarkAll();
+        }
 
         public void Dispose()
         {
@@ -91,6 +114,44 @@ namespace SPF.Runtime.World
             m_ColumnList.Clear();
             m_Columns.Clear();
             if (m_Handles.IsCreated) m_Handles.Dispose();
+        }
+    
+    }
+
+    /// <summary>Deduplicated list of changed rows. Rows ≥ the table's Count mean "removed".</summary>
+    public sealed class ChangeLog
+    {
+        readonly int[] m_Rows;
+        readonly bool[] m_Marked;
+
+        internal ChangeLog(int capacity)
+        {
+            m_Rows = new int[capacity];
+            m_Marked = new bool[capacity];
+        }
+
+        public int Count { get; private set; }
+
+        /// <summary>True when everything must be treated as changed (reset / overflow).</summary>
+        public bool All { get; private set; } = true;
+
+        public int this[int index] => m_Rows[index];
+
+        internal void Mark(int row)
+        {
+            if (All || m_Marked[row]) return;
+            m_Marked[row] = true;
+            m_Rows[Count++] = row;
+        }
+
+        internal void MarkAll() => All = true;
+
+        public void Clear()
+        {
+            for (int i = 0; i < Count; i++)
+                m_Marked[m_Rows[i]] = false;
+            Count = 0;
+            All = false;
         }
     }
 }

@@ -47,7 +47,7 @@ namespace SPF.Runtime.Scheduling
             // Stable sort: phase, then order, then registration order.
             entries.Sort((a, b) =>
             {
-                int c = a.System.Phase.CompareTo(b.System.Phase);
+                int c = ((int)a.System.Phase).CompareTo((int)b.System.Phase);
                 if (c != 0) return c;
                 c = a.System.Order.CompareTo(b.System.Order);
                 return c != 0 ? c : a.RegistrationIndex.CompareTo(b.RegistrationIndex);

@@ -47,11 +47,24 @@ namespace SnakeFoundation.Tests.PlayMode
 
         SnakeGameState State => m_Game.State;
 
+        /// <summary>
+        /// Test coroutines resume between Update (ticks scheduled) and LateUpdate (sync), so jobs may
+        /// still be running: complete them before touching simulation data.
+        /// </summary>
+        SPF.Runtime.World.SimWorld World
+        {
+            get
+            {
+                m_Game.Session.Sync();
+                return m_Game.Session.World;
+            }
+        }
+
         int PlayerRow
         {
             get
             {
-                var world = m_Game.Session.World;
+                var world = World;
                 return world.Registry.TryResolve(State.Player, out _, out int row) ? row : -1;
             }
         }
@@ -68,7 +81,7 @@ namespace SnakeFoundation.Tests.PlayMode
         /// <summary>Moves the player (whole body, straight) to a position; used to set up scenarios quickly.</summary>
         void PlacePlayer(float2 head, float2 heading)
         {
-            var world = m_Game.Session.World;
+            var world = World;
             int row = PlayerRow;
             var config = world.Resource(SnakeKeys.Config);
             var trails = world.Column(SnakeKeys.Trail);
@@ -104,7 +117,7 @@ namespace SnakeFoundation.Tests.PlayMode
             PlacePlayer(float2.zero, new float2(1, 0));
             yield return UIDriver.Drag(m_Game.Hud.Joystick.gameObject, new Vector2(0, 200));
             yield return UIDriver.WaitSeconds(1.2f);
-            var heading = m_Game.Session.World.Column(SnakeKeys.Heading)[PlayerRow];
+            var heading = World.Column(SnakeKeys.Heading)[PlayerRow];
             UIDriver.Release(m_Game.Hud.Joystick.gameObject);
             Assert.Greater(heading.y, 0.9f, $"dragging up turned the snake up (heading {heading})");
         }
@@ -113,10 +126,10 @@ namespace SnakeFoundation.Tests.PlayMode
         public IEnumerator HoldingBoostSpeedsUpAndCostsMass()
         {
             yield return StartFromMenu();
-            var world = m_Game.Session.World;
-            world.Column(SnakeKeys.Mass).Set(PlayerRow, 60f);
+            World.Column(SnakeKeys.Mass).Set(PlayerRow, 60f);
             UIDriver.Press(m_Game.Hud.BoostButton.gameObject);
             yield return UIDriver.WaitSeconds(1.5f);
+            var world = World;
             float speed = world.Column(SnakeKeys.Speed)[PlayerRow];
             float mass = world.Column(SnakeKeys.Mass)[PlayerRow];
             UIDriver.Release(m_Game.Hud.BoostButton.gameObject);
@@ -128,18 +141,17 @@ namespace SnakeFoundation.Tests.PlayMode
         public IEnumerator SkillButtonFiresAProjectile()
         {
             yield return StartFromMenu();
-            var world = m_Game.Session.World;
-            world.Column(SnakeKeys.Mass).Set(PlayerRow, 80f);
+            World.Column(SnakeKeys.Mass).Set(PlayerRow, 80f);
             UIDriver.Click(m_Game.Hud.SkillButton.gameObject);
-            yield return UIDriver.WaitUntil(() => world.Table(SnakeKeys.Projectile).Count > 0, 1f);
-            Assert.Greater(world.Table(SnakeKeys.Projectile).Count, 0);
+            yield return UIDriver.WaitUntil(() => World.Table(SnakeKeys.Projectile).Count > 0, 1f);
+            Assert.Greater(World.Table(SnakeKeys.Projectile).Count, 0);
         }
 
         [UnityTest]
         public IEnumerator DyingShowsGameOverAndPlayAgainRespawns()
         {
             yield return StartFromMenu();
-            var region = m_Game.Session.World.Resource(SnakeKeys.Config).Regions[0];
+            var region = World.Resource(SnakeKeys.Config).Regions[0];
             PlacePlayer(new float2(region.Max.x - 4f, 0), new float2(1, 0));
             m_Game.InputRouter.Scripted.Active = true;
             m_Game.InputRouter.Scripted.Command = new PlayerCommand { Direction = new float2(1, 0) };
@@ -162,7 +174,7 @@ namespace SnakeFoundation.Tests.PlayMode
         public IEnumerator MenuButtonResetsTheWorldToAttractMode()
         {
             yield return StartFromMenu();
-            var region = m_Game.Session.World.Resource(SnakeKeys.Config).Regions[0];
+            var region = World.Resource(SnakeKeys.Config).Regions[0];
             PlacePlayer(new float2(region.Min.x + 4f, 0), new float2(-1, 0));
             m_Game.InputRouter.Scripted.Active = true;
             m_Game.InputRouter.Scripted.Command = new PlayerCommand { Direction = new float2(-1, 0) };
@@ -192,7 +204,7 @@ namespace SnakeFoundation.Tests.PlayMode
         public IEnumerator EnteringAPortalSwitchesToTheArena()
         {
             yield return StartFromMenu();
-            var portal = m_Game.Session.World.Resource(SnakeKeys.Config).Portals[0];
+            var portal = World.Resource(SnakeKeys.Config).Portals[0];
             PlacePlayer(portal.Position - new float2(10, 0), new float2(1, 0));
             m_Game.InputRouter.Scripted.Active = true;
             m_Game.InputRouter.Scripted.Command = new PlayerCommand { Direction = new float2(1, 0) };

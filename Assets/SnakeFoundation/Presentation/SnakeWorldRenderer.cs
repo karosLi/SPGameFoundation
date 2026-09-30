@@ -107,9 +107,20 @@ namespace SnakeFoundation.Presentation
             var bodies = world.Resource(SnakeKeys.Bodies);
             m_Chains = new ChainRenderer(m_Assets, snakeCapacity, m_MaxNodes, bodies.TotalPoints, snakeCapacity);
             int foodCapacity = world.Table(SnakeKeys.Food).Capacity;
-            if (tier == RenderTier.GpuDriven)
-                m_FoodPool = new PointCloudRenderer(m_Assets, BlendKind.Opaque, foodCapacity, foodCapacity);
-            else
+            if (tier == RenderTier.GpuDriven && m_Assets.PointCloud != null)
+            {
+                try
+                {
+                    m_FoodPool = new PointCloudRenderer(m_Assets, BlendKind.Opaque, foodCapacity, foodCapacity);
+                }
+                catch (Exception e)
+                {
+                    // e.g. graphics APIs that cannot write indirect arguments from compute: cull on the CPU instead.
+                    Debug.LogWarning($"[SPF] GPU food pool unavailable ({e.Message}); using CPU culling.");
+                    m_FoodPool = null;
+                }
+            }
+            if (m_FoodPool == null)
                 m_Food = new CircleBatch(m_Assets, BlendKind.Opaque, 16384);
             m_Opaque = new CircleBatch(m_Assets, BlendKind.Opaque, snakeCapacity * 4 + world.Table(SnakeKeys.Prop).Capacity * 2);
             m_OpaqueHeads = new CircleBatch(m_Assets, BlendKind.Opaque, snakeCapacity);
@@ -140,7 +151,7 @@ namespace SnakeFoundation.Presentation
             float pixelsPerUnit = Screen.height / math.max(view.w - view.y, 1f);
             float time = Time.time;
 
-            DrawBackground(config.Regions[game.ActiveRegion], view);
+            DrawBackground(config.Regions[game.ActiveRegion], view, bounds);
             DrawSnakes(world, config, quality, game, alpha, cull, pixelsPerUnit);
             DrawFood(world, cull);
             DrawItems(world, config, game, cull, time);
@@ -155,14 +166,14 @@ namespace SnakeFoundation.Presentation
             m_Additive.Draw(bounds);
         }
 
-        void DrawBackground(in RegionDef region, float4 view)
+        void DrawBackground(in RegionDef region, float4 view, Bounds bounds)
         {
             if (m_BackgroundMaterial == null) return;
             m_BackgroundMaterial.SetVector(RenderAssets.Ids.Region, new Vector4(region.Min.x, region.Min.y, region.Max.x, region.Max.y));
             float2 center = (view.xy + view.zw) * 0.5f;
             float2 size = view.zw - view.xy + 4f;
             var matrix = Matrix4x4.TRS(new Vector3(center.x, center.y, 10f), Quaternion.identity, new Vector3(size.x, size.y, 1f));
-            Graphics.RenderMesh(new RenderParams(m_BackgroundMaterial), m_Quad, 0, matrix);
+            Graphics.RenderMesh(new RenderParams(m_BackgroundMaterial) { worldBounds = bounds }, m_Quad, 0, matrix);
         }
 
         void DrawSnakes(SimWorld world, SnakeRuntimeConfig config, SnakeQuality quality, SnakeGameState game, float alpha, float4 cull, float pixelsPerUnit)

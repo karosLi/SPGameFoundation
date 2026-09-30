@@ -141,7 +141,7 @@ namespace SnakeFoundation
 
         public int CompareTo(EatCandidate other)
         {
-            int c = TargetType.CompareTo(other.TargetType);
+            int c = ((int)TargetType).CompareTo((int)other.TargetType);   // no Enum.CompareTo: it boxes (Burst / IL2CPP)
             if (c != 0) return c;
             c = TargetRow.CompareTo(other.TargetRow);
             return c != 0 ? c : SnakeRow.CompareTo(other.SnakeRow);

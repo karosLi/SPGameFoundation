@@ -21,7 +21,7 @@ uint FindHeader(uint node)
     uint lo = 0, hi = _HeaderCount - 1;
     while (lo < hi)
     {
-        uint mid = (lo + hi + 1) >> 1;
+        uint mid = lo + ((hi - lo + 1) >> 1);
         if (_Headers[mid].nodeOffset <= node) lo = mid; else hi = mid - 1;
     }
     return lo;
@@ -48,7 +48,8 @@ void ExpandNodes(uint3 id : SV_DispatchThreadID)
     o.position = p;
     o.radius = visible ? radius : 0.0;
     // Opaque: head in front of its body (smaller z = closer). Translucent: one depth for the whole chain.
-    o.depth = (h.flags & SPF_FLAG_TRANSLUCENT) != 0 ? h.depth : h.depth + j * 1e-4;
+    // Clamped so a very long body never leaves its snake's 0.2-deep band.
+    o.depth = (h.flags & SPF_FLAG_TRANSLUCENT) != 0 ? h.depth : h.depth + min(j * 1e-4, 0.15);
     o.color = stripe ? h.colorB : h.colorA;
     _Nodes[node] = o;
 }

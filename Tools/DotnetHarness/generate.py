@@ -103,6 +103,8 @@ def main():
     <AllowUnsafeBlocks>{str(bool(data.get("allowUnsafeCode"))).lower()}</AllowUnsafeBlocks>
     <Nullable>disable</Nullable>
     <IsTestProject>{str(is_test).lower()}</IsTestProject>
+    <!-- Unity asmdef references are not transitive: every assembly must name what it uses. -->
+    <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
     <DefineConstants>{defines}</DefineConstants>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <NoWarn>{NOWARN}</NoWarn>

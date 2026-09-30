@@ -23,7 +23,7 @@ namespace SPF.Presentation
         readonly GraphicsBuffer m_Deltas;
         readonly GraphicsBuffer m_Args;
         NativeArray<RowDelta> m_Staged;
-        NativeArray<uint> m_ArgsReset;
+        NativeArray<GraphicsBuffer.IndirectDrawIndexedArgs> m_ArgsReset;
         int m_StagedCount;
 
         public PointCloudRenderer(RenderAssets assets, BlendKind blend, int capacity, int maxDeltasPerFrame)
@@ -39,10 +39,11 @@ namespace SPF.Presentation
             m_Pool = new GraphicsBuffer(GraphicsBuffer.Target.Structured, capacity, InstanceData.Stride);
             m_Visible = new GraphicsBuffer(GraphicsBuffer.Target.Structured, capacity, InstanceData.Stride);
             m_Deltas = new GraphicsBuffer(GraphicsBuffer.Target.Structured, maxDeltasPerFrame, RowDelta.Stride);
-            m_Args = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments | GraphicsBuffer.Target.Structured, 5, sizeof(uint));
+            // Raw (byte address) + indirect: the compute kernel bumps instanceCount with an atomic.
+            m_Args = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments | GraphicsBuffer.Target.Raw, 1, GraphicsBuffer.IndirectDrawIndexedArgs.size);
             m_Staged = new NativeArray<RowDelta>(maxDeltasPerFrame, Allocator.Persistent);
-            m_ArgsReset = new NativeArray<uint>(5, Allocator.Persistent);
-            m_ArgsReset[0] = DiscMesh.IndicesPerDisc;
+            m_ArgsReset = new NativeArray<GraphicsBuffer.IndirectDrawIndexedArgs>(1, Allocator.Persistent);
+            m_ArgsReset[0] = new GraphicsBuffer.IndirectDrawIndexedArgs { indexCountPerInstance = DiscMesh.IndicesPerDisc };
             m_Material?.SetBuffer(RenderAssets.Ids.Instances, m_Visible);
         }
 

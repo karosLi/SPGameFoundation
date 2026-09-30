@@ -32,6 +32,17 @@ namespace SnakeFoundation.Game
 
         public int Level { get; private set; }
 
+#if SPF_URP
+        float m_OriginalRenderScale = -1f;
+
+        void OnDisable()
+        {
+            // The URP asset is shared (and persists in the Editor): restore what we changed.
+            if (m_OriginalRenderScale > 0f && GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset urp)
+                urp.renderScale = m_OriginalRenderScale;
+        }
+#endif
+
         void Update()
         {
             var session = Host != null ? Host.Session : null;
@@ -58,7 +69,10 @@ namespace SnakeFoundation.Game
             quality.RenderScale = s_RenderScale[Level];
 #if SPF_URP
             if (GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset urp)
-                urp.renderScale = quality.RenderScale;
+            {
+                if (m_OriginalRenderScale < 0f) m_OriginalRenderScale = urp.renderScale;
+                urp.renderScale = m_OriginalRenderScale * quality.RenderScale;
+            }
 #endif
         }
     }

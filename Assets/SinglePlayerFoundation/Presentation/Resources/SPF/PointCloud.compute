@@ -28,7 +28,7 @@ void ScatterRows(uint3 id : SV_DispatchThreadID)
 
 StructuredBuffer<InstanceData> _PoolIn;
 RWStructuredBuffer<InstanceData> _Visible;
-RWStructuredBuffer<uint> _Args;   // IndirectDrawIndexedArgs: [1] = instanceCount
+RWByteAddressBuffer _Args;   // IndirectDrawIndexedArgs; byte offset 4 = instanceCount (raw view works on DX11 too)
 uint _PoolCount;
 float4 _ViewRect;
 
@@ -53,7 +53,7 @@ void Cull(uint3 id : SV_DispatchThreadID, uint3 lid : SV_GroupThreadID)
     }
     GroupMemoryBarrierWithGroupSync();
     // One global atomic per group (cheap on mobile), no wave intrinsics, no append buffers.
-    if (lid.x == 0) InterlockedAdd(_Args[1], gs_Count, gs_Base);
+    if (lid.x == 0) _Args.InterlockedAdd(4, gs_Count, gs_Base);
     GroupMemoryBarrierWithGroupSync();
     if (keep) _Visible[gs_Base + local] = d;
 }

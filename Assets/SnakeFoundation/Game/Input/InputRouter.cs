@@ -38,6 +38,8 @@ namespace SnakeFoundation.Game
             for (int i = 0; i < m_Sources.Count; i++)
                 if (m_Sources[i].TryRead(out command))
                     break;
+            // One-shot actions stay latched until a tick consumes them (frames without ticks would drop them).
+            command.Skill |= game.Command.Skill;
             game.Command = command;
             LastCommand = command;
         }

@@ -275,7 +275,7 @@ namespace SPF.Presentation
                     var props = m_StripProps[blend];
                     props.SetBuffer(RenderAssets.Ids.Headers, m_HeaderBuffers[c]);
                     props.SetBuffer(RenderAssets.Ids.Trail, m_TrailMirror);
-                    props.SetInt(RenderAssets.Ids.HeaderCount, headers);
+                    props.SetInteger(RenderAssets.Ids.HeaderCount, headers);
                     props.SetFloat(RenderAssets.Ids.Alpha, alpha);
                     Graphics.RenderPrimitives(new RenderParams(m_StripMaterials[blend]) { worldBounds = bounds, layer = layer, matProps = props },
                         MeshTopology.Triangles, total * 6);
@@ -315,14 +315,15 @@ namespace SPF.Presentation
                 data.SetIndexBufferParams(segments * 6, IndexFormat.UInt32);
                 if (segments > 0)
                 {
-                    handle = JobHandle.CombineDependencies(handle, new BuildStripsJob
+                    // Chained, not parallel: the vertex / index arrays share the MeshDataArray's safety handle.
+                    handle = new BuildStripsJob
                     {
                         Headers = m_Headers[c],
                         Points = m_Points,
                         Vertices = data.GetVertexData<StripVertex>(),
                         Indices = data.GetIndexData<uint>(),
                         Alpha = alpha,
-                    }.Schedule(m_HeaderCounts[c], 4));
+                    }.Schedule(m_HeaderCounts[c], 4, handle);
                 }
             }
             handle.Complete();
@@ -402,7 +403,7 @@ namespace SPF.Presentation
                     bool visible = p.x + radius >= ViewRect.x && p.y + radius >= ViewRect.y && p.x - radius <= ViewRect.z && p.y - radius <= ViewRect.w;
                     bool stripe = h.Stripe > 0 && ((j / (int)h.Stripe) & 1) == 1;
                     Output[(int)h.NodeOffset + j] = new InstanceData(p, visible ? radius : 0f,
-                        translucent ? h.Depth : h.Depth + j * 1e-4f, stripe ? h.ColorB : h.ColorA);
+                        translucent ? h.Depth : h.Depth + math.min(j * 1e-4f, 0.15f), stripe ? h.ColorB : h.ColorA);
                 }
             }
         }
@@ -439,7 +440,7 @@ namespace SPF.Presentation
                         float2 tangent = math.normalizesafe(next - prev, new float2(1f, 0f));
                         float2 normal = new float2(-tangent.y, tangent.x);
                         float radius = h.Radius * ChainMath.Taper(h.NodeCount > 1 ? (float)pt / h.NodeCount : 0f);
-                        float depth = translucent ? h.Depth : h.Depth + pt * 1e-4f;
+                        float depth = translucent ? h.Depth : h.Depth + math.min(pt * 1e-4f, 0.15f);
                         Vertices[v + e * 2] = new StripVertex { Position = new float3(p - normal * radius, depth), ColorA = colorA, ColorB = colorB, Uv = new float3(s, -1f, period) };
                         Vertices[v + e * 2 + 1] = new StripVertex { Position = new float3(p + normal * radius, depth), ColorA = colorA, ColorB = colorB, Uv = new float3(s, 1f, period) };
                     }

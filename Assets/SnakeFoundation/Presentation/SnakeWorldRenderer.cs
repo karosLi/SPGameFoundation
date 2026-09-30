@@ -39,7 +39,8 @@ namespace SnakeFoundation.Presentation
             new float4(0.9f, 0.5f, 1.0f, 1f),
         };
 
-        const float FoodDepth = 5f, PropDepth = 4.5f, ProjectileDepth = 4f, SnakeDepthTop = 3f, EffectDepth = -20f;
+        // Camera looks down +z from z = -50: smaller z is nearer. Snakes get 0.2-deep bands from z = 3 towards the camera.
+        const float FoodDepth = 5f, PropDepth = 4.5f, ProjectileDepth = 4f, SnakeDepthTop = 3f, SnakeBand = 0.2f, EffectDepth = -40f;
 
         RenderAssets m_Assets;
         ChainRenderer m_Chains;
@@ -55,6 +56,7 @@ namespace SnakeFoundation.Presentation
         Effect[] m_Effects = new Effect[128];
         int m_EffectCursor;
         SimSession m_BoundSession;
+        bool m_Headless;
 
         public SessionHost Host { get => m_Host; set => m_Host = value; }
         public SnakeCameraRig CameraRig { get => m_Camera; set => m_Camera = value; }
@@ -131,6 +133,8 @@ namespace SnakeFoundation.Presentation
                 m_BackgroundMaterial = new Material(m_Assets.BackgroundShader) { hideFlags = HideFlags.HideAndDontSave, renderQueue = 1900 };
             m_Quad = CreateQuad();
             m_BoundSession = session;
+            // Batch mode without a GPU: keep all CPU-side work (tests read the counters) but submit nothing.
+            m_Headless = SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null;
         }
 
         void LateUpdate()
@@ -157,6 +161,10 @@ namespace SnakeFoundation.Presentation
             DrawItems(world, config, game, cull, time);
             UpdateEffects(world);
 
+            if (m_Headless)
+            {
+                return;
+            }
             m_Chains.Draw(alpha, cull, bounds);
             m_OpaqueHeads.Draw(bounds);
             m_TranslucentHeads.Draw(bounds);
@@ -168,7 +176,7 @@ namespace SnakeFoundation.Presentation
 
         void DrawBackground(in RegionDef region, float4 view, Bounds bounds)
         {
-            if (m_BackgroundMaterial == null) return;
+            if (m_BackgroundMaterial == null || m_Headless) return;
             m_BackgroundMaterial.SetVector(RenderAssets.Ids.Region, new Vector4(region.Min.x, region.Min.y, region.Max.x, region.Max.y));
             float2 center = (view.xy + view.zw) * 0.5f;
             float2 size = view.zw - view.xy + 4f;
@@ -232,7 +240,8 @@ namespace SnakeFoundation.Presentation
                 var skin = skins[info.Skin % skins.Length];
                 var blend = fallback || skin.Blend == SkinBlend.Opaque ? BlendKind.Opaque
                     : skin.Blend == SkinBlend.Additive ? BlendKind.Additive : BlendKind.Translucent;
-                float depth = SnakeDepthTop - (visible - 1 - o) * 0.1f;
+                // o = 0 is the lightest (farthest); the player / heaviest end up nearest the camera.
+                float depth = SnakeDepthTop - o * SnakeBand;
                 float radius = radii[row];
                 float4 colorA = fallback ? ToFloat4(skin.OpaqueFallback) : ToFloat4(skin.Primary, skin.Alpha);
                 float4 colorB = fallback ? ToFloat4(skin.OpaqueFallback) * new float4(0.85f, 0.85f, 0.85f, 1f) : ToFloat4(skin.Secondary, skin.Alpha);

@@ -39,6 +39,10 @@ Unity 2022.3 2D 单机小游戏基座（面向移动端）+ 首个接入玩法�
 
 依赖方向由 asmdef 强制：Contracts ← L1 ← L2 ← 玩法；Presentation 只读模拟数据。
 
+## 渲染管线说明
+
+Shader 为无光照 CGPROGRAM，内置管线与 URP 均可用（URP 下走 SRPDefaultUnlit）。若使用 URP，请保持 Renderer 的 **Depth Priming 关闭**（这些 Shader 没有 DepthOnly Pass，强制 Depth Priming 会导致不透明物体被深度测试剔除）。
+
 ## 测试
 
 | 方式 | 需要 | 覆盖 |

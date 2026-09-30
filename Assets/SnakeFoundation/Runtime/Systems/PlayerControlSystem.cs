@@ -15,11 +15,12 @@ namespace SnakeFoundation.Systems
         {
             var world = context.World;
             var game = world.Resource(SnakeKeys.Game);
+            var command = game.Command;
+            game.Command.Skill = false;   // one-shot: consumed by this tick
             if (!world.Registry.TryResolve(game.Player, out _, out int row))
                 return dependency;
 
             dependency.Complete();
-            var command = game.Command;
             var heading = world.Column(SnakeKeys.Heading)[row];
             var controls = world.Column(SnakeKeys.Control);
             controls[row] = new SnakeControl

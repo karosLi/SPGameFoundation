@@ -45,7 +45,7 @@ Shader "SPF/ChainStripGPU"
                 uint lo = 0, hi = _HeaderCount - 1;
                 while (lo < hi)
                 {
-                    uint mid = (lo + hi + 1) >> 1;
+                    uint mid = lo + ((hi - lo + 1) >> 1);
                     if (_Headers[mid].nodeOffset <= segment) lo = mid; else hi = mid - 1;
                 }
                 return lo;
@@ -54,6 +54,11 @@ Shader "SPF/ChainStripGPU"
             v2f vert(uint vid : SV_VertexID)
             {
                 // 6 vertices per segment: (k,-1) (k,+1) (k+1,-1) | (k+1,-1) (k,+1) (k+1,+1)
+                if (_HeaderCount == 0)
+                {
+                    v2f empty = (v2f)0;
+                    return empty;
+                }
                 uint segment = vid / 6;
                 uint corner = vid % 6;
                 ChainHeader h = _Headers[FindHeader(segment)];
@@ -72,7 +77,7 @@ Shader "SPF/ChainStripGPU"
 
                 float t = h.nodeCount > 1 ? (float)pt / h.nodeCount : 0.0;
                 float radius = h.radius * SPFTaper(t);
-                float depth = (h.flags & SPF_FLAG_TRANSLUCENT) != 0 ? h.depth : h.depth + pt * 1e-4;
+                float depth = (h.flags & SPF_FLAG_TRANSLUCENT) != 0 ? h.depth : h.depth + min(pt * 1e-4, 0.15);
 
                 v2f o;
                 o.pos = UnityWorldToClipPos(float3(p + normal * radius * side, depth));

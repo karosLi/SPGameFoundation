@@ -19,6 +19,19 @@ if [ -z "$EDITOR" ]; then
   echo "::error::Unity $VERSION not found. Install it with Unity Hub or set UNITY_EDITOR_PATH."; exit 1
 fi
 echo "Unity: $EDITOR"
+
+# On Apple Silicon an x64 Actions runner runs under Rosetta and every child inherits x86_64, so Unity
+# would run translated and Burst's JIT code gets the editor SIGKILLed ("Code Signature Invalid").
+# Launch the editor natively as arm64 whenever the hardware and the editor binary support it.
+LAUNCH=()
+if [ "$(uname)" = Darwin ] && [ "$(sysctl -n hw.optional.arm64 2>/dev/null)" = 1 ]; then
+  echo "Shell arch: $(uname -m) (runner under Rosetta if x86_64); editor archs: $(lipo -archs "$EDITOR" 2>/dev/null)"
+  if lipo -archs "$EDITOR" 2>/dev/null | grep -qw arm64; then
+    LAUNCH=(arch -arm64)
+  else
+    echo "::warning::Unity at $EDITOR has no arm64 slice; install the Apple Silicon editor for Burst to work"
+  fi
+fi
 A=Artifacts; rm -rf "$A"; mkdir -p "$A"
 PROJECT="$(pwd)"
 
@@ -29,9 +42,15 @@ diagnose_kill() {
   log show --last 3m --style compact --predicate \
     '(eventMessage CONTAINS[c] "unity") AND (eventMessage CONTAINS[c] "kill" OR eventMessage CONTAINS[c] "jetsam" OR eventMessage CONTAINS[c] "memorystatus" OR eventMessage CONTAINS[c] "codesign" OR eventMessage CONTAINS[c] "code sign" OR eventMessage CONTAINS[c] "signature")' \
     2>/dev/null | tail -n 40 || true
-  local ips
-  ips=$(ls -t "$HOME"/Library/Logs/DiagnosticReports/Unity*.ips 2>/dev/null | head -n 1)
-  if [ -n "$ips" ] && [ $(( $(date +%s) - $(stat -f %m "$ips") )) -lt 600 ]; then
+  # The crash report is written asynchronously; find the one for this editor's PID.
+  local ips="" f i
+  for i in 1 2 3 4 5 6 7 8 9 10; do
+    for f in $(ls -t "$HOME"/Library/Logs/DiagnosticReports/Unity*.ips 2>/dev/null | head -n 5); do
+      if grep -qE "\"pid\" ?: ?$1[,}]" "$f"; then ips=$f; break 2; fi
+    done
+    sleep 2
+  done
+  if [ -n "$ips" ]; then
     echo "----- $ips (termination info) -----"
     grep -iE '"(termination|exception)"' "$ips" | cut -c1-400 | head -n 10 || true
     # Which binary did code signing reject? Map the faulting address to a loaded image, then codesign it.
@@ -83,7 +102,7 @@ print_failures() {
 run() {
   local platform=$1 tag=$2; shift 2
   echo "::group::${platform} tests${tag:+ ($tag)}"
-  "$EDITOR" -batchmode "$@" -projectPath "$PROJECT" -runTests -testPlatform "$platform" \
+  ${LAUNCH[@]+"${LAUNCH[@]}"} "$EDITOR" -batchmode "$@" -projectPath "$PROJECT" -runTests -testPlatform "$platform" \
     -testResults "$PROJECT/$A/${platform}${tag:+-$tag}-results.xml" -logFile "$PROJECT/$A/${platform}${tag:+-$tag}.log" &
   local pid=$! peak=0 rss
   # Sample the editor's resident memory so a runaway allocation is visible even if the OS kills it.
@@ -101,7 +120,7 @@ run() {
     echo "----- errors/exceptions in ${log} -----"
     grep -nE 'error CS|Exception|Crash|Received signal|Stacktrace|Assertion failed|Failed' "$log" | grep -v 'Failed to read NSDictionary' | head -n 60 || true
     echo "----- last 150 lines of ${log} -----"; tail -n 150 "$log" || true
-    [ $code -ge 128 ] && diagnose_kill
+    [ $code -ge 128 ] && diagnose_kill $pid
   fi
   print_failures "$PROJECT/$A/${platform}${tag:+-$tag}-results.xml"
   return $code

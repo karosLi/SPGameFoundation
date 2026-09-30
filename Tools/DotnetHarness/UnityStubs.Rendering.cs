@@ -176,6 +176,7 @@ namespace UnityEngine
 
         public static MeshDataArray AllocateWritableMeshData(int count) => new MeshDataArray(count);
         public static void ApplyAndDisposeWritableMeshData(MeshDataArray data, Mesh mesh, MeshUpdateFlags flags = MeshUpdateFlags.Default) { }
+        public static void ApplyAndDisposeWritableMeshData(MeshDataArray data, Mesh[] meshes, MeshUpdateFlags flags = MeshUpdateFlags.Default) { }
 
         public struct MeshDataArray : IDisposable
         {

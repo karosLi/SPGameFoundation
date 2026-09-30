@@ -45,6 +45,7 @@ namespace SnakeFoundation.Systems
                 points[slot] = points[slot] + delta;
             }
             trail.Last += delta;
+            trail.Version++;
             trails[row] = trail;
             heads[row] += delta;
             prevHeads[row] += delta;

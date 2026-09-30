@@ -27,6 +27,12 @@ namespace SPF.L1.Body
         /// <summary>Copy of the newest point.</summary>
         public float2 Last;
 
+        /// <summary>
+        /// Bumped whenever existing points are rewritten or moved (reset, slab resize, teleport), so
+        /// mirrors (e.g. a GPU copy) know to re-upload instead of appending new points.
+        /// </summary>
+        public uint Version;
+
         public bool IsAllocated => Capacity > 0;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -81,6 +87,7 @@ namespace SPF.L1.Body
             }
             trail.Last = head;
             trail.Count = count;
+            trail.Version++;
         }
 
         /// <summary>Arc length of the body from the head to the oldest kept point.</summary>

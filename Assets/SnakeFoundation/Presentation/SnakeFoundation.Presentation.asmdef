@@ -1,10 +1,13 @@
 {
-    "name": "SPF.Presentation",
-    "rootNamespace": "SPF.Presentation",
+    "name": "SnakeFoundation.Presentation",
+    "rootNamespace": "SnakeFoundation.Presentation",
     "references": [
         "SPF.Contracts",
         "SPF.L1Simulation",
         "SPF.Runtime.Core",
+        "SPF.Runtime",
+        "SPF.Presentation",
+        "SnakeFoundation.Runtime",
         "Unity.Collections",
         "Unity.Mathematics",
         "Unity.Burst"

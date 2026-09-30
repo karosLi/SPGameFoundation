@@ -1,0 +1,72 @@
+// GPU-driven chain expansion: one thread per body node. The CPU culls whole chains and writes
+// per-chain node offsets (ordered back-to-front for translucent chains); the GPU computes every
+// node's interpolated position, taper, stripe colour and depth, and zeroes nodes outside the view.
+#pragma kernel ExpandNodes
+#pragma kernel ScatterTrail
+
+#include "../../Shaders/SPFCommon.hlsl"
+#include "../../Shaders/SPFChainSample.hlsl"
+
+StructuredBuffer<ChainHeader> _Headers;
+StructuredBuffer<float2> _Trail;
+RWStructuredBuffer<InstanceData> _Nodes;
+uint _HeaderCount;
+uint _NodeTotal;
+float _Alpha;
+float4 _ViewRect;   // xy min, zw max (world)
+
+uint FindHeader(uint node)
+{
+    // Headers are sorted by nodeOffset: binary search the last header whose offset <= node.
+    uint lo = 0, hi = _HeaderCount - 1;
+    while (lo < hi)
+    {
+        uint mid = (lo + hi + 1) >> 1;
+        if (_Headers[mid].nodeOffset <= node) lo = mid; else hi = mid - 1;
+    }
+    return lo;
+}
+
+[numthreads(64, 1, 1)]
+void ExpandNodes(uint3 id : SV_DispatchThreadID)
+{
+    uint node = id.x;
+    if (node >= _NodeTotal || _HeaderCount == 0)
+        return;
+    ChainHeader h = _Headers[FindHeader(node)];
+    uint j = node - h.nodeOffset;
+
+    float s = j * h.nodeSpacing * h.nodeStride;
+    float2 p = SPFSampleChain(_Trail, h, _Alpha, s);
+    float t = h.nodeCount > 1 ? (float)j / (h.nodeCount - 1) : 0.0;
+    float radius = h.radius * SPFTaper(t) * (j == 0 ? 1.12 : 1.0) * (h.nodeStride > 1.0 && j > 0 ? 1.1 : 1.0);
+
+    bool visible = p.x + radius >= _ViewRect.x && p.y + radius >= _ViewRect.y && p.x - radius <= _ViewRect.z && p.y - radius <= _ViewRect.w;
+    bool stripe = h.stripe > 0 && ((j / h.stripe) & 1u) == 1u;
+
+    InstanceData o;
+    o.position = p;
+    o.radius = visible ? radius : 0.0;
+    // Opaque: head in front of its body (smaller z = closer). Translucent: one depth for the whole chain.
+    o.depth = (h.flags & SPF_FLAG_TRANSLUCENT) != 0 ? h.depth : h.depth + j * 1e-4;
+    o.color = stripe ? h.colorB : h.colorA;
+    _Nodes[node] = o;
+}
+
+// Trail mirror update: CPU uploads (slot, point) pairs for points pushed since the last frame.
+struct TrailDelta
+{
+    uint slot;
+    float2 value;
+};
+StructuredBuffer<TrailDelta> _TrailDeltas;
+RWStructuredBuffer<float2> _TrailOut;
+uint _TrailDeltaCount;
+
+[numthreads(64, 1, 1)]
+void ScatterTrail(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _TrailDeltaCount) return;
+    TrailDelta d = _TrailDeltas[id.x];
+    _TrailOut[d.slot] = d.value;
+}

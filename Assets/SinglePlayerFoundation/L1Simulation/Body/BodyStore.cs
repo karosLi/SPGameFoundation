@@ -90,6 +90,7 @@ namespace SPF.L1.Body
             moved.Pushed = trail.Pushed;
             moved.Last = trail.Last;
             moved.Count = math.min(trail.Count, moved.Capacity);
+            moved.Version = trail.Version + 1;
             for (int i = 0; i < moved.Count; i++)
             {
                 uint g = trail.Pushed - 1 - (uint)i;

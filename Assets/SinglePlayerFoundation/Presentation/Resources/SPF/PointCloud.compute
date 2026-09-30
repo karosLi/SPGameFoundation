@@ -1,0 +1,59 @@
+// GPU-resident point cloud (food): persistent pool updated by row deltas, culled to the view every
+// frame into an append list whose length feeds the indirect draw arguments directly.
+#pragma kernel ScatterRows
+#pragma kernel Cull
+
+#include "../../Shaders/SPFCommon.hlsl"
+
+struct RowDelta
+{
+    uint row;
+    uint pad0;
+    uint pad1;
+    uint pad2;
+    InstanceData data;
+};
+
+StructuredBuffer<RowDelta> _Deltas;
+uint _DeltaCount;
+RWStructuredBuffer<InstanceData> _Pool;
+
+[numthreads(64, 1, 1)]
+void ScatterRows(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _DeltaCount) return;
+    RowDelta d = _Deltas[id.x];
+    _Pool[d.row] = d.data;
+}
+
+StructuredBuffer<InstanceData> _PoolIn;
+RWStructuredBuffer<InstanceData> _Visible;
+RWStructuredBuffer<uint> _Args;   // IndirectDrawIndexedArgs: [1] = instanceCount
+uint _PoolCount;
+float4 _ViewRect;
+
+groupshared uint gs_Count;
+groupshared uint gs_Base;
+
+[numthreads(64, 1, 1)]
+void Cull(uint3 id : SV_DispatchThreadID, uint3 lid : SV_GroupThreadID)
+{
+    if (lid.x == 0) gs_Count = 0;
+    GroupMemoryBarrierWithGroupSync();
+
+    bool keep = false;
+    InstanceData d = (InstanceData)0;
+    uint local = 0;
+    if (id.x < _PoolCount)
+    {
+        d = _PoolIn[id.x];
+        keep = d.radius > 0.0 && d.position.x + d.radius >= _ViewRect.x && d.position.y + d.radius >= _ViewRect.y
+            && d.position.x - d.radius <= _ViewRect.z && d.position.y - d.radius <= _ViewRect.w;
+        if (keep) InterlockedAdd(gs_Count, 1, local);
+    }
+    GroupMemoryBarrierWithGroupSync();
+    // One global atomic per group (cheap on mobile), no wave intrinsics, no append buffers.
+    if (lid.x == 0) InterlockedAdd(_Args[1], gs_Count, gs_Base);
+    GroupMemoryBarrierWithGroupSync();
+    if (keep) _Visible[gs_Base + local] = d;
+}

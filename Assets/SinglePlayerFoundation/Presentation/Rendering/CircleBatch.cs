@@ -1,0 +1,156 @@
+using System;
+using Unity.Collections;
+using Unity.Mathematics;
+using UnityEngine;
+
+namespace SPF.Presentation
+{
+    /// <summary>
+    /// A list of disc instances drawn with one material. Fill <see cref="Instances"/> up to
+    /// <see cref="Capacity"/>, set <see cref="Count"/>, call <see cref="Draw"/> once per frame.
+    /// GPU-driven tier: one indirect draw from a structured buffer. Data-texture tier: pages of 4096
+    /// instances (RGBA32F texture + indexed mesh), one draw per used page.
+    /// </summary>
+    public sealed class CircleBatch : IDisposable
+    {
+        public const int PageSize = 4096;
+        const int TextureWidth = 2048;
+
+        readonly RenderTier m_Tier;
+        readonly Material m_Material;
+        NativeArray<InstanceData> m_Instances;
+
+        // GPU-driven
+        GraphicsBuffer m_Buffer;
+        GraphicsBuffer m_Args;
+        NativeArray<GraphicsBuffer.IndirectDrawIndexedArgs> m_ArgsData;
+        Mesh m_Disc;
+
+        // Data texture
+        Page[] m_Pages;
+
+        public CircleBatch(RenderAssets assets, BlendKind blend, int capacity, bool shaded = true, int queueOffset = 0)
+        {
+            m_Tier = assets.Tier;
+            Capacity = capacity;
+            m_Material = RenderAssets.CreateMaterial(assets.InstancedShader, blend, shaded, queueOffset);
+            m_Instances = new NativeArray<InstanceData>(capacity, Allocator.Persistent);
+            if (m_Tier == RenderTier.GpuDriven)
+            {
+                m_Buffer = new GraphicsBuffer(GraphicsBuffer.Target.Structured, capacity, InstanceData.Stride);
+                m_Args = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments, 1, GraphicsBuffer.IndirectDrawIndexedArgs.size);
+                m_ArgsData = new NativeArray<GraphicsBuffer.IndirectDrawIndexedArgs>(1, Allocator.Persistent);
+                m_Disc = DiscMesh.CreateSingle();
+                m_Material?.SetBuffer(RenderAssets.Ids.Instances, m_Buffer);
+            }
+            else
+            {
+                m_Pages = new Page[(capacity + PageSize - 1) / PageSize];
+            }
+        }
+
+        public int Capacity { get; }
+        public int Count { get; set; }
+        public NativeArray<InstanceData> Instances => m_Instances;
+        public Material Material => m_Material;
+
+        /// <summary>Appends one instance; returns false when full.</summary>
+        public bool Add(float2 position, float radius, float depth, float4 color)
+        {
+            if (Count >= Capacity) return false;
+            m_Instances[Count++] = new InstanceData(position, radius, depth, color);
+            return true;
+        }
+
+        public void Draw(Bounds bounds, int layer = 0)
+        {
+            if (m_Material == null || Count <= 0)
+                return;
+            int count = math.min(Count, Capacity);
+            var rp = new RenderParams(m_Material) { worldBounds = bounds, layer = layer };
+
+            if (m_Tier == RenderTier.GpuDriven)
+            {
+                m_Buffer.SetData(m_Instances, 0, 0, count);
+                m_ArgsData[0] = new GraphicsBuffer.IndirectDrawIndexedArgs
+                {
+                    indexCountPerInstance = (uint)DiscMesh.IndicesPerDisc,
+                    instanceCount = (uint)count,
+                };
+                m_Args.SetData(m_ArgsData);
+                Graphics.RenderMeshIndirect(rp, m_Disc, m_Args);
+                return;
+            }
+
+            for (int p = 0; p * PageSize < count; p++)
+            {
+                var page = m_Pages[p] ??= new Page(TextureWidth, PageSize);
+                int n = math.min(PageSize, count - p * PageSize);
+                page.Upload(m_Instances, p * PageSize, n);
+                rp.matProps = page.Properties;
+                Graphics.RenderMesh(rp, page.Mesh, 0, Matrix4x4.identity);
+            }
+        }
+
+        public void Dispose()
+        {
+            if (m_Instances.IsCreated) m_Instances.Dispose();
+            if (m_ArgsData.IsCreated) m_ArgsData.Dispose();
+            m_Buffer?.Dispose();
+            m_Args?.Dispose();
+            if (m_Disc != null) UnityEngine.Object.Destroy(m_Disc);
+            if (m_Material != null) UnityEngine.Object.Destroy(m_Material);
+            if (m_Pages != null)
+                foreach (var page in m_Pages) page?.Dispose();
+        }
+
+        /// <summary>Data-texture page: 2 RGBA32F texels per instance + a prebuilt indexed disc mesh.</summary>
+        internal sealed class Page : IDisposable
+        {
+            readonly Texture2D m_Texture;
+            int m_LastCount;
+
+            public Page(int width, int instances)
+            {
+                int height = instances * 2 / width;
+                m_Texture = new Texture2D(width, height, TextureFormat.RGBAFloat, false, true)
+                {
+                    filterMode = FilterMode.Point,
+                    wrapMode = TextureWrapMode.Clamp,
+                    hideFlags = HideFlags.HideAndDontSave,
+                };
+                var texels = m_Texture.GetPixelData<float4>(0);
+                for (int i = 0; i < texels.Length; i++) texels[i] = float4.zero;
+                m_Texture.Apply(false, false);
+                Mesh = DiscMesh.CreateIndexed(instances);
+                Properties = new MaterialPropertyBlock();
+                Properties.SetTexture(RenderAssets.Ids.DataTex, m_Texture);
+            }
+
+            public Mesh Mesh { get; }
+            public MaterialPropertyBlock Properties { get; }
+
+            public void Upload(NativeArray<InstanceData> source, int start, int count)
+            {
+                var texels = m_Texture.GetPixelData<float4>(0);
+                for (int i = 0; i < count; i++)
+                {
+                    var d = source[start + i];
+                    texels[i * 2] = new float4(d.Position, d.Radius, d.Depth);
+                    texels[i * 2 + 1] = d.Color;
+                }
+                // Unused slots collapse to zero-radius discs (the mesh stays static and non-readable).
+                for (int i = count; i < m_LastCount; i++)
+                    texels[i * 2] = float4.zero;
+                m_LastCount = count;
+                m_Texture.Apply(false, false);
+            }
+
+            public void Dispose()
+            {
+                UnityEngine.Object.Destroy(m_Texture);
+                UnityEngine.Object.Destroy(Mesh);
+            }
+        }
+    }
+}

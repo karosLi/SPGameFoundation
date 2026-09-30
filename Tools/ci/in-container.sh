@@ -5,10 +5,14 @@ cd /project
 A=Artifacts
 mkdir -p "$A"
 
+mkdir -p ~/.cache/unity3d ~/.local/share/unity3d/Unity
 if [ -n "${UNITY_LICENSE:-}" ]; then
-  mkdir -p ~/.local/share/unity3d/Unity
-  printf '%s' "$UNITY_LICENSE" > ~/.local/share/unity3d/Unity/Unity_lic.ulf
-  echo "Licence: .ulf file installed"
+  LIC=~/.local/share/unity3d/Unity/Unity_lic.ulf
+  printf '%s' "$UNITY_LICENSE" > "$LIC"
+  # The licensing client only accepts a .ulf that is imported explicitly.
+  unity-editor -batchmode -nographics -quit -manualLicenseFile "$LIC" -logFile "$A/activation.log"
+  echo "Licence: .ulf import exit $?"
+  grep -iE "licen[cs]e|entitlement|error" "$A/activation.log" | tail -n 25 || true
 elif [ -n "${UNITY_SERIAL:-}" ]; then
   unity-editor -batchmode -nographics -quit -serial "$UNITY_SERIAL" -username "$UNITY_EMAIL" -password "$UNITY_PASSWORD" -logFile "$A/activation.log"
   echo "Licence: serial activation exit $?"

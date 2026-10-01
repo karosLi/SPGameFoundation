@@ -316,6 +316,13 @@ namespace UnityEngine
         public static implicit operator Color32(Color c) => new Color32((byte)(c.r * 255), (byte)(c.g * 255), (byte)(c.b * 255), (byte)(c.a * 255));
     }
 
+    public struct RectInt
+    {
+        public int x, y, width, height;
+        public RectInt(int x, int y, int width, int height) { this.x = x; this.y = y; this.width = width; this.height = height; }
+        public override string ToString() => $"(x:{x}, y:{y}, width:{width}, height:{height})";
+    }
+
     public struct Rect
     {
         public float x, y, width, height;

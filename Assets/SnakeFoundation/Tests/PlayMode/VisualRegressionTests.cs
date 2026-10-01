@@ -35,6 +35,13 @@ namespace SnakeFoundation.Tests.PlayMode
             m_Target.Create();
             m_Read = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
             m_Game.CameraRig.Camera.targetTexture = m_Target;
+            // Adaptive quality reacts to (slow, batch-mode) frame times and would change node stride,
+            // translucency budget, disc detail and render scale between captures: pin level 0.
+            if (m_Game.Quality != null)
+            {
+                m_Game.Quality.SetLevel(m_Game.Session, 0);
+                m_Game.Quality.enabled = false;
+            }
             m_Game.StartGame();
             yield return UIDriver.WaitSeconds(3f);      // AI gathers around the player
             Time.timeScale = 0f;                       // freeze simulation and animations
@@ -68,6 +75,7 @@ namespace SnakeFoundation.Tests.PlayMode
             // WaitForEndOfFrame never resumes in batch mode. The camera renders into the target after
             // LateUpdate, so a frame later the target holds a frame rendered with the current options;
             // the scene is frozen, so waiting two frames is safe.
+            m_Game.CameraRig.Snap();
             yield return null;
             yield return null;
             var previous = RenderTexture.active;
@@ -84,16 +92,24 @@ namespace SnakeFoundation.Tests.PlayMode
             }
         }
 
-        static (int differing, int maxDelta) Compare(Color32[] a, Color32[] b, int tolerance)
+        static (int differing, int maxDelta, RectInt box) Compare(Color32[] a, Color32[] b, int tolerance)
         {
             int differing = 0, maxDelta = 0;
+            int minX = Width, minY = Height, maxX = -1, maxY = -1;
             for (int i = 0; i < a.Length; i++)
             {
                 int d = Mathf.Max(Mathf.Max(Mathf.Abs(a[i].r - b[i].r), Mathf.Abs(a[i].g - b[i].g)), Mathf.Abs(a[i].b - b[i].b));
                 if (d > maxDelta) maxDelta = d;
-                if (d > tolerance) differing++;
+                if (d > tolerance)
+                {
+                    differing++;
+                    int x = i % Width, y = i / Width;
+                    minX = Mathf.Min(minX, x); maxX = Mathf.Max(maxX, x);
+                    minY = Mathf.Min(minY, y); maxY = Mathf.Max(maxY, y);
+                }
             }
-            return (differing, maxDelta);
+            var box = differing > 0 ? new RectInt(minX, minY, maxX - minX + 1, maxY - minY + 1) : default;
+            return (differing, maxDelta, box);
         }
 
         /// <summary>Guards against vacuous passes: the capture must contain a rendered scene, not a cleared target.</summary>
@@ -132,13 +148,13 @@ namespace SnakeFoundation.Tests.PlayMode
             var frames = new Color32[3][];
             chains.CompactOpaqueNodes = false;
             yield return Capture(frames, 0, "compaction-off");
-            yield return Capture(frames, 1);
+            yield return Capture(frames, 1, "compaction-off-repeat");
             chains.CompactOpaqueNodes = true;
             yield return Capture(frames, 2, "compaction-on");
 
             AssertHasContent(frames[0]);
             var baseline = Compare(frames[0], frames[1], 0);
-            Assert.AreEqual(0, baseline.differing, "frozen scene renders identically twice (test is stable)");
+            Assert.AreEqual(0, baseline.differing, $"frozen scene renders identically twice (test is stable); differing box {baseline.box}, max delta {baseline.maxDelta}");
             var result = Compare(frames[0], frames[2], 0);
             TestContext.WriteLine($"compaction: differing pixels {result.differing}, max delta {result.maxDelta}");
             Assert.AreEqual(0, result.differing, $"compaction changed {result.differing} pixels (max delta {result.maxDelta})");
@@ -159,13 +175,14 @@ namespace SnakeFoundation.Tests.PlayMode
             var frames = new Color32[3][];
             quality.DiscSegments = 16;
             yield return Capture(frames, 0, "discs16-" + suffix);
-            yield return Capture(frames, 1);
+            yield return Capture(frames, 1, "discs16-repeat-" + suffix);
             quality.DiscSegments = 8;
             yield return Capture(frames, 2, "discs8-" + suffix);
             quality.DiscSegments = 16;
 
             AssertHasContent(frames[0]);
-            Assert.AreEqual(0, Compare(frames[0], frames[1], 0).differing, "frozen scene renders identically twice");
+            var baseline = Compare(frames[0], frames[1], 0);
+            Assert.AreEqual(0, baseline.differing, $"frozen scene renders identically twice; differing box {baseline.box}, max delta {baseline.maxDelta}");
             var result = Compare(frames[0], frames[2], 24);
             float ratio = result.differing / (float)(Width * Height);
             TestContext.WriteLine($"discs 16 vs 8 ({suffix}): {result.differing} pixels differ by > 24/255 ({ratio:P2}), max delta {result.maxDelta}");

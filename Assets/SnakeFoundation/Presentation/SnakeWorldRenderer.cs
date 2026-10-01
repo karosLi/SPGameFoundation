@@ -155,6 +155,7 @@ namespace SnakeFoundation.Presentation
             float pixelsPerUnit = Screen.height / math.max(view.w - view.y, 1f);
             float time = Time.time;
 
+            ApplyDiscSegments(quality.DiscSegments);
             DrawBackground(config.Regions[game.ActiveRegion], view, bounds);
             DrawSnakes(world, config, quality, game, alpha, cull, pixelsPerUnit);
             DrawFood(world, cull);
@@ -173,6 +174,21 @@ namespace SnakeFoundation.Presentation
             else m_Food.Draw(bounds);
             m_Additive.Draw(bounds);
         }
+
+        void ApplyDiscSegments(int segments)
+        {
+            if (m_Chains == null || m_Chains.DiscSegments == segments && m_Opaque.DiscSegments == segments) return;
+            m_Chains.DiscSegments = segments;
+            m_Opaque.DiscSegments = segments;
+            m_OpaqueHeads.DiscSegments = segments;
+            m_TranslucentHeads.DiscSegments = segments;
+            m_Additive.DiscSegments = segments;
+            if (m_Food != null) m_Food.DiscSegments = segments;
+            if (m_FoodPool != null) m_FoodPool.DiscSegments = segments;
+        }
+
+        /// <summary>Renderer under test (A/B pixel tests flip its options).</summary>
+        internal ChainRenderer Chains => m_Chains;
 
         void DrawBackground(in RegionDef region, float4 view, Bounds bounds)
         {

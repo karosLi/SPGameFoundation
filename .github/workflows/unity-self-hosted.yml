@@ -13,6 +13,8 @@ jobs:
   unity-tests:
     if: vars.UNITY_SELF_HOSTED == 'true'
     runs-on: [self-hosted, unity]
+    permissions:
+      contents: write   # publish-screenshots.sh pushes to the ci-screenshots/<branch> branch only
     timeout-minutes: 120
     env:
       UNITY_EDITOR_PATH: ${{ vars.UNITY_EDITOR_PATH }}
@@ -33,6 +35,12 @@ jobs:
             echo "$(basename "$f"): $line" | tee -a "$GITHUB_STEP_SUMMARY"
             grep -o '<test-case [^>]*result="Failed"[^>]*>' "$f" | grep -o 'fullname="[^"]*"' | tee -a "$GITHUB_STEP_SUMMARY" || true
           done
+      - name: Publish screenshots
+        if: always() && github.event_name != 'pull_request'
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: Tools/ci/publish-screenshots.sh || echo "::warning::screenshot publish failed"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

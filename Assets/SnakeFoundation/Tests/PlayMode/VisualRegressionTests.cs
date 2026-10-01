@@ -1,0 +1,175 @@
+using System.Collections;
+using System.IO;
+using NUnit.Framework;
+using SnakeFoundation.Game;
+using SPF.Presentation;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.TestTools;
+
+namespace SnakeFoundation.Tests.PlayMode
+{
+    /// <summary>
+    /// GPU A/B pixel tests: the game is frozen (time scale 0: no ticks, no camera motion, no animation),
+    /// the camera renders into a RenderTexture, and the same frame is captured with a renderer option off
+    /// and on. Every test first checks that two captures of the same variant are identical, so any
+    /// difference is caused by the option. Captures are written to Artifacts/Screenshots (CI publishes
+    /// them to the ci-screenshots/&lt;branch&gt; branch).
+    /// </summary>
+    public class VisualRegressionTests
+    {
+        const int Width = 960, Height = 540;
+
+        SnakeGameBootstrap m_Game;
+        SnakeConfig m_Config;
+        RenderTexture m_Target;
+        Texture2D m_Read;
+
+        IEnumerator Setup(RenderTier tier)
+        {
+            RenderCapabilities.Override = tier;
+            m_Config = SnakeConfig.CreateDefault();
+            m_Config.AI.SnakesPerRegion = 60;
+            m_Game = SnakeGameBootstrap.Create(m_Config, seed: 4242, ui: false);
+            m_Target = new RenderTexture(Width, Height, 24, RenderTextureFormat.ARGB32) { antiAliasing = 1 };
+            m_Target.Create();
+            m_Read = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
+            m_Game.CameraRig.Camera.targetTexture = m_Target;
+            m_Game.StartGame();
+            yield return UIDriver.WaitSeconds(3f);      // AI gathers around the player
+            Time.timeScale = 0f;                       // freeze simulation, camera smoothing and animations
+            for (int i = 0; i < 5; i++) yield return null;
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            Time.timeScale = 1f;
+            RenderCapabilities.Override = null;
+            if (m_Game != null)
+            {
+                if (m_Game.CameraRig != null) m_Game.CameraRig.Camera.targetTexture = null;
+                Object.Destroy(m_Game.gameObject);
+            }
+            if (m_Target != null) { m_Target.Release(); Object.Destroy(m_Target); }
+            if (m_Read != null) Object.Destroy(m_Read);
+            if (m_Config != null) Object.Destroy(m_Config);
+        }
+
+        /// <summary>Renders one more frame with the current options and reads it back.</summary>
+        IEnumerator Capture(Color32[][] slot, int index)
+        {
+            yield return null;
+            yield return new WaitForEndOfFrame();
+            var previous = RenderTexture.active;
+            RenderTexture.active = m_Target;
+            m_Read.ReadPixels(new Rect(0, 0, Width, Height), 0, 0);
+            m_Read.Apply(false);
+            RenderTexture.active = previous;
+            slot[index] = m_Read.GetPixels32();
+        }
+
+        static (int differing, int maxDelta) Compare(Color32[] a, Color32[] b, int tolerance)
+        {
+            int differing = 0, maxDelta = 0;
+            for (int i = 0; i < a.Length; i++)
+            {
+                int d = Mathf.Max(Mathf.Max(Mathf.Abs(a[i].r - b[i].r), Mathf.Abs(a[i].g - b[i].g)), Mathf.Abs(a[i].b - b[i].b));
+                if (d > maxDelta) maxDelta = d;
+                if (d > tolerance) differing++;
+            }
+            return (differing, maxDelta);
+        }
+
+        void Save(string name, Color32[] pixels)
+        {
+            var texture = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
+            texture.SetPixels32(pixels);
+            texture.Apply(false);
+            string dir = Path.Combine(Application.dataPath, "..", "Artifacts", "Screenshots");
+            Directory.CreateDirectory(dir);
+            File.WriteAllBytes(Path.Combine(dir, name + ".png"), texture.EncodeToPNG());
+            Object.Destroy(texture);
+        }
+
+        /// <summary>Guards against vacuous passes: the capture must contain a rendered scene, not a cleared target.</summary>
+        static void AssertHasContent(Color32[] pixels)
+        {
+            var first = pixels[0];
+            int other = 0;
+            for (int i = 0; i < pixels.Length; i++)
+                if (pixels[i].r != first.r || pixels[i].g != first.g || pixels[i].b != first.b) other++;
+            Assert.Greater(other, pixels.Length / 20, "the captured frame shows the scene (camera rendered into the target)");
+        }
+
+        static void SkipWithoutGpu(RenderTier tier)
+        {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
+                Assert.Ignore("No graphics device (batch mode with -nographics)");
+            if (tier == RenderTier.GpuDriven && !SystemInfo.supportsComputeShaders)
+                Assert.Ignore("No compute shader support");
+        }
+
+        /// <summary>
+        /// Opaque node compaction drops off-screen nodes and changes their order, which must not change a
+        /// single pixel: opaque nodes have unique depths, so the depth test decides visibility.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator OpaqueNodeCompactionIsPixelIdentical()
+        {
+            SkipWithoutGpu(RenderTier.GpuDriven);
+            yield return Setup(RenderTier.GpuDriven);
+            var chains = m_Game.WorldRenderer.Chains;
+            if (!chains.CompactionAvailable)
+                Assert.Ignore("Raw indirect arguments not supported on this graphics API");
+            Assert.Greater(chains.NodeCount(BlendKind.Opaque), 0, "scene contains opaque node chains");
+
+            var frames = new Color32[3][];
+            chains.CompactOpaqueNodes = false;
+            yield return Capture(frames, 0);
+            yield return Capture(frames, 1);
+            chains.CompactOpaqueNodes = true;
+            yield return Capture(frames, 2);
+            Save("compaction-off", frames[0]);
+            Save("compaction-on", frames[2]);
+
+            AssertHasContent(frames[0]);
+            var baseline = Compare(frames[0], frames[1], 0);
+            Assert.AreEqual(0, baseline.differing, "frozen scene renders identically twice (test is stable)");
+            var result = Compare(frames[0], frames[2], 0);
+            TestContext.WriteLine($"compaction: differing pixels {result.differing}, max delta {result.maxDelta}");
+            Assert.AreEqual(0, result.differing, $"compaction changed {result.differing} pixels (max delta {result.maxDelta})");
+        }
+
+        /// <summary>
+        /// 8-segment discs (adaptive quality level 2+) must look close to 16-segment ones: only disc
+        /// silhouettes may move by a pixel or so. Both captures are published for visual review.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator EightSegmentDiscsStayCloseToSixteen([Values(RenderTier.GpuDriven, RenderTier.DataTexture)] RenderTier tier)
+        {
+            SkipWithoutGpu(tier);
+            yield return Setup(tier);
+            var quality = m_Game.Session.World.Resource(SnakeKeys.Quality);
+            string suffix = tier == RenderTier.GpuDriven ? "gpu" : "datatex";
+
+            var frames = new Color32[3][];
+            quality.DiscSegments = 16;
+            yield return Capture(frames, 0);
+            yield return Capture(frames, 1);
+            quality.DiscSegments = 8;
+            yield return Capture(frames, 2);
+            quality.DiscSegments = 16;
+            Save("discs16-" + suffix, frames[0]);
+            Save("discs8-" + suffix, frames[2]);
+
+            AssertHasContent(frames[0]);
+            Assert.AreEqual(0, Compare(frames[0], frames[1], 0).differing, "frozen scene renders identically twice");
+            var result = Compare(frames[0], frames[2], 24);
+            float ratio = result.differing / (float)(Width * Height);
+            TestContext.WriteLine($"discs 16 vs 8 ({suffix}): {result.differing} pixels differ by > 24/255 ({ratio:P2}), max delta {result.maxDelta}");
+            Assert.Less(ratio, 0.04f, "8-segment discs differ from 16-segment ones only along silhouettes");
+            Assert.Greater(result.differing, 0, "the segment count actually changed what was drawn");
+        }
+    }
+}

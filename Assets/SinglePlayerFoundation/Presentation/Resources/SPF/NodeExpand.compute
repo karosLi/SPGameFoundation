@@ -2,6 +2,7 @@
 // per-chain node offsets (ordered back-to-front for translucent chains); the GPU computes every
 // node's interpolated position, taper, stripe colour and depth, and zeroes nodes outside the view.
 #pragma kernel ExpandNodes
+#pragma kernel ExpandNodesCompact
 #pragma kernel ScatterTrail
 
 #include "../../Shaders/SPFCommon.hlsl"
@@ -27,12 +28,9 @@ uint FindHeader(uint node)
     return lo;
 }
 
-[numthreads(64, 1, 1)]
-void ExpandNodes(uint3 id : SV_DispatchThreadID)
+// Interpolated instance of one body node; returns false when it is outside the view.
+bool ExpandNode(uint node, out InstanceData o)
 {
-    uint node = id.x;
-    if (node >= _NodeTotal || _HeaderCount == 0)
-        return;
     ChainHeader h = _Headers[FindHeader(node)];
     uint j = node - h.nodeOffset;
 
@@ -44,14 +42,53 @@ void ExpandNodes(uint3 id : SV_DispatchThreadID)
     bool visible = p.x + radius >= _ViewRect.x && p.y + radius >= _ViewRect.y && p.x - radius <= _ViewRect.z && p.y - radius <= _ViewRect.w;
     bool stripe = h.stripe > 0 && ((j / h.stripe) & 1u) == 1u;
 
-    InstanceData o;
     o.position = p;
     o.radius = visible ? radius : 0.0;
     // Opaque: head in front of its body (smaller z = closer). Translucent: one depth for the whole chain.
     // Clamped so a very long body never leaves its snake's 0.2-deep band.
     o.depth = (h.flags & SPF_FLAG_TRANSLUCENT) != 0 ? h.depth : h.depth + min(j * 1e-4, 0.15);
     o.color = stripe ? h.colorB : h.colorA;
+    return visible;
+}
+
+// Keeps every node in order (invisible ones as zero-radius discs). Required for translucent chains:
+// all nodes of a chain share one depth with ZTest Less, so draw order decides which node shows.
+[numthreads(64, 1, 1)]
+void ExpandNodes(uint3 id : SV_DispatchThreadID)
+{
+    uint node = id.x;
+    if (node >= _NodeTotal || _HeaderCount == 0)
+        return;
+    InstanceData o;
+    ExpandNode(node, o);
     _Nodes[node] = o;
+}
+
+// Opaque chains only: every node has its own depth, so order does not matter and off-screen nodes
+// (a long body mostly outside the view) are dropped instead of running the vertex shader for nothing.
+// Visible nodes are appended with one global atomic per group; the count feeds the indirect draw.
+RWByteAddressBuffer _Args;   // IndirectDrawIndexedArgs; byte offset 4 = instanceCount
+groupshared uint gs_NodeCount;
+groupshared uint gs_NodeBase;
+
+[numthreads(64, 1, 1)]
+void ExpandNodesCompact(uint3 id : SV_DispatchThreadID, uint3 lid : SV_GroupThreadID)
+{
+    if (lid.x == 0) gs_NodeCount = 0;
+    GroupMemoryBarrierWithGroupSync();
+
+    InstanceData o = (InstanceData)0;
+    bool keep = false;
+    uint local = 0;
+    if (id.x < _NodeTotal && _HeaderCount > 0)
+    {
+        keep = ExpandNode(id.x, o);
+        if (keep) InterlockedAdd(gs_NodeCount, 1, local);
+    }
+    GroupMemoryBarrierWithGroupSync();
+    if (lid.x == 0) _Args.InterlockedAdd(4, gs_NodeCount, gs_NodeBase);
+    GroupMemoryBarrierWithGroupSync();
+    if (keep) _Nodes[gs_NodeBase + local] = o;
 }
 
 // Trail mirror update: CPU uploads (slot, point) pairs for points pushed since the last frame.

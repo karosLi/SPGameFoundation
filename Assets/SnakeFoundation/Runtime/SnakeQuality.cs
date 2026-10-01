@@ -19,6 +19,9 @@ namespace SnakeFoundation
         /// <summary>Body node LOD: draw every Nth node (radius scaled) when > 1.</summary>
         public int NodeStride { get; set; } = 1;
 
+        /// <summary>Polygon segments per rendered disc (16 = smooth, 8 = half the vertex work).</summary>
+        public int DiscSegments { get; set; } = 16;
+
         /// <summary>Fraction of the screen resolution to render at.</summary>
         public float RenderScale { get; set; } = 1f;
     }

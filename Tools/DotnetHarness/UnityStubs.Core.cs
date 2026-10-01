@@ -338,6 +338,7 @@ namespace UnityEngine
         public const float PI = MathF.PI;
         public static int Min(int a, int b) => Math.Min(a, b);
         public static int Max(int a, int b) => Math.Max(a, b);
+        public static int Abs(int v) => Math.Abs(v);
         public static float Min(float a, float b) => Math.Min(a, b);
         public static float Max(float a, float b) => Math.Max(a, b);
         public static float Abs(float a) => Math.Abs(a);

@@ -9,8 +9,8 @@ namespace SnakeFoundation.Game
 {
     /// <summary>
     /// Watches frame time and trades fidelity for speed when the device can't keep up (thermal
-    /// throttling on phones): AI decision rate, translucency budget, node LOD, render scale — in that
-    /// order. Recovers slowly when there is headroom. The simulation tick rate is never touched.
+    /// throttling on phones): AI decision rate, translucency budget, node LOD, disc polygon detail,
+    /// render scale — in that order. Recovers slowly when there is headroom. The simulation tick rate is never touched.
     /// </summary>
     [DefaultExecutionOrder(900)]
     public sealed class AdaptiveQualityController : MonoBehaviour
@@ -24,6 +24,7 @@ namespace SnakeFoundation.Game
         static readonly int[] s_AIInterval = { 1, 8, 12, 16 };
         static readonly int[] s_Translucent = { 30, 20, 10, 0 };
         static readonly int[] s_NodeStride = { 1, 1, 2, 2 };
+        static readonly int[] s_DiscSegments = { 16, 16, 8, 8 };
         static readonly float[] s_RenderScale = { 1f, 0.9f, 0.8f, 0.7f };
 
         float m_Average = 16f;
@@ -66,6 +67,7 @@ namespace SnakeFoundation.Game
             quality.AIDecisionIntervalTicks = s_AIInterval[Level];
             quality.TranslucentBudget = s_Translucent[Level];
             quality.NodeStride = s_NodeStride[Level];
+            quality.DiscSegments = s_DiscSegments[Level];
             quality.RenderScale = s_RenderScale[Level];
 #if SPF_URP
             if (GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset urp)

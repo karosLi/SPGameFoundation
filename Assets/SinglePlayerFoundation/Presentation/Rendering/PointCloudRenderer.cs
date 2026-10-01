@@ -17,7 +17,8 @@ namespace SPF.Presentation
         readonly int m_ScatterKernel;
         readonly int m_CullKernel;
         readonly Material m_Material;
-        readonly Mesh m_Disc;
+        Mesh m_Disc;
+        int m_Segments = DiscMesh.Segments;
         readonly GraphicsBuffer m_Pool;
         readonly GraphicsBuffer m_Visible;
         readonly GraphicsBuffer m_Deltas;
@@ -45,6 +46,21 @@ namespace SPF.Presentation
             m_ArgsReset = new NativeArray<GraphicsBuffer.IndirectDrawIndexedArgs>(1, Allocator.Persistent);
             m_ArgsReset[0] = new GraphicsBuffer.IndirectDrawIndexedArgs { indexCountPerInstance = DiscMesh.IndicesPerDisc };
             m_Material?.SetBuffer(RenderAssets.Ids.Instances, m_Visible);
+        }
+
+        /// <summary>Polygon segments per disc (adaptive quality lowers it).</summary>
+        public int DiscSegments
+        {
+            get => m_Segments;
+            set
+            {
+                value = math.clamp(value, 6, 32);
+                if (value == m_Segments) return;
+                m_Segments = value;
+                UnityEngine.Object.Destroy(m_Disc);
+                m_Disc = DiscMesh.CreateSingle(value);
+                m_ArgsReset[0] = new GraphicsBuffer.IndirectDrawIndexedArgs { indexCountPerInstance = (uint)DiscMesh.IndicesFor(value) };
+            }
         }
 
         public int Capacity { get; }

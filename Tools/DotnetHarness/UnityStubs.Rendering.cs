@@ -31,13 +31,23 @@ namespace UnityEngine
         public void SetPixel(int x, int y, Color c) { }
         public Color GetPixel(int x, int y) => default;
         public Color32[] GetPixels32() => new Color32[width * height];
+        public void ReadPixels(Rect source, int destX, int destY) { }
         public void Apply() { }
         public void Apply(bool updateMipmaps, bool makeNoLongerReadable = false) { }
         public byte[] EncodeToPNG() => Array.Empty<byte>();
         public bool Reinitialize(int w, int h) { width = w; height = h; return true; }
     }
 
-    public class RenderTexture : Texture { public RenderTexture(int w, int h, int d) { width = w; height = h; } public static RenderTexture active { get; set; } public void Release() { } }
+    public enum RenderTextureFormat { ARGB32 = 0, Depth = 1, ARGBHalf = 2, Default = 7, ARGBFloat = 11 }
+    public class RenderTexture : Texture
+    {
+        public RenderTexture(int w, int h, int d) { width = w; height = h; }
+        public RenderTexture(int w, int h, int d, RenderTextureFormat format) : this(w, h, d) { }
+        public static RenderTexture active { get; set; }
+        public int antiAliasing { get; set; } = 1;
+        public bool Create() => true;
+        public void Release() { }
+    }
 
     public class Shader : Object
     {

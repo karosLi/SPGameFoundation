@@ -28,6 +28,7 @@ namespace SPF.Presentation
 
         // Data texture
         Page[] m_Pages;
+        int m_Segments = DiscMesh.Segments;
 
         public CircleBatch(RenderAssets assets, BlendKind blend, int capacity, bool shaded = true, int queueOffset = 0)
         {
@@ -46,6 +47,29 @@ namespace SPF.Presentation
             else
             {
                 m_Pages = new Page[(capacity + PageSize - 1) / PageSize];
+            }
+        }
+
+        /// <summary>Polygon segments per disc (adaptive quality lowers it); meshes are rebuilt on change.</summary>
+        public int DiscSegments
+        {
+            get => m_Segments;
+            set
+            {
+                value = math.clamp(value, 6, 32);
+                if (value == m_Segments) return;
+                m_Segments = value;
+                if (m_Disc != null)
+                {
+                    UnityEngine.Object.Destroy(m_Disc);
+                    m_Disc = DiscMesh.CreateSingle(value);
+                }
+                if (m_Pages != null)
+                    for (int p = 0; p < m_Pages.Length; p++)
+                    {
+                        m_Pages[p]?.Dispose();
+                        m_Pages[p] = null;
+                    }
             }
         }
 
@@ -74,7 +98,7 @@ namespace SPF.Presentation
                 m_Buffer.SetData(m_Instances, 0, 0, count);
                 m_ArgsData[0] = new GraphicsBuffer.IndirectDrawIndexedArgs
                 {
-                    indexCountPerInstance = (uint)DiscMesh.IndicesPerDisc,
+                    indexCountPerInstance = (uint)DiscMesh.IndicesFor(m_Segments),
                     instanceCount = (uint)count,
                 };
                 m_Args.SetData(m_ArgsData);
@@ -86,7 +110,7 @@ namespace SPF.Presentation
             {
                 // Pages hold at most what the batch can ever need, so small batches (heads, eyes)
                 // upload and vertex-process a few hundred discs instead of a full 4096-disc page.
-                var page = m_Pages[p] ??= new Page(TextureWidth, math.min(PageSize, Capacity - p * PageSize));
+                var page = m_Pages[p] ??= new Page(TextureWidth, math.min(PageSize, Capacity - p * PageSize), m_Segments);
                 int n = math.min(PageSize, count - p * PageSize);
                 page.Upload(m_Instances, p * PageSize, n);
                 rp.matProps = page.Properties;
@@ -112,7 +136,7 @@ namespace SPF.Presentation
             readonly Texture2D m_Texture;
             int m_LastCount;
 
-            public Page(int width, int instances)
+            public Page(int width, int instances, int segments)
             {
                 // 2 texels per instance; narrow pages for small batches, height rounded up.
                 width = math.min(width, math.ceilpow2(instances * 2));
@@ -126,7 +150,7 @@ namespace SPF.Presentation
                 var texels = m_Texture.GetPixelData<float4>(0);
                 for (int i = 0; i < texels.Length; i++) texels[i] = float4.zero;
                 m_Texture.Apply(false, false);
-                Mesh = DiscMesh.CreateIndexed(instances);
+                Mesh = DiscMesh.CreateIndexed(instances, segments);
                 Properties = new MaterialPropertyBlock();
                 Properties.SetTexture(RenderAssets.Ids.DataTex, m_Texture);
             }

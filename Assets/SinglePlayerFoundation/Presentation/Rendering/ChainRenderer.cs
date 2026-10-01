@@ -54,7 +54,8 @@ namespace SPF.Presentation
 
         // GPU-driven
         readonly ComputeShader m_Compute;
-        readonly int m_ExpandKernel, m_ScatterKernel;
+        readonly int m_ExpandKernel, m_CompactKernel, m_ScatterKernel;
+        readonly GraphicsBuffer m_CompactArgs;   // raw + indirect: the compact kernel bumps instanceCount
         readonly GraphicsBuffer[] m_HeaderBuffers = new GraphicsBuffer[Categories];
         readonly GraphicsBuffer[] m_NodeBuffers = new GraphicsBuffer[3];
         readonly GraphicsBuffer[] m_NodeArgs = new GraphicsBuffer[3];
@@ -66,7 +67,8 @@ namespace SPF.Presentation
         NativeArray<TrailDelta> m_TrailDeltas;
         NativeArray<GraphicsBuffer.IndirectDrawIndexedArgs> m_ArgsData;
         int m_TrailDeltaCount;
-        readonly Mesh m_Disc;
+        Mesh m_Disc;
+        int m_Segments = DiscMesh.Segments;
         readonly int[] m_CacheIdentity;
         readonly uint[] m_CacheVersion;
         readonly int[] m_CacheStart;
@@ -96,7 +98,16 @@ namespace SPF.Presentation
                 if (m_Compute != null)
                 {
                     m_ExpandKernel = m_Compute.FindKernel("ExpandNodes");
+                    m_CompactKernel = m_Compute.FindKernel("ExpandNodesCompact");
                     m_ScatterKernel = m_Compute.FindKernel("ScatterTrail");
+                    try
+                    {
+                        m_CompactArgs = new GraphicsBuffer(GraphicsBuffer.Target.IndirectArguments | GraphicsBuffer.Target.Raw, 1, GraphicsBuffer.IndirectDrawIndexedArgs.size);
+                    }
+                    catch (Exception)
+                    {
+                        m_CompactArgs = null;   // API without raw indirect args: keep the uncompacted path
+                    }
                 }
                 m_Disc = DiscMesh.CreateSingle();
                 m_ArgsData = new NativeArray<GraphicsBuffer.IndirectDrawIndexedArgs>(1, Allocator.Persistent);
@@ -130,6 +141,34 @@ namespace SPF.Presentation
         }
 
         public RenderTier Tier => m_Tier;
+
+        /// <summary>
+        /// GPU-driven tier: append only on-screen nodes of opaque chains (order-free thanks to per-node
+        /// depth) instead of drawing off-screen nodes as zero-radius discs. Translucent / additive chains
+        /// always keep node order. On by default; exposed for A/B pixel tests.
+        /// </summary>
+        public bool CompactOpaqueNodes { get; set; } = true;
+
+        public bool CompactionAvailable => m_CompactArgs != null;
+
+        /// <summary>Polygon segments per node disc (adaptive quality lowers it); meshes are rebuilt on change.</summary>
+        public int DiscSegments
+        {
+            get => m_Segments;
+            set
+            {
+                value = math.clamp(value, 6, 32);
+                if (value == m_Segments) return;
+                m_Segments = value;
+                if (m_Disc != null)
+                {
+                    UnityEngine.Object.Destroy(m_Disc);
+                    m_Disc = DiscMesh.CreateSingle(value);
+                }
+                foreach (var batch in m_NodeBatches)
+                    if (batch != null) batch.DiscSegments = value;
+            }
+        }
         public int NodeCount(BlendKind blend) => m_Totals[(int)blend];
         public int StripSegments(BlendKind blend) => m_Totals[3 + (int)blend];
 
@@ -252,23 +291,30 @@ namespace SPF.Presentation
 
                 if (c < 3)
                 {
-                    m_Compute.SetBuffer(m_ExpandKernel, RenderAssets.Ids.Headers, m_HeaderBuffers[c]);
-                    m_Compute.SetBuffer(m_ExpandKernel, RenderAssets.Ids.Trail, m_TrailMirror);
-                    m_Compute.SetBuffer(m_ExpandKernel, RenderAssets.Ids.Nodes, m_NodeBuffers[blend]);
+                    bool compact = blend == (int)BlendKind.Opaque && CompactOpaqueNodes && m_CompactArgs != null;
+                    int kernel = compact ? m_CompactKernel : m_ExpandKernel;
+                    m_Compute.SetBuffer(kernel, RenderAssets.Ids.Headers, m_HeaderBuffers[c]);
+                    m_Compute.SetBuffer(kernel, RenderAssets.Ids.Trail, m_TrailMirror);
+                    m_Compute.SetBuffer(kernel, RenderAssets.Ids.Nodes, m_NodeBuffers[blend]);
                     m_Compute.SetInt(RenderAssets.Ids.HeaderCount, headers);
                     m_Compute.SetInt(RenderAssets.Ids.NodeTotal, total);
                     m_Compute.SetFloat(RenderAssets.Ids.Alpha, alpha);
                     m_Compute.SetVector(RenderAssets.Ids.ViewRect, viewRect);
-                    m_Compute.Dispatch(m_ExpandKernel, (total + 63) / 64, 1, 1);
 
+                    // Compact: the kernel counts visible nodes into instanceCount (reset to 0 first).
                     m_ArgsData[0] = new GraphicsBuffer.IndirectDrawIndexedArgs
                     {
-                        indexCountPerInstance = DiscMesh.IndicesPerDisc,
-                        instanceCount = (uint)total,
+                        indexCountPerInstance = (uint)DiscMesh.IndicesFor(m_Segments),
+                        instanceCount = compact ? 0u : (uint)total,
                     };
-                    m_NodeArgs[blend].SetData(m_ArgsData);
+                    var args = compact ? m_CompactArgs : m_NodeArgs[blend];
+                    args.SetData(m_ArgsData);
+                    if (compact)
+                        m_Compute.SetBuffer(kernel, RenderAssets.Ids.Args, m_CompactArgs);
+                    m_Compute.Dispatch(kernel, (total + 63) / 64, 1, 1);
+
                     if (m_NodeMaterials[blend] != null)
-                        Graphics.RenderMeshIndirect(new RenderParams(m_NodeMaterials[blend]) { worldBounds = bounds, layer = layer }, m_Disc, m_NodeArgs[blend]);
+                        Graphics.RenderMeshIndirect(new RenderParams(m_NodeMaterials[blend]) { worldBounds = bounds, layer = layer }, m_Disc, args);
                 }
                 else if (m_StripMaterials[blend] != null)
                 {
@@ -357,6 +403,7 @@ namespace SPF.Presentation
             foreach (var b in m_HeaderBuffers) b?.Dispose();
             foreach (var b in m_NodeBuffers) b?.Dispose();
             foreach (var b in m_NodeArgs) b?.Dispose();
+            m_CompactArgs?.Dispose();
             m_TrailMirror?.Dispose();
             m_TrailDeltaBuffer?.Dispose();
             foreach (var m in m_NodeMaterials) if (m != null) UnityEngine.Object.Destroy(m);

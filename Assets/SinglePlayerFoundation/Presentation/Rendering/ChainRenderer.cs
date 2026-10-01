@@ -367,7 +367,7 @@ namespace SPF.Presentation
         }
 
         [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-        struct StripVertex
+        internal struct StripVertex
         {
             public float3 Position;
             public uint ColorA;
@@ -409,7 +409,7 @@ namespace SPF.Presentation
         }
 
         [BurstCompile(FloatMode = FloatMode.Fast)]
-        struct BuildStripsJob : IJobParallelFor
+        internal struct BuildStripsJob : IJobParallelFor
         {
             [ReadOnly] public NativeArray<ChainHeader> Headers;
             [ReadOnly] public NativeArray<float2> Points;
@@ -426,30 +426,49 @@ namespace SPF.Presentation
                 int segments = math.max((int)h.NodeCount - 1, 0);
                 uint colorA = Pack(h.ColorA), colorB = Pack(h.ColorB);
                 float period = h.Stripe > 0 ? h.Stripe * step : 1e6f;
-                for (int k = 0; k < segments; k++)
+                if (segments == 0) return;
+
+                // Rolling window over the sampled points: each point is sampled once and its vertex pair
+                // is shared by the two segments that meet there (was 3 samples x 2 endpoints per segment).
+                float2 pPrev = ChainMath.Sample(h, trail, Points, Alpha, 0f);
+                float2 pCur = pPrev;
+                float2 pNext = ChainMath.Sample(h, trail, Points, Alpha, step);
+                for (int pt = 0; pt <= segments; pt++)
                 {
-                    int v = ((int)h.NodeOffset + k) * 4;
-                    int i = ((int)h.NodeOffset + k) * 6;
-                    for (int e = 0; e < 2; e++)
+                    float s = pt * step;
+                    float2 tangent = math.normalizesafe(pNext - pPrev, new float2(1f, 0f));
+                    float2 normal = new float2(-tangent.y, tangent.x);
+                    float radius = h.Radius * ChainMath.Taper(h.NodeCount > 1 ? (float)pt / h.NodeCount : 0f);
+                    float depth = translucent ? h.Depth : h.Depth + math.min(pt * 1e-4f, 0.15f);
+                    var left = new StripVertex { Position = new float3(pCur - normal * radius, depth), ColorA = colorA, ColorB = colorB, Uv = new float3(s, -1f, period) };
+                    var right = new StripVertex { Position = new float3(pCur + normal * radius, depth), ColorA = colorA, ColorB = colorB, Uv = new float3(s, 1f, period) };
+
+                    if (pt < segments)
                     {
-                        int pt = k + e;
-                        float s = pt * step;
-                        float2 p = ChainMath.Sample(h, trail, Points, Alpha, s);
-                        float2 prev = ChainMath.Sample(h, trail, Points, Alpha, math.max(s - step, 0f));
-                        float2 next = ChainMath.Sample(h, trail, Points, Alpha, s + step);
-                        float2 tangent = math.normalizesafe(next - prev, new float2(1f, 0f));
-                        float2 normal = new float2(-tangent.y, tangent.x);
-                        float radius = h.Radius * ChainMath.Taper(h.NodeCount > 1 ? (float)pt / h.NodeCount : 0f);
-                        float depth = translucent ? h.Depth : h.Depth + math.min(pt * 1e-4f, 0.15f);
-                        Vertices[v + e * 2] = new StripVertex { Position = new float3(p - normal * radius, depth), ColorA = colorA, ColorB = colorB, Uv = new float3(s, -1f, period) };
-                        Vertices[v + e * 2 + 1] = new StripVertex { Position = new float3(p + normal * radius, depth), ColorA = colorA, ColorB = colorB, Uv = new float3(s, 1f, period) };
+                        // Start of segment pt.
+                        int v = ((int)h.NodeOffset + pt) * 4;
+                        int i = ((int)h.NodeOffset + pt) * 6;
+                        Vertices[v] = left;
+                        Vertices[v + 1] = right;
+                        Indices[i] = (uint)v;
+                        Indices[i + 1] = (uint)(v + 1);
+                        Indices[i + 2] = (uint)(v + 2);
+                        Indices[i + 3] = (uint)(v + 2);
+                        Indices[i + 4] = (uint)(v + 1);
+                        Indices[i + 5] = (uint)(v + 3);
                     }
-                    Indices[i] = (uint)v;
-                    Indices[i + 1] = (uint)(v + 1);
-                    Indices[i + 2] = (uint)(v + 2);
-                    Indices[i + 3] = (uint)(v + 2);
-                    Indices[i + 4] = (uint)(v + 1);
-                    Indices[i + 5] = (uint)(v + 3);
+                    if (pt > 0)
+                    {
+                        // End of segment pt - 1.
+                        int v = ((int)h.NodeOffset + pt - 1) * 4;
+                        Vertices[v + 2] = left;
+                        Vertices[v + 3] = right;
+                    }
+
+                    pPrev = pCur;
+                    pCur = pNext;
+                    if (pt < segments)
+                        pNext = ChainMath.Sample(h, trail, Points, Alpha, (pt + 2) * step);
                 }
             }
         }

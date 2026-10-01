@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using SPF.L1.Body;
 using SPF.Presentation;
+using Unity.Jobs;
 using Unity.Mathematics;
 
 namespace SPF.Tests.EditMode
@@ -109,6 +110,70 @@ namespace SPF.Tests.EditMode
             Assert.AreEqual(0x8000 | 1234, e.Data);
             e.Owner = 7;
             Assert.AreEqual(0x8000 | 1234, e.Data, "setting the owner keeps the data");
+        }
+
+        [Test]
+        public void StripBuilderMatchesPerSegmentSampling()
+        {
+            // A 40-point trail along a wave, head slightly ahead of the newest point.
+            var points = new Unity.Collections.NativeArray<float2>(64, Unity.Collections.Allocator.TempJob);
+            for (int g = 0; g < 40; g++) points[g] = new float2(g * 0.5f, math.sin(g * 0.3f) * 2f);
+            var header = new ChainHeader
+            {
+                HeadPrev = points[39] + new float2(0.2f, 0f), HeadCurr = points[39] + new float2(0.4f, 0f),
+                ArcPrev = 0.2f, ArcCurr = 0.4f,
+                TrailStart = 0, TrailMask = 63, Newest = 39, Count = 40,
+                Spacing = 0.5f, NodeSpacing = 0.6f, NodeStride = 1f,
+                NodeOffset = 3, NodeCount = 25, Radius = 1.5f, Depth = 2f,
+                ColorA = new float4(1, 0, 0, 1), ColorB = new float4(0, 1, 0, 1), Stripe = 3,
+            };
+            int segments = (int)header.NodeCount - 1;
+            int total = (int)header.NodeOffset + segments;
+            var vertices = new Unity.Collections.NativeArray<ChainRenderer.StripVertex>(total * 4, Unity.Collections.Allocator.TempJob);
+            var indices = new Unity.Collections.NativeArray<uint>(total * 6, Unity.Collections.Allocator.TempJob);
+            var headers = new Unity.Collections.NativeArray<ChainHeader>(1, Unity.Collections.Allocator.TempJob);
+            headers[0] = header;
+            const float alpha = 0.5f;
+            try
+            {
+                new ChainRenderer.BuildStripsJob { Headers = headers, Points = points, Vertices = vertices, Indices = indices, Alpha = alpha }
+                    .Schedule(1, 1).Complete();
+
+                // Reference: the original per-segment algorithm (3 samples per endpoint).
+                var trail = ChainMath.ToTrail(header, points);
+                float step = header.NodeSpacing * header.NodeStride;
+                for (int k = 0; k < segments; k++)
+                {
+                    int v = ((int)header.NodeOffset + k) * 4;
+                    for (int e = 0; e < 2; e++)
+                    {
+                        int pt = k + e;
+                        float sArc = pt * step;
+                        float2 p = ChainMath.Sample(header, trail, points, alpha, sArc);
+                        float2 prev = ChainMath.Sample(header, trail, points, alpha, math.max(sArc - step, 0f));
+                        float2 next = ChainMath.Sample(header, trail, points, alpha, sArc + step);
+                        float2 tangent = math.normalizesafe(next - prev, new float2(1f, 0f));
+                        float2 normal = new float2(-tangent.y, tangent.x);
+                        float radius = header.Radius * ChainMath.Taper((float)pt / header.NodeCount);
+                        float2 left = vertices[v + e * 2].Position.xy, right = vertices[v + e * 2 + 1].Position.xy;
+                        Assert.AreEqual((p - normal * radius).x, left.x, 1e-3f, $"segment {k} end {e}");
+                        Assert.AreEqual((p - normal * radius).y, left.y, 1e-3f, $"segment {k} end {e}");
+                        Assert.AreEqual((p + normal * radius).x, right.x, 1e-3f, $"segment {k} end {e}");
+                        Assert.AreEqual((p + normal * radius).y, right.y, 1e-3f, $"segment {k} end {e}");
+                        Assert.AreEqual(sArc, vertices[v + e * 2].Uv.x, 1e-4f);
+                    }
+                    int i = ((int)header.NodeOffset + k) * 6;
+                    CollectionAssert.AreEqual(new uint[] { (uint)v, (uint)v + 1, (uint)v + 2, (uint)v + 2, (uint)v + 1, (uint)v + 3 },
+                        new[] { indices[i], indices[i + 1], indices[i + 2], indices[i + 3], indices[i + 4], indices[i + 5] });
+                }
+            }
+            finally
+            {
+                points.Dispose();
+                vertices.Dispose();
+                indices.Dispose();
+                headers.Dispose();
+            }
         }
     }
 }

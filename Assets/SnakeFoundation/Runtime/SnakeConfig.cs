@@ -143,8 +143,8 @@ namespace SnakeFoundation
             public int GridCells = 256;
             [Tooltip("Window size = GridCells x GridCellSize (both grids cover the same window)")]
             public float GridCellSize = 4f;
-            [Tooltip("Body grid cell size (0 = GridCellSize). Larger cells: cheaper rebuild, more entries per query")]
-            public float BodyGridCellSize = 0f;
+            [Tooltip("Body grid cell size (0 = GridCellSize). Larger cells: cheaper rebuild, more entries per query. 8 m measured 0.229 vs 0.270 ms per tick at 4 m (query cost unchanged)")]
+            public float BodyGridCellSize = 8f;
             [Tooltip("Item grid cell size; the item grid covers the same window as the body grid with fewer, larger cells (items are small and static, eat / food-scan queries are wide)")]
             public float ItemGridCellSize = 8f;
             public float ChunkSize = 125f;

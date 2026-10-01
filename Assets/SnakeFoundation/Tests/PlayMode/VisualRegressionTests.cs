@@ -56,8 +56,11 @@ namespace SnakeFoundation.Tests.PlayMode
             if (m_Config != null) Object.Destroy(m_Config);
         }
 
-        /// <summary>Renders one more frame with the current options and reads it back.</summary>
-        IEnumerator Capture(Color32[][] slot, int index)
+        /// <summary>
+        /// Renders one more frame with the current options, reads it back and, when named, writes it to
+        /// Artifacts/Screenshots straight from the readback texture.
+        /// </summary>
+        IEnumerator Capture(Color32[][] slot, int index, string saveAs = null)
         {
             yield return null;
             yield return new WaitForEndOfFrame();
@@ -67,6 +70,12 @@ namespace SnakeFoundation.Tests.PlayMode
             m_Read.Apply(false);
             RenderTexture.active = previous;
             slot[index] = m_Read.GetPixels32();
+            if (saveAs != null)
+            {
+                string dir = Path.Combine(Application.dataPath, "..", "Artifacts", "Screenshots");
+                Directory.CreateDirectory(dir);
+                File.WriteAllBytes(Path.Combine(dir, saveAs + ".png"), m_Read.EncodeToPNG());
+            }
         }
 
         static (int differing, int maxDelta) Compare(Color32[] a, Color32[] b, int tolerance)
@@ -79,17 +88,6 @@ namespace SnakeFoundation.Tests.PlayMode
                 if (d > tolerance) differing++;
             }
             return (differing, maxDelta);
-        }
-
-        void Save(string name, Color32[] pixels)
-        {
-            var texture = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
-            texture.SetPixels32(pixels);
-            texture.Apply(false);
-            string dir = Path.Combine(Application.dataPath, "..", "Artifacts", "Screenshots");
-            Directory.CreateDirectory(dir);
-            File.WriteAllBytes(Path.Combine(dir, name + ".png"), texture.EncodeToPNG());
-            Object.Destroy(texture);
         }
 
         /// <summary>Guards against vacuous passes: the capture must contain a rendered scene, not a cleared target.</summary>
@@ -126,12 +124,10 @@ namespace SnakeFoundation.Tests.PlayMode
 
             var frames = new Color32[3][];
             chains.CompactOpaqueNodes = false;
-            yield return Capture(frames, 0);
+            yield return Capture(frames, 0, "compaction-off");
             yield return Capture(frames, 1);
             chains.CompactOpaqueNodes = true;
-            yield return Capture(frames, 2);
-            Save("compaction-off", frames[0]);
-            Save("compaction-on", frames[2]);
+            yield return Capture(frames, 2, "compaction-on");
 
             AssertHasContent(frames[0]);
             var baseline = Compare(frames[0], frames[1], 0);
@@ -155,13 +151,11 @@ namespace SnakeFoundation.Tests.PlayMode
 
             var frames = new Color32[3][];
             quality.DiscSegments = 16;
-            yield return Capture(frames, 0);
+            yield return Capture(frames, 0, "discs16-" + suffix);
             yield return Capture(frames, 1);
             quality.DiscSegments = 8;
-            yield return Capture(frames, 2);
+            yield return Capture(frames, 2, "discs8-" + suffix);
             quality.DiscSegments = 16;
-            Save("discs16-" + suffix, frames[0]);
-            Save("discs8-" + suffix, frames[2]);
 
             AssertHasContent(frames[0]);
             Assert.AreEqual(0, Compare(frames[0], frames[1], 0).differing, "frozen scene renders identically twice");

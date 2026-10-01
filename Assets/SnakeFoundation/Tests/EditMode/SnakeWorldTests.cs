@@ -41,6 +41,60 @@ namespace SnakeFoundation.Tests
             }
         }
 
+        struct CollectFood : SPF.L1.Spatial.IGridVisitor
+        {
+            public System.Collections.Generic.List<int> Rows;
+            public bool Visit(in SPF.L1.Spatial.GridEntry entry)
+            {
+                if (entry.Data == 0) Rows.Add(entry.Owner);
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// The item grid is only rebuilt when food / props changed or the window moved; after a run with
+        /// eating, spawning and skipped builds its queries must still match a brute-force scan.
+        /// </summary>
+        [Test]
+        public void ItemGridStaysExactWhenBuildsAreSkipped()
+        {
+            using var t = new SnakeTestWorld(aiPerRegion: 40, foodPerChunk: 30);
+            t.StartPlayer();
+            long skipped = 0;
+            var random = new Unity.Mathematics.Random(5);
+            for (int round = 0; round < 6; round++)
+            {
+                t.Step(round % 2 == 0 ? 1 : 15);
+                // Two extra ticks without input: usually at least one has no item change.
+                t.Step(2);
+                var world = t.World;
+                var reader = world.Resource(SnakeKeys.ItemGrid).AsReader();
+                var positions = world.Column(SnakeKeys.FoodPosition);
+                var infos = world.Column(SnakeKeys.FoodInfo);
+                int foodCount = world.Table(SnakeKeys.Food).Count;
+                for (int q = 0; q < 20; q++)
+                {
+                    float2 center = random.NextFloat2(reader.Origin + 40f, reader.Max - 40f);
+                    float radius = random.NextFloat(1f, 25f);
+                    var visitor = new CollectFood { Rows = new System.Collections.Generic.List<int>() };
+                    reader.Query(center, radius, ref visitor);
+                    var expected = new System.Collections.Generic.List<int>();
+                    for (int i = 0; i < foodCount; i++)
+                    {
+                        float r = radius + infos[i].Radius;
+                        if (reader.Covers(positions[i]) && math.distancesq(center, positions[i]) < r * r)
+                            expected.Add(i);
+                    }
+                    visitor.Rows.Sort();
+                    CollectionAssert.AreEqual(expected, visitor.Rows, $"round {round} query {q}");
+                }
+            }
+            for (int i = 0; i < t.Session.Pipeline.SystemCount; i++)
+                if (t.Session.Pipeline.GetSystem(i) is SnakeFoundation.Systems.ItemGridSystem items)
+                    skipped = items.SkippedBuilds;
+            TestContext.WriteLine($"item grid builds skipped: {skipped}");
+        }
+
         [Test]
         public void AISnakesMostlySurviveAndStayInsideTheRegion()
         {

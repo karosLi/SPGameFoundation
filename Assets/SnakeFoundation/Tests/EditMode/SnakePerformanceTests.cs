@@ -21,10 +21,13 @@ namespace SnakeFoundation.Tests
         const int WarmupTicks = 20, MeasuredTicks = 40, SerialTicks = 20;
 #endif
 
-        [Test]
-        public void TickBenchmark()
+        /// <param name="bodyCell">Body grid cell size: compares rebuild cost against query cost.</param>
+        [TestCase(4f)]
+        [TestCase(8f)]
+        public void TickBenchmark(float bodyCell)
         {
-            using var world = new SnakeTestWorld(aiPerRegion: 150, foodPerChunk: 150, propsPerChunk: 1, seed: 1234);
+            using var world = new SnakeTestWorld(aiPerRegion: 150, foodPerChunk: 150, propsPerChunk: 1, seed: 1234,
+                tweak: c => c.Capacity.BodyGridCellSize = bodyCell);
             world.StartPlayer();
             world.Step(WarmupTicks);
 
@@ -48,10 +51,10 @@ namespace SnakeFoundation.Tests
             world.Step(SerialTicks);
             pipeline.SerialProfiling = false;
 
-            var report = BuildReport(world, samples, scheduleSum / MeasuredTicks, waitSum / MeasuredTicks, pipeline);
+            var report = $"body grid cell: {bodyCell} m\n" + BuildReport(world, samples, scheduleSum / MeasuredTicks, waitSum / MeasuredTicks, pipeline);
             TestContext.WriteLine(report);
             Console.WriteLine(report);
-            WriteArtifact(report);
+            WriteArtifact($"perf-editmode-body{bodyCell:0}m.txt", report);
 
             Array.Sort(samples);
             Assert.Greater(samples[samples.Length / 2], 0.0);
@@ -73,6 +76,9 @@ namespace SnakeFoundation.Tests
             sb.AppendLine($"snakes: {w.Table(SnakeKeys.Snake).Count}  food: {w.Table(SnakeKeys.Food).Count}  props: {w.Table(SnakeKeys.Prop).Count}  projectiles: {w.Table(SnakeKeys.Projectile).Count}  body points used: {w.Resource(SnakeKeys.Bodies).UsedPoints}");
             sb.AppendLine($"pipelined tick ms  mean {mean:F3}  p50 {sorted[sorted.Length / 2]:F3}  p95 {sorted[(int)(sorted.Length * 0.95)]:F3}  max {sorted[sorted.Length - 1]:F3}");
             sb.AppendLine($"main-thread schedule ms {scheduleMs:F3}  sync wait ms {waitMs:F3}");
+            for (int i = 0; i < pipeline.SystemCount; i++)
+                if (pipeline.GetSystem(i) is SnakeFoundation.Systems.ItemGridSystem items)
+                    sb.AppendLine($"item grid builds skipped (unchanged items): {items.SkippedBuilds} of {pipeline.Stats.TickCount} ticks");
             sb.AppendLine("per-system ms (serial profiling, includes scheduling):");
             var stats = pipeline.Stats;
             var order = new int[stats.SystemCount];
@@ -88,7 +94,7 @@ namespace SnakeFoundation.Tests
             return sb.ToString();
         }
 
-        static void WriteArtifact(string report)
+        static void WriteArtifact(string fileName, string report)
         {
             try
             {
@@ -98,7 +104,7 @@ namespace SnakeFoundation.Tests
                 string dir = Path.Combine(Path.GetTempPath(), "spf-artifacts");
 #endif
                 Directory.CreateDirectory(dir);
-                File.WriteAllText(Path.Combine(dir, "perf-editmode.txt"), report);
+                File.WriteAllText(Path.Combine(dir, fileName), report);
             }
             catch (IOException) { }
             catch (UnauthorizedAccessException) { }

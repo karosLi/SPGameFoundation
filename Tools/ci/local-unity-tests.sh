@@ -171,6 +171,6 @@ run_platform() {
 }
 
 run_platform editmode -nographics; EDIT=$?
-if [ -f "$A/perf-editmode.txt" ]; then echo "::group::performance report"; cat "$A/perf-editmode.txt"; echo "::endgroup::"; fi
+for f in "$A"/perf-*.txt; do [ -f "$f" ] && { echo "::group::performance report $(basename "$f")"; cat "$f"; echo "::endgroup::"; }; done
 run_platform playmode; PLAY=$?
 [ $EDIT -eq 0 ] && [ $PLAY -eq 0 ]

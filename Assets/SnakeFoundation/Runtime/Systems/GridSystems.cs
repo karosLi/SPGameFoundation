@@ -170,10 +170,23 @@ namespace SnakeFoundation.Systems
         }
     }
 
-    /// <summary>SpatialBuild phase, item grid (window): food then props (Data 0 / 1). Food only changes on the main thread.</summary>
-    sealed class ItemGridSystem : SimSystemBase
+    /// <summary>
+    /// SpatialBuild phase, item grid (window): food then props (Data 0 / 1). Items only change
+    /// structurally on the main thread (spawn / eat / stream), so the grid is rebuilt only when either
+    /// table's <see cref="SimTable.Version"/> or the window origin changed since the last build.
+    /// </summary>
+    sealed class ItemGridSystem : SimSystemBase, IResettableSystem
     {
+        uint m_FoodVersion, m_PropVersion;
+        float2 m_Origin;
+        bool m_Built;
+
         public override SimPhase Phase => SimPhase.SpatialBuild;
+
+        /// <summary>Builds skipped because nothing changed (diagnostics / tests).</summary>
+        public long SkippedBuilds { get; private set; }
+
+        public void OnReset(SimWorld world) => m_Built = false;
 
         public override void Declare(AccessDeclaration access) => access
             .Read(SnakeKeys.Food).Read(SnakeKeys.FoodPosition).Read(SnakeKeys.FoodInfo)
@@ -182,7 +195,20 @@ namespace SnakeFoundation.Systems
 
         public override JobHandle OnTick(in SimContext context, JobHandle dependency)
         {
-            var itemGrid = context.World.Resource(SnakeKeys.ItemGrid);
+            var world = context.World;
+            var itemGrid = world.Resource(SnakeKeys.ItemGrid);
+            uint foodVersion = world.Table(SnakeKeys.Food).Version;
+            uint propVersion = world.Table(SnakeKeys.Prop).Version;
+            if (m_Built && foodVersion == m_FoodVersion && propVersion == m_PropVersion && math.all(itemGrid.Origin == m_Origin))
+            {
+                SkippedBuilds++;
+                return dependency;
+            }
+            m_Built = true;
+            m_FoodVersion = foodVersion;
+            m_PropVersion = propVersion;
+            m_Origin = itemGrid.Origin;
+
             int foodCount = context.Count(SnakeKeys.Food);
             int propCount = context.Count(SnakeKeys.Prop);
             int total = math.min(foodCount + propCount, itemGrid.Capacity);

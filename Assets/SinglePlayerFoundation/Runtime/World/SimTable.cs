@@ -23,6 +23,13 @@ namespace SPF.Runtime.World
         public int Capacity { get; }
         public int Count { get; private set; }
 
+        /// <summary>
+        /// Incremented by every structural change (add, remove / swap-back, clear) and by
+        /// <see cref="MarkChanged"/>. Lets consumers skip rebuilding derived data (e.g. a spatial grid of
+        /// static items) when nothing changed. In-place column writes must call MarkChanged to count.
+        /// </summary>
+        public uint Version { get; private set; }
+
         /// <summary>Entity handle of each row. Access is declared through the TableKey.</summary>
         public NativeArray<EntityHandle> Handles => m_Handles;
 
@@ -47,7 +54,11 @@ namespace SPF.Runtime.World
         }
 
         /// <summary>Marks a row whose data changed outside of structural operations (main thread).</summary>
-        public void MarkChanged(int row) => m_Changes?.Mark(row);
+        public void MarkChanged(int row)
+        {
+            Version++;
+            m_Changes?.Mark(row);
+        }
 
         internal void AddColumn<T>(ColumnKey<T> key) where T : unmanaged
         {
@@ -76,6 +87,7 @@ namespace SPF.Runtime.World
             if (Count >= Capacity)
                 return -1;
             int row = Count++;
+            Version++;
             m_Handles[row] = handle;
             m_Changes?.Mark(row);
             for (int i = 0; i < m_ColumnList.Count; i++)
@@ -91,6 +103,7 @@ namespace SPF.Runtime.World
         {
             int last = Count - 1;
             Count = last;
+            Version++;
             m_Changes?.Mark(row);
             if (row == last)
                 return EntityHandle.Null;
@@ -104,6 +117,7 @@ namespace SPF.Runtime.World
         internal void Clear()
         {
             Count = 0;
+            Version++;
             m_Changes?.MarkAll();
         }
 
@@ -131,6 +145,13 @@ namespace SPF.Runtime.World
         }
 
         public int Count { get; private set; }
+
+        /// <summary>
+        /// Incremented by every structural change (add, remove / swap-back, clear) and by
+        /// <see cref="MarkChanged"/>. Lets consumers skip rebuilding derived data (e.g. a spatial grid of
+        /// static items) when nothing changed. In-place column writes must call MarkChanged to count.
+        /// </summary>
+        public uint Version { get; private set; }
 
         /// <summary>True when everything must be treated as changed (reset / overflow).</summary>
         public bool All { get; private set; } = true;

@@ -60,7 +60,9 @@ namespace SnakeFoundation
             layout.Resource(SnakeKeys.Bodies, new BodyStore(cap.Snakes * cap.AverageTrailPoints, cap.MaxTrailPoints));
 
             var cells = new int2(cap.GridCells);
-            layout.Resource(SnakeKeys.BodyGrid, new SpatialGrid(cells, cap.GridCellSize, cap.BodyGridEntries));
+            float bodyCell = cap.BodyGridCellSize > 0f ? cap.BodyGridCellSize : cap.GridCellSize;
+            var bodyCells = (int2)math.ceil((float2)cells * cap.GridCellSize / bodyCell);
+            layout.Resource(SnakeKeys.BodyGrid, new SpatialGrid(bodyCells, bodyCell, cap.BodyGridEntries));
             var itemCells = (int2)math.ceil((float2)cells * cap.GridCellSize / cap.ItemGridCellSize);
             layout.Resource(SnakeKeys.ItemGrid, new SpatialGrid(itemCells, cap.ItemGridCellSize, cap.Food + cap.Props));
             // Coarse grid over the largest region: one cell per chunk.

@@ -141,7 +141,10 @@ namespace SnakeFoundation
             public int MaxTrailPoints = 1024;
             public int BodyGridEntries = 65536;
             public int GridCells = 256;
+            [Tooltip("Window size = GridCells x GridCellSize (both grids cover the same window)")]
             public float GridCellSize = 4f;
+            [Tooltip("Body grid cell size (0 = GridCellSize). Larger cells: cheaper rebuild, more entries per query")]
+            public float BodyGridCellSize = 0f;
             [Tooltip("Item grid cell size; the item grid covers the same window as the body grid with fewer, larger cells (items are small and static, eat / food-scan queries are wide)")]
             public float ItemGridCellSize = 8f;
             public float ChunkSize = 125f;

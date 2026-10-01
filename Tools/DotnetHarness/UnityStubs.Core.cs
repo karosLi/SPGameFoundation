@@ -21,7 +21,7 @@ namespace UnityEngine
     public enum RuntimeInitializeLoadType { AfterSceneLoad, BeforeSceneLoad, AfterAssembliesLoaded, BeforeSplashScreen, SubsystemRegistration }
     [AttributeUsage(AttributeTargets.Method)] public sealed class RuntimeInitializeOnLoadMethodAttribute : Attribute { public RuntimeInitializeOnLoadMethodAttribute() { } public RuntimeInitializeOnLoadMethodAttribute(RuntimeInitializeLoadType t) { } }
 
-    public enum HideFlags { None = 0, HideAndDontSave = 61, DontSave = 52 }
+    public enum HideFlags { None = 0, HideInInspector = 2, HideAndDontSave = 61, DontSave = 52 }
 
     public class Object
     {

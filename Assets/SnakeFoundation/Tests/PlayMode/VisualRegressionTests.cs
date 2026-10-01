@@ -112,6 +112,35 @@ namespace SnakeFoundation.Tests.PlayMode
             return (differing, maxDelta, box);
         }
 
+        /// <summary>
+        /// Long opaque node snakes whose heads sit just outside the left / right / top edge of the view, so
+        /// most of their nodes are off-screen: the case compaction exists for.
+        /// </summary>
+        void SpawnSnakesCrossingTheViewEdges()
+        {
+            var session = m_Game.Session;
+            session.Sync();
+            var world = session.World;
+            var runtime = world.Resource(SnakeKeys.Config);
+            var game = world.Resource(SnakeKeys.Game);
+            var view = m_Game.CameraRig.ViewRect;
+            var center = (view.xy + view.zw) * 0.5f;
+            var half = (view.zw - view.xy) * 0.5f;
+            var random = new Unity.Mathematics.Random(9);
+            // Skins 0 (Sky) and 2 (Candy, striped) are opaque node skins.
+            var spawns = new[]
+            {
+                (center + new Unity.Mathematics.float2(half.x + 6f, half.y * 0.5f), new Unity.Mathematics.float2(1, 0), 0),
+                (center + new Unity.Mathematics.float2(-half.x * 0.3f, half.y + 6f), new Unity.Mathematics.float2(0, 1), 2),
+                (center + new Unity.Mathematics.float2(-half.x - 6f, -half.y * 0.5f), new Unity.Mathematics.float2(-1, 0), 0),
+            };
+            foreach (var (head, heading, skin) in spawns)
+            {
+                var handle = SnakeSpawner.SpawnSnake(world, runtime, game, game.ActiveRegion, head, heading, 400f, default, skin, ref random);
+                Assert.IsFalse(handle.IsNull, "spawned a long snake across the view edge");
+            }
+        }
+
         /// <summary>Guards against vacuous passes: the capture must contain a rendered scene, not a cleared target.</summary>
         static void AssertHasContent(Color32[] pixels)
         {
@@ -143,6 +172,8 @@ namespace SnakeFoundation.Tests.PlayMode
             var chains = m_Game.WorldRenderer.Chains;
             if (!chains.CompactionAvailable)
                 Assert.Ignore("Raw indirect arguments not supported on this graphics API");
+            SpawnSnakesCrossingTheViewEdges();
+            for (int i = 0; i < 3; i++) yield return null;
             Assert.Greater(chains.NodeCount(BlendKind.Opaque), 0, "scene contains opaque node chains");
 
             var frames = new Color32[3][];

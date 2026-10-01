@@ -57,13 +57,16 @@ namespace SnakeFoundation.Tests.PlayMode
         }
 
         /// <summary>
-        /// Renders one more frame with the current options, reads it back and, when named, writes it to
+        /// Reads back a frame rendered with the current options and, when named, writes it to
         /// Artifacts/Screenshots straight from the readback texture.
         /// </summary>
         IEnumerator Capture(Color32[][] slot, int index, string saveAs = null)
         {
+            // WaitForEndOfFrame never resumes in batch mode. The camera renders into the target after
+            // LateUpdate, so a frame later the target holds a frame rendered with the current options;
+            // the scene is frozen, so waiting two frames is safe.
             yield return null;
-            yield return new WaitForEndOfFrame();
+            yield return null;
             var previous = RenderTexture.active;
             RenderTexture.active = m_Target;
             m_Read.ReadPixels(new Rect(0, 0, Width, Height), 0, 0);
@@ -93,6 +96,7 @@ namespace SnakeFoundation.Tests.PlayMode
         /// <summary>Guards against vacuous passes: the capture must contain a rendered scene, not a cleared target.</summary>
         static void AssertHasContent(Color32[] pixels)
         {
+            Assert.IsNotNull(pixels, "frame was captured");
             var first = pixels[0];
             int other = 0;
             for (int i = 0; i < pixels.Length; i++)

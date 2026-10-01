@@ -37,7 +37,10 @@ namespace SnakeFoundation.Tests.PlayMode
             m_Game.CameraRig.Camera.targetTexture = m_Target;
             m_Game.StartGame();
             yield return UIDriver.WaitSeconds(3f);      // AI gathers around the player
-            Time.timeScale = 0f;                       // freeze simulation, camera smoothing and animations
+            Time.timeScale = 0f;                       // freeze simulation and animations
+            // The camera follows with unscaled time and would keep creeping sub-pixel towards its target;
+            // snapping puts it exactly on the (now constant) target, where it stays.
+            m_Game.CameraRig.Snap();
             for (int i = 0; i < 5; i++) yield return null;
         }
 

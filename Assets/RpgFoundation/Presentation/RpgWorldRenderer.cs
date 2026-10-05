@@ -93,7 +93,7 @@ namespace RpgFoundation.Presentation
             var map = world.Resource(RpgKeys.Map);
             int actors = world.Table(RpgKeys.Actor).Capacity;
             m_Tiles = new SpriteBatch(tier, atlas, BlendKind.Opaque, map.Size.x * map.Size.y, queueOffset: -10);
-            m_Opaque = new SpriteBatch(tier, atlas, BlendKind.Opaque, actors * 3 + world.Table(RpgKeys.Item).Capacity * 2 + world.Table(RpgKeys.Projectile).Capacity);
+            m_Opaque = new SpriteBatch(tier, atlas, BlendKind.Opaque, actors * 3 + world.Table(RpgKeys.Item).Capacity * 2 + world.Table(RpgKeys.Projectile).Capacity + world.Table(RpgKeys.Prop).Capacity);
             m_Effects = new SpriteBatch(tier, atlas, BlendKind.Translucent, 4096);
             m_Additive = new SpriteBatch(tier, atlas, BlendKind.Additive, 1024);
             m_Bars = new QuadBatch(actors * 2 + 8, overlay: true);
@@ -136,6 +136,7 @@ namespace RpgFoundation.Presentation
 
             DrainFeedback(world, config, game);
             DrawActors(world, config, game, alpha, dt, view);
+            DrawProps(world, view);
             DrawItems(world, view);
             DrawProjectiles(world, alpha, view);
             DrawStairs(map, game);
@@ -325,6 +326,33 @@ namespace RpgFoundation.Presentation
         }
 
         // ---- Items, projectiles, stairs ----
+
+        void DrawProps(SPF.Runtime.World.SimWorld world, float4 view)
+        {
+            var positions = world.Column(RpgKeys.PropPosition);
+            var infos = world.Column(RpgKeys.PropInfo);
+            for (int i = 0; i < world.Table(RpgKeys.Prop).Count; i++)
+            {
+                float2 p = positions[i];
+                if (p.x < view.x || p.y < view.y || p.x > view.z || p.y > view.w) continue;
+                var prop = infos[i];
+                float depth = ActorDepth + p.y * DepthPerY;
+                switch (prop.Kind)
+                {
+                    case PropKind.Chest:
+                        m_Opaque.Add(p + new float2(0f, 0.3f), new float2(18, 15) / RpgArt.PixelsPerUnit * 1.3f, m_Art.Sheet[prop.Active ? m_Art.ChestOpen : m_Art.ChestClosed].Uv, depth, new float4(1f));
+                        m_Effects.Add(p + new float2(0f, -0.02f), new float2(0.9f, 0.3f), m_Art.Sheet[m_Art.Shadow].Uv, depth + 0.5f, new float4(1f));
+                        break;
+                    case PropKind.Barrel:
+                        m_Opaque.Add(p + new float2(0f, 0.3f), new float2(13, 15) / RpgArt.PixelsPerUnit * 1.3f, m_Art.Sheet[m_Art.Barrel].Uv, depth, new float4(1f));
+                        m_Effects.Add(p + new float2(0f, -0.02f), new float2(0.7f, 0.28f), m_Art.Sheet[m_Art.Shadow].Uv, depth + 0.5f, new float4(1f));
+                        break;
+                    case PropKind.Spikes:
+                        m_Opaque.Add(p, new float2(0.9f), m_Art.Sheet[prop.Active ? m_Art.SpikesUp : m_Art.SpikesDown].Uv, TileDepth - 0.4f, new float4(1f));
+                        break;
+                }
+            }
+        }
 
         void DrawItems(SPF.Runtime.World.SimWorld world, float4 view)
         {
@@ -541,6 +569,15 @@ namespace RpgFoundation.Presentation
                 case FeedbackKind.Dash:
                     for (int k = 0; k < 3; k++)
                         m_Fx.Spawn(new SpriteEffects.Effect { Clip = m_Art.Dust, Position = e.Position - e.Direction * (0.2f * k), Size = new float2(0.5f, 0.33f), Delay = k * 0.05f, Color = new float4(1f), Depth = depthFx + 0.2f });
+                    break;
+                case FeedbackKind.Chest:
+                    for (int k = 0; k < 5; k++)
+                        m_Fx.Spawn(new SpriteEffects.Effect { Clip = m_Art.Sparkle, Position = e.Position + m_Random.NextFloat2(-0.4f, 0.4f) + new float2(0f, 0.5f), Velocity = new float2(0f, 1f), Size = new float2(0.35f), Delay = k * 0.06f, Color = new float4(1f, 0.9f, 0.4f, 1f), Depth = depthFx });
+                    break;
+                case FeedbackKind.Barrel:
+                    m_Fx.Spawn(new SpriteEffects.Effect { Clip = m_Art.Puff, Position = e.Position + new float2(0f, 0.3f), Size = new float2(0.9f), Color = new float4(0.75f, 0.55f, 0.35f, 0.9f), Depth = depthFx });
+                    for (int k = 0; k < 4; k++)
+                        m_Fx.Spawn(new SpriteEffects.Effect { Clip = m_Art.Dust, Position = e.Position + new float2(0f, 0.3f), Velocity = m_Random.NextFloat2Direction() * 2f, Size = new float2(0.3f), Color = new float4(0.6f, 0.4f, 0.2f, 1f), Depth = depthFx });
                     break;
                 case FeedbackKind.Cast:
                     m_Fx.Spawn(new SpriteEffects.Effect { Clip = new SpriteClip(m_Art.Disc, 1, 1f, false), Position = e.Position + new float2(0f, 0.9f), Size = new float2(0.9f), Life = math.max(e.Value, 0.2f), ScaleFrom = 0.3f, ScaleTo = 1.1f, Fade = true, Color = new float4(1f, 0.6f, 0.2f, 0.6f), Depth = depthFx });

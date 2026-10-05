@@ -25,6 +25,7 @@ namespace RpgFoundation.Presentation
         Unity.Mathematics.Random m_Random = new Unity.Mathematics.Random(0x5EED);
 
         int m_Hit, m_Crit, m_Hurt, m_Heal, m_Gold, m_Item, m_LevelUp, m_Death, m_BossDeath, m_HeroDeath, m_Stairs;
+        int m_Chest, m_Barrel, m_Spikes;
         int m_SwingLight, m_SwingHeavy, m_Bow, m_Explosion, m_Nova, m_Whirlwind, m_SlamWarning, m_Slam, m_Dash, m_Cast, m_NoMana;
         public int Click { get; private set; }
 
@@ -73,6 +74,9 @@ namespace RpgFoundation.Presentation
             m_Dash = p.Register("dash", SfxDef.Create(SfxWave.Noise, 1200f, 4800f, 0.16f, 0.35f).WithNoise(1f, 0.5f), maxVoices: 1);
             m_Cast = p.Register("cast", SfxDef.Create(SfxWave.Sine, 500f, 1250f, 0.18f, 0.35f).WithVibrato(0.5f, 25f), maxVoices: 2, minInterval: 0.05f);
             m_NoMana = p.Register("nomana", SfxDef.Create(SfxWave.Square, 180f, 150f, 0.12f, 0.3f).WithDuty(0.2f), maxVoices: 1, minInterval: 0.3f, priority: 1);
+            m_Chest = p.Register("chest", SfxDef.Create(SfxWave.Square, 523f, 1046f, 0.35f, 0.4f).WithDuty(0.25f).WithVibrato(0.8f, 16f), maxVoices: 1, priority: 2);
+            m_Barrel = p.Register("barrel", SfxDef.Create(SfxWave.Noise, 700f, 150f, 0.22f, 0.55f).WithNoise(1f, 0.6f).WithEnvelope(0.002f, 0.05f, 0.5f, 0.15f), maxVoices: 2, minInterval: 0.05f);
+            m_Spikes = p.Register("spikes", SfxDef.Create(SfxWave.Saw, 900f, 400f, 0.12f, 0.35f).WithNoise(0.5f, 0.2f), maxVoices: 2, minInterval: 0.08f);
             Click = p.Register("click", SfxDef.Create(SfxWave.Square, 1100f, 900f, 0.04f, 0.25f).WithEnvelope(0.001f, 0.01f, 0.5f, 0.02f), SoundBus.Ui, maxVoices: 2, minInterval: 0.02f, priority: 5);
         }
 
@@ -142,6 +146,9 @@ namespace RpgFoundation.Presentation
                 case FeedbackKind.Slam: Play(m_Slam, e.Position, 1f, 1f, 0f, 0.03f); break;
                 case FeedbackKind.Dash: Play(m_Dash, e.Position); break;
                 case FeedbackKind.Cast: Play(m_Cast, e.Position, 0.8f); break;
+                case FeedbackKind.Chest: Play(m_Chest, e.Position, 1f, 1f, 0f, 0f); break;
+                case FeedbackKind.Barrel: Play(m_Barrel, e.Position); break;
+                case FeedbackKind.Spikes: Play(m_Spikes, e.Position, 0.7f); break;
                 case FeedbackKind.Mana: Play(m_NoMana, e.Position, 1f, 1f, 0f, 0f); break;
             }
         }

@@ -47,6 +47,16 @@ namespace RpgFoundation
             public int EliteFromFloor = 2;
             [Tooltip("Elite health / attack / XP multipliers")]
             public float EliteHealth = 2.5f, EliteAttack = 1.35f, EliteXp = 3f;
+            [Tooltip("Chance of a treasure chest per room (not the start room)")]
+            public float ChestChance = 0.35f;
+            [Tooltip("Up to this many breakable barrels per room")]
+            public int BarrelsPerRoom = 3;
+            [Tooltip("Spike traps: from this floor, up to TrapsPerRoom per room")]
+            public int TrapsFromFloor = 2;
+            public int TrapsPerRoom = 2;
+            public float TrapDamage = 10f;
+            [Tooltip("Spike cycle (seconds); the spikes are up for the last SpikesUp seconds")]
+            public float SpikeCycle = 2.4f, SpikesUp = 0.6f;
         }
 
         [Serializable]
@@ -177,6 +187,7 @@ namespace RpgFoundation
             public int Actors = 512;
             public int Projectiles = 256;
             public int Items = 512;
+            public int Props = 256;
             public float GridCellSize = 2f;
             public int EventQueue = 2048;
         }

@@ -51,12 +51,14 @@ namespace RpgFoundation
             var size = new int2(d.Width, d.Height);
             layout.Resource(RpgKeys.Map, new TileMap(size, d.TileSize));
             layout.Resource(RpgKeys.Flow, new FlowField(size));
+            layout.Table(RpgKeys.Prop, Config.Capacity.Props).LevelScoped().Column(RpgKeys.PropPosition).Column(RpgKeys.PropInfo);
         }
 
         public override void RegisterSystems(SystemRegistry registry) => registry
             .Add(new FloorSystem())
             .Add(new FlowFieldSystem())
-            .Add(new StairsSystem());
+            .Add(new StairsSystem())
+            .Add(new PropSystem());
     }
 
     /// <summary>Hero and monsters: control, AI, movement, the actor grid, combat and projectiles.</summary>

@@ -40,6 +40,7 @@ namespace RpgFoundation.Presentation
         public WeaponArt[] Weapons { get; private set; }         // index = WeaponKind
         public SpriteClip Spark, Slash, Explosion, Puff, Fireball, Bolt, Coin, Stairs, Pillar, Sparkle, Dust;
         public int Arrow, Spit, Potion, ArmourIcon, Ring, Disc, Shadow;
+        public int ChestClosed, ChestOpen, Barrel, SpikesDown, SpikesUp;
         public int[] Floor, Wall;
 
         static readonly Color32 Outline = new Color32(24, 16, 22, 255);
@@ -167,6 +168,18 @@ namespace RpgFoundation.Presentation
                 for (int r = 15; r > 0; r--) c.Ellipse(16, 16, r, r, C(255, 255, 255, (byte)(255 * (1f - r / 16f) * (1f - r / 16f) + 40)));
             });
             art.Shadow = Single(atlas, 16, 8, c => c.Ellipse(8, 4, 7, 3, C(0, 0, 0, 110)));
+            art.ChestClosed = Single(atlas, 18, 15, c => DrawChest(c, false));
+            art.ChestOpen = Single(atlas, 18, 15, c => DrawChest(c, true));
+            art.Barrel = Single(atlas, 13, 15, c =>
+            {
+                c.Ellipse(6.5f, 7.5f, 5.5f, 7f, C(150, 95, 50));
+                c.Rect(2, 3, 9, 1, C(90, 90, 100)); c.Rect(1, 10, 11, 1, C(90, 90, 100));
+                c.Rect(4, 1, 1, 13, C(120, 75, 40)); c.Rect(8, 1, 1, 13, C(120, 75, 40));
+                c.Ellipse(6.5f, 13f, 4f, 1.2f, C(175, 120, 70));
+                c.Outline(Outline);
+            });
+            art.SpikesDown = Single(atlas, 20, 20, c => DrawSpikes(c, false));
+            art.SpikesUp = Single(atlas, 20, 20, c => DrawSpikes(c, true));
             art.Pillar = Strip(atlas, 4, 16, 40, 10f, true, (c, f) =>
             {
                 for (int k = 0; k < 4; k++)
@@ -415,6 +428,43 @@ namespace RpgFoundation.Presentation
         }
 
         // ---- Helpers ----
+
+        static void DrawChest(PixelCanvas c, bool open)
+        {
+            c.Rect(1, 0, 16, 8, C(130, 80, 40));
+            c.Rect(1, 3, 16, 1, C(90, 55, 25));
+            c.Rect(0, 0, 1, 8, C(210, 170, 60)); c.Rect(17, 0, 1, 8, C(210, 170, 60));
+            if (open)
+            {
+                c.Rect(2, 8, 14, 2, C(40, 25, 15));
+                c.Rect(3, 8, 12, 1, C(255, 215, 80));
+                c.Rect(1, 10, 16, 4, C(110, 65, 30));
+                c.Rect(1, 13, 16, 1, C(210, 170, 60));
+            }
+            else
+            {
+                c.Rect(1, 8, 16, 5, C(150, 95, 50));
+                c.Rect(1, 12, 16, 1, C(210, 170, 60));
+                c.Rect(8, 6, 2, 4, C(240, 210, 90));
+            }
+            c.Outline(Outline);
+        }
+
+        static void DrawSpikes(PixelCanvas c, bool up)
+        {
+            c.Rect(1, 1, 18, 18, C(55, 52, 62));
+            for (int y = 0; y < 3; y++)
+            for (int x = 0; x < 3; x++)
+            {
+                int cx = 4 + x * 6, cy = 4 + y * 6;
+                if (up)
+                {
+                    c.Line(new float2(cx - 1.5f, cy - 1), new float2(cx, cy + 3), 1f, C(210, 215, 225));
+                    c.Line(new float2(cx + 1.5f, cy - 1), new float2(cx, cy + 3), 1f, C(170, 175, 190));
+                }
+                else c.Rect(cx - 1, cy - 1, 2, 2, C(25, 24, 30));
+            }
+        }
 
         static SpriteClip Strip(SpriteAtlasBuilder atlas, int count, int w, int h, float fps, bool loop, Action<PixelCanvas, int> draw) =>
             new SpriteClip(atlas.AddStrip(count, w, h, draw), count, fps, loop);

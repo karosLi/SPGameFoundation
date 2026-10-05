@@ -100,6 +100,7 @@ namespace RpgFoundation.Systems
                 if (!leader.IsNull && floor >= d.EliteFromFloor && random.NextFloat() < d.EliteChance)
                     RpgSpawner.MakeElite(world, config, leader, RpgSpawner.RandomAffixes(math.min(1 + floor / 3, 3), ref random));
             }
+            PlaceProps(world, d, view, profile, stairs);
             game.BossAlive = false;
             int boss = config.BossKind;
             if (boss > 0 && d.BossEvery > 0 && floor % d.BossEvery == 0)
@@ -116,6 +117,40 @@ namespace RpgFoundation.Systems
             game.Message = game.BossAlive ? "A Warden guards the stairs" : $"Floor {floor}";
             game.FloorBuilds++;
             game.Version++;
+        }
+
+        /// <summary>Chests, barrels against the walls and (deeper) spike traps; own random stream, so monster placement does not depend on it.</summary>
+        void PlaceProps(SimWorld world, RpgConfig.DungeonSection d, SPF.L1.Spatial.TileMapView view, HeroProfile profile, int2 stairs)
+        {
+            var random = new Random(math.hash(new uint3(profile.RunSeed, (uint)profile.Floor, 0x77u)) | 1u);
+            for (int r = 1; r < m_Rooms.Count; r++)
+            {
+                var room = m_Rooms[r];
+                if (math.any(room.Size < 4)) continue;
+                int2 Interior() => room.Min + new int2(random.NextInt(1, room.Size.x - 1), random.NextInt(1, room.Size.y - 1));
+                bool Free(int2 cell) => !view.IsSolid(cell) && math.any(cell != stairs);
+                if (random.NextFloat() < d.ChestChance)
+                {
+                    var cell = Interior();
+                    if (Free(cell)) RpgSpawner.SpawnProp(world, view.CenterOf(cell), PropKind.Chest);
+                }
+                int barrels = random.NextInt(0, d.BarrelsPerRoom + 1);
+                for (int b = 0; b < barrels; b++)
+                {
+                    // Along a wall: first or last interior row / column.
+                    var cell = Interior();
+                    if (random.NextBool()) cell.x = random.NextBool() ? room.Min.x + 1 : room.Min.x + room.Size.x - 2;
+                    else cell.y = random.NextBool() ? room.Min.y + 1 : room.Min.y + room.Size.y - 2;
+                    if (Free(cell)) RpgSpawner.SpawnProp(world, view.CenterOf(cell), PropKind.Barrel);
+                }
+                if (profile.Floor < d.TrapsFromFloor) continue;
+                int traps = random.NextInt(0, d.TrapsPerRoom + 1);
+                for (int k = 0; k < traps; k++)
+                {
+                    var cell = Interior();
+                    if (Free(cell)) RpgSpawner.SpawnProp(world, view.CenterOf(cell), PropKind.Spikes, random.NextFloat(d.SpikeCycle));
+                }
+            }
         }
 
         static int PickKind(RpgRuntimeConfig config, ref Random random)
@@ -140,7 +175,8 @@ namespace RpgFoundation.Systems
 
         public override void Declare(AccessDeclaration access) => access
             .Write(RpgKeys.MoveIntent).Write(RpgKeys.Facing).Write(RpgKeys.Combat).Write(RpgKeys.Health)
-            .Read(RpgKeys.Stats).Read(RpgKeys.Loadout).Read(RpgKeys.Mana).Read(RpgKeys.Position).Write(RpgKeys.Feedback);
+            .Read(RpgKeys.Stats).Read(RpgKeys.Loadout).Read(RpgKeys.Mana).Read(RpgKeys.Position).Write(RpgKeys.Feedback)
+            .Read(RpgKeys.Prop).Read(RpgKeys.PropPosition).Read(RpgKeys.PropInfo).Read(RpgKeys.Info);
 
         public override JobHandle OnTick(in SimContext context, JobHandle dependency)
         {
@@ -161,6 +197,10 @@ namespace RpgFoundation.Systems
 
             var c = combat[row];
             c.Action = ActorAction.None;
+            // Barrels within reach count as swing targets; standing still, the hero turns to the nearest.
+            float reach = world.Column(RpgKeys.Stats)[row][Stat.Range] + world.Column(RpgKeys.Info)[row].Radius + 0.3f;
+            c.PropInReach = NearestBreakable(world, world.Column(RpgKeys.Position)[row], reach, out float2 toProp);
+            if (c.PropInReach && math.lengthsq(move) <= 1e-4f) world.Column(RpgKeys.Facing).Set(row, toProp);
             if (playing)
             {
                 // Only a castable skill (unlocked, off cooldown, affordable) replaces the attack: tapping a
@@ -189,6 +229,24 @@ namespace RpgFoundation.Systems
                 TryDrinkPotion(world, game, row, ref c);
             combat[row] = c;
             return dependency;
+        }
+
+        static bool NearestBreakable(SimWorld world, float2 hero, float reach, out float2 direction)
+        {
+            direction = default;
+            float best = float.MaxValue;
+            var positions = world.Column(RpgKeys.PropPosition);
+            var infos = world.Column(RpgKeys.PropInfo);
+            for (int i = 0; i < world.Table(RpgKeys.Prop).Count; i++)
+            {
+                if (infos[i].Kind != PropKind.Barrel) continue;
+                float d = math.distancesq(positions[i], hero);
+                float r = reach + infos[i].Radius;
+                if (d > r * r || d >= best) continue;
+                best = d;
+                direction = math.normalizesafe(positions[i] - hero, new float2(1f, 0f));
+            }
+            return best < float.MaxValue;
         }
 
         internal static bool TryDrinkPotion(SimWorld world, RpgGameState game, int row, ref CombatState combat)

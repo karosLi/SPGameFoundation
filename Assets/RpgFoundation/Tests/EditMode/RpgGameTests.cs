@@ -319,5 +319,82 @@ namespace RpgFoundation.Tests
                 Assert.IsFalse((a & Affix.Burning) != 0 && (a & Affix.Venomous) != 0);
             }
         }
+    
+        static int CountProps(RpgTestWorld t, PropKind kind)
+        {
+            int n = 0;
+            var infos = t.World.Column(RpgKeys.PropInfo);
+            for (int i = 0; i < t.World.Table(RpgKeys.Prop).Count; i++) if (infos[i].Kind == kind) n++;
+            return n;
+        }
+
+        static int CountItems(RpgTestWorld t)
+        {
+            return t.World.Table(RpgKeys.Item).Count;
+        }
+
+        [Test]
+        public void FloorsHaveChestsBarrelsAndLaterTraps()
+        {
+            using var t = new RpgTestWorld(tweak: c => { c.Dungeon.ChestChance = 1f; c.Dungeon.BarrelsPerRoom = 4; });
+            Assert.Greater(CountProps(t, PropKind.Chest), 3);
+            Assert.Greater(CountProps(t, PropKind.Barrel), 3);
+            Assert.AreEqual(0, CountProps(t, PropKind.Spikes), "no traps on floor 1");
+            var map = t.World.Resource(RpgKeys.Map).AsView();
+            var positions = t.World.Column(RpgKeys.PropPosition);
+            for (int i = 0; i < t.World.Table(RpgKeys.Prop).Count; i++)
+                Assert.IsFalse(map.IsSolidAt(positions[i]), "props stand on floor tiles");
+
+            t.Game.FloorStart.Floor = 3;
+            t.Game.Send(RpgCommandKind.Retry);   // rebuilds the floor from the floor-start profile
+            t.Step();
+            Assert.AreEqual(3, t.Game.Profile.Floor);
+            Assert.Greater(CountProps(t, PropKind.Spikes), 0, "traps deeper down");
+        }
+
+        [Test]
+        public void ChestsOpenOnTouchAndDropLoot()
+        {
+            using var t = new RpgTestWorld();
+            t.ClearMonsters();
+            RpgSpawner.SpawnProp(t.World, t.FreeSpotNearHero(0.5f), PropKind.Chest);
+            int row = t.World.Table(RpgKeys.Prop).Count - 1;
+            int items = CountItems(t);
+            int gold = t.Game.Profile.Gold;
+            t.Step();
+            Assert.IsTrue(t.World.Column(RpgKeys.PropInfo)[row].Active, "opened");
+            t.Step(30);
+            Assert.Greater(t.Game.Profile.Gold + CountItems(t), gold + items, "gold dropped (and picked up)");
+        }
+
+        [Test]
+        public void BarrelsBreakUnderTheHerosStrike()
+        {
+            using var t = new RpgTestWorld();
+            t.ClearMonsters();
+            int before = CountProps(t, PropKind.Barrel);
+            var spot = t.FreeSpotNearHero(0.9f);
+            RpgSpawner.SpawnProp(t.World, spot, PropKind.Barrel);
+            var aim = math.normalize(spot - t.HeroPosition);
+            for (int i = 0; i < 30; i++) { t.Input(new InputFrame { Held = 1u << RpgButton.Attack, Aim = aim, Move = aim * 0.02f }); t.Step(); }
+            Assert.AreEqual(before, CountProps(t, PropKind.Barrel), "broken");
+        }
+
+        [Test]
+        public void SpikesHurtWhoeverStandsOnThemWhenTheyRise()
+        {
+            using var t = new RpgTestWorld();
+            t.ClearMonsters();
+            RpgSpawner.SpawnProp(t.World, t.HeroPosition, PropKind.Spikes);
+            float before = t.World.Column(RpgKeys.Health)[t.HeroRow].Current;
+            bool rose = false;
+            for (int i = 0; i < 90; i++)
+            {
+                t.Step();
+                rose |= t.World.Column(RpgKeys.PropInfo)[t.World.Table(RpgKeys.Prop).Count - 1].Active;
+            }
+            Assert.IsTrue(rose, "the spikes cycle");
+            Assert.Less(t.World.Column(RpgKeys.Health)[t.HeroRow].Current, before - 3f, "impaled");
+        }
     }
 }

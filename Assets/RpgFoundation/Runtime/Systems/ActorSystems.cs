@@ -539,7 +539,7 @@ namespace RpgFoundation.Systems
                     float reach = weapon.Ranged ? weapon.Range : stats[Stat.Range] + info.Radius + 1f;
                     c.Aim = hero ? Aim(p, info, reach, Facing[i]) : math.normalizesafe(Facing[i], new float2(1f, 0f));
                     // A hero with a melee weapon and nobody in reach does not swing (no wasted cooldown).
-                    bool target = !hero || weapon.Ranged || HasEnemy(p, info, stats[Stat.Range] + info.Radius + 0.3f);
+                    bool target = !hero || weapon.Ranged || c.PropInReach || HasEnemy(p, info, stats[Stat.Range] + info.Radius + 0.3f);
                     if (target)
                     {
                         float rate = math.max(stats[Stat.AttackRate], 0.05f);

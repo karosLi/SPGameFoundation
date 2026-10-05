@@ -119,6 +119,7 @@ namespace RpgFoundation
         public float2 Aim;                 // direction locked when the action started
         public float2 Knockback;           // velocity, decays
         public float Invulnerable;         // seconds (dash)
+        public bool PropInReach;           // hero: a breakable prop is in reach (swing even with no enemy)
         public float HitFlash;
 
         public float PhaseProgress => PhaseDuration > 0f ? math.saturate(PhaseTime / PhaseDuration) : 1f;
@@ -206,12 +207,23 @@ namespace RpgFoundation
         public float Age;
     }
 
+    /// <summary>Dungeon furniture: chests (open on touch), barrels (break when struck), spike traps (cycle up and down).</summary>
+    public enum PropKind : byte { None = 0, Chest = 1, Barrel = 2, Spikes = 3 }
+
+    public struct PropInfo
+    {
+        public PropKind Kind;
+        public bool Active;     // chest opened, spikes up
+        public float Timer;     // spikes: position in the cycle
+        public float Radius;
+    }
+
     public enum GearSlot : byte { Weapon = 0, Armour = 1 }
 
     // ---- Events between jobs and main-thread systems ----
 
     /// <summary>What dealt a hit (presentation picks the impact effect).</summary>
-    public enum HitSource : byte { Weapon, Projectile, Explosion, Whirlwind, Nova, Slam, Burn, Poison }
+    public enum HitSource : byte { Weapon, Projectile, Explosion, Whirlwind, Nova, Slam, Burn, Poison, Trap }
 
     public struct HitEvent
     {
@@ -259,7 +271,7 @@ namespace RpgFoundation
     public enum FeedbackKind : byte
     {
         Damage, Crit, HeroHurt, Heal, Gold, Item, LevelUp, Death, Stairs,
-        Swing, Explosion, Nova, Whirlwind, SlamWarning, Slam, Dash, Cast, Mana,
+        Swing, Explosion, Nova, Whirlwind, SlamWarning, Slam, Dash, Cast, Mana, Chest, Barrel, Spikes,
     }
 
     /// <summary>For presentation (damage numbers, impacts, skill visuals); drained by the renderer.</summary>

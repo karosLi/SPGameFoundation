@@ -31,6 +31,10 @@ namespace RpgFoundation
         public static readonly ColumnKey<float2> ProjectilePrev = new ColumnKey<float2>(Projectile, "Prev");
         public static readonly ColumnKey<ProjectileInfo> ProjectileInfo = new ColumnKey<ProjectileInfo>(Projectile, "Info");
 
+        public static readonly TableKey Prop = new TableKey("Rpg.Prop");
+        public static readonly ColumnKey<float2> PropPosition = new ColumnKey<float2>(Prop, "Position");
+        public static readonly ColumnKey<PropInfo> PropInfo = new ColumnKey<PropInfo>(Prop, "Info");
+
         public static readonly TableKey Item = new TableKey("Rpg.Item");
         public static readonly ColumnKey<float2> ItemPosition = new ColumnKey<float2>(Item, "Position");
         public static readonly ColumnKey<ItemInfo> ItemInfo = new ColumnKey<ItemInfo>(Item, "Info");

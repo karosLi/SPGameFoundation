@@ -141,6 +141,15 @@ namespace RpgFoundation
             world.Column(RpgKeys.Brain).Set(row, default);
         }
 
+        public static bool SpawnProp(SimWorld world, float2 position, PropKind kind, float timer = 0f)
+        {
+            var handle = world.CreateEntity(RpgKeys.Prop, out int row);
+            if (handle.IsNull) return false;
+            world.Column(RpgKeys.PropPosition).Set(row, position);
+            world.Column(RpgKeys.PropInfo).Set(row, new PropInfo { Kind = kind, Timer = timer, Radius = kind == PropKind.Spikes ? 0.45f : 0.35f });
+            return true;
+        }
+
         public static bool SpawnItem(SimWorld world, float2 position, ItemKind kind, int value)
         {
             var handle = world.CreateEntity(RpgKeys.Item, out int row);

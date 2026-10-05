@@ -271,6 +271,23 @@ namespace RpgFoundation.Systems
             Drop(world, death.Position, kind, value, ref random);
         }
 
+        /// <summary>Treasure chest: a pile of gold, often a potion, sometimes gear.</summary>
+        internal static void DropChest(SimWorld world, RpgRuntimeConfig config, float2 at, int floor, ref Random random)
+        {
+            var l = config.Loot;
+            Drop(world, at, ItemKind.Gold, (l.GoldMax * 2 + random.NextInt(0, l.GoldMax + 1)) * (1 + floor / 2), ref random);
+            if (random.NextFloat() < 0.5f) Drop(world, at, ItemKind.Potion, 1, ref random);
+            if (random.NextFloat() < 0.35f) Drop(world, at, ItemKind.Gear, RandomGear(config, math.clamp((floor + 1) / 2, 1, l.GearTiers), ref random), ref random);
+        }
+
+        /// <summary>Barrel: usually nothing, sometimes a little gold or a potion.</summary>
+        internal static void DropBarrel(SimWorld world, RpgRuntimeConfig config, float2 at, int floor, ref Random random)
+        {
+            float roll = random.NextFloat();
+            if (roll < 0.3f) Drop(world, at, ItemKind.Gold, random.NextInt(config.Loot.GoldMin, config.Loot.GoldMax + 1) * (1 + floor / 2), ref random);
+            else if (roll < 0.4f) Drop(world, at, ItemKind.Potion, 1, ref random);
+        }
+
         static int RandomGear(RpgRuntimeConfig config, int tier, ref Random random)
         {
             // Half armour, half one of the lootable weapon families.

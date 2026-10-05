@@ -432,6 +432,7 @@ namespace UnityEngine
         public static Rendering.GraphicsDeviceType graphicsDeviceType => Rendering.GraphicsDeviceType.Null;
         public static bool SupportsTextureFormat(TextureFormat f) => true;
         public static int maxTextureSize => 4096;
+        public static bool IsFormatSupported(UnityEngine.Experimental.Rendering.GraphicsFormat format, UnityEngine.Experimental.Rendering.FormatUsage usage) => true;
     }
 
     public static class QualitySettings

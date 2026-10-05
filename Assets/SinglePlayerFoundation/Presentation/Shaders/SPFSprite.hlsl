@@ -2,6 +2,7 @@
 #define SPF_SPRITE_INCLUDED
 
 // Shared sprite vertex / fragment logic for both tiers.
+// Instances arrive packed in two uint4 (see PackedSprite.cs) and are decoded by SPFUnpackSprite into:
 // posSize: centre xy, size zw (negative x size mirrors the sprite)
 // uv:      atlas rect min xy, size zw
 // param:   rotation (radians), depth (world z), white flash 0..1, unused
@@ -18,6 +19,14 @@ struct v2f
     float flash : TEXCOORD1;
 };
 
+void SPFUnpackSprite(uint4 a, uint4 b, out float4 posSize, out float4 uv, out float4 param, out float4 color)
+{
+    posSize = float4(asfloat(a.x), asfloat(a.y), f16tof32(a.z & 0xFFFF), f16tof32(a.z >> 16));
+    uv = float4(b.x & 0xFFFF, b.x >> 16, b.y & 0xFFFF, b.y >> 16) * (1.0 / 65535.0);
+    color = float4(b.z & 0xFF, (b.z >> 8) & 0xFF, (b.z >> 16) & 0xFF, b.z >> 24) * (1.0 / 255.0) * float4(2.0, 2.0, 2.0, 1.0);
+    param = float4(f16tof32(b.w & 0xFFFF), asfloat(a.w), ((b.w >> 16) & 0xFF) * (1.0 / 255.0), 0.0);
+}
+
 v2f SPFSpriteVertex(float2 corner, float4 posSize, float4 uv, float4 param, float4 color)
 {
     float2 local = corner * posSize.zw;
@@ -29,6 +38,13 @@ v2f SPFSpriteVertex(float2 corner, float4 posSize, float4 uv, float4 param, floa
     o.color = color;
     o.flash = param.z;
     return o;
+}
+
+v2f SPFSpriteVertexPacked(float2 corner, uint4 a, uint4 b)
+{
+    float4 posSize, uv, param, color;
+    SPFUnpackSprite(a, b, posSize, uv, param, color);
+    return SPFSpriteVertex(corner, posSize, uv, param, color);
 }
 
 float4 SPFSpriteFragment(v2f i)

@@ -76,8 +76,8 @@ namespace SPF.Tests.EditMode
             using var batch = new SpriteBatch(RenderTier.DataTexture, sheet.Texture, BlendKind.Translucent, 64);
             font.DrawNumber(batch, sheet, 1234, '-', '!', float2.zero, 0.5f, 0f, new float4(1));
             Assert.AreEqual(6, batch.Count, "'-', four digits, '!'");
-            Assert.AreEqual(sheet[font.Frame('-')].Uv, batch.Instances[0].Uv);
-            Assert.AreEqual(sheet[font.Frame('4')].Uv, batch.Instances[4].Uv, "digits in reading order");
+            Assert.Less(math.cmax(math.abs(sheet[font.Frame('-')].Uv - batch.Instances[0].Uv)), 1e-4f);
+            Assert.Less(math.cmax(math.abs(sheet[font.Frame('4')].Uv - batch.Instances[4].Uv)), 1e-4f, "digits in reading order");
 
             var effects = new SpriteEffects(4);
             var clip = new SpriteClip(0, 2, 10f, false);
@@ -102,6 +102,44 @@ namespace SPF.Tests.EditMode
             Assert.AreEqual(0, c.Get(2, 3).r);
             Assert.AreEqual(0, c.Get(2, 2).a, "diagonals stay empty (4-neighbour outline)");
             Assert.AreEqual(255, c.Get(3, 3).r, "shape itself untouched");
+        }
+    
+        [Test]
+        public void PackedSpritesRoundTripWithinPrecision()
+        {
+            var p = PackedSprite.Pack(new float2(1234.5f, -77.25f), new float2(-1.3f, 0.75f), new float4(0.125f, 0.5f, 0.0078125f, 0.015625f),
+                -12.3456f, new float4(1.25f, 0.5f, 0.1f, 0.8f), 7f, 0.4f);
+            Assert.AreEqual(new float2(1234.5f, -77.25f), p.Center, "positions are exact");
+            Assert.AreEqual(-12.3456f, p.Depth, "depth is exact (sort order)");
+            Assert.Less(math.cmax(math.abs(p.Size - new float2(-1.3f, 0.75f))), 1e-3f, "half sizes, mirror sign kept");
+            Assert.Less(math.cmax(math.abs(p.Uv - new float4(0.125f, 0.5f, 0.0078125f, 0.015625f))), 1f / 65535f);
+            Assert.Less(math.cmax(math.abs(p.Color - new float4(1.25f, 0.5f, 0.1f, 0.8f))), 1f / 127f, "tints up to 2x");
+            Assert.AreEqual(7f - 2f * math.PI, p.Rotation, 2e-3f, "rotation wrapped to ±π");
+            Assert.AreEqual(0.4f, p.Flash, 1f / 255f);
+            Assert.AreEqual(32, System.Runtime.InteropServices.Marshal.SizeOf<PackedSprite>());
+        }
+
+        [Test]
+        public void ReservedSlotsAreFilledByJobsAndTheFloatFallbackDecodes()
+        {
+            SpriteBatch.PackedTexturesOverride = false;
+            try
+            {
+                using var batch = new SpriteBatch(RenderTier.DataTexture, null, BlendKind.Opaque, 8);
+                Assert.IsFalse(batch.PackedTextures);
+                Assert.AreEqual(64, batch.BytesPerInstance);
+                batch.Add(float2.zero, new float2(1f), new float4(0f, 0f, 1f, 1f), 0f, new float4(1f));
+                var slots = batch.Reserve(10);
+                Assert.AreEqual(7, slots.Length, "clamped to capacity");
+                Assert.AreEqual(8, batch.Count);
+                for (int i = 0; i < slots.Length; i++) slots[i] = PackedSprite.Pack(new float2(i, 0f), new float2(1f), new float4(0f, 0f, 1f, 1f), 0f, new float4(1f));
+                batch.Trim(5);
+                Assert.AreEqual(5, batch.Count);
+                Assert.AreEqual(new float2(3f, 0f), batch.Instances[4].Center);
+            }
+            finally { SpriteBatch.PackedTexturesOverride = null; }
+            using var packed = new SpriteBatch(RenderTier.GpuDriven, null, BlendKind.Opaque, 8);
+            Assert.AreEqual(32, packed.BytesPerInstance);
         }
     }
 }

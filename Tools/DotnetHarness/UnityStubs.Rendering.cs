@@ -24,6 +24,7 @@ namespace UnityEngine
         public Texture2D(int w, int h) : this(w, h, TextureFormat.RGBA32, false) { }
         public Texture2D(int w, int h, TextureFormat f, bool mip) : this(w, h, f, mip, false) { }
         public Texture2D(int w, int h, TextureFormat f, bool mip, bool linear) { width = w; height = h; format = f; m_Data = new byte[w * h * 16]; }
+        public Texture2D(int w, int h, UnityEngine.Experimental.Rendering.GraphicsFormat f, UnityEngine.Experimental.Rendering.TextureCreationFlags flags) { width = w; height = h; m_Data = new byte[w * h * 16]; }
         public TextureFormat format { get; }
         public NativeArray<T> GetPixelData<T>(int mip) where T : struct => new NativeArray<T>(width * height * 16 / System.Runtime.CompilerServices.Unsafe.SizeOf<T>(), Allocator.Persistent);
         public void SetPixelData<T>(NativeArray<T> data, int mip, int offset = 0) where T : struct { }
@@ -280,4 +281,11 @@ namespace UnityEngine.Rendering
     }
     public class RenderPipelineAsset : ScriptableObject { }
     public static class GraphicsSettings { public static RenderPipelineAsset currentRenderPipeline => null; public static RenderPipelineAsset defaultRenderPipeline { get; set; } }
+}
+
+namespace UnityEngine.Experimental.Rendering
+{
+    public enum GraphicsFormat { None = 0, R8G8B8A8_UNorm = 8, R32G32B32A32_UInt = 52, R32G32B32A32_SFloat = 54 }
+    [System.Flags] public enum TextureCreationFlags { None = 0, MipChain = 1 }
+    [System.Flags] public enum FormatUsage { Sample = 0, Linear = 1, Render = 3, LoadStore = 8 }
 }

@@ -80,6 +80,11 @@ namespace SurvivorFoundation.Tests.PlayMode
                 while (game.State.Kills < 10 && Time.realtimeSinceStartup < end) yield return null;
                 game.Session.Sync();
                 Assert.Greater(game.State.Kills, 0, "the bot fought");
+                // The GC window measures the game, not the test bot (AllocationSources showed the bot's own path allocates):
+                // the hero stands, invulnerable, and level-ups are taken through the game's API.
+                game.Session.Sync();
+                game.AutoPlay = false;
+                game.State.MaxHp = game.State.Hp = 1e9f;
                 // Per frame: bytes allocated (the governor reads the previous frame's counter) and whether a screen
                 // changed (level-up choices, flow). Allocation next to a screen change is UI work; anything else is a leak.
                 const int Window = 180;
@@ -91,6 +96,7 @@ namespace SurvivorFoundation.Tests.PlayMode
                 for (int f = 0; f < Window; f++)
                 {
                     yield return null;
+                    if (game.State.Flow == SvFlow.LevelUp) game.Choose(0);
                     bytes[f] = game.Governor.GcBytesLastFrame;
                     changed[f] = game.State.Level != level || game.State.Flow != flow;
                     level = game.State.Level;

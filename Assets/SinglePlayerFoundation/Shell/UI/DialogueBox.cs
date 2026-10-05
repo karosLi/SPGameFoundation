@@ -99,9 +99,12 @@ namespace SPF.Shell.UI
             m_ShownCount = 0;
         }
 
-        void Update()
+        void Update() => Refresh(Time.unscaledDeltaTime);
+
+        /// <summary>Brings the box up to date now (call after changing language or loading, without waiting a frame).</summary>
+        public void Refresh(float revealSeconds = 0f)
         {
-            if (Runner == null || Strings == null) return;
+            if (Runner == null || Strings == null || Panel == null) return;
             bool active = Runner.State == DialogueRunner.Mode.Line || Runner.State == DialogueRunner.Mode.Choice;
             if (Panel.gameObject.activeSelf != active) Panel.gameObject.SetActive(active);
             if (TapCatcher.gameObject.activeSelf != active) TapCatcher.gameObject.SetActive(active);
@@ -119,7 +122,7 @@ namespace SPF.Shell.UI
             }
             if (Typing)
             {
-                m_Visible += Time.unscaledDeltaTime * CharactersPerSecond;
+                m_Visible += revealSeconds * CharactersPerSecond;
                 BodyText.MaxVisible = (int)m_Visible;
             }
             if (!Typing && Runner.State == DialogueRunner.Mode.Choice && m_ShownCount == 0)

@@ -13,28 +13,6 @@ namespace StoryFoundation.Tests.PlayMode
 {
     public class StPlayTests
     {
-        static IEnumerator Shot(StGameBootstrap game, string name)
-        {
-            var target = new RenderTexture(960, 540, 24, RenderTextureFormat.ARGB32);
-            var read = new Texture2D(960, 540, TextureFormat.RGBA32, false);
-            try
-            {
-                // UI is screen-space overlay: capture the whole screen at the end of the frame.
-                yield return new WaitForEndOfFrame();
-                var shot = ScreenCapture.CaptureScreenshotAsTexture();
-                string dir = Path.Combine(Application.dataPath, "..", "Artifacts", "Screenshots");
-                Directory.CreateDirectory(dir);
-                File.WriteAllBytes(Path.Combine(dir, name), shot.EncodeToPNG());
-                Object.Destroy(shot);
-            }
-            finally
-            {
-                target.Release();
-                Object.Destroy(target);
-                Object.Destroy(read);
-            }
-        }
-
         [UnityTest]
         public IEnumerator TapThroughChooseSwitchLanguageUndoAndSave()
         {
@@ -71,14 +49,12 @@ namespace StoryFoundation.Tests.PlayMode
                 yield return UIDriver.WaitUntil(() => game.Dialogue.ChoicesShown == 3, 2f);
                 Assert.AreEqual(3, game.Dialogue.ChoicesShown);
                 yield return UIDriver.WaitSeconds(0.4f);   // portrait slides in
-                yield return Shot(game, "story-en.png");
 
                 game.ToggleLanguage();
                 yield return UIDriver.WaitUntil(() => game.Dialogue.SpeakerText.ToString() != "Mira", 2f);
                 Assert.AreEqual("米拉", game.Dialogue.SpeakerText.ToString(),
                     $"language {game.Strings.Language} v{game.Strings.Version}, box drew v{game.Dialogue.StringsVersionShown}, speaker key '{run.Speaker}' -> '{game.Strings.Get(run.Speaker)}', state {run.State}");
                 StringAssert.Contains("灯笼", game.Dialogue.BodyText.ToString());
-                yield return Shot(game, "story-zh.png");
 
                 // Choose "ask" (second button), save, play on, load: back at the saved line.
                 UIDriver.Click(game.Dialogue.Choice(1).gameObject);

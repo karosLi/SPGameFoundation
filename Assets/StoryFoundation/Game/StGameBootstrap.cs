@@ -122,6 +122,7 @@ namespace StoryFoundation.Game
             bool zh = Strings.Language == "en";
             Strings.SetLanguage(zh ? "zh" : "en");
             UIFactory.SetText(LanguageButton, zh ? "EN" : "中文");
+            Dialogue.Refresh();
         }
 
         public bool LoadQuick()

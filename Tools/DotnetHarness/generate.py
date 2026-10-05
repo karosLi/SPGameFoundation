@@ -57,7 +57,7 @@ def main():
 
     write("Unity.Mathematics", f"""<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><TargetFramework>net8.0</TargetFramework><AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  <EnableDefaultCompileItems>false</EnableDefaultCompileItems><NoWarn>{NOWARN}</NoWarn></PropertyGroup>
+  <EnableDefaultCompileItems>false</EnableDefaultCompileItems><GenerateAssemblyInfo>false</GenerateAssemblyInfo><NoWarn>{NOWARN}</NoWarn></PropertyGroup>
   <ItemGroup>
     <Compile Include="{MATH_SRC}/**/*.cs" />
     <ProjectReference Include="../UnityStubs/UnityStubs.csproj" />

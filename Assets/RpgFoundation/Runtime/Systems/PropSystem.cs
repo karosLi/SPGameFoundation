@@ -56,7 +56,7 @@ namespace RpgFoundation.Systems
                 switch (info.Kind)
                 {
                     case PropKind.Chest:
-                        if (info.Active || !hero || math.distancesq(p, heroPos) > math.square(info.Radius + heroRadius + 0.3f)) break;
+                        if (info.Active || !hero || math.distancesq(p, heroPos) > Sq(info.Radius + heroRadius + 0.3f)) break;
                         info.Active = true;
                         infos[row] = info;
                         RewardSystem.DropChest(world, config, p, game.Profile.Floor, ref random);
@@ -88,6 +88,8 @@ namespace RpgFoundation.Systems
             return dependency;
         }
 
+        static float Sq(float x) => x * x;
+
         static bool HitByProjectile(SimWorld world, float2 p, float radius)
         {
             var table = world.Table(RpgKeys.Projectile);
@@ -97,7 +99,7 @@ namespace RpgFoundation.Systems
             {
                 var info = infos[i];
                 if (info.Team != Team.Hero) continue;
-                if (math.distancesq(positions[i], p) <= math.square(radius + info.Radius)) return true;
+                if (math.distancesq(positions[i], p) <= Sq(radius + info.Radius)) return true;
             }
             return false;
         }
@@ -112,7 +114,7 @@ namespace RpgFoundation.Systems
             {
                 var info = infos[row];
                 if (info.Has(ActorFlags.Dead)) continue;
-                if (math.distancesq(positions[row], p) > math.square(radius + info.Radius * 0.5f)) continue;
+                if (math.distancesq(positions[row], p) > Sq(radius + info.Radius * 0.5f)) continue;
                 hits.TryAdd(new HitEvent
                 {
                     AttackerId = -2, TargetRow = row, Damage = damage, Position = positions[row], Direction = math.normalizesafe(positions[row] - p, new float2(0f, 1f)),

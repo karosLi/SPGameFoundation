@@ -251,6 +251,28 @@ namespace SPF.Shell.UI
             }
         }
 
+        static Font s_SharedFont;
+
+        /// <summary>
+        /// A dynamic font of its own for buffer labels: its atlas rebuilds (glyphs evicted and re-added) then never
+        /// make every UGUI <c>Text</c> on the shared built-in font regenerate, which allocates inside UGUI.
+        /// Falls back to the built-in font where no OS font can be created.
+        /// </summary>
+        public static Font SharedFont
+        {
+            get
+            {
+                if (s_SharedFont != null) return s_SharedFont;
+                try
+                {
+                    s_SharedFont = Font.CreateDynamicFontFromOSFont(new[] { "Helvetica Neue", "Helvetica", "Arial", "Roboto", "Liberation Sans", "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC" }, 32);
+                }
+                catch (Exception) { s_SharedFont = null; }
+                if (s_SharedFont == null) s_SharedFont = UIFactory.Font;
+                return s_SharedFont;
+            }
+        }
+
         /// <summary>A label like <see cref="UIFactory.Label"/>, but allocation-free.</summary>
         public static BufferText Create(Transform parent, string name, int size, TextAnchor anchor, Vector2 anchorMin, Vector2 anchorMax)
         {
@@ -262,7 +284,7 @@ namespace SPF.Shell.UI
             rect.offsetMin = new Vector2(16, 8);
             rect.offsetMax = new Vector2(-16, -8);
             var label = go.AddComponent<BufferText>();
-            label.Font = UIFactory.Font;
+            label.Font = SharedFont;
             label.m_FontSize = size;
             label.m_Alignment = anchor;
             label.color = Color.white;

@@ -422,6 +422,7 @@ namespace UnityEngine
     public class Font : Object
     {
         public static Font CreateDynamicFontFromOSFont(string n, int s) => new Font();
+        public static Font CreateDynamicFontFromOSFont(string[] n, int s) => new Font();
         public static event System.Action<Font> textureRebuilt;
         internal static void RaiseRebuilt(Font f) => textureRebuilt?.Invoke(f);
         public Material material { get; set; }

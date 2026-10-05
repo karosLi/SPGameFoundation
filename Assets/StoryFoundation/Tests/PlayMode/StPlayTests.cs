@@ -50,21 +50,23 @@ namespace StoryFoundation.Tests.PlayMode
                 var run = game.State.Runner;
                 Assert.AreEqual(DialogueRunner.Mode.Line, run.State);
 
-                // The typewriter reveals over several frames, allocating nothing.
+                // The first line warms up UGUI's shared mesh buffers (they grow with the longest text once).
                 yield return null;
-                Assert.IsTrue(game.Dialogue.Typing, "text is still being revealed");
+                Assert.IsTrue(game.Dialogue.Typing, "text is revealed over several frames");
+                for (int f = 0; f < 600 && game.Dialogue.Typing; f++) yield return null;
+
+                // Tap: the next line (Mira appears and asks). Its typewriter reveal must allocate nothing.
+                UIDriver.Click(game.Dialogue.TapCatcher.gameObject);
+                yield return UIDriver.WaitUntil(() => run.State == DialogueRunner.Mode.Choice, 2f);
+                yield return null;
+                yield return null;
                 game.Governor.ResetGcStats();
                 for (int f = 0; f < 30 && game.Dialogue.Typing; f++) yield return null;
                 if (game.Governor.GcCounterValid)
                 {
-                    GcReport.Write("story typewriter", game.Governor.FramesSinceReset, game.Governor.GcFramesSinceReset, game.Governor.GcBytesSinceReset);
+                    GcReport.Write("story typewriter (second line)", game.Governor.FramesSinceReset, game.Governor.GcFramesSinceReset, game.Governor.GcBytesSinceReset);
                     Assert.LessOrEqual(game.Governor.GcFramesSinceReset, 1, "revealing text allocates nothing");
                 }
-
-                // Tap: finish the line, tap again: next line (Mira appears and asks).
-                UIDriver.Click(game.Dialogue.TapCatcher.gameObject);
-                UIDriver.Click(game.Dialogue.TapCatcher.gameObject);
-                yield return UIDriver.WaitUntil(() => run.State == DialogueRunner.Mode.Choice, 2f);
                 game.Dialogue.Finish();
                 yield return UIDriver.WaitUntil(() => game.Dialogue.ChoicesShown == 3, 2f);
                 Assert.AreEqual(3, game.Dialogue.ChoicesShown);

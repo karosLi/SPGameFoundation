@@ -20,6 +20,10 @@ namespace Unity.Collections
             new Span<byte>(m_Ptr, size).Clear();
             len = length;
         }
+        public NativeArray(T[] array, Allocator allocator) : this(array.Length, allocator)
+        {
+            for (int i = 0; i < array.Length; i++) this[i] = array[i];
+        }
         public int Length => len;
         public bool IsCreated => m_Ptr != null;
         public T this[int i]

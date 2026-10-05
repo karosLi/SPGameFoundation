@@ -123,7 +123,7 @@ namespace SnakeFoundation.Tests
             world.Step(3);
 
             var report = new StringBuilder();
-            report.AppendLine("=== item grid queries (Burst, single thread) ===");
+            report.AppendLine("=== item grid queries: block lists vs linked nodes (Burst, single thread) ===");
             MeasureItemQueries(world, center, 16f, "12-snake death crossing (realistic dense)", report);
 
             // Synthetic stress: 2000 food packed into 40 x 40 m (about 80 per 8 m cell).
@@ -142,14 +142,45 @@ namespace SnakeFoundation.Tests
             WriteArtifact("perf-itemgrid.txt", report.ToString());
         }
 
+        [BurstCompile(CompileSynchronously = true)]
+        struct LinkedQueryJob : IJob
+        {
+            public LinkedCellReaderReference Items;
+            [ReadOnly] public NativeArray<float2> Points;
+            public NativeArray<long> Hits;
+            public float Radius;
+
+            public void Execute()
+            {
+                long hits = 0;
+                for (int i = 0; i < Points.Length; i++)
+                {
+                    var visitor = new CountVisitor();
+                    Items.Query(Points[i], Radius, ref visitor);
+                    hits += visitor.Hits;
+                }
+                Hits[0] = hits;
+            }
+        }
+
+        /// <summary>
+        /// Builds the block-list grid (current) and the linked-list reference from the same food rows and
+        /// times the same queries on both: once freshly inserted in row order, and once after churn
+        /// (everything removed in random order and re-inserted in another random order), which is what a
+        /// long match of eating / respawning does to a node pool.
+        /// </summary>
         static void MeasureItemQueries(SnakeTestWorld world, float2 hotspot, float hotspotHalfSize, string label, StringBuilder report)
         {
             var w = world.World;
             int foodCount = w.Table(SnakeKeys.Food).Count;
             var positions = w.Column(SnakeKeys.FoodPosition);
+            var infos = w.Column(SnakeKeys.FoodInfo);
+            var reference = w.Resource(SnakeKeys.ItemGrid);
             int queries = math.min(foodCount, 8192);
             var points = new NativeArray<float2>(queries, Allocator.TempJob);
             var hits = new NativeArray<long>(1, Allocator.TempJob);
+            using var blocks = new CellListGrid(reference.Dimensions, reference.CellSize, foodCount, foodCount) { Origin = reference.Origin };
+            using var linked = new LinkedCellGridReference(reference.Dimensions, reference.CellSize, foodCount, foodCount) { Origin = reference.Origin };
             report.AppendLine($"-- {label}: food {foodCount}, {queries} queries (half in the hot spot, half on food)");
             try
             {
@@ -159,24 +190,69 @@ namespace SnakeFoundation.Tests
                     points[i] = (i & 1) == 0
                         ? hotspot + random.NextFloat2(-hotspotHalfSize, hotspotHalfSize)
                         : positions[(i * stride) % foodCount] + new float2(0.37f, -0.21f);
-                var items = w.Resource(SnakeKeys.ItemGrid).AsReader();
-                foreach (float radius in new[] { 3f, 20f })
+
+                var blockWriter = blocks.AsWriter();
+                var linkedWriter = linked.AsWriter();
+                for (int row = 0; row < foodCount; row++)
                 {
-                    var job = new ItemQueryJob { Items = items, Points = points, Hits = hits, Radius = radius };
-                    job.Schedule().Complete();   // warm up (Burst compile, caches)
-                    const int Repeats = 10;
-                    long t0 = Stopwatch.GetTimestamp();
-                    for (int r = 0; r < Repeats; r++) job.Schedule().Complete();
-                    double ms = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency;
-                    double nsPerQuery = ms * 1e6 / (Repeats * queries);
-                    report.AppendLine($"   radius {radius,4:0} m: {nsPerQuery,8:F1} ns/query, {hits[0] / (double)queries,7:F1} entries visited/query");
-                    Assert.Greater(hits[0], 0);
+                    var e = new GridEntry { Position = positions[row], Radius = infos[row].Radius, Owner = row };
+                    blockWriter.Set(row, e);
+                    linkedWriter.Set(row, e);
                 }
+                Run("fresh  ");
+
+                // Churn: remove in one random order, re-insert in another.
+                var order = new int[foodCount];
+                for (int i = 0; i < foodCount; i++) order[i] = i;
+                Shuffle(order, ref random);
+                foreach (int row in order) { blockWriter.Remove(row); linkedWriter.Remove(row); }
+                Shuffle(order, ref random);
+                foreach (int row in order)
+                {
+                    var e = new GridEntry { Position = positions[row], Radius = infos[row].Radius, Owner = row };
+                    blockWriter.Set(row, e);
+                    linkedWriter.Set(row, e);
+                }
+                Run("churned");
             }
             finally
             {
                 points.Dispose();
                 hits.Dispose();
+            }
+
+            void Run(string state)
+            {
+                foreach (float radius in new[] { 3f, 20f })
+                {
+                    const int Repeats = 10;
+                    var blockJob = new ItemQueryJob { Items = blocks.AsReader(), Points = points, Hits = hits, Radius = radius };
+                    blockJob.Schedule().Complete();   // warm up (Burst compile, caches)
+                    long t0 = Stopwatch.GetTimestamp();
+                    for (int r = 0; r < Repeats; r++) blockJob.Schedule().Complete();
+                    double blockNs = (Stopwatch.GetTimestamp() - t0) * 1e9 / Stopwatch.Frequency / (Repeats * queries);
+                    long blockHits = hits[0];
+
+                    var linkedJob = new LinkedQueryJob { Items = linked.AsReader(), Points = points, Hits = hits, Radius = radius };
+                    linkedJob.Schedule().Complete();
+                    t0 = Stopwatch.GetTimestamp();
+                    for (int r = 0; r < Repeats; r++) linkedJob.Schedule().Complete();
+                    double linkedNs = (Stopwatch.GetTimestamp() - t0) * 1e9 / Stopwatch.Frequency / (Repeats * queries);
+
+                    Assert.AreEqual(blockHits, hits[0], "both structures return the same entries");
+                    Assert.Greater(blockHits, 0);
+                    report.AppendLine($"   {state} radius {radius,4:0} m: blocks {blockNs,8:F1} ns  linked {linkedNs,8:F1} ns  " +
+                                      $"(x{linkedNs / math.max(blockNs, 1e-9):F2}), {blockHits / (double)queries:F1} entries/query");
+                }
+            }
+        }
+
+        static void Shuffle(int[] items, ref Unity.Mathematics.Random random)
+        {
+            for (int i = items.Length - 1; i > 0; i--)
+            {
+                int j = random.NextInt(i + 1);
+                (items[i], items[j]) = (items[j], items[i]);
             }
         }
 

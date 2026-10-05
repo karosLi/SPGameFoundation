@@ -65,8 +65,11 @@ namespace SPF.Tests.EditMode
             }
         }
 
-        [Test]
-        public void CellListGridMatchesBruteForceUnderRandomEdits()
+        /// <param name="spread">Half-size of the area entries are placed in: 70 = sparse (some outside the
+        /// window), 6 = dense (~2x2 cells, long multi-block chains, frequent tail-block frees).</param>
+        [TestCase(70f)]
+        [TestCase(6f)]
+        public void CellListGridMatchesBruteForceUnderRandomEdits(float spread)
         {
             const int Keys = 600;
             using var grid = new CellListGrid(new int2(16, 16), 8f, Keys, Keys) { Origin = new float2(-64, -64) };
@@ -83,7 +86,7 @@ namespace SPF.Tests.EditMode
                 }
                 else
                 {
-                    var e = new GridEntry { Position = random.NextFloat2(new float2(-70), new float2(70)), Radius = random.NextFloat(0.2f, 2f), Owner = key };
+                    var e = new GridEntry { Position = random.NextFloat2(new float2(-spread), new float2(spread)), Radius = random.NextFloat(0.2f, 2f), Owner = key };
                     bool stored = writer.Set(key, e);
                     model[key] = stored ? e : (GridEntry?)null;
                     Assert.AreEqual(math.all(e.Position >= grid.Origin) && math.all(e.Position < grid.Origin + grid.Size), stored);
@@ -96,7 +99,7 @@ namespace SPF.Tests.EditMode
                 Assert.AreEqual(expectedCount, grid.Count);
                 for (int q = 0; q < 20; q++)
                 {
-                    float2 center = random.NextFloat2(new float2(-60), new float2(60));
+                    float2 center = random.NextFloat2(new float2(-math.min(spread, 60f)), new float2(math.min(spread, 60f)));
                     float radius = random.NextFloat(0.1f, 10f);
                     var visitor = new Collect { Hits = new List<int>() };
                     reader.Query(center, radius, ref visitor);

@@ -7,25 +7,34 @@ using Unity.Mathematics;
 namespace SPF.L1.Spatial
 {
     /// <summary>
-    /// Uniform grid over a window that is updated incrementally: every cell holds a doubly linked list of
-    /// nodes and every entry is addressed by a caller-chosen key (e.g. table row), so an entry can be
-    /// removed or re-inserted in O(1). Meant for many mostly static items (food) where only a few rows
-    /// change per tick; <see cref="SpatialGrid"/> (counting sort, rebuilt every tick) suits moving data.
-    /// List order within a cell depends only on the order of operations, so it is deterministic when the
-    /// operations are. Queries match <see cref="GridReader"/> semantics. Moving the window requires a full
-    /// rebuild (<see cref="Writer.Clear"/> then re-insert).
+    /// Uniform grid over a window that is updated incrementally, for many mostly static items (food) where
+    /// only a few rows change per tick; <see cref="SpatialGrid"/> (counting sort, rebuilt every tick) suits
+    /// moving data. Every entry is addressed by a caller-chosen key (e.g. table row): set / remove are O(1).
+    /// <para>
+    /// Storage is an unrolled list per cell: a chain of blocks of <see cref="BlockSize"/> entries
+    /// (16 B each, so one block is one 64-byte cache line). All blocks of a cell are full except its last,
+    /// so a query reads each cell as a few contiguous runs instead of chasing one pointer per entry.
+    /// Removing an entry moves the cell's last entry into the hole (order within a cell changes, but only
+    /// as a function of the operations, so it stays deterministic). Moving the window requires a full
+    /// rebuild (<see cref="Writer.Clear"/> then re-insert). Queries match <see cref="GridReader"/>.
+    /// </para>
     /// </summary>
     public sealed class CellListGrid : IDisposable, IResettableResource
     {
-        const int StatMaxRadiusBits = 0, StatCount = 1, StatNodeTop = 2, StatFreeCount = 3, StatSlots = 4;
+        public const int BlockSize = 4;
+        const int BlockShift = 2, LaneMask = BlockSize - 1;
+        internal const int StatMaxRadiusBits = 0, StatCount = 1, StatBlockTop = 2, StatFreeBlocks = 3, StatSlots = 4;
 
-        NativeArray<int> m_CellHead;
-        NativeArray<GridEntry> m_Entries;
-        NativeArray<int> m_Next, m_Prev, m_Cell;
-        NativeArray<int> m_KeyNode;
-        NativeArray<int> m_Free;
+        NativeArray<int> m_CellHead, m_CellTail, m_CellCount;
+        NativeArray<GridEntry> m_Slots;
+        NativeArray<int> m_SlotKey;
+        NativeArray<int> m_BlockNext, m_BlockPrev;
+        NativeArray<int> m_KeySlot;
+        NativeArray<int> m_FreeBlocks;
         NativeArray<int> m_Stats;
 
+        /// <param name="capacity">Maximum entries.</param>
+        /// <param name="keyCapacity">Keys are in [0, keyCapacity).</param>
         public CellListGrid(int2 dimensions, float cellSize, int capacity, int keyCapacity)
         {
             if (math.any(dimensions <= 0)) throw new ArgumentOutOfRangeException(nameof(dimensions));
@@ -33,21 +42,27 @@ namespace SPF.L1.Spatial
             if (capacity > GridEntry.MaxOwner + 1) throw new ArgumentOutOfRangeException(nameof(capacity), "entry owners are 16-bit");
             Dimensions = dimensions;
             CellSize = cellSize;
-            m_CellHead = new NativeArray<int>(dimensions.x * dimensions.y, Allocator.Persistent);
-            m_Entries = new NativeArray<GridEntry>(capacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            m_Next = new NativeArray<int>(capacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            m_Prev = new NativeArray<int>(capacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            m_Cell = new NativeArray<int>(capacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            m_KeyNode = new NativeArray<int>(keyCapacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            m_Free = new NativeArray<int>(capacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            Capacity = capacity;
+            int cells = dimensions.x * dimensions.y;
+            // Worst case: every occupied cell has a partial block, plus full blocks for the rest.
+            int blocks = math.min(capacity, cells) + (capacity + BlockSize - 1) / BlockSize;
+            m_CellHead = new NativeArray<int>(cells, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            m_CellTail = new NativeArray<int>(cells, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            m_CellCount = new NativeArray<int>(cells, Allocator.Persistent);
+            m_Slots = new NativeArray<GridEntry>(blocks * BlockSize, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            m_SlotKey = new NativeArray<int>(blocks * BlockSize, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            m_BlockNext = new NativeArray<int>(blocks, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            m_BlockPrev = new NativeArray<int>(blocks, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            m_KeySlot = new NativeArray<int>(keyCapacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            m_FreeBlocks = new NativeArray<int>(blocks, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             m_Stats = new NativeArray<int>(StatSlots, Allocator.Persistent);
             AsWriter().Clear();
         }
 
         public int2 Dimensions { get; }
         public float CellSize { get; }
-        public int Capacity => m_Entries.Length;
-        public int KeyCapacity => m_KeyNode.Length;
+        public int Capacity { get; }
+        public int KeyCapacity => m_KeySlot.Length;
         public float2 Size => (float2)Dimensions * CellSize;
 
         /// <summary>Window origin. Changing it invalidates the contents: clear and re-insert everything.</summary>
@@ -58,63 +73,90 @@ namespace SPF.L1.Spatial
 
         public Writer AsWriter() => new Writer
         {
-            CellHead = m_CellHead, Entries = m_Entries, Next = m_Next, Prev = m_Prev, Cell = m_Cell,
-            KeyNode = m_KeyNode, Free = m_Free, Stats = m_Stats,
-            Origin = Origin, InvCellSize = 1f / CellSize, Dimensions = Dimensions,
+            CellHead = m_CellHead, CellTail = m_CellTail, CellCount = m_CellCount,
+            Slots = m_Slots, SlotKey = m_SlotKey, BlockNext = m_BlockNext, BlockPrev = m_BlockPrev,
+            KeySlot = m_KeySlot, FreeBlocks = m_FreeBlocks, Stats = m_Stats,
+            Origin = Origin, InvCellSize = 1f / CellSize, Dimensions = Dimensions, Capacity = Capacity,
         };
 
-        public CellListReader AsReader() => new CellListReader(m_CellHead, m_Entries, m_Next, m_Stats, Origin, CellSize, Dimensions);
+        public CellListReader AsReader() => new CellListReader(m_CellHead, m_CellCount, m_Slots, m_BlockNext, m_Stats, Origin, CellSize, Dimensions);
 
         public void OnReset() => AsWriter().Clear();
 
         public void Dispose()
         {
             if (m_CellHead.IsCreated) m_CellHead.Dispose();
-            if (m_Entries.IsCreated) m_Entries.Dispose();
-            if (m_Next.IsCreated) m_Next.Dispose();
-            if (m_Prev.IsCreated) m_Prev.Dispose();
-            if (m_Cell.IsCreated) m_Cell.Dispose();
-            if (m_KeyNode.IsCreated) m_KeyNode.Dispose();
-            if (m_Free.IsCreated) m_Free.Dispose();
+            if (m_CellTail.IsCreated) m_CellTail.Dispose();
+            if (m_CellCount.IsCreated) m_CellCount.Dispose();
+            if (m_Slots.IsCreated) m_Slots.Dispose();
+            if (m_SlotKey.IsCreated) m_SlotKey.Dispose();
+            if (m_BlockNext.IsCreated) m_BlockNext.Dispose();
+            if (m_BlockPrev.IsCreated) m_BlockPrev.Dispose();
+            if (m_KeySlot.IsCreated) m_KeySlot.Dispose();
+            if (m_FreeBlocks.IsCreated) m_FreeBlocks.Dispose();
             if (m_Stats.IsCreated) m_Stats.Dispose();
         }
 
         /// <summary>Mutating view for one job (single writer).</summary>
         public struct Writer
         {
-            public NativeArray<int> CellHead;
-            public NativeArray<GridEntry> Entries;
-            public NativeArray<int> Next, Prev, Cell;
-            public NativeArray<int> KeyNode;
-            public NativeArray<int> Free;
+            public NativeArray<int> CellHead, CellTail, CellCount;
+            public NativeArray<GridEntry> Slots;
+            public NativeArray<int> SlotKey;
+            public NativeArray<int> BlockNext, BlockPrev;
+            public NativeArray<int> KeySlot;
+            public NativeArray<int> FreeBlocks;
             public NativeArray<int> Stats;
             public float2 Origin;
             public float InvCellSize;
             public int2 Dimensions;
+            public int Capacity;
 
             /// <summary>Removes everything (window moved, reset).</summary>
             public void Clear()
             {
-                for (int c = 0; c < CellHead.Length; c++) CellHead[c] = -1;
-                for (int k = 0; k < KeyNode.Length; k++) KeyNode[k] = -1;
+                for (int c = 0; c < CellHead.Length; c++)
+                {
+                    CellHead[c] = -1;
+                    CellTail[c] = -1;
+                    CellCount[c] = 0;
+                }
+                for (int k = 0; k < KeySlot.Length; k++) KeySlot[k] = -1;
                 Stats[StatMaxRadiusBits] = 0;
                 Stats[StatCount] = 0;
-                Stats[StatNodeTop] = 0;
-                Stats[StatFreeCount] = 0;
+                Stats[StatBlockTop] = 0;
+                Stats[StatFreeBlocks] = 0;
             }
 
             /// <summary>Removes the entry stored under <paramref name="key"/>, if any.</summary>
             public void Remove(int key)
             {
-                int node = KeyNode[key];
-                if (node < 0) return;
-                KeyNode[key] = -1;
-                int prev = Prev[node], next = Next[node];
-                if (prev >= 0) Next[prev] = next; else CellHead[Cell[node]] = next;
-                if (next >= 0) Prev[next] = prev;
-                int free = Stats[StatFreeCount];
-                Free[free] = node;
-                Stats[StatFreeCount] = free + 1;
+                int slot = KeySlot[key];
+                if (slot < 0) return;
+                KeySlot[key] = -1;
+                int cell = CellOf(Slots[slot].Position);
+                int count = CellCount[cell] - 1;
+                int tail = CellTail[cell];
+                int last = (tail << BlockShift) + (count & LaneMask);
+                if (last != slot)
+                {
+                    // Fill the hole with the cell's last entry so every block but the tail stays full.
+                    Slots[slot] = Slots[last];
+                    int movedKey = SlotKey[last];
+                    SlotKey[slot] = movedKey;
+                    KeySlot[movedKey] = slot;
+                }
+                CellCount[cell] = count;
+                if ((count & LaneMask) == 0)
+                {
+                    // The tail block became empty: unlink and free it.
+                    int prev = BlockPrev[tail];
+                    CellTail[cell] = prev;
+                    if (prev >= 0) BlockNext[prev] = -1; else CellHead[cell] = -1;
+                    int free = Stats[StatFreeBlocks];
+                    FreeBlocks[free] = tail;
+                    Stats[StatFreeBlocks] = free + 1;
+                }
                 Stats[StatCount] = Stats[StatCount] - 1;
             }
 
@@ -125,36 +167,53 @@ namespace SPF.L1.Spatial
             public bool Set(int key, in GridEntry entry)
             {
                 Remove(key);
-                int2 cell = (int2)math.floor((entry.Position - Origin) * InvCellSize);
-                if (math.any(cell < 0) || math.any(cell >= Dimensions))
+                int cell = CellOf(entry.Position);
+                if (cell < 0 || Stats[StatCount] >= Capacity)
                     return false;
-                int node;
-                int free = Stats[StatFreeCount];
-                if (free > 0)
+                int count = CellCount[cell];
+                int lane = count & LaneMask;
+                int tail = CellTail[cell];
+                if (lane == 0)
                 {
-                    node = Free[free - 1];
-                    Stats[StatFreeCount] = free - 1;
+                    // Tail full (or no block yet): link a new block.
+                    int block;
+                    int free = Stats[StatFreeBlocks];
+                    if (free > 0)
+                    {
+                        block = FreeBlocks[free - 1];
+                        Stats[StatFreeBlocks] = free - 1;
+                    }
+                    else
+                    {
+                        block = Stats[StatBlockTop];
+                        if (block >= BlockNext.Length) return false;
+                        Stats[StatBlockTop] = block + 1;
+                    }
+                    BlockNext[block] = -1;
+                    BlockPrev[block] = tail;
+                    if (tail >= 0) BlockNext[tail] = block; else CellHead[cell] = block;
+                    CellTail[cell] = block;
+                    tail = block;
                 }
-                else
-                {
-                    node = Stats[StatNodeTop];
-                    if (node >= Entries.Length) return false;
-                    Stats[StatNodeTop] = node + 1;
-                }
-                int index = cell.y * Dimensions.x + cell.x;
-                int head = CellHead[index];
-                Entries[node] = entry;
-                Cell[node] = index;
-                Prev[node] = -1;
-                Next[node] = head;
-                if (head >= 0) Prev[head] = node;
-                CellHead[index] = node;
-                KeyNode[key] = node;
+                int slot = (tail << BlockShift) + lane;
+                Slots[slot] = entry;
+                SlotKey[slot] = key;
+                KeySlot[key] = slot;
+                CellCount[cell] = count + 1;
                 Stats[StatCount] = Stats[StatCount] + 1;
                 // Grows only; reset on Clear. A stale (too large) maximum only widens queries.
                 if (entry.Radius > math.asfloat(Stats[StatMaxRadiusBits]))
                     Stats[StatMaxRadiusBits] = math.asint(entry.Radius);
                 return true;
+            }
+
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            int CellOf(float2 position)
+            {
+                int2 cell = (int2)math.floor((position - Origin) * InvCellSize);
+                if (math.any(cell < 0) || math.any(cell >= Dimensions))
+                    return -1;
+                return cell.y * Dimensions.x + cell.x;
             }
         }
     }
@@ -163,20 +222,22 @@ namespace SPF.L1.Spatial
     public struct CellListReader
     {
         [ReadOnly] NativeArray<int> m_CellHead;
-        [ReadOnly] NativeArray<GridEntry> m_Entries;
-        [ReadOnly] NativeArray<int> m_Next;
+        [ReadOnly] NativeArray<int> m_CellCount;
+        [ReadOnly] NativeArray<GridEntry> m_Slots;
+        [ReadOnly] NativeArray<int> m_BlockNext;
         [ReadOnly] NativeArray<int> m_Stats;
         float2 m_Origin;
         float m_CellSize;
         float m_InvCellSize;
         int2 m_Dimensions;
 
-        internal CellListReader(NativeArray<int> cellHead, NativeArray<GridEntry> entries, NativeArray<int> next, NativeArray<int> stats,
-            float2 origin, float cellSize, int2 dimensions)
+        internal CellListReader(NativeArray<int> cellHead, NativeArray<int> cellCount, NativeArray<GridEntry> slots, NativeArray<int> blockNext,
+            NativeArray<int> stats, float2 origin, float cellSize, int2 dimensions)
         {
             m_CellHead = cellHead;
-            m_Entries = entries;
-            m_Next = next;
+            m_CellCount = cellCount;
+            m_Slots = slots;
+            m_BlockNext = blockNext;
             m_Stats = stats;
             m_Origin = origin;
             m_CellSize = cellSize;
@@ -186,7 +247,7 @@ namespace SPF.L1.Spatial
 
         public float2 Origin => m_Origin;
         public float2 Max => m_Origin + (float2)m_Dimensions * m_CellSize;
-        public float MaxEntryRadius => math.asfloat(m_Stats[0]);
+        public float MaxEntryRadius => math.asfloat(m_Stats[CellListGrid.StatMaxRadiusBits]);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Covers(float2 position) => math.all(position >= m_Origin) && math.all(position < Max);
@@ -202,12 +263,20 @@ namespace SPF.L1.Spatial
                 int row = y * m_Dimensions.x;
                 for (int x = min.x; x <= max.x; x++)
                 {
-                    for (int node = m_CellHead[row + x]; node >= 0; node = m_Next[node])
+                    int cell = row + x;
+                    int remaining = m_CellCount[cell];
+                    for (int block = m_CellHead[cell]; remaining > 0; block = m_BlockNext[block])
                     {
-                        var e = m_Entries[node];
-                        float r = radius + e.Radius;
-                        if (math.distancesq(center, e.Position) < r * r && !visitor.Visit(e))
-                            return;
+                        int start = block * CellListGrid.BlockSize;
+                        int end = start + math.min(remaining, CellListGrid.BlockSize);
+                        remaining -= CellListGrid.BlockSize;
+                        for (int i = start; i < end; i++)
+                        {
+                            var e = m_Slots[i];
+                            float r = radius + e.Radius;
+                            if (math.distancesq(center, e.Position) < r * r && !visitor.Visit(e))
+                                return;
+                        }
                     }
                 }
             }
@@ -222,9 +291,19 @@ namespace SPF.L1.Spatial
             {
                 int row = y * m_Dimensions.x;
                 for (int x = min.x; x <= max.x; x++)
-                    for (int node = m_CellHead[row + x]; node >= 0; node = m_Next[node])
-                        if (!visitor.Visit(m_Entries[node]))
-                            return;
+                {
+                    int cell = row + x;
+                    int remaining = m_CellCount[cell];
+                    for (int block = m_CellHead[cell]; remaining > 0; block = m_BlockNext[block])
+                    {
+                        int start = block * CellListGrid.BlockSize;
+                        int end = start + math.min(remaining, CellListGrid.BlockSize);
+                        remaining -= CellListGrid.BlockSize;
+                        for (int i = start; i < end; i++)
+                            if (!visitor.Visit(m_Slots[i]))
+                                return;
+                    }
+                }
             }
         }
     }

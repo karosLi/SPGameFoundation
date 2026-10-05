@@ -94,6 +94,7 @@
   - `PlTests.SteadyStateTicksDoNotAllocate`
   - `TdTests.SteadyStateWaveTicksDoNotAllocate`
 - Survivor 渲染压测的报告里会附上 `FrameGovernor` 统计的 GC 帧数。这一项包含 HUD 文字刷新，所以只记录，不断言。
+  - Mac 实测（1.3 万精灵压测，240 帧）：GPU 驱动 Tier 0 帧分配；数据纹理 Tier 只有 1 帧分配，共 122 字节（来自 HUD 文字）。
 - 三消是回合制，每步的少量托管分配不在热路径上，没有加这个约束。
 
 ## 4. FrameGovernor：移动端帧调控

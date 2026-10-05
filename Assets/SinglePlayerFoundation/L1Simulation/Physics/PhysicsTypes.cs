@@ -116,6 +116,8 @@ namespace SPF.L1.Physics
         public float RestitutionThreshold;
         public float SleepLinear, SleepAngular, TimeToSleep;
         public bool AllowSleep;
+        /// <summary>Start each step's solver from last step's impulses (fewer iterations for stable stacks).</summary>
+        public bool WarmStarting;
         /// <summary>Total normal impulse on a manifold above which a <see cref="ContactEvent"/> is reported.</summary>
         public float EventImpulse;
         /// <summary>Upper bound for the speculative contact margin (anti tunnelling), in metres.</summary>
@@ -124,7 +126,7 @@ namespace SPF.L1.Physics
         public static PhysicsSettings Default => new PhysicsSettings
         {
             Gravity = new float2(0f, -9.81f),
-            VelocityIterations = 10,
+            VelocityIterations = 10,   // uniform stacks stand from 7; mixed stone/wood structures need ~10 to settle
             BiasFactor = 0.2f,
             AllowedPenetration = 0.01f,
             RestitutionThreshold = 1f,
@@ -132,6 +134,7 @@ namespace SPF.L1.Physics
             SleepAngular = 0.05f,
             TimeToSleep = 0.5f,
             AllowSleep = true,
+            WarmStarting = true,
             EventImpulse = 1f,
             MaxSpeculative = 2f,
         };

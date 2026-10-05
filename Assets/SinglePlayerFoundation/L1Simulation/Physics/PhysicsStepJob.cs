@@ -130,7 +130,7 @@ namespace SPF.L1.Physics
                     if (!(swap ? PhysicsCollide.Collide(b, a, margin, ref m) : PhysicsCollide.Collide(a, b, margin, ref m))) continue;
                     m.Friction = math.sqrt(a.Friction * b.Friction);
                     m.Restitution = math.max(a.Restitution, b.Restitution);
-                    WarmStartFrom(ref m);
+                    if (Settings.WarmStarting) WarmStartFrom(ref m);
                     Manifolds[manifolds++] = m;
                 }
             }

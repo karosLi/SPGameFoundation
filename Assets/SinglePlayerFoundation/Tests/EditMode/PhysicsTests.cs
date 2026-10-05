@@ -257,5 +257,59 @@ namespace SPF.Tests.EditMode
             Assert.Less(mean, 4.0, "Burst step budget for 600 bodies");   // the .NET harness runs it unoptimised: report only
 #endif
         }
+    
+        /// <summary>Lowest solver iteration count that keeps a 12-box stack standing for 5 s (0 if none up to 30).</summary>
+        static int MinStableIterations(bool warm)
+        {
+            for (int iterations = 1; iterations <= 30; iterations++)
+            {
+                using var w = World();
+                w.Settings.WarmStarting = warm;
+                w.Settings.VelocityIterations = iterations;
+                w.Settings.AllowSleep = false;
+                int top = 0;
+                for (int i = 0; i < 12; i++) top = w.AddBox(new float2(0f, 0.5f + i), new float2(0.5f, 0.5f));
+                Run(w, 5f);
+                var b = w[top];
+                if (math.abs(b.Position.x) < 0.1f && math.abs(b.Position.y - 11.5f) < 0.2f) return iterations;
+            }
+            return 0;
+        }
+
+        static double SettledPyramidStepMs(bool sleep)
+        {
+            using var w = World();
+            w.Settings.AllowSleep = sleep;
+            for (int r = 0; r < 14; r++)
+                for (int c = 0; c < 14 - r; c++)
+                    w.AddBox(new float2((c - (14 - r - 1) * 0.5f) * 1.05f, 0.5f + r), new float2(0.5f, 0.5f));
+            Run(w, 6f);
+            var watch = Stopwatch.StartNew();
+            for (int i = 0; i < 120; i++) w.Step(Dt);
+            return watch.Elapsed.TotalMilliseconds / 120;
+        }
+
+        [Test]
+        public void OptionBenefits()
+        {
+            int warm = MinStableIterations(true);
+            int cold = MinStableIterations(false);
+            double asleep = SettledPyramidStepMs(true);
+            double awake = SettledPyramidStepMs(false);
+            string report = "=== Physics2D options ===\n" +
+                            $"12-box stack, minimum solver iterations to stand: warm start {warm}, cold {cold}\n" +
+                            $"settled 105-box pyramid, step ms: sleeping islands {asleep:F3}, sleep disabled {awake:F3} ({awake / System.Math.Max(asleep, 1e-6):F1}x)\n";
+            TestContext.WriteLine(report);
+            try
+            {
+                string dir = Path.Combine(UnityEngine.Application.dataPath, "..", "Artifacts");
+                Directory.CreateDirectory(dir);
+                File.WriteAllText(Path.Combine(dir, "perf-physics-options.txt"), report);
+            }
+            catch (System.Exception e) when (e is IOException || e is System.UnauthorizedAccessException) { }
+            Assert.Greater(warm, 0, "a warm-started stack stands");
+            Assert.IsTrue(cold == 0 || warm <= cold, "warm starting needs no more iterations than a cold solver");
+            Assert.Less(asleep, awake, "sleeping islands skip the work");
+        }
     }
 }

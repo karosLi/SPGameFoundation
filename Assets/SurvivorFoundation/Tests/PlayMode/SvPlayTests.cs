@@ -103,7 +103,8 @@ namespace SurvivorFoundation.Tests.PlayMode
                     yield return null;
                     if (game.State.Flow == SvFlow.LevelUp) game.Choose(0);
                     bytes[f] = game.Governor.GcBytesLastFrame;
-                    changed[f] = game.State.Level != level || game.State.Flow != flow;
+                    // A level-up screen can stay up for several ticks (one offer per pending level): all UI frames.
+                    changed[f] = game.State.Level != level || game.State.Flow != flow || game.State.Flow == SvFlow.LevelUp;
                     level = game.State.Level;
                     flow = game.State.Flow;
                 }

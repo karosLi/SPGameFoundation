@@ -118,7 +118,7 @@ namespace SPF.Presentation.Sprites
 
         public void Dispose()
         {
-            if (Texture != null) UnityEngine.Object.Destroy(Texture);
+            if (Texture != null) RenderObjects.Destroy(Texture);
         }
     }
 }

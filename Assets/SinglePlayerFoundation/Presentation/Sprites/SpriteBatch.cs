@@ -133,8 +133,8 @@ namespace SPF.Presentation.Sprites
             if (m_ArgsData.IsCreated) m_ArgsData.Dispose();
             m_Buffer?.Dispose();
             m_Args?.Dispose();
-            if (m_Quad != null) UnityEngine.Object.Destroy(m_Quad);
-            if (m_Material != null) UnityEngine.Object.Destroy(m_Material);
+            if (m_Quad != null) RenderObjects.Destroy(m_Quad);
+            if (m_Material != null) RenderObjects.Destroy(m_Material);
             if (m_Pages != null) foreach (var p in m_Pages) p?.Dispose();
         }
 
@@ -227,8 +227,8 @@ namespace SPF.Presentation.Sprites
 
             public void Dispose()
             {
-                UnityEngine.Object.Destroy(m_Texture);
-                UnityEngine.Object.Destroy(Mesh);
+                RenderObjects.Destroy(m_Texture);
+                RenderObjects.Destroy(Mesh);
             }
         }
     }

@@ -85,8 +85,8 @@ namespace SPF.Presentation
 
         public void Dispose()
         {
-            if (m_Mesh != null) UnityEngine.Object.Destroy(m_Mesh);
-            if (m_Material != null) UnityEngine.Object.Destroy(m_Material);
+            if (m_Mesh != null) RenderObjects.Destroy(m_Mesh);
+            if (m_Material != null) RenderObjects.Destroy(m_Material);
         }
     }
 }

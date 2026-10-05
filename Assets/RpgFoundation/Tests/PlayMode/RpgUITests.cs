@@ -169,8 +169,15 @@ namespace RpgFoundation.Tests.PlayMode
                 exploded = !World.Registry.TryResolve(target, out _, out int row) || World.Column(RpgKeys.Health)[row].Current < World.Column(RpgKeys.Health)[row].Max;
             }
             Assert.IsTrue(exploded, "the fireball hit the brute");
+            // The renderer drains the hit's feedback in LateUpdate: give it a few frames, track the peak.
+            int effects = 0;
+            for (int f = 0; f < 6; f++)
+            {
+                yield return null;
+                effects = Mathf.Max(effects, m_Game.WorldRenderer.EffectsActive);
+            }
             Assert.Less(World.Column(RpgKeys.Mana)[HeroRow].Current, mana + 1f, "mana was spent (regen aside)");
-            Assert.Greater(m_Game.WorldRenderer.EffectsActive, 0, "explosion / numbers on screen");
+            Assert.Greater(effects, 0, "explosion / numbers on screen");
         }
 
         [UnityTest]

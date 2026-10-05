@@ -227,6 +227,8 @@ namespace UnityEngine
         public static bool GetKeyUp(KeyCode k) => false;
         public static bool GetMouseButton(int b) => false;
         public static bool GetMouseButtonDown(int b) => false;
+        public static bool GetMouseButtonUp(int b) => false;
+        public static Vector2 mouseScrollDelta => default;
         public static Vector3 mousePosition => default;
         public static bool mousePresent => false;
         public static int touchCount => 0;

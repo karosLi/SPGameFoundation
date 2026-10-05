@@ -58,8 +58,8 @@ namespace SPF.Presentation
 
         /// <summary>
         /// Many discs in one mesh, each carrying its instance id in vertex.z (data-texture path).
-        /// Submesh i draws the first min(256 &lt;&lt; i, instances) discs (overlapping prefixes of one index
-        /// buffer), so a partly used page does not vertex-process its unused discs.
+        /// Submesh i draws the first min(256 &lt;&lt; i, instances) discs, so a partly used page does not
+        /// vertex-process its unused discs.
         /// </summary>
         public static Mesh CreateIndexed(int instances, int segments = Segments)
         {
@@ -70,14 +70,28 @@ namespace SPF.Presentation
                 Fill(vertices, indices, i, i, segments);
             var mesh = new Mesh { name = "SPF Disc Page " + segments, hideFlags = HideFlags.HideAndDontSave, indexFormat = IndexFormat.UInt32 };
             mesh.SetVertices(vertices);
+            // Submesh p = its own copy of the first min(256 << p, instances) discs' indices: one draw per page
+            // without vertex-processing unused discs. (Overlapping submesh ranges would avoid the copies,
+            // but Unity deprecates them.) Costs about +90% index memory on a full page.
             int prefixes = PrefixCount(instances);
-            mesh.SetIndexBufferParams(indices.Length, IndexFormat.UInt32);
-            mesh.SetIndexBufferData(indices, 0, 0, indices.Length, MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontRecalculateBounds);
-            mesh.subMeshCount = prefixes;
-            for (int p = 0; p < prefixes; p++)
+            int total = 0;
+            for (int p = 0; p < prefixes; p++) total += math.min(MinPrefix << p, instances) * ipd;
+            var all = new int[total];
+            for (int p = 0, offset = 0; p < prefixes; p++)
             {
-                int discs = math.min(MinPrefix << p, instances);
-                mesh.SetSubMesh(p, new SubMeshDescriptor(0, discs * ipd), MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontRecalculateBounds);
+                int count = math.min(MinPrefix << p, instances) * ipd;
+                System.Array.Copy(indices, 0, all, offset, count);
+                offset += count;
+            }
+            const MeshUpdateFlags Quiet = MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontRecalculateBounds;
+            mesh.SetIndexBufferParams(total, IndexFormat.UInt32);
+            mesh.SetIndexBufferData(all, 0, 0, total, Quiet);
+            mesh.subMeshCount = prefixes;
+            for (int p = 0, offset = 0; p < prefixes; p++)
+            {
+                int count = math.min(MinPrefix << p, instances) * ipd;
+                mesh.SetSubMesh(p, new SubMeshDescriptor(offset, count), Quiet);
+                offset += count;
             }
             mesh.bounds = new Bounds(Vector3.zero, new Vector3(1e6f, 1e6f, 1e6f));
             mesh.UploadMeshData(true);

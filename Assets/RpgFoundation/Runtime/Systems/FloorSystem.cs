@@ -160,10 +160,19 @@ namespace RpgFoundation.Systems
             if (math.lengthsq(move) > 1e-4f) world.Column(RpgKeys.Facing).Set(row, math.normalize(move));
 
             var c = combat[row];
-            c.Action = !playing ? ActorAction.None
-                : input.WasPressed(RpgButton.Skill) ? ActorAction.Skill
-                : input.IsHeld(RpgButton.Attack) || input.WasPressed(RpgButton.Attack) ? ActorAction.Melee
-                : ActorAction.None;
+            c.Action = ActorAction.None;
+            if (playing)
+            {
+                for (int slot = 0; slot < RpgButton.SkillSlots; slot++)
+                    if (input.WasPressed(RpgButton.Skill1 + slot))
+                    {
+                        c.Action = ActorAction.Skill;
+                        c.RequestSlot = (byte)slot;
+                        break;
+                    }
+                if (c.Action == ActorAction.None && (input.IsHeld(RpgButton.Attack) || input.WasPressed(RpgButton.Attack)))
+                    c.Action = ActorAction.Attack;
+            }
             if (playing && input.WasPressed(RpgButton.Potion))
                 TryDrinkPotion(world, game, row, ref c);
             combat[row] = c;

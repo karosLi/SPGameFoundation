@@ -152,7 +152,7 @@ namespace RpgFoundation.Presentation
             {
                 var pr = projInfo[i];
                 float2 p = math.lerp(projPrev[i], projPos[i], alpha);
-                if (pr.Fireball)
+                if (pr.Visual == ProjectileVisual.Fireball)
                 {
                     m_Glow.Add(p, pr.Radius * 2.2f, ProjectileDepth, new float4(1f, 0.35f, 0.05f, 0.35f));
                     m_Glow.Add(p, pr.Radius, ProjectileDepth - 0.01f, new float4(1f, 0.8f, 0.3f, 0.9f));

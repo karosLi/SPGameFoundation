@@ -67,7 +67,7 @@ namespace RpgFoundation
             var cap = Config.Capacity;
             layout.Table(RpgKeys.Actor, cap.Actors)
                 .Column(RpgKeys.Position).Column(RpgKeys.PrevPosition).Column(RpgKeys.Facing).Column(RpgKeys.MoveIntent)
-                .Column(RpgKeys.Info).Column(RpgKeys.Health).Column(RpgKeys.BaseStats).Column(RpgKeys.Stats)
+                .Column(RpgKeys.Info).Column(RpgKeys.Health).Column(RpgKeys.Mana).Column(RpgKeys.Loadout).Column(RpgKeys.BaseStats).Column(RpgKeys.Stats)
                 .Column(RpgKeys.Mods).Column(RpgKeys.Combat).Column(RpgKeys.Brain);
             layout.Table(RpgKeys.Projectile, cap.Projectiles)
                 .Column(RpgKeys.ProjectilePosition).Column(RpgKeys.ProjectilePrev).Column(RpgKeys.ProjectileInfo);

@@ -2,6 +2,7 @@ using System;
 using SPF.Contracts;
 using SPF.L2.Combat;
 using Unity.Mathematics;
+using SPF.L2.Stats;
 
 namespace RpgFoundation
 {
@@ -9,6 +10,7 @@ namespace RpgFoundation
     public static class Stat
     {
         public const int MaxHealth = 0, Attack = 1, Armour = 2, Speed = 3, AttackRate = 4, Crit = 5, Regen = 6, Range = 7;
+        public const int MaxMana = 8, ManaRegen = 9, SkillPower = 10;
     }
 
     /// <summary>Modifier sources (ModifierSet.Source).</summary>
@@ -17,10 +19,32 @@ namespace RpgFoundation
         public const byte Weapon = 1, Armour = 2, Haste = 3, Slow = 4;
     }
 
-    /// <summary>Input button indices (InputFrame bits).</summary>
+    /// <summary>Input button indices (InputFrame bits): attack, four skill slots, potion.</summary>
     public static class RpgButton
     {
-        public const int Attack = 0, Skill = 1, Potion = 2;
+        public const int Attack = 0, Skill1 = 1, Skill2 = 2, Skill3 = 3, Skill4 = 4, Potion = 5;
+        /// <summary>First skill slot (kept for callers that only use slot 1).</summary>
+        public const int Skill = Skill1;
+        public const int SkillSlots = 4;
+    }
+
+    /// <summary>Weapon families: they decide reach, arc, timing and whether the attack is a projectile.</summary>
+    public enum WeaponKind : byte { Sword, Axe, Spear, Bow, Staff, Claw, Hammer }
+
+    public enum SkillKind : byte { None, Projectile, Dash, Whirlwind, Nova, Slam }
+
+    /// <summary>What an actor carries: weapon family and up to four skills (skill ids, 0 = empty).</summary>
+    public struct Loadout
+    {
+        public WeaponKind Weapon;
+        public byte S0, S1, S2, S3;
+
+        public byte Skill(int slot) => slot == 0 ? S0 : slot == 1 ? S1 : slot == 2 ? S2 : S3;
+
+        public void SetSkill(int slot, byte skill)
+        {
+            switch (slot) { case 0: S0 = skill; break; case 1: S1 = skill; break; case 2: S2 = skill; break; default: S3 = skill; break; }
+        }
     }
 
     public enum Team : byte { Hero = 0, Monsters = 1 }
@@ -57,16 +81,38 @@ namespace RpgFoundation
         public float Provoked;      // seconds of forced aggro after being hit
     }
 
-    public enum ActorAction : byte { None, Melee, Shoot, Skill }
+    /// <summary>Requested action this tick (input / AI). Attack uses the weapon (melee or projectile).</summary>
+    public enum ActorAction : byte { None, Attack, Skill }
+
+    /// <summary>
+    /// Timed action phase, simulated (so damage lands when the animation strikes) and read by presentation
+    /// to pick animations: wind-up → strike → recover for attacks; cast → release for skills; channel for
+    /// whirlwind; dash; stagger after a heavy hit.
+    /// </summary>
+    public enum ActionPhase : byte { None, Windup, Recover, Cast, Channel, Dash, Stagger }
 
     public struct CombatState
     {
         public Cooldown Attack;
-        public Cooldown Skill;
         public Cooldown Potion;
-        public ActorAction Action;
+        public float4 SkillCooldown;       // per slot, seconds
+        public ActorAction Action;         // request
+        public byte RequestSlot;           // skill slot of a Skill request
+        public ActionPhase Phase;
+        public float PhaseTime, PhaseDuration;
+        public byte PhaseSkill;            // skill id being cast / channelled
+        public byte PhaseTicks;            // channel ticks done
+        public float2 Aim;                 // direction locked when the action started
+        public float2 Knockback;           // velocity, decays
+        public float Invulnerable;         // seconds (dash)
         public float HitFlash;
+
+        public float PhaseProgress => PhaseDuration > 0f ? math.saturate(PhaseTime / PhaseDuration) : 1f;
+        public bool Busy => Phase != ActionPhase.None && Phase != ActionPhase.Recover;
     }
+
+    /// <summary>Projectile look (presentation) and impact flavour.</summary>
+    public enum ProjectileVisual : byte { Arrow, Fireball, Bolt, Spit }
 
     public struct ProjectileInfo
     {
@@ -75,9 +121,13 @@ namespace RpgFoundation
         public float Life;
         public float Damage;
         public float CritChance;
+        public float Knockback;
+        public float ExplodeRadius;     // > 0: area damage on impact
+        public int Pierce;              // extra targets it passes through
+        public int LastHit;             // row hit last (pierce never hits the same actor twice in a row)
         public Team Team;
         public int OwnerId;
-        public bool Fireball;
+        public ProjectileVisual Visual;
     }
 
     public enum ItemKind : byte { None = 0, Gold = 1, Potion = 2, Gear = 3 }
@@ -94,6 +144,9 @@ namespace RpgFoundation
 
     // ---- Events between jobs and main-thread systems ----
 
+    /// <summary>What dealt a hit (presentation picks the impact effect).</summary>
+    public enum HitSource : byte { Weapon, Projectile, Explosion, Whirlwind, Nova, Slam }
+
     public struct HitEvent
     {
         public int AttackerId;
@@ -101,7 +154,11 @@ namespace RpgFoundation
         public float Damage;      // before the target's armour
         public float CritChance;
         public float2 Position;
-        public bool Projectile;
+        public float2 Direction;  // push direction
+        public float Knockback;   // impulse (velocity) before the target's weight
+        public float Stagger;     // seconds of stagger for light targets
+        public SPF.L2.Stats.Modifier Mod;   // Source 0 = none (e.g. frost slow)
+        public HitSource Source;
     }
 
     public struct ProjectileRequest
@@ -109,11 +166,16 @@ namespace RpgFoundation
         public float2 Position;
         public float2 Direction;
         public float Speed;
+        public float Radius;
         public float Damage;
         public float CritChance;
+        public float Knockback;
+        public float ExplodeRadius;
+        public int Pierce;
+        public float Life;
         public Team Team;
         public int OwnerId;
-        public bool Fireball;
+        public ProjectileVisual Visual;
     }
 
     public struct DeathEvent
@@ -124,14 +186,22 @@ namespace RpgFoundation
         public bool Boss;
     }
 
-    public enum FeedbackKind : byte { Damage, Crit, HeroHurt, Heal, Gold, Item, LevelUp, Death, Stairs }
+    public enum FeedbackKind : byte
+    {
+        Damage, Crit, HeroHurt, Heal, Gold, Item, LevelUp, Death, Stairs,
+        Swing, Explosion, Nova, Whirlwind, SlamWarning, Slam, Dash, Cast, Mana,
+    }
 
-    /// <summary>For presentation (damage numbers, flashes); drained by the renderer.</summary>
+    /// <summary>For presentation (damage numbers, impacts, skill visuals); drained by the renderer.</summary>
     public struct FeedbackEvent
     {
         public FeedbackKind Kind;
         public float2 Position;
-        public float Value;
+        public float Value;        // amount, radius or duration depending on the kind
+        public float2 Direction;
+        public byte Actor;         // actor kind (0 hero, monster kind) for deaths / swings
+        public WeaponKind Weapon;
+        public HitSource Source;
     }
 
     public enum RpgFlow : byte { Menu, Playing, FloorClear, Dead, Victory }

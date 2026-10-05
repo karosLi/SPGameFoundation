@@ -11,6 +11,8 @@ namespace RpgFoundation
         public DungeonSection Dungeon = new DungeonSection();
         public HeroSection Hero = new HeroSection();
         public List<MonsterEntry> Monsters = MonsterEntry.Defaults();
+        public List<WeaponEntry> Weapons = WeaponEntry.Defaults();
+        public List<SkillEntry> Skills = SkillEntry.Defaults();
         public LootSection Loot = new LootSection();
         public CapacitySection Capacity = new CapacitySection();
 
@@ -57,9 +59,9 @@ namespace RpgFoundation
             public float Range = 1.3f;
             [Tooltip("Cosine of the melee arc half angle")]
             public float ArcCos = 0.25f;
-            public float FireballSpeed = 14f;
-            public float FireballCooldown = 3f;
-            public float FireballDamage = 2.2f;
+            public float Mana = 50f, ManaPerLevel = 6f, ManaRegen = 3f;
+            [Tooltip("Skill ids (1-based into Skills) in hero slots 1..4")]
+            public int[] SkillSlots = { 1, 2, 3, 4 };
             public float PotionHeal = 0.5f;
             public float PotionCooldown = 1f;
             public int StartPotions = 2;
@@ -79,13 +81,68 @@ namespace RpgFoundation
             [Tooltip("Relative spawn weight in ordinary rooms (0 = only placed explicitly, e.g. bosses)")]
             public float SpawnWeight;
             public bool Boss;
+            public WeaponKind Weapon;
+            [Tooltip("Skill id (1-based into Skills), 0 = none")]
+            public int Skill;
 
             public static List<MonsterEntry> Defaults() => new List<MonsterEntry>
             {
-                new MonsterEntry { Name = "Slime", Color = new Color(0.35f, 0.85f, 0.4f), Radius = 0.42f, Health = 34f, Attack = 7f, Armour = 0f, Speed = 2.4f, AttackRate = 0.9f, Range = 0.6f, Aggro = 7f, Xp = 8f, SpawnWeight = 5f },
-                new MonsterEntry { Name = "Skeleton Archer", Color = new Color(0.9f, 0.88f, 0.78f), Radius = 0.38f, Health = 26f, Attack = 9f, Armour = 2f, Speed = 2.8f, AttackRate = 0.7f, Range = 6f, Aggro = 9f, Xp = 12f, Ranged = true, ProjectileSpeed = 10f, SpawnWeight = 3f },
-                new MonsterEntry { Name = "Brute", Color = new Color(0.85f, 0.3f, 0.25f), Radius = 0.6f, Health = 90f, Attack = 15f, Armour = 8f, Speed = 2f, AttackRate = 0.6f, Range = 0.8f, Aggro = 6f, Xp = 22f, SpawnWeight = 1.5f },
-                new MonsterEntry { Name = "Warden", Color = new Color(0.65f, 0.35f, 0.95f), Radius = 0.95f, Health = 420f, Attack = 22f, Armour = 15f, Speed = 2.3f, AttackRate = 0.8f, Range = 1.1f, Aggro = 10f, Xp = 140f, SpawnWeight = 0f, Boss = true },
+                new MonsterEntry { Name = "Slime", Color = new Color(0.35f, 0.85f, 0.4f), Radius = 0.42f, Health = 34f, Attack = 7f, Armour = 0f, Speed = 2.4f, AttackRate = 0.9f, Range = 0.6f, Aggro = 7f, Xp = 8f, SpawnWeight = 5f, Weapon = WeaponKind.Claw },
+                new MonsterEntry { Name = "Skeleton Archer", Color = new Color(0.9f, 0.88f, 0.78f), Radius = 0.38f, Health = 26f, Attack = 9f, Armour = 2f, Speed = 2.8f, AttackRate = 0.7f, Range = 6f, Aggro = 9f, Xp = 12f, Ranged = true, ProjectileSpeed = 10f, SpawnWeight = 3f, Weapon = WeaponKind.Bow },
+                new MonsterEntry { Name = "Brute", Color = new Color(0.85f, 0.3f, 0.25f), Radius = 0.6f, Health = 90f, Attack = 15f, Armour = 8f, Speed = 2f, AttackRate = 0.6f, Range = 0.8f, Aggro = 6f, Xp = 22f, SpawnWeight = 1.5f, Weapon = WeaponKind.Hammer },
+                new MonsterEntry { Name = "Warden", Color = new Color(0.65f, 0.35f, 0.95f), Radius = 0.95f, Health = 420f, Attack = 22f, Armour = 15f, Speed = 2.3f, AttackRate = 0.8f, Range = 1.1f, Aggro = 10f, Xp = 140f, SpawnWeight = 0f, Boss = true, Weapon = WeaponKind.Hammer, Skill = 5 },
+            };
+        }
+
+        [Serializable]
+        public sealed class WeaponEntry
+        {
+            public string Name;
+            public WeaponKind Kind;
+            [Tooltip("Damage = attack x this")] public float DamageMul = 1f;
+            public float AttackRate = 1.5f;
+            [Tooltip("Reach beyond the wielder's radius (melee) or projectile life x speed (ranged)")] public float Range = 1.2f;
+            [Tooltip("Cosine of the half arc (melee): 1 = a line, -1 = all around")] public float ArcCos = 0.25f;
+            public float Windup = 0.15f, Recover = 0.2f;
+            public float Knockback = 2.5f;
+            public float Stagger = 0.15f;
+            public bool Ranged;
+            public float ProjectileSpeed = 14f, ProjectileRadius = 0.15f;
+            public int Pierce;
+            public ProjectileVisual Visual;
+            [Tooltip("Hero weapons drop as loot; monster weapons (claw, hammer) do not")] public bool Lootable = true;
+
+            public static List<WeaponEntry> Defaults() => new List<WeaponEntry>
+            {
+                new WeaponEntry { Name = "Sword", Kind = WeaponKind.Sword, DamageMul = 1f, AttackRate = 2f, Range = 1.2f, ArcCos = 0.25f, Windup = 0.12f, Recover = 0.16f, Knockback = 2.5f },
+                new WeaponEntry { Name = "Axe", Kind = WeaponKind.Axe, DamageMul = 1.65f, AttackRate = 1.1f, Range = 1.25f, ArcCos = -0.25f, Windup = 0.26f, Recover = 0.28f, Knockback = 5f, Stagger = 0.3f },
+                new WeaponEntry { Name = "Spear", Kind = WeaponKind.Spear, DamageMul = 1.2f, AttackRate = 1.6f, Range = 2.2f, ArcCos = 0.85f, Windup = 0.16f, Recover = 0.2f, Knockback = 3.5f, Stagger = 0.2f },
+                new WeaponEntry { Name = "Bow", Kind = WeaponKind.Bow, DamageMul = 0.85f, AttackRate = 1.8f, Range = 9f, Windup = 0.2f, Recover = 0.1f, Knockback = 1.5f, Ranged = true, ProjectileSpeed = 17f, ProjectileRadius = 0.14f, Visual = ProjectileVisual.Arrow },
+                new WeaponEntry { Name = "Staff", Kind = WeaponKind.Staff, DamageMul = 1.05f, AttackRate = 1.3f, Range = 8f, Windup = 0.22f, Recover = 0.15f, Knockback = 2f, Ranged = true, ProjectileSpeed = 11f, ProjectileRadius = 0.22f, Pierce = 2, Visual = ProjectileVisual.Bolt },
+                new WeaponEntry { Name = "Claw", Kind = WeaponKind.Claw, DamageMul = 1f, AttackRate = 1f, Range = 0.6f, ArcCos = 0f, Windup = 0.35f, Recover = 0.35f, Knockback = 1.5f, Lootable = false },
+                new WeaponEntry { Name = "Hammer", Kind = WeaponKind.Hammer, DamageMul = 1f, AttackRate = 0.8f, Range = 1f, ArcCos = -0.2f, Windup = 0.45f, Recover = 0.45f, Knockback = 6f, Stagger = 0.3f, Lootable = false },
+            };
+        }
+
+        [Serializable]
+        public sealed class SkillEntry
+        {
+            public string Name;
+            public SkillKind Kind;
+            public float ManaCost, Cooldown, CastTime;
+            [Tooltip("Damage = attack x skill power x this")] public float Power = 1f;
+            public float Radius, Duration, Speed, Knockback;
+            [Tooltip("Speed multiplier delta applied to targets (e.g. -0.5 = 50% slower) for SlowDuration")]
+            public float Slow, SlowDuration;
+            public int UnlockLevel = 1;
+
+            public static List<SkillEntry> Defaults() => new List<SkillEntry>
+            {
+                new SkillEntry { Name = "Fireball", Kind = SkillKind.Projectile, ManaCost = 12f, Cooldown = 2.5f, CastTime = 0.25f, Power = 2f, Radius = 1.4f, Speed = 14f, Knockback = 4f, UnlockLevel = 1 },
+                new SkillEntry { Name = "Dash", Kind = SkillKind.Dash, ManaCost = 8f, Cooldown = 3f, Duration = 0.22f, Speed = 16f, UnlockLevel = 2 },
+                new SkillEntry { Name = "Whirlwind", Kind = SkillKind.Whirlwind, ManaCost = 20f, Cooldown = 6f, Power = 0.7f, Radius = 2f, Duration = 0.9f, Knockback = 3f, UnlockLevel = 4 },
+                new SkillEntry { Name = "Frost Nova", Kind = SkillKind.Nova, ManaCost = 25f, Cooldown = 9f, CastTime = 0.3f, Power = 0.8f, Radius = 4f, Knockback = 2f, Slow = -0.5f, SlowDuration = 3f, UnlockLevel = 6 },
+                new SkillEntry { Name = "Ground Slam", Kind = SkillKind.Slam, Cooldown = 6f, CastTime = 0.9f, Power = 2.2f, Radius = 3f, Knockback = 8f, UnlockLevel = 1 },
             };
         }
 

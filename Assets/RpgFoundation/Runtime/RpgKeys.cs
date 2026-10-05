@@ -17,6 +17,8 @@ namespace RpgFoundation
         public static readonly ColumnKey<float2> MoveIntent = new ColumnKey<float2>(Actor, "MoveIntent");
         public static readonly ColumnKey<ActorInfo> Info = new ColumnKey<ActorInfo>(Actor, "Info");
         public static readonly ColumnKey<Health> Health = new ColumnKey<Health>(Actor, "Health");
+        public static readonly ColumnKey<Health> Mana = new ColumnKey<Health>(Actor, "Mana");
+        public static readonly ColumnKey<Loadout> Loadout = new ColumnKey<Loadout>(Actor, "Loadout");
         public static readonly ColumnKey<StatBlock> BaseStats = new ColumnKey<StatBlock>(Actor, "BaseStats");
         public static readonly ColumnKey<StatBlock> Stats = new ColumnKey<StatBlock>(Actor, "Stats");
         public static readonly ColumnKey<ModifierSet> Mods = new ColumnKey<ModifierSet>(Actor, "Mods");

@@ -26,7 +26,7 @@ namespace RpgFoundation.Systems
 
         public override void Declare(AccessDeclaration access) => access
             .Read(RpgKeys.Actor).Read(RpgKeys.Stats).Read(RpgKeys.Position)
-            .Write(RpgKeys.Info).Write(RpgKeys.Health).Write(RpgKeys.Combat).Write(RpgKeys.Brain)
+            .Write(RpgKeys.Info).Write(RpgKeys.Health).Write(RpgKeys.Combat).Write(RpgKeys.Brain).Write(RpgKeys.Mods)
             .Write(RpgKeys.Hits).Write(RpgKeys.Deaths).Write(RpgKeys.Feedback).Write(SimWorld.DestroyQueueKey);
 
         struct HitOrder : IComparer<HitEvent>
@@ -53,6 +53,7 @@ namespace RpgFoundation.Systems
                 Stats = context.Column(RpgKeys.Stats),
                 Combat = context.Column(RpgKeys.Combat),
                 Brain = context.Column(RpgKeys.Brain),
+                Mods = context.Column(RpgKeys.Mods),
                 Position = context.Column(RpgKeys.Position),
                 Count = context.Count(RpgKeys.Actor),
                 CritMultiplier = world.Resource(RpgKeys.Config).Settings.CritMultiplier,
@@ -75,6 +76,7 @@ namespace RpgFoundation.Systems
             [ReadOnly] public NativeArray<StatBlock> Stats;
             public NativeArray<CombatState> Combat;
             public NativeArray<Brain> Brain;
+            public NativeArray<ModifierSet> Mods;
             [ReadOnly] public NativeArray<float2> Position;
             public int Count, Floor;
             public float CritMultiplier;
@@ -91,20 +93,41 @@ namespace RpgFoundation.Systems
                     if (row < 0 || row >= Count) continue;
                     var info = Info[row];
                     if (info.Has(ActorFlags.Dead)) continue;
+                    var c = Combat[row];
+                    if (c.Invulnerable > 0f) continue;   // dashing: i-frames
                     var random = SimRandom.Create(Seed, Tick, (uint)h * 7919u + 13u);
                     var roll = CombatMath.Roll(hit.Damage, Stats[row][Stat.Armour], hit.CritChance, CritMultiplier, 0.12f, ref random);
                     var health = Health[row];
                     health.Current -= roll.Amount;
                     Health[row] = health;
-                    var c = Combat[row];
-                    c.HitFlash = 0.15f;
-                    Combat[row] = c;
                     bool hero = info.Has(ActorFlags.Hero);
+                    bool boss = info.Has(ActorFlags.Boss);
+                    c.HitFlash = 0.15f;
+                    // Knockback: lighter (smaller) actors fly further; bosses barely move.
+                    float weight = math.max(info.Radius * info.Radius * 6f, 0.5f) * (boss ? 4f : 1f);
+                    c.Knockback += hit.Direction * (hit.Knockback * (roll.Critical ? 1.5f : 1f) / weight);
+                    // Stagger interrupts monsters' attacks (not bosses, not the hero: the player keeps control).
+                    if (!hero && !boss && hit.Stagger > 0f && (roll.Critical || hit.Stagger >= 0.2f || c.Phase != ActionPhase.Windup))
+                    {
+                        c.Phase = ActionPhase.Stagger;
+                        c.PhaseTime = 0f;
+                        c.PhaseDuration = hit.Stagger * (roll.Critical ? 1.6f : 1f);
+                    }
+                    Combat[row] = c;
+                    if (hit.Mod.Source != 0)
+                    {
+                        var mods = Mods[row];
+                        mods.Apply(hit.Mod);
+                        Mods[row] = mods;
+                    }
                     Feedback.TryAdd(new FeedbackEvent
                     {
                         Kind = hero ? FeedbackKind.HeroHurt : roll.Critical ? FeedbackKind.Crit : FeedbackKind.Damage,
                         Position = hit.Position,
                         Value = roll.Amount,
+                        Direction = hit.Direction,
+                        Actor = info.Kind,
+                        Source = hit.Source,
                     });
                     if (!hero)
                     {
@@ -116,7 +139,7 @@ namespace RpgFoundation.Systems
                     if (health.Current > 0f) continue;
                     info.Flags |= ActorFlags.Dead;
                     Info[row] = info;
-                    Feedback.TryAdd(new FeedbackEvent { Kind = FeedbackKind.Death, Position = Position[row], Value = info.Radius });
+                    Feedback.TryAdd(new FeedbackEvent { Kind = FeedbackKind.Death, Position = Position[row], Value = info.Radius, Actor = info.Kind, Direction = hit.Direction });
                     if (!hero)
                     {
                         Deaths.TryAdd(new DeathEvent { Kind = info.Kind, Position = Position[row], Floor = Floor, Boss = info.Has(ActorFlags.Boss) });
@@ -199,7 +222,8 @@ namespace RpgFoundation.Systems
 
         static void LevelUp(SimWorld world, RpgRuntimeConfig config, HeroProfile profile, int row, EventQueue<FeedbackEvent> feedback)
         {
-            var baseStats = RpgSpawner.HeroBaseStats(config.Settings, profile.Level);
+            var baseStats = RpgSpawner.HeroBaseStats(config, profile.Level, profile.Weapon);
+            world.Column(RpgKeys.Loadout).Set(row, config.HeroLoadout(profile.Level, profile.Weapon));
             world.Column(RpgKeys.BaseStats).Set(row, baseStats);
             var stats = world.Column(RpgKeys.Mods)[row].Evaluate(baseStats);
             world.Column(RpgKeys.Stats).Set(row, stats);
@@ -214,7 +238,7 @@ namespace RpgFoundation.Systems
             int gearTier = math.clamp((death.Floor + 1) / 2 + (death.Boss ? 1 : 0), 1, l.GearTiers);
             if (death.Boss && l.BossGuaranteedGear)
             {
-                Drop(world, death.Position, ItemKind.Gear, config.GearId(random.NextBool() ? GearSlot.Weapon : GearSlot.Armour, gearTier), ref random);
+                Drop(world, death.Position, ItemKind.Gear, RandomGear(config, gearTier, ref random), ref random);
                 Drop(world, death.Position, ItemKind.Potion, 1, ref random);
             }
             if (random.NextFloat() >= l.DropChance) return;
@@ -226,9 +250,16 @@ namespace RpgFoundation.Systems
             if (pick < 0) return;
             var kind = (ItemKind)table[pick].Item;
             int value = kind == ItemKind.Gold ? LootTable.Count(table[pick], ref random) * (1 + death.Floor / 2)
-                : kind == ItemKind.Gear ? config.GearId(random.NextBool() ? GearSlot.Weapon : GearSlot.Armour, gearTier)
+                : kind == ItemKind.Gear ? RandomGear(config, gearTier, ref random)
                 : 1;
             Drop(world, death.Position, kind, value, ref random);
+        }
+
+        static int RandomGear(RpgRuntimeConfig config, int tier, ref Random random)
+        {
+            // Half armour, half one of the lootable weapon families.
+            if (random.NextBool() || config.LootWeapons.Length == 0) return config.ArmourId(tier);
+            return config.GearId(config.LootWeapons[random.NextInt(config.LootWeapons.Length)], tier);
         }
 
         static void Drop(SimWorld world, float2 at, ItemKind kind, int value, ref Random random)
@@ -282,6 +313,8 @@ namespace RpgFoundation.Systems
             var def = config.Gear[gear];
             int current = def.Slot == GearSlot.Weapon ? profile.Weapon : profile.Armour;
             if (current != 0 && config.Gear[current].Tier >= def.Tier) return false;
+            // Another weapon family is a play-style choice: it goes to the bag unless the hand is empty.
+            if (current != 0 && def.Slot == GearSlot.Weapon && config.Gear[current].Weapon != def.Weapon) return false;
             if (current != 0)
             {
                 if (profile.Inventory.Count >= HeroProfile.MaxInventory) return false;
@@ -338,8 +371,15 @@ namespace RpgFoundation.Systems
             var m = mods[heroRow];
             RpgSpawner.ApplyGear(ref m, config, profile.Weapon, profile.Armour);
             mods[heroRow] = m;
+            // The weapon family sets attack rate and reach; the loadout tells combat what to swing.
+            var baseStats = RpgSpawner.HeroBaseStats(config, profile.Level, profile.Weapon);
+            world.Column(RpgKeys.BaseStats).Set(heroRow, baseStats);
+            var loadout = world.Column(RpgKeys.Loadout);
+            var l = loadout[heroRow];
+            l.Weapon = config.HeroWeapon(profile.Weapon);
+            loadout[heroRow] = l;
             // Keep the health fraction when max health changes.
-            var stats = m.Evaluate(world.Column(RpgKeys.BaseStats)[heroRow]);
+            var stats = m.Evaluate(baseStats);
             world.Column(RpgKeys.Stats).Set(heroRow, stats);
             var healths = world.Column(RpgKeys.Health);
             var h = healths[heroRow];

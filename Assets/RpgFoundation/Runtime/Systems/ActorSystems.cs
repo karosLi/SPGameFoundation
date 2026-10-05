@@ -25,6 +25,7 @@ namespace RpgFoundation.Systems
 
         public override void Declare(AccessDeclaration access) => access
             .Read(RpgKeys.Position).Read(RpgKeys.Info).Read(RpgKeys.Stats).Read(RpgKeys.Map).Read(RpgKeys.Flow)
+            .Read(RpgKeys.Loadout)
             .Write(RpgKeys.Brain).Write(RpgKeys.MoveIntent).Write(RpgKeys.Combat).Write(RpgKeys.Facing);
 
         public override JobHandle OnTick(in SimContext context, JobHandle dependency)
@@ -33,8 +34,11 @@ namespace RpgFoundation.Systems
             var game = world.Resource(RpgKeys.Game);
             bool hasHero = world.Registry.TryResolve(game.Hero, out _, out int heroRow) && game.Flow == RpgFlow.Playing;
             var map = world.Resource(RpgKeys.Map).AsView();
+            var config = world.Resource(RpgKeys.Config);
             return new BrainJob
             {
+                Loadout = context.Column(RpgKeys.Loadout),
+                Skills = config.Skills,
                 Position = context.Column(RpgKeys.Position),
                 Info = context.Column(RpgKeys.Info),
                 Stats = context.Column(RpgKeys.Stats),
@@ -62,6 +66,8 @@ namespace RpgFoundation.Systems
             public NativeArray<float2> Intent;
             public NativeArray<CombatState> Combat;
             public NativeArray<float2> Facing;
+            [ReadOnly] public NativeArray<Loadout> Loadout;
+            [ReadOnly] public NativeArray<SkillDef> Skills;
             public TileMapView Map;
             public FlowFieldView Flow;
             public int HeroRow;
@@ -119,17 +125,24 @@ namespace RpgFoundation.Systems
                         brain.LostSight = sees ? 0f : brain.LostSight + DeltaTime;
                         if (brain.LostSight > 4f && brain.Provoked <= 0f) { Enter(ref brain, AIState.Return); break; }
                         bool inRange = dist <= reach && (sees || dist < 1.5f);
-                        if (def.Ranged)
+                        byte skill = Loadout[i].S0;
+                        if (skill > 0 && combat.SkillCooldown.x <= 0f && sees && dist < Skills[skill - 1].Radius * 0.85f)
+                        {
+                            // Area skill (the boss's slam): telegraphed cast when the hero is close.
+                            combat.Action = ActorAction.Skill;
+                            combat.RequestSlot = 0;
+                        }
+                        else if (def.Ranged)
                         {
                             // Archers: keep between half and full range, shoot when in sight.
                             if (sees && dist < reach * 0.45f) intent = -math.normalizesafe(toHero);
                             else if (!inRange) intent = Approach(p, toHero, dist, sees);
-                            if (inRange) combat.Action = ActorAction.Shoot;
+                            if (inRange && sees) combat.Action = ActorAction.Attack;
                         }
                         else
                         {
                             if (!inRange) intent = Approach(p, toHero, dist, sees);
-                            else combat.Action = ActorAction.Melee;
+                            else combat.Action = ActorAction.Attack;
                         }
                         brain.State = inRange ? AIState.Attack : AIState.Chase;
                         if (hero) Facing[i] = math.normalizesafe(toHero, Facing[i]);
@@ -169,7 +182,8 @@ namespace RpgFoundation.Systems
         public override void Declare(AccessDeclaration access) => access
             .Read(RpgKeys.MoveIntent).Read(RpgKeys.Info).Read(RpgKeys.BaseStats).Read(RpgKeys.Map).Read(RpgKeys.ActorGrid)
             .Write(RpgKeys.Position).Write(RpgKeys.PrevPosition).Write(RpgKeys.Facing)
-            .Write(RpgKeys.Stats).Write(RpgKeys.Mods).Write(RpgKeys.Combat).Write(RpgKeys.Health);
+            .Write(RpgKeys.Stats).Write(RpgKeys.Mods).Write(RpgKeys.Combat).Write(RpgKeys.Health).Write(RpgKeys.Mana)
+            .Read(RpgKeys.Loadout);
 
         public override JobHandle OnTick(in SimContext context, JobHandle dependency)
         {
@@ -186,6 +200,9 @@ namespace RpgFoundation.Systems
                 Mods = context.Column(RpgKeys.Mods),
                 Combat = context.Column(RpgKeys.Combat),
                 Health = context.Column(RpgKeys.Health),
+                Mana = context.Column(RpgKeys.Mana),
+                Loadout = context.Column(RpgKeys.Loadout),
+                Skills = world.Resource(RpgKeys.Config).Skills,
                 Map = world.Resource(RpgKeys.Map).AsView(),
                 Grid = world.Resource(RpgKeys.ActorGrid).AsReader(),
                 DeltaTime = context.Time.DeltaTime,
@@ -227,6 +244,9 @@ namespace RpgFoundation.Systems
             public NativeArray<ModifierSet> Mods;
             public NativeArray<CombatState> Combat;
             public NativeArray<Health> Health;
+            public NativeArray<Health> Mana;
+            [ReadOnly] public NativeArray<Loadout> Loadout;
+            [ReadOnly] public NativeArray<SkillDef> Skills;
             public TileMapView Map;
             public GridReader Grid;
             public float DeltaTime;
@@ -246,24 +266,48 @@ namespace RpgFoundation.Systems
 
                 var combat = Combat[i];
                 combat.Attack.Tick(DeltaTime);
-                combat.Skill.Tick(DeltaTime);
                 combat.Potion.Tick(DeltaTime);
+                combat.SkillCooldown = math.max(combat.SkillCooldown - DeltaTime, 0f);
                 combat.HitFlash = math.max(combat.HitFlash - DeltaTime, 0f);
-                Combat[i] = combat;
+                combat.Invulnerable = math.max(combat.Invulnerable - DeltaTime, 0f);
 
                 var h = Health[i];
                 h.Max = stats[Stat.MaxHealth];
                 h.Current = math.min(h.Max, h.Current + stats[Stat.Regen] * DeltaTime);
                 Health[i] = h;
+                var mana = Mana[i];
+                mana.Max = stats[Stat.MaxMana];
+                mana.Current = math.min(mana.Max, mana.Current + stats[Stat.ManaRegen] * DeltaTime);
+                Mana[i] = mana;
 
+                // Actions slow or replace walking: rooted while winding up / casting / staggered, a dash
+                // moves along the locked aim at the skill's speed.
                 float2 intent = Intent[i];
-                float2 velocity = intent * stats[Stat.Speed];
+                float factor = combat.Phase switch
+                {
+                    ActionPhase.Windup => info.Has(ActorFlags.Hero) ? 0.45f : 0.15f,
+                    ActionPhase.Recover => 0.6f,
+                    ActionPhase.Cast => 0.15f,
+                    ActionPhase.Channel => 0.75f,
+                    ActionPhase.Stagger => 0f,
+                    _ => 1f,
+                };
+                float2 velocity = intent * stats[Stat.Speed] * factor;
+                if (combat.Phase == ActionPhase.Dash && combat.PhaseSkill > 0)
+                    velocity = combat.Aim * Skills[combat.PhaseSkill - 1].Speed;
+                velocity += combat.Knockback;
+                combat.Knockback *= math.exp(-9f * DeltaTime);
+                if (math.lengthsq(combat.Knockback) < 1e-4f) combat.Knockback = float2.zero;
+                Combat[i] = combat;
+
                 var sep = new Separation { Self = i, Position = p, Radius = info.Radius };
                 Grid.Query(p, info.Radius, ref sep);
-                // Push out of overlaps over a few ticks (soft), heavier actors move less.
-                float2 delta = velocity * DeltaTime + sep.Push * 0.35f;
+                // Push out of overlaps over a few ticks (soft); dashing actors slip through crowds.
+                float2 delta = velocity * DeltaTime + (combat.Phase == ActionPhase.Dash ? float2.zero : sep.Push * 0.35f);
                 Position[i] = Map.MoveCircle(p, delta, info.Radius);
-                if (info.Team == Team.Monsters && math.lengthsq(intent) > 1e-4f && combat.Action == ActorAction.None)
+                if (combat.Phase != ActionPhase.None && combat.Phase != ActionPhase.Stagger && math.lengthsq(combat.Aim) > 0f)
+                    Facing[i] = combat.Aim;
+                else if (math.lengthsq(intent) > 1e-4f && (info.Team == Team.Monsters || combat.Phase == ActionPhase.None))
                     Facing[i] = math.normalize(intent);
             }
         }
@@ -314,17 +358,19 @@ namespace RpgFoundation.Systems
     }
 
     /// <summary>
-    /// Collision (Burst, parallel): melee swings (arc against enemies in reach; the hero auto-aims at the
-    /// nearest enemy), shots and the hero's fireball (as projectile requests), projectile flight with wall
-    /// and actor hits. Hits are queued; rules apply in <see cref="ResolveSystem"/>.
+    /// Collision (Burst, parallel): the action phase machine. Attacks wind up, strike (melee arc against
+    /// enemies in reach with knockback / stagger, or a projectile for bows and staves) and recover; skills
+    /// spend mana and go on cooldown, then cast (fireball, frost nova, the boss's telegraphed slam),
+    /// channel (whirlwind: area hits every third of its duration) or dash (invulnerable). The hero aims at
+    /// the nearest enemy. Hits are queued; rules apply in <see cref="ResolveSystem"/>.
     /// </summary>
     sealed class CombatSystem : SimSystemBase
     {
         public override SimPhase Phase => SimPhase.Collision;
 
         public override void Declare(AccessDeclaration access) => access
-            .Read(RpgKeys.Position).Read(RpgKeys.Info).Read(RpgKeys.Stats).Read(RpgKeys.ActorGrid).Read(RpgKeys.Map)
-            .Write(RpgKeys.Combat).Write(RpgKeys.Facing).Write(RpgKeys.Hits).Write(RpgKeys.ProjectileRequests)
+            .Read(RpgKeys.Position).Read(RpgKeys.Info).Read(RpgKeys.Stats).Read(RpgKeys.ActorGrid).Read(RpgKeys.Map).Read(RpgKeys.Loadout)
+            .Write(RpgKeys.Combat).Write(RpgKeys.Facing).Write(RpgKeys.Mana).Write(RpgKeys.Hits).Write(RpgKeys.ProjectileRequests).Write(RpgKeys.Feedback)
             .Read(RpgKeys.Projectile).Write(RpgKeys.ProjectilePosition).Write(RpgKeys.ProjectilePrev).Write(RpgKeys.ProjectileInfo)
             .Write(SimWorld.DestroyQueueKey);
 
@@ -334,18 +380,24 @@ namespace RpgFoundation.Systems
             var config = world.Resource(RpgKeys.Config);
             var grid = world.Resource(RpgKeys.ActorGrid).AsReader();
             var hits = world.Resource(RpgKeys.Hits).AsWriter();
-            var melee = new ActionJob
+            var feedback = world.Resource(RpgKeys.Feedback).AsWriter();
+            var actions = new ActionJob
             {
                 Position = context.Column(RpgKeys.Position),
                 Info = context.Column(RpgKeys.Info),
                 Stats = context.Column(RpgKeys.Stats),
+                Loadout = context.Column(RpgKeys.Loadout),
                 Combat = context.Column(RpgKeys.Combat),
                 Facing = context.Column(RpgKeys.Facing),
+                Mana = context.Column(RpgKeys.Mana),
                 Grid = grid,
                 Hits = hits,
+                Feedback = feedback,
                 Requests = world.Resource(RpgKeys.ProjectileRequests).AsWriter(),
-                Monsters = config.Monsters,
+                Weapons = config.Weapons,
+                Skills = config.Skills,
                 Settings = config.Settings,
+                DeltaTime = context.Time.DeltaTime,
             }.Schedule(context.Count(RpgKeys.Actor), 16, dependency);
 
             var projectiles = new ProjectileJob
@@ -357,9 +409,10 @@ namespace RpgFoundation.Systems
                 Grid = grid,
                 Map = world.Resource(RpgKeys.Map).AsView(),
                 Hits = hits,
+                Feedback = feedback,
                 Destroy = world.Resource(SimWorld.DestroyQueueKey).AsWriter(),
                 DeltaTime = context.Time.DeltaTime,
-            }.Schedule(context.Count(RpgKeys.Projectile), 16, melee);   // both write the hit queue: chained
+            }.Schedule(context.Count(RpgKeys.Projectile), 16, actions);   // both write the hit queue: chained
             return projectiles;
         }
 
@@ -380,12 +433,15 @@ namespace RpgFoundation.Systems
             }
         }
 
-        struct ArcHits : IGridVisitor
+        /// <summary>Hits every enemy in an arc (ArcCos = -1: full circle) with knockback away from the origin.</summary>
+        struct AreaHits : IGridVisitor
         {
             public Team Team;
             public int AttackerId;
             public float2 Origin, Facing;
-            public float Range, Cos, Damage, Crit;
+            public float Range, Cos, Damage, Crit, Knockback, Stagger;
+            public Modifier Mod;
+            public HitSource Source;
             public ParallelQueue<HitEvent>.Writer Hits;
             public int Count;
 
@@ -393,7 +449,11 @@ namespace RpgFoundation.Systems
             {
                 if (e.Data == (int)Team) return true;
                 if (!CombatMath.InArc(Origin, Facing, e.Position, e.Radius, Range, Cos)) return true;
-                Hits.TryAdd(new HitEvent { AttackerId = AttackerId, TargetRow = e.Owner, Damage = Damage, CritChance = Crit, Position = e.Position });
+                Hits.TryAdd(new HitEvent
+                {
+                    AttackerId = AttackerId, TargetRow = e.Owner, Damage = Damage, CritChance = Crit, Position = e.Position,
+                    Direction = math.normalizesafe(e.Position - Origin, Facing), Knockback = Knockback, Stagger = Stagger, Mod = Mod, Source = Source,
+                });
                 Count++;
                 return true;
             }
@@ -405,75 +465,206 @@ namespace RpgFoundation.Systems
             [ReadOnly] public NativeArray<float2> Position;
             [ReadOnly] public NativeArray<ActorInfo> Info;
             [ReadOnly] public NativeArray<StatBlock> Stats;
+            [ReadOnly] public NativeArray<Loadout> Loadout;
             public NativeArray<CombatState> Combat;
             public NativeArray<float2> Facing;
+            public NativeArray<Health> Mana;
             public GridReader Grid;
             public ParallelQueue<HitEvent>.Writer Hits;
+            public ParallelQueue<FeedbackEvent>.Writer Feedback;
             public ParallelQueue<ProjectileRequest>.Writer Requests;
-            [ReadOnly] public NativeArray<MonsterDef> Monsters;
+            [ReadOnly] public NativeArray<WeaponDef> Weapons;
+            [ReadOnly] public NativeArray<SkillDef> Skills;
             public RpgSettings Settings;
+            public float DeltaTime;
 
             public void Execute(int i)
             {
                 var info = Info[i];
+                if (info.Has(ActorFlags.Dead)) return;
                 var c = Combat[i];
-                if (info.Has(ActorFlags.Dead) || c.Action == ActorAction.None) return;
                 var stats = Stats[i];
+                var loadout = Loadout[i];
+                var weapon = Weapons[(int)loadout.Weapon];
                 float2 p = Position[i];
-                float range = stats[Stat.Range] + info.Radius;
                 bool hero = info.Has(ActorFlags.Hero);
 
-                if (c.Action == ActorAction.Skill)
+                // 1. Advance the running phase.
+                if (c.Phase != ActionPhase.None)
                 {
-                    if (c.Skill.Ready)
+                    c.PhaseTime += DeltaTime;
+                    switch (c.Phase)
                     {
-                        float2 dir = Aim(i, p, info, 12f, Facing[i]);
-                        Requests.TryAdd(new ProjectileRequest
+                        case ActionPhase.Windup:
+                            if (c.PhaseTime >= c.PhaseDuration)
+                            {
+                                Strike(info, stats, weapon, p, c.Aim);
+                                Enter(ref c, ActionPhase.Recover, weapon.Recover);
+                            }
+                            break;
+                        case ActionPhase.Cast:
+                            if (c.PhaseTime >= c.PhaseDuration)
+                            {
+                                Release(info, stats, c.PhaseSkill, p, c.Aim);
+                                Enter(ref c, ActionPhase.Recover, 0.15f);
+                            }
+                            break;
+                        case ActionPhase.Channel:
                         {
-                            Position = p + dir * (info.Radius + 0.2f), Direction = dir, Speed = Settings.FireballSpeed,
-                            Damage = stats[Stat.Attack] * Settings.FireballDamage, CritChance = stats[Stat.Crit],
-                            Team = info.Team, OwnerId = info.Id, Fireball = true,
-                        });
-                        c.Skill.Start(Settings.FireballCooldown);
+                            var skill = Skills[c.PhaseSkill - 1];
+                            int due = (int)math.min(3f, math.floor(c.PhaseTime / math.max(skill.Duration, 1e-3f) * 3f) + 1f);
+                            while (c.PhaseTicks < due)
+                            {
+                                c.PhaseTicks++;
+                                Area(info, stats, p, c.Aim, skill.Radius, -1f, stats[Stat.Attack] * stats[Stat.SkillPower] * skill.Power, skill.Knockback, 0.1f, default, HitSource.Whirlwind);
+                            }
+                            if (c.PhaseTime >= c.PhaseDuration) Enter(ref c, ActionPhase.None, 0f);
+                            break;
+                        }
+                        default:   // Recover, Dash, Stagger
+                            if (c.PhaseTime >= c.PhaseDuration) Enter(ref c, ActionPhase.None, 0f);
+                            break;
                     }
                 }
-                else if (c.Attack.Ready)
+
+                // 2. Start a requested action when free (recovering can be cancelled by a new action).
+                bool free = c.Phase == ActionPhase.None || c.Phase == ActionPhase.Recover;
+                if (free && c.Action == ActorAction.Skill)
+                    TryStartSkill(i, info, stats, loadout, p, ref c);
+                else if (free && c.Action == ActorAction.Attack && c.Attack.Ready)
                 {
-                    if (c.Action == ActorAction.Shoot)
+                    float reach = weapon.Ranged ? weapon.Range : stats[Stat.Range] + info.Radius + 1f;
+                    c.Aim = hero ? Aim(p, info, reach, Facing[i]) : math.normalizesafe(Facing[i], new float2(1f, 0f));
+                    // A hero with a melee weapon and nobody in reach does not swing (no wasted cooldown).
+                    bool target = !hero || weapon.Ranged || HasEnemy(p, info, stats[Stat.Range] + info.Radius + 0.3f);
+                    if (target)
                     {
-                        var def = Monsters[info.Kind - 1];
-                        float2 dir = math.normalizesafe(Facing[i], new float2(1f, 0f));
-                        Requests.TryAdd(new ProjectileRequest
-                        {
-                            Position = p + dir * (info.Radius + 0.15f), Direction = dir, Speed = def.ProjectileSpeed,
-                            Damage = stats[Stat.Attack], CritChance = stats[Stat.Crit], Team = info.Team, OwnerId = info.Id,
-                        });
-                        c.Attack.Start(1f / math.max(stats[Stat.AttackRate], 0.05f));
-                    }
-                    else
-                    {
-                        float2 facing = hero ? Aim(i, p, info, range + 1f, Facing[i]) : Facing[i];
-                        Facing[i] = facing;
-                        var arc = new ArcHits
-                        {
-                            Team = info.Team, AttackerId = info.Id, Origin = p, Facing = facing, Range = range,
-                            Cos = hero ? Settings.ArcCos : 0.5f, Damage = stats[Stat.Attack], Crit = stats[Stat.Crit], Hits = Hits,
-                        };
-                        Grid.Query(p, range, ref arc);
-                        // Swinging at nothing still costs the swing (no free spam), but a hero with no target
-                        // in reach does not swing at all.
-                        if (arc.Count > 0 || !hero)
-                            c.Attack.Start(1f / math.max(stats[Stat.AttackRate], 0.05f));
+                        float rate = math.max(stats[Stat.AttackRate], 0.05f);
+                        // Faster attack rates shorten the wind-up too (animations stay in sync).
+                        float speed = math.max(rate / math.max(weapon.AttackRate, 0.05f), 0.25f);
+                        Enter(ref c, ActionPhase.Windup, weapon.Windup / speed);
+                        c.Attack.Start(1f / rate);
+                        Facing[i] = c.Aim;
+                        Feedback.TryAdd(new FeedbackEvent { Kind = FeedbackKind.Swing, Position = p, Direction = c.Aim, Actor = info.Kind, Weapon = loadout.Weapon, Value = c.PhaseDuration });
                     }
                 }
+                c.Action = ActorAction.None;
                 Combat[i] = c;
             }
 
-            float2 Aim(int self, float2 p, in ActorInfo info, float reach, float2 fallback)
+            void TryStartSkill(int i, in ActorInfo info, in StatBlock stats, in Loadout loadout, float2 p, ref CombatState c)
+            {
+                int slot = c.RequestSlot;
+                byte id = loadout.Skill(slot);
+                if (id == 0 || c.SkillCooldown[slot] > 0f) return;
+                var skill = Skills[id - 1];
+                var mana = Mana[i];
+                if (mana.Current < skill.ManaCost) return;
+                mana.Current -= skill.ManaCost;
+                Mana[i] = mana;
+                var cd = c.SkillCooldown;
+                cd[slot] = skill.Cooldown;
+                c.SkillCooldown = cd;
+                bool hero = info.Has(ActorFlags.Hero);
+                float2 facing = math.normalizesafe(Facing[i], new float2(1f, 0f));
+                c.Aim = hero && skill.Kind == SkillKind.Projectile ? Aim(p, info, 12f, facing) : facing;
+                c.PhaseSkill = id;
+                switch (skill.Kind)
+                {
+                    case SkillKind.Dash:
+                        Enter(ref c, ActionPhase.Dash, skill.Duration);
+                        c.Invulnerable = skill.Duration + 0.05f;
+                        Feedback.TryAdd(new FeedbackEvent { Kind = FeedbackKind.Dash, Position = p, Direction = c.Aim, Value = skill.Duration, Actor = info.Kind });
+                        break;
+                    case SkillKind.Whirlwind:
+                        Enter(ref c, ActionPhase.Channel, skill.Duration);
+                        Feedback.TryAdd(new FeedbackEvent { Kind = FeedbackKind.Whirlwind, Position = p, Value = skill.Radius, Actor = info.Kind });
+                        break;
+                    default:
+                        Enter(ref c, ActionPhase.Cast, math.max(skill.CastTime, 0.01f));
+                        Feedback.TryAdd(new FeedbackEvent
+                        {
+                            Kind = skill.Kind == SkillKind.Slam ? FeedbackKind.SlamWarning : FeedbackKind.Cast,
+                            Position = p, Direction = c.Aim, Value = skill.Kind == SkillKind.Slam ? skill.Radius : skill.CastTime, Actor = info.Kind,
+                        });
+                        break;
+                }
+                c.PhaseSkill = id;
+            }
+
+            void Strike(in ActorInfo info, in StatBlock stats, in WeaponDef weapon, float2 p, float2 aim)
+            {
+                float damage = stats[Stat.Attack] * weapon.DamageMul;
+                if (weapon.Ranged)
+                {
+                    Requests.TryAdd(new ProjectileRequest
+                    {
+                        Position = p + aim * (info.Radius + 0.15f), Direction = aim, Speed = weapon.ProjectileSpeed, Radius = weapon.ProjectileRadius,
+                        Damage = damage, CritChance = stats[Stat.Crit], Knockback = weapon.Knockback, Pierce = weapon.Pierce,
+                        Life = weapon.Range / math.max(weapon.ProjectileSpeed, 0.1f), Team = info.Team, OwnerId = info.Id, Visual = weapon.Visual,
+                    });
+                    return;
+                }
+                float cos = info.Has(ActorFlags.Hero) ? weapon.ArcCos : math.max(weapon.ArcCos, 0f);
+                Area(info, stats, p, aim, stats[Stat.Range] + info.Radius, cos, damage, weapon.Knockback, weapon.Stagger, default, HitSource.Weapon);
+            }
+
+            void Release(in ActorInfo info, in StatBlock stats, byte id, float2 p, float2 aim)
+            {
+                var skill = Skills[id - 1];
+                float damage = stats[Stat.Attack] * stats[Stat.SkillPower] * skill.Power;
+                switch (skill.Kind)
+                {
+                    case SkillKind.Projectile:
+                        Requests.TryAdd(new ProjectileRequest
+                        {
+                            Position = p + aim * (info.Radius + 0.2f), Direction = aim, Speed = skill.Speed, Radius = 0.3f, Damage = damage,
+                            CritChance = stats[Stat.Crit], Knockback = skill.Knockback, ExplodeRadius = skill.Radius, Life = 2f,
+                            Team = info.Team, OwnerId = info.Id, Visual = ProjectileVisual.Fireball,
+                        });
+                        break;
+                    case SkillKind.Nova:
+                        Area(info, stats, p, aim, skill.Radius, -1f, damage, skill.Knockback, 0.2f,
+                            new Modifier { Source = ModSource.Slow, Stat = Stat.Speed, Op = ModifierOp.Multiply, Value = skill.Slow, Remaining = skill.SlowDuration }, HitSource.Nova);
+                        Feedback.TryAdd(new FeedbackEvent { Kind = FeedbackKind.Nova, Position = p, Value = skill.Radius });
+                        break;
+                    case SkillKind.Slam:
+                        Area(info, stats, p, aim, skill.Radius, -1f, damage, skill.Knockback, 0.4f, default, HitSource.Slam);
+                        Feedback.TryAdd(new FeedbackEvent { Kind = FeedbackKind.Slam, Position = p, Value = skill.Radius });
+                        break;
+                }
+            }
+
+            void Area(in ActorInfo info, in StatBlock stats, float2 p, float2 aim, float range, float cos, float damage, float knockback, float stagger, Modifier mod, HitSource source)
+            {
+                var area = new AreaHits
+                {
+                    Team = info.Team, AttackerId = info.Id, Origin = p, Facing = aim, Range = range, Cos = cos, Damage = damage,
+                    Crit = stats[Stat.Crit], Knockback = knockback, Stagger = stagger, Mod = mod, Source = source, Hits = Hits,
+                };
+                Grid.Query(p, range, ref area);
+            }
+
+            bool HasEnemy(float2 p, in ActorInfo info, float reach)
+            {
+                var nearest = new Nearest { Team = info.Team, Position = p, Row = -1, BestSq = reach * reach };
+                Grid.Query(p, reach, ref nearest);
+                return nearest.Row >= 0;
+            }
+
+            float2 Aim(float2 p, in ActorInfo info, float reach, float2 fallback)
             {
                 var nearest = new Nearest { Team = info.Team, Position = p, Row = -1, BestSq = reach * reach };
                 Grid.Query(p, reach, ref nearest);
                 return nearest.Row >= 0 ? math.normalizesafe(nearest.Target - p, fallback) : math.normalizesafe(fallback, new float2(1f, 0f));
+            }
+
+            static void Enter(ref CombatState c, ActionPhase phase, float duration)
+            {
+                c.Phase = phase;
+                c.PhaseTime = 0f;
+                c.PhaseDuration = duration;
+                c.PhaseTicks = 0;
             }
         }
 
@@ -483,11 +674,12 @@ namespace RpgFoundation.Systems
             public float2 From, To;
             public float Radius;
             public int Row;
+            public int Skip;
             public float T;
 
             public bool Visit(in GridEntry e)
             {
-                if (e.Data == (int)Team) return true;
+                if (e.Data == (int)Team || e.Owner == Skip) return true;
                 if (!SPF.L1.Geometry.GeoMath.SweptCircleHits(From, To, Radius, e.Position, e.Radius)) return true;
                 float2 d = To - From;
                 float lenSq = math.lengthsq(d);
@@ -507,6 +699,7 @@ namespace RpgFoundation.Systems
             public GridReader Grid;
             public TileMapView Map;
             public ParallelQueue<HitEvent>.Writer Hits;
+            public ParallelQueue<FeedbackEvent>.Writer Feedback;
             public ParallelQueue<EntityHandle>.Writer Destroy;
             public float DeltaTime;
 
@@ -517,26 +710,73 @@ namespace RpgFoundation.Systems
                 float2 to = from + info.Velocity * DeltaTime;
                 Prev[i] = from;
                 info.Life -= DeltaTime;
-                Projectile[i] = info;
+                float2 dir = math.normalizesafe(info.Velocity);
 
-                var hit = new FirstHit { Team = info.Team, From = from, To = to, Radius = info.Radius, Row = -1 };
+                var hit = new FirstHit { Team = info.Team, From = from, To = to, Radius = info.Radius, Row = -1, Skip = info.LastHit };
                 Grid.Query((from + to) * 0.5f, math.length(to - from) * 0.5f + info.Radius, ref hit);
-                bool wall = !Map.LineOfSight(from, to);
                 if (hit.Row >= 0)
                 {
                     float2 at = math.lerp(from, to, hit.T);
                     // A wall between the shooter and the target blocks the hit.
                     if (Map.LineOfSight(from, at))
                     {
-                        Hits.TryAdd(new HitEvent { AttackerId = info.OwnerId, TargetRow = hit.Row, Damage = info.Damage, CritChance = info.CritChance, Position = at, Projectile = true });
-                        Destroy.TryAdd(Handles[i]);
-                        Position[i] = at;
-                        return;
+                        if (info.ExplodeRadius > 0f) { Explode(info, at, dir); Destroy.TryAdd(Handles[i]); Position[i] = at; Projectile[i] = info; return; }
+                        Hits.TryAdd(new HitEvent
+                        {
+                            AttackerId = info.OwnerId, TargetRow = hit.Row, Damage = info.Damage, CritChance = info.CritChance, Position = at,
+                            Direction = dir, Knockback = info.Knockback, Stagger = 0.1f, Source = HitSource.Projectile,
+                        });
+                        if (info.Pierce > 0)
+                        {
+                            info.Pierce--;
+                            info.LastHit = hit.Row;
+                        }
+                        else
+                        {
+                            Destroy.TryAdd(Handles[i]);
+                            Position[i] = at;
+                            Projectile[i] = info;
+                            return;
+                        }
                     }
                 }
+                bool wall = !Map.LineOfSight(from, to);
                 Position[i] = to;
                 if (wall || info.Life <= 0f)
+                {
+                    if (info.ExplodeRadius > 0f) Explode(info, wall ? from : to, dir);
                     Destroy.TryAdd(Handles[i]);
+                }
+                Projectile[i] = info;
+            }
+
+            void Explode(in ProjectileInfo info, float2 at, float2 dir)
+            {
+                var area = new ExplosionHits { Team = info.Team, Info = info, Origin = at, Hits = Hits };
+                Grid.Query(at, info.ExplodeRadius, ref area);
+                Feedback.TryAdd(new FeedbackEvent { Kind = FeedbackKind.Explosion, Position = at, Value = info.ExplodeRadius, Direction = dir });
+            }
+        }
+
+        struct ExplosionHits : IGridVisitor
+        {
+            public Team Team;
+            public ProjectileInfo Info;
+            public float2 Origin;
+            public ParallelQueue<HitEvent>.Writer Hits;
+
+            public bool Visit(in GridEntry e)
+            {
+                if (e.Data == (int)Team) return true;
+                float r = Info.ExplodeRadius + e.Radius;
+                if (math.distancesq(Origin, e.Position) > r * r) return true;
+                Hits.TryAdd(new HitEvent
+                {
+                    AttackerId = Info.OwnerId, TargetRow = e.Owner, Damage = Info.Damage, CritChance = Info.CritChance, Position = e.Position,
+                    Direction = math.normalizesafe(e.Position - Origin, new float2(1f, 0f)), Knockback = Info.Knockback, Stagger = 0.25f,
+                    Source = HitSource.Explosion,
+                });
+                return true;
             }
         }
     }

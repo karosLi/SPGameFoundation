@@ -9,18 +9,24 @@ namespace RpgFoundation
     /// <summary>Entity creation (main thread: ApplyCommands / Resolve phases).</summary>
     public static class RpgSpawner
     {
-        public static StatBlock HeroBaseStats(in RpgSettings s, int level)
+        /// <summary>Hero base stats for a level; attack rate and reach come from the equipped weapon family.</summary>
+        public static StatBlock HeroBaseStats(RpgRuntimeConfig config, int level, int weaponGear)
         {
+            var s = config.Settings;
+            var weapon = config.Weapons[(int)config.HeroWeapon(weaponGear)];
             var b = new StatBlock();
             int l = math.max(level - 1, 0);
             b[Stat.MaxHealth] = s.HeroHealth + s.HeroHealthPerLevel * l;
             b[Stat.Attack] = s.HeroAttack + s.HeroAttackPerLevel * l;
             b[Stat.Armour] = s.HeroArmour + s.HeroArmourPerLevel * l;
             b[Stat.Speed] = s.HeroSpeed;
-            b[Stat.AttackRate] = s.HeroAttackRate;
+            b[Stat.AttackRate] = weapon.AttackRate;
             b[Stat.Crit] = s.HeroCrit;
             b[Stat.Regen] = s.HeroRegen;
-            b[Stat.Range] = s.HeroRange;
+            b[Stat.Range] = weapon.Range;
+            b[Stat.MaxMana] = s.HeroMana + s.HeroManaPerLevel * l;
+            b[Stat.ManaRegen] = s.HeroManaRegen;
+            b[Stat.SkillPower] = 1f + 0.05f * l;
             return b;
         }
 
@@ -45,12 +51,13 @@ namespace RpgFoundation
             var handle = world.CreateEntity(RpgKeys.Actor, out int row);
             if (handle.IsNull) return handle;
             var s = config.Settings;
-            var baseStats = HeroBaseStats(s, profile.Level);
+            var baseStats = HeroBaseStats(config, profile.Level, profile.Weapon);
             var mods = new ModifierSet();
             ApplyGear(ref mods, config, profile.Weapon, profile.Armour);
             var stats = mods.Evaluate(baseStats);
             Write(world, row, position, new ActorInfo { Id = handle.Index, Kind = 0, Team = Team.Hero, Flags = ActorFlags.Hero, Radius = s.HeroRadius },
                 baseStats, stats, mods, stats[Stat.MaxHealth] * math.saturate(profile.HealthFraction <= 0f ? 1f : profile.HealthFraction));
+            world.Column(RpgKeys.Loadout).Set(row, config.HeroLoadout(profile.Level, profile.Weapon));
             return handle;
         }
 
@@ -69,9 +76,11 @@ namespace RpgFoundation
             b[Stat.Crit] = 0.05f;
             b[Stat.Regen] = 0f;
             b[Stat.Range] = def.Range;
+            b[Stat.SkillPower] = 1f;
             var flags = (def.Boss ? ActorFlags.Boss : 0) | (def.Ranged ? ActorFlags.Ranged : 0);
             Write(world, row, position, new ActorInfo { Id = handle.Index, Kind = (byte)kind, Team = Team.Monsters, Flags = flags, Radius = def.Radius },
                 b, b, default, b[Stat.MaxHealth]);
+            world.Column(RpgKeys.Loadout).Set(row, new Loadout { Weapon = def.Weapon, S0 = def.Skill });
             world.Column(RpgKeys.Brain).Set(row, new Brain { State = AIState.Idle, Home = position, WanderTarget = position });
             return handle;
         }
@@ -87,6 +96,7 @@ namespace RpgFoundation
             world.Column(RpgKeys.Stats).Set(row, stats);
             world.Column(RpgKeys.Mods).Set(row, mods);
             world.Column(RpgKeys.Health).Set(row, new Health { Current = health, Max = stats[Stat.MaxHealth] });
+            world.Column(RpgKeys.Mana).Set(row, new Health { Current = stats[Stat.MaxMana], Max = stats[Stat.MaxMana] });
             world.Column(RpgKeys.Combat).Set(row, default);
             world.Column(RpgKeys.Brain).Set(row, default);
         }
@@ -109,13 +119,17 @@ namespace RpgFoundation
             world.Column(RpgKeys.ProjectileInfo).Set(row, new ProjectileInfo
             {
                 Velocity = math.normalizesafe(r.Direction, new float2(1f, 0f)) * r.Speed,
-                Radius = r.Fireball ? 0.35f : 0.18f,
-                Life = 2.5f,
+                Radius = r.Radius > 0f ? r.Radius : 0.15f,
+                Life = r.Life > 0f ? r.Life : 2.5f,
                 Damage = r.Damage,
                 CritChance = r.CritChance,
+                Knockback = r.Knockback,
+                ExplodeRadius = r.ExplodeRadius,
+                Pierce = r.Pierce,
+                LastHit = -1,
                 Team = r.Team,
                 OwnerId = r.OwnerId,
-                Fireball = r.Fireball,
+                Visual = r.Visual,
             });
             return true;
         }

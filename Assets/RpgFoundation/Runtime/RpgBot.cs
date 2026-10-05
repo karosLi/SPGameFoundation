@@ -34,15 +34,21 @@ namespace RpgFoundation
                 frame.Pressed |= 1u << RpgButton.Potion;
 
             int count = world.Table(RpgKeys.Actor).Count;
-            int target = -1;
+            int target = -1, close = 0, near = 0;
             float best = float.MaxValue;
             for (int i = 0; i < count; i++)
             {
                 var info = infos[i];
                 if (info.Team != Team.Monsters || info.Has(ActorFlags.Dead)) continue;
                 float d = math.distancesq(positions[i], hero);
+                if (d < 2.2f * 2.2f) close++;
+                if (d < 3.8f * 3.8f) near++;
                 if (d < best) { best = d; target = i; }
             }
+            // Area skills when crowded, a dash out when hurt and cornered (locked slots just do nothing).
+            if (close >= 3) frame.Pressed |= 1u << RpgButton.Skill3;
+            else if (near >= 4) frame.Pressed |= 1u << RpgButton.Skill4;
+            if (health.Fraction < 0.3f && close >= 2) frame.Pressed |= 1u << RpgButton.Skill2;
 
             float2 goal = target >= 0 ? positions[target] : view.CenterOf(game.StairsCell);
             float dist = math.distance(goal, hero);

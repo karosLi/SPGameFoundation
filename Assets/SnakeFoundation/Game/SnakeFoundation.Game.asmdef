@@ -6,6 +6,7 @@
         "SPF.L1Simulation",
         "SPF.Runtime.Core",
         "SPF.Runtime",
+        "SPF.Shell",
         "SPF.Presentation",
         "SnakeFoundation.Runtime",
         "SnakeFoundation.Presentation",

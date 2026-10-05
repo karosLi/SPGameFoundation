@@ -7,6 +7,7 @@
         "SPF.Contracts",
         "SPF.Runtime.Core",
         "SPF.L1Simulation",
+        "SPF.L2Gameplay",
         "SPF.Presentation",
         "SPF.Runtime",
         "SPF.Samples.DriftSmoke",

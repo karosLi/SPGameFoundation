@@ -1,0 +1,21 @@
+{
+    "name": "SPF.Shell",
+    "rootNamespace": "SPF.Shell",
+    "references": [
+        "SPF.Contracts",
+        "SPF.Runtime.Core",
+        "SPF.Runtime",
+        "UnityEngine.UI",
+        "Unity.Collections",
+        "Unity.Mathematics"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

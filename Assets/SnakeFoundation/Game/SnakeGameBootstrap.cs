@@ -96,7 +96,7 @@ namespace SnakeFoundation.Game
             {
                 Hud = gameObject.AddComponent<SnakeHud>();
                 Hud.Build(this);
-                InputRouter.AddSource(Hud.Joystick);
+                InputRouter.AddSource(Hud.TouchInput);
             }
             InputRouter.AddSource(new KeyboardMouseInput());
 

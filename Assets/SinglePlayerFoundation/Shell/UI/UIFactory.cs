@@ -2,10 +2,10 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-namespace SnakeFoundation.Game.UI
+namespace SPF.Shell.UI
 {
     /// <summary>Builds the UGUI hierarchy in code (no prefabs), so the game runs from a single component.</summary>
-    static class UIFactory
+    public static class UIFactory
     {
         static Font s_Font;
 
@@ -20,9 +20,9 @@ namespace SnakeFoundation.Game.UI
             }
         }
 
-        public static Canvas CreateCanvas(Transform parent)
+        public static Canvas CreateCanvas(Transform parent, string name = "GameUI")
         {
-            var go = new GameObject("SnakeUI", typeof(RectTransform));
+            var go = new GameObject(name, typeof(RectTransform));
             go.transform.SetParent(parent, false);
             var canvas = go.AddComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -82,7 +82,7 @@ namespace SnakeFoundation.Game.UI
             return label;
         }
 
-        public static Button Button(Transform parent, string name, string text, Vector2 anchoredPosition, Vector2 size, Color color, Vector2 anchor)
+        public static Button Button(Transform parent, string name, string text, Vector2 anchoredPosition, Vector2 size, Color color, Vector2 anchor, int fontSize = 40)
         {
             var go = new GameObject(name, typeof(RectTransform));
             go.transform.SetParent(parent, false);
@@ -96,8 +96,23 @@ namespace SnakeFoundation.Game.UI
             image.color = color;
             var button = go.AddComponent<Button>();
             button.targetGraphic = image;
-            Label(go.transform, "Label", text, 40, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one);
+            Label(go.transform, "Label", text, fontSize, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one);
             return button;
+        }
+
+        /// <summary>Horizontal fill bar (background + fill image); returns the fill to drive with <see cref="SetFill"/>.</summary>
+        public static Image Bar(Transform parent, string name, Color background, Color fill, Vector2 anchorMin, Vector2 anchorMax)
+        {
+            var back = Panel(parent, name, background, anchorMin, anchorMax, raycast: false);
+            var fillRect = Panel(back, "Fill", fill, Vector2.zero, Vector2.one, raycast: false);
+            return fillRect.GetComponent<Image>();
+        }
+
+        /// <summary>Sets a bar's fill fraction (0..1) by moving the fill's right anchor (no sprite needed).</summary>
+        public static void SetFill(Image fill, float fraction)
+        {
+            var rect = fill.rectTransform;
+            rect.anchorMax = new Vector2(Mathf.Clamp01(fraction), 1f);
         }
 
         public static void SetText(Button button, string text)

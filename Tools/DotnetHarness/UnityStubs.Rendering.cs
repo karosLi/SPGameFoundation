@@ -172,6 +172,9 @@ namespace UnityEngine
         public void SetUVs(int channel, Vector4[] uvs) { }
         public void SetUVs(int channel, Vector2[] uvs) { }
         public void SetColors(Color32[] c) { }
+        public void SetColors(Color32[] c, int start, int length) { }
+        public void SetVertices(Vector3[] v, int start, int length) { vertexCount = length; }
+        public void SetIndices(int[] indices, int start, int length, MeshTopology t, int submesh, bool calcBounds = true, int baseVertex = 0) { }
         public void SetIndices(int[] indices, MeshTopology t, int submesh, bool calcBounds = true) { }
         public void SetTriangles(int[] t, int submesh) { }
         public void SetSubMesh(int index, Rendering.SubMeshDescriptor desc, MeshUpdateFlags flags = MeshUpdateFlags.Default) { }

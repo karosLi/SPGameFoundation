@@ -1,3 +1,4 @@
+using SPF.Shell.UI;
 using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
@@ -35,11 +36,12 @@ namespace SnakeFoundation.Game.UI
         public VirtualJoystick Joystick { get; private set; }
         public HoldButton BoostButton { get; private set; }
         public TapButton SkillButton { get; private set; }
+        public SnakeTouchInput TouchInput { get; private set; }
 
         public void Build(SnakeGameBootstrap game)
         {
             m_Game = game;
-            Canvas = UIFactory.CreateCanvas(transform);
+            Canvas = UIFactory.CreateCanvas(transform, "SnakeUI");
             var root = Canvas.transform;
 
             // HUD
@@ -56,8 +58,7 @@ namespace SnakeFoundation.Game.UI
             BoostButton = boost.gameObject.AddComponent<HoldButton>();
             var skill = UIFactory.Button(HudPanel, "SkillButton", "FIRE", new Vector2(-420, 130), new Vector2(160, 160), new Color(0.4f, 0.6f, 1f, 0.45f), new Vector2(1f, 0f));
             SkillButton = skill.gameObject.AddComponent<TapButton>();
-            Joystick.Boost = BoostButton;
-            Joystick.Skill = SkillButton;
+            TouchInput = new SnakeTouchInput(Joystick, BoostButton, SkillButton);
 
             // Menu
             MenuPanel = UIFactory.Panel(root, "MenuPanel", new Color(0f, 0f, 0f, 0.45f), Vector2.zero, Vector2.one);

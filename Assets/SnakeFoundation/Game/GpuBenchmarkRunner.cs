@@ -121,8 +121,9 @@ namespace SnakeFoundation.Game
                 var x = m_Variants[v];
                 double gpu = x.Measured > 0 ? x.GpuSum / x.Measured : 0, cpu = x.Measured > 0 ? x.CpuSum / x.Measured : 0;
                 if (v == 0) baseline = gpu;
-                string delta = v > 0 && baseline > 0 && x.GpuSamples > 0 ? $"  ({(gpu / baseline - 1.0):+0.0%;-0.0%} vs all on)" : "";
-                r.AppendLine($"{x.Name,-28} GPU {(x.GpuSamples > 0 ? gpu.ToString("F3") + " ms" : "n/a"),-10} CPU {cpu:F3} ms  frames {x.Frames}{delta}");
+                // Below ~0.01 ms the platform is not really reporting GPU time (or the scene is trivial for it).
+                string delta = v > 0 && baseline > 0.01 && x.GpuSamples > 0 ? $"  ({(gpu / baseline - 1.0):+0.0%;-0.0%} vs all on)" : "";
+                r.AppendLine($"{x.Name,-28} GPU {(x.GpuSamples > 0 ? gpu.ToString("F3") + " ms" : "n/a"),-10} ({x.GpuSamples} samples)  CPU {cpu:F3} ms  frames {x.Frames}{delta}");
             }
             if (m_Variants.Count > 0 && m_Variants[0].GpuSamples == 0)
                 r.AppendLine("GPU timings unavailable on this platform / build (enable Frame Timing Stats in Player settings).");

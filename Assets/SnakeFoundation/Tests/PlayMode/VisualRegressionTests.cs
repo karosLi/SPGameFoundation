@@ -192,6 +192,36 @@ namespace SnakeFoundation.Tests.PlayMode
         }
 
         /// <summary>
+        /// Frames without a tick reuse the culled / sorted chain data (and, on the GPU tier, the uploaded
+        /// headers): the frozen frame must look exactly like one rebuilt from scratch.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator ReusingChainDataBetweenTicksIsPixelIdentical([Values(RenderTier.GpuDriven, RenderTier.DataTexture)] RenderTier tier)
+        {
+            SkipWithoutGpu(tier);
+            yield return Setup(tier);
+            var renderer = m_Game.WorldRenderer;
+            string suffix = tier == RenderTier.GpuDriven ? "gpu" : "datatex";
+
+            var frames = new Color32[3][];
+            renderer.ReuseBetweenTicks = false;
+            yield return Capture(frames, 0, "reuse-off-" + suffix);
+            yield return Capture(frames, 1);
+            renderer.ResetCpuStats();
+            renderer.ReuseBetweenTicks = true;
+            yield return Capture(frames, 2, "reuse-on-" + suffix);
+            Assert.Greater(renderer.ChainReuses, 0, "frames without a tick reused chain data");
+            Assert.AreEqual(0, renderer.ChainRebuilds, "no rebuild while frozen");
+
+            AssertHasContent(frames[0]);
+            var baseline = Compare(frames[0], frames[1], 0);
+            Assert.AreEqual(0, baseline.differing, $"frozen scene renders identically twice; differing box {baseline.box}");
+            var result = Compare(frames[0], frames[2], 0);
+            TestContext.WriteLine($"reuse ({suffix}): differing pixels {result.differing}, max delta {result.maxDelta}");
+            Assert.AreEqual(0, result.differing, $"reusing chain data changed {result.differing} pixels; box {result.box}");
+        }
+
+        /// <summary>
         /// 8-segment discs (adaptive quality level 2+) must look close to 16-segment ones: only disc
         /// silhouettes may move by a pixel or so. Both captures are published for visual review.
         /// </summary>

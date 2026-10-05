@@ -62,9 +62,9 @@ namespace SnakeFoundation
             var cells = new int2(cap.GridCells);
             float bodyCell = cap.BodyGridCellSize > 0f ? cap.BodyGridCellSize : cap.GridCellSize;
             var bodyCells = (int2)math.ceil((float2)cells * cap.GridCellSize / bodyCell);
-            layout.Resource(SnakeKeys.BodyGrid, new SpatialGrid(bodyCells, bodyCell, cap.BodyGridEntries));
+            layout.Resource(SnakeKeys.BodyGrid, new SpatialGrid(bodyCells, bodyCell, cap.BodyGridEntries, cap.LargeBodyRadius));
             var itemCells = (int2)math.ceil((float2)cells * cap.GridCellSize / cap.ItemGridCellSize);
-            layout.Resource(SnakeKeys.ItemGrid, new SpatialGrid(itemCells, cap.ItemGridCellSize, cap.Food + cap.Props));
+            layout.Resource(SnakeKeys.ItemGrid, new CellListGrid(itemCells, cap.ItemGridCellSize, cap.Food + cap.Props, cap.Food + cap.Props));
             // Coarse grid over the largest region: one cell per chunk.
             float2 largest = 0f;
             for (int i = 0; i < runtime.Regions.Length; i++) largest = math.max(largest, runtime.Regions[i].Size);

@@ -143,7 +143,7 @@ namespace SnakeFoundation.Systems
             [ReadOnly] public NativeArray<FoodInfo> FoodInfo;
             public NativeArray<AIState> AI;
             public GridReader Heads;
-            public GridReader Items;
+            public CellListReader Items;
             public SnakeSettings Settings;
             public RegionDef Region;
             public int ActiveRegion;

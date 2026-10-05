@@ -69,6 +69,7 @@ namespace SPF.Presentation
         int m_TrailDeltaCount;
         Mesh m_Disc;
         int m_Segments = DiscMesh.Segments;
+        bool m_HeadersDirty = true;
         readonly int[] m_CacheIdentity;
         readonly uint[] m_CacheVersion;
         readonly int[] m_CacheStart;
@@ -179,9 +180,14 @@ namespace SPF.Presentation
                 for (int i = 0; i < m_CacheIdentity.Length; i++) m_CacheIdentity[i] = -1;
         }
 
+        /// <summary>
+        /// Starts a new set of chains. Between Begin/Add rounds, <see cref="Draw"/> may be called any number
+        /// of times (e.g. every frame with a new interpolation alpha); headers are uploaded only once.
+        /// </summary>
         public void Begin(NativeArray<float2> trailPoints)
         {
             m_Points = trailPoints;
+            m_HeadersDirty = true;
             Array.Clear(m_HeaderCounts, 0, Categories);
             Array.Clear(m_Totals, 0, Categories);
         }
@@ -281,12 +287,15 @@ namespace SPF.Presentation
                 m_TrailDeltaCount = 0;
             }
 
+            bool uploadHeaders = m_HeadersDirty;
+            m_HeadersDirty = false;
             for (int c = 0; c < Categories; c++)
             {
                 int headers = m_HeaderCounts[c];
                 int total = m_Totals[c];
                 if (headers == 0 || total == 0) continue;
-                m_HeaderBuffers[c].SetData(m_Headers[c], 0, 0, headers);
+                if (uploadHeaders)
+                    m_HeaderBuffers[c].SetData(m_Headers[c], 0, 0, headers);
                 int blend = c % 3;
 
                 if (c < 3)

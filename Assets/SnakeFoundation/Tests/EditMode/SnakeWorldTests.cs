@@ -52,11 +52,12 @@ namespace SnakeFoundation.Tests
         }
 
         /// <summary>
-        /// The item grid is only rebuilt when food / props changed or the window moved; after a run with
-        /// eating, spawning and skipped builds its queries must still match a brute-force scan.
+        /// The item grid is updated incrementally from changed rows (full rebuild only when the window
+        /// moves); after a run with eating, spawning and swap-back removals its queries must still match
+        /// a brute-force scan.
         /// </summary>
         [Test]
-        public void ItemGridStaysExactWhenBuildsAreSkipped()
+        public void ItemGridStaysExactWithIncrementalUpdates()
         {
             using var t = new SnakeTestWorld(aiPerRegion: 40, foodPerChunk: 30);
             t.StartPlayer();
@@ -91,8 +92,11 @@ namespace SnakeFoundation.Tests
             }
             for (int i = 0; i < t.Session.Pipeline.SystemCount; i++)
                 if (t.Session.Pipeline.GetSystem(i) is SnakeFoundation.Systems.ItemGridSystem items)
-                    skipped = items.SkippedBuilds;
-            TestContext.WriteLine($"item grid builds skipped: {skipped}");
+                {
+                    skipped = items.IncrementalUpdates;
+                    Assert.Greater(items.IncrementalUpdates, 0, "the grid was updated incrementally");
+                    TestContext.WriteLine($"item grid: {items.FullRebuilds} full rebuilds, {items.IncrementalUpdates} incremental updates, {items.DirtyRows} rows");
+                }
         }
 
         [Test]

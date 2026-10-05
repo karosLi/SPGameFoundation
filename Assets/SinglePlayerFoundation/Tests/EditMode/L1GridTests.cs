@@ -13,10 +13,12 @@ namespace SPF.Tests.EditMode
             public bool Visit(in GridEntry entry) { Hits.Add(entry.Owner); return true; }
         }
 
-        [Test]
-        public void QueryMatchesBruteForce()
+        /// <param name="largeRadius">0: single layer; otherwise entries above it use the coarse large layer.</param>
+        [TestCase(0f)]
+        [TestCase(1.5f)]
+        public void QueryMatchesBruteForce(float largeRadius)
         {
-            using var grid = new SpatialGrid(new int2(32, 32), 4f, 5000);
+            using var grid = new SpatialGrid(new int2(32, 32), 4f, 5000, largeRadius);
             grid.Origin = new float2(-64, -64);
             var staging = grid.Staging;
             var stagingCount = grid.StagingCount;
@@ -37,9 +39,11 @@ namespace SPF.Tests.EditMode
             grid.ScheduleBuild(default).Complete();
             var reader = grid.AsReader();
 
-            int inside = 0;
-            foreach (var e in all) if (reader.Covers(e.Position)) inside++;
+            int inside = 0, large = 0;
+            foreach (var e in all)
+                if (reader.Covers(e.Position)) { inside++; if (largeRadius > 0f && e.Radius > largeRadius) large++; }
             Assert.AreEqual(inside, grid.EntryCount);
+            Assert.AreEqual(large, grid.LargeEntryCount);
             Assert.AreEqual(all.Count - inside, grid.DroppedLastBuild);
 
             for (int q = 0; q < 200; q++)
@@ -59,6 +63,57 @@ namespace SPF.Tests.EditMode
                 visitor.Hits.Sort();
                 CollectionAssert.AreEqual(expected, visitor.Hits, $"query {q}");
             }
+        }
+
+        [Test]
+        public void CellListGridMatchesBruteForceUnderRandomEdits()
+        {
+            const int Keys = 600;
+            using var grid = new CellListGrid(new int2(16, 16), 8f, Keys, Keys) { Origin = new float2(-64, -64) };
+            var writer = grid.AsWriter();
+            var random = new Random(77);
+            var model = new GridEntry?[Keys];
+            for (int step = 0; step < 4000; step++)
+            {
+                int key = random.NextInt(Keys);
+                if (random.NextFloat() < 0.3f)
+                {
+                    writer.Remove(key);
+                    model[key] = null;
+                }
+                else
+                {
+                    var e = new GridEntry { Position = random.NextFloat2(new float2(-70), new float2(70)), Radius = random.NextFloat(0.2f, 2f), Owner = key };
+                    bool stored = writer.Set(key, e);
+                    model[key] = stored ? e : (GridEntry?)null;
+                    Assert.AreEqual(math.all(e.Position >= grid.Origin) && math.all(e.Position < grid.Origin + grid.Size), stored);
+                }
+
+                if (step % 200 != 0) continue;
+                var reader = grid.AsReader();
+                int expectedCount = 0;
+                foreach (var m in model) if (m.HasValue) expectedCount++;
+                Assert.AreEqual(expectedCount, grid.Count);
+                for (int q = 0; q < 20; q++)
+                {
+                    float2 center = random.NextFloat2(new float2(-60), new float2(60));
+                    float radius = random.NextFloat(0.1f, 10f);
+                    var visitor = new Collect { Hits = new List<int>() };
+                    reader.Query(center, radius, ref visitor);
+                    var expected = new List<int>();
+                    for (int k = 0; k < Keys; k++)
+                    {
+                        if (!model[k].HasValue) continue;
+                        var e = model[k].Value;
+                        float r = radius + e.Radius;
+                        if (math.distancesq(center, e.Position) < r * r) expected.Add(k);
+                    }
+                    visitor.Hits.Sort();
+                    CollectionAssert.AreEqual(expected, visitor.Hits, $"step {step} query {q}");
+                }
+            }
+            writer.Clear();
+            Assert.AreEqual(0, grid.Count);
         }
 
         [Test]

@@ -173,4 +173,5 @@ run_platform() {
 run_platform editmode -nographics; EDIT=$?
 for f in "$A"/perf-*.txt; do [ -f "$f" ] && { echo "::group::performance report $(basename "$f")"; cat "$f"; echo "::endgroup::"; }; done
 run_platform playmode; PLAY=$?
+for f in "$A"/perf-render-*.txt; do [ -f "$f" ] && { echo "::group::performance report $(basename "$f")"; cat "$f"; echo "::endgroup::"; }; done
 [ $EDIT -eq 0 ] && [ $PLAY -eq 0 ]

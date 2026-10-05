@@ -171,90 +171,143 @@ namespace SnakeFoundation.Systems
     }
 
     /// <summary>
-    /// SpatialBuild phase, item grid (window): food then props (Data 0 / 1). Items only change
-    /// structurally on the main thread (spawn / eat / stream), so the grid is rebuilt only when either
-    /// table's <see cref="SimTable.Version"/> or the window origin changed since the last build.
+    /// SpatialBuild phase, item grid (window): food then props (Data 0 / 1), keyed by row (props after
+    /// the food capacity). Items only change structurally on the main thread (spawn / eat / stream), so the
+    /// <see cref="CellListGrid"/> is updated incrementally from this system's own change logs: every changed
+    /// row is re-inserted from its current data, rows freed by swap-back removal (≥ the new count) are
+    /// removed. A full rebuild happens when the window moved, after a reset (log "All"), or when so many
+    /// rows changed that rebuilding is cheaper.
     /// </summary>
-    sealed class ItemGridSystem : SimSystemBase, IResettableSystem
+    sealed class ItemGridSystem : SimSystemBase
     {
-        uint m_FoodVersion, m_PropVersion;
+        ChangeLog m_FoodLog, m_PropLog;
+        NativeArray<int> m_Dirty;
+        int m_FoodCapacity;
+        int m_PrevFood, m_PrevProps;
         float2 m_Origin;
         bool m_Built;
 
         public override SimPhase Phase => SimPhase.SpatialBuild;
 
-        /// <summary>Builds skipped because nothing changed (diagnostics / tests).</summary>
-        public long SkippedBuilds { get; private set; }
-
-        public void OnReset(SimWorld world) => m_Built = false;
+        /// <summary>Diagnostics / tests.</summary>
+        public long FullRebuilds { get; private set; }
+        public long IncrementalUpdates { get; private set; }
+        public long DirtyRows { get; private set; }
 
         public override void Declare(AccessDeclaration access) => access
             .Read(SnakeKeys.Food).Read(SnakeKeys.FoodPosition).Read(SnakeKeys.FoodInfo)
             .Read(SnakeKeys.Prop).Read(SnakeKeys.PropPosition).Read(SnakeKeys.PropInfo)
             .Write(SnakeKeys.ItemGrid);
 
+        public override void OnCreate(SimWorld world)
+        {
+            var food = world.Table(SnakeKeys.Food);
+            var props = world.Table(SnakeKeys.Prop);
+            m_FoodLog = food.CreateChangeLog();
+            m_PropLog = props.CreateChangeLog();
+            m_FoodCapacity = food.Capacity;
+            m_Dirty = new NativeArray<int>(food.Capacity + props.Capacity, Allocator.Persistent);
+        }
+
+        public override void OnDestroy(SimWorld world)
+        {
+            if (m_Dirty.IsCreated) m_Dirty.Dispose();
+        }
+
         public override JobHandle OnTick(in SimContext context, JobHandle dependency)
         {
             var world = context.World;
-            var itemGrid = world.Resource(SnakeKeys.ItemGrid);
-            uint foodVersion = world.Table(SnakeKeys.Food).Version;
-            uint propVersion = world.Table(SnakeKeys.Prop).Version;
-            if (m_Built && foodVersion == m_FoodVersion && propVersion == m_PropVersion && math.all(itemGrid.Origin == m_Origin))
-            {
-                SkippedBuilds++;
-                return dependency;
-            }
-            m_Built = true;
-            m_FoodVersion = foodVersion;
-            m_PropVersion = propVersion;
-            m_Origin = itemGrid.Origin;
-
+            var grid = world.Resource(SnakeKeys.ItemGrid);
             int foodCount = context.Count(SnakeKeys.Food);
             int propCount = context.Count(SnakeKeys.Prop);
-            int total = math.min(foodCount + propCount, itemGrid.Capacity);
-            var fillItems = new FillItemsJob
+
+            bool full = !m_Built || m_FoodLog.All || m_PropLog.All || math.any(grid.Origin != m_Origin);
+            int dirty = 0;
+            if (!full)
             {
+                dirty = Collect(m_FoodLog, foodCount, m_PrevFood, 0, dirty);
+                dirty = Collect(m_PropLog, propCount, m_PrevProps, m_FoodCapacity, dirty);
+                // Re-inserting more than ~a quarter of the items costs about as much as a rebuild.
+                full = dirty > (foodCount + propCount) / 4;
+            }
+            m_FoodLog.Clear();
+            m_PropLog.Clear();
+            m_Built = true;
+            m_Origin = grid.Origin;
+            m_PrevFood = foodCount;
+            m_PrevProps = propCount;
+            if (full) FullRebuilds++;
+            else if (dirty > 0) { IncrementalUpdates++; DirtyRows += dirty; }
+            else return dependency;
+
+            return new UpdateJob
+            {
+                Grid = grid.AsWriter(),
                 FoodPosition = context.Column(SnakeKeys.FoodPosition),
                 FoodInfo = context.Column(SnakeKeys.FoodInfo),
                 PropPosition = context.Column(SnakeKeys.PropPosition),
                 PropInfo = context.Column(SnakeKeys.PropInfo),
                 FoodCount = foodCount,
-                Staging = itemGrid.Staging,
-            }.Schedule(total, 256, dependency);
-            var setItemCount = new SetCountJob { Count = itemGrid.StagingCount, Value = total }.Schedule(fillItems);
-            return itemGrid.ScheduleBuild(setItemCount);
+                PropCount = propCount,
+                FoodCapacity = m_FoodCapacity,
+                Full = full,
+                Dirty = m_Dirty,
+                DirtyCount = dirty,
+            }.Schedule(dependency);
+        }
+
+        int Collect(ChangeLog log, int count, int previousCount, int keyOffset, int dirty)
+        {
+            for (int i = 0; i < log.Count && dirty < m_Dirty.Length; i++)
+                m_Dirty[dirty++] = keyOffset + log[i];
+            // Rows past the new end were vacated by swap-back removal (their marked destination row was
+            // re-inserted above with the moved item); drop their stale entries.
+            for (int row = count; row < previousCount && dirty < m_Dirty.Length; row++)
+                m_Dirty[dirty++] = keyOffset + row;
+            return dirty;
         }
 
         [BurstCompile(CompileSynchronously = true)]
-        struct FillItemsJob : IJobParallelFor
+        struct UpdateJob : IJob
         {
+            public CellListGrid.Writer Grid;
             [ReadOnly] public NativeArray<float2> FoodPosition;
             [ReadOnly] public NativeArray<FoodInfo> FoodInfo;
             [ReadOnly] public NativeArray<float2> PropPosition;
             [ReadOnly] public NativeArray<PropInfo> PropInfo;
-            public int FoodCount;
-            [NativeDisableParallelForRestriction] public NativeArray<GridEntry> Staging;
+            [ReadOnly] public NativeArray<int> Dirty;
+            public int FoodCount, PropCount, FoodCapacity, DirtyCount;
+            public bool Full;
 
-            public void Execute(int i)
+            public void Execute()
             {
-                if (i < FoodCount)
+                if (Full)
                 {
-                    Staging[i] = new GridEntry { Position = FoodPosition[i], Radius = FoodInfo[i].Radius, Owner = i, Data = 0 };
+                    Grid.Clear();
+                    for (int row = 0; row < FoodCount; row++) SetFood(row);
+                    for (int row = 0; row < PropCount; row++) SetProp(row);
+                    return;
                 }
-                else
+                for (int i = 0; i < DirtyCount; i++)
                 {
-                    int p = i - FoodCount;
-                    Staging[i] = new GridEntry { Position = PropPosition[p], Radius = PropInfo[p].Radius, Owner = p, Data = 1 };
+                    int key = Dirty[i];
+                    if (key < FoodCapacity)
+                    {
+                        if (key < FoodCount) SetFood(key); else Grid.Remove(key);
+                    }
+                    else
+                    {
+                        int row = key - FoodCapacity;
+                        if (row < PropCount) SetProp(row); else Grid.Remove(key);
+                    }
                 }
             }
-        }
 
-        [BurstCompile(CompileSynchronously = true)]
-        struct SetCountJob : IJob
-        {
-            public NativeArray<int> Count;
-            public int Value;
-            public void Execute() => Count[0] = Value;
+            void SetFood(int row) =>
+                Grid.Set(row, new GridEntry { Position = FoodPosition[row], Radius = FoodInfo[row].Radius, Owner = row, Data = 0 });
+
+            void SetProp(int row) =>
+                Grid.Set(FoodCapacity + row, new GridEntry { Position = PropPosition[row], Radius = PropInfo[row].Radius, Owner = row, Data = 1 });
         }
     }
 

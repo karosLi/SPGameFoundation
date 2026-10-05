@@ -75,7 +75,11 @@ namespace SnakeFoundation.Presentation
         }
 
         /// <summary>Call after the world was reset: GPU mirrors are rebuilt from scratch.</summary>
-        public void ResetCaches() => m_Chains?.Invalidate();
+        public void ResetCaches()
+        {
+            m_Chains?.Invalidate();
+            m_BuildValid = false;
+        }
 
         void OnDisable() => Release();
         void OnDestroy() => Release();
@@ -102,6 +106,8 @@ namespace SnakeFoundation.Presentation
         void Bind(SimSession session)
         {
             Release();
+            m_BuildValid = false;
+            m_HeadCount = 0;
             var world = session.World;
             var tier = m_ForceTier ? m_Tier : RenderCapabilities.Detect();
             m_Assets = new RenderAssets(tier);
@@ -137,11 +143,31 @@ namespace SnakeFoundation.Presentation
             m_Headless = SystemInfo.graphicsDeviceType == UnityEngine.Rendering.GraphicsDeviceType.Null;
         }
 
+        /// <summary>Main-thread time spent in this renderer's LateUpdate (diagnostics / benchmarks).</summary>
+        public double CpuMsTotal { get; private set; }
+        public long CpuFrames { get; private set; }
+
+        public void ResetCpuStats()
+        {
+            CpuMsTotal = 0;
+            CpuFrames = 0;
+            ChainRebuilds = 0;
+            ChainReuses = 0;
+        }
+
         void LateUpdate()
         {
             var session = m_Host != null ? m_Host.Session : null;
             if (session == null || m_Camera == null) return;
             if (session != m_BoundSession) Bind(session);
+            long start = System.Diagnostics.Stopwatch.GetTimestamp();
+            Render(session);
+            CpuMsTotal += (System.Diagnostics.Stopwatch.GetTimestamp() - start) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+            CpuFrames++;
+        }
+
+        void Render(SimSession session)
+        {
 
             var world = session.World;
             var game = world.Resource(SnakeKeys.Game);
@@ -157,7 +183,7 @@ namespace SnakeFoundation.Presentation
 
             ApplyDiscSegments(quality.DiscSegments);
             DrawBackground(config.Regions[game.ActiveRegion], view, bounds);
-            DrawSnakes(world, config, quality, game, alpha, cull, pixelsPerUnit);
+            DrawSnakes(session, world, config, quality, game, alpha, cull, pixelsPerUnit);
             DrawFood(world, cull);
             DrawItems(world, config, game, cull, time);
             UpdateEffects(world);
@@ -200,7 +226,52 @@ namespace SnakeFoundation.Presentation
             Graphics.RenderMesh(new RenderParams(m_BackgroundMaterial) { worldBounds = bounds }, m_Quad, 0, matrix);
         }
 
-        void DrawSnakes(SimWorld world, SnakeRuntimeConfig config, SnakeQuality quality, SnakeGameState game, float alpha, float4 cull, float pixelsPerUnit)
+        /// <summary>
+        /// Reuse culled / sorted chain data on frames without a new tick (e.g. 60 fps over a 30 Hz
+        /// simulation): only the interpolation alpha, the view rect and the head caps / eyes change then.
+        /// On by default; exposed for A/B tests.
+        /// </summary>
+        public bool ReuseBetweenTicks { get; set; } = true;
+
+        /// <summary>Diagnostics: frames that rebuilt / reused chain data.</summary>
+        public long ChainRebuilds { get; private set; }
+        public long ChainReuses { get; private set; }
+
+        struct HeadDraw
+        {
+            public int Row;
+            public float Depth;
+            public float Radius;
+            public float4 Color;
+            public bool OpaqueCap;
+            public bool Cap;
+        }
+
+        HeadDraw[] m_Heads = Array.Empty<HeadDraw>();
+        int m_HeadCount;
+        int4 m_BuildKey;
+        bool m_BuildValid;
+
+        void DrawSnakes(SimSession session, SimWorld world, SnakeRuntimeConfig config, SnakeQuality quality, SnakeGameState game, float alpha, float4 cull, float pixelsPerUnit)
+        {
+            // Everything the chain data depends on that can change without a tick being visible here.
+            var key = new int4((int)session.Pipeline.LastTickTime.Tick, (int)world.Table(SnakeKeys.Snake).Version,
+                quality.TranslucentBudget * 64 + quality.NodeStride, game.ActiveRegion);
+            if (!ReuseBetweenTicks || !m_BuildValid || math.any(key != m_BuildKey))
+            {
+                BuildChains(world, config, quality, game, alpha, cull, pixelsPerUnit);
+                m_BuildKey = key;
+                m_BuildValid = true;
+                ChainRebuilds++;
+            }
+            else
+            {
+                ChainReuses++;
+            }
+            DrawHeads(world, alpha);
+        }
+
+        void BuildChains(SimWorld world, SnakeRuntimeConfig config, SnakeQuality quality, SnakeGameState game, float alpha, float4 cull, float pixelsPerUnit)
         {
             var table = world.Table(SnakeKeys.Snake);
             var infos = table.Column(SnakeKeys.Info);
@@ -223,16 +294,13 @@ namespace SnakeFoundation.Presentation
 
             var heads = table.Column(SnakeKeys.Head);
             var prevHeads = table.Column(SnakeKeys.PrevHead);
-            var headings = table.Column(SnakeKeys.Heading);
             var trails = table.Column(SnakeKeys.Trail);
             var radii = table.Column(SnakeKeys.Radius);
             var prevArcs = table.Column(SnakeKeys.PrevArc);
             var s = config.Settings;
             var skins = config.Skins;
             m_Chains.Begin(world.Resource(SnakeKeys.Bodies).Points);
-            m_Opaque.Count = 0;
-            m_OpaqueHeads.Count = 0;
-            m_TranslucentHeads.Count = 0;
+            if (m_Heads.Length < visible) m_Heads = new HeadDraw[math.max(visible, table.Capacity)];
 
             // Translucency budget counted from the top (nearest) snake down.
             int translucentLeft = quality.TranslucentBudget;
@@ -269,7 +337,6 @@ namespace SnakeFoundation.Presentation
                 }
                 float stride = math.max(quality.NodeStride, radius * pixelsPerUnit < 3f ? 2 : 1);
                 var trail = trails[row];
-                float2 head = math.lerp(prevHeads[row], heads[row], alpha);
 
                 m_Chains.Add(new ChainDesc
                 {
@@ -292,22 +359,50 @@ namespace SnakeFoundation.Presentation
                     Shape = skin.Shape == SkinShape.Strip ? ChainShape.Strip : ChainShape.Nodes,
                 });
 
-                // Strip chains get a round head cap (nodes chains draw their head as node 0).
-                if (skin.Shape == SkinShape.Strip)
+                m_Heads[o] = new HeadDraw
                 {
-                    var batch = blend == BlendKind.Opaque ? m_OpaqueHeads : m_TranslucentHeads;
-                    batch.Add(head, radius * 1.12f, depth - 0.001f, colorA);
+                    Row = row,
+                    Depth = depth,
+                    Radius = radius,
+                    Color = colorA,
+                    // Strip chains get a round head cap (nodes chains draw their head as node 0).
+                    Cap = skin.Shape == SkinShape.Strip,
+                    OpaqueCap = blend == BlendKind.Opaque,
+                };
+            }
+            m_HeadCount = visible;
+        }
+
+        /// <summary>Head caps and eyes follow the interpolated head every frame.</summary>
+        void DrawHeads(SimWorld world, float alpha)
+        {
+            var table = world.Table(SnakeKeys.Snake);
+            var heads = table.Column(SnakeKeys.Head);
+            var prevHeads = table.Column(SnakeKeys.PrevHead);
+            var headings = table.Column(SnakeKeys.Heading);
+            m_Opaque.Count = 0;
+            m_OpaqueHeads.Count = 0;
+            m_TranslucentHeads.Count = 0;
+            for (int o = 0; o < m_HeadCount; o++)
+            {
+                var h = m_Heads[o];
+                if (h.Row >= table.Count) continue;
+                float2 head = math.lerp(prevHeads[h.Row], heads[h.Row], alpha);
+                if (h.Cap)
+                {
+                    var batch = h.OpaqueCap ? m_OpaqueHeads : m_TranslucentHeads;
+                    batch.Add(head, h.Radius * 1.12f, h.Depth - 0.001f, h.Color);
                 }
 
                 // Eyes: whites + pupils looking along the heading.
-                float2 heading = headings[row];
+                float2 heading = headings[h.Row];
                 float2 side = new float2(-heading.y, heading.x);
-                float eyeR = radius * 0.38f;
+                float eyeR = h.Radius * 0.38f;
                 for (int e = -1; e <= 1; e += 2)
                 {
-                    float2 eye = head + heading * radius * 0.35f + side * (radius * 0.45f * e);
-                    m_Opaque.Add(eye, eyeR, depth - 0.02f, new float4(1f, 1f, 1f, 1f));
-                    m_Opaque.Add(eye + heading * eyeR * 0.35f, eyeR * 0.55f, depth - 0.03f, new float4(0.08f, 0.08f, 0.12f, 1f));
+                    float2 eye = head + heading * h.Radius * 0.35f + side * (h.Radius * 0.45f * e);
+                    m_Opaque.Add(eye, eyeR, h.Depth - 0.02f, new float4(1f, 1f, 1f, 1f));
+                    m_Opaque.Add(eye + heading * eyeR * 0.35f, eyeR * 0.55f, h.Depth - 0.03f, new float4(0.08f, 0.08f, 0.12f, 1f));
                 }
             }
         }

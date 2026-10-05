@@ -22,12 +22,14 @@ namespace SnakeFoundation.Tests
 #endif
 
         /// <param name="bodyCell">Body grid cell size: compares rebuild cost against query cost.</param>
-        [TestCase(4f)]
-        [TestCase(8f)]
-        public void TickBenchmark(float bodyCell)
+        /// <param name="largeRadius">Large-radius body layer threshold (0 = single layer).</param>
+        [TestCase(4f, 0f)]
+        [TestCase(8f, 0f)]
+        [TestCase(8f, 1.6f)]
+        public void TickBenchmark(float bodyCell, float largeRadius)
         {
             using var world = new SnakeTestWorld(aiPerRegion: 150, foodPerChunk: 150, propsPerChunk: 1, seed: 1234,
-                tweak: c => c.Capacity.BodyGridCellSize = bodyCell);
+                tweak: c => { c.Capacity.BodyGridCellSize = bodyCell; c.Capacity.LargeBodyRadius = largeRadius; });
             world.StartPlayer();
             world.Step(WarmupTicks);
 
@@ -51,10 +53,10 @@ namespace SnakeFoundation.Tests
             world.Step(SerialTicks);
             pipeline.SerialProfiling = false;
 
-            var report = $"body grid cell: {bodyCell} m\n" + BuildReport(world, samples, scheduleSum / MeasuredTicks, waitSum / MeasuredTicks, pipeline);
+            var report = $"body grid cell: {bodyCell} m, large layer above radius {largeRadius} (0 = off)\n" + BuildReport(world, samples, scheduleSum / MeasuredTicks, waitSum / MeasuredTicks, pipeline);
             TestContext.WriteLine(report);
             Console.WriteLine(report);
-            WriteArtifact($"perf-editmode-body{bodyCell:0}m.txt", report);
+            WriteArtifact($"perf-editmode-body{bodyCell:0}m-large{largeRadius * 10:0}.txt", report);
 
             Array.Sort(samples);
             Assert.Greater(samples[samples.Length / 2], 0.0);
@@ -78,7 +80,7 @@ namespace SnakeFoundation.Tests
             sb.AppendLine($"main-thread schedule ms {scheduleMs:F3}  sync wait ms {waitMs:F3}");
             for (int i = 0; i < pipeline.SystemCount; i++)
                 if (pipeline.GetSystem(i) is SnakeFoundation.Systems.ItemGridSystem items)
-                    sb.AppendLine($"item grid builds skipped (unchanged items): {items.SkippedBuilds} of {pipeline.Stats.TickCount} ticks");
+                    sb.AppendLine($"item grid: {items.FullRebuilds} full rebuilds, {items.IncrementalUpdates} incremental updates ({items.DirtyRows} rows) in {pipeline.Stats.TickCount} ticks");
             sb.AppendLine("per-system ms (serial profiling, includes scheduling):");
             var stats = pipeline.Stats;
             var order = new int[stats.SystemCount];

@@ -118,7 +118,7 @@ namespace SnakeFoundation.Systems
             [ReadOnly] public NativeArray<EffectiveStats> Stats;
             public NativeArray<SnakeContact> Contact;
             public GridReader Bodies;
-            public GridReader Items;
+            public CellListReader Items;
             public ParallelQueue<EatCandidate>.Writer Eats;
             public SnakeSettings Settings;
             public RegionDef Region;

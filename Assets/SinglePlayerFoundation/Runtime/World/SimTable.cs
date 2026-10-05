@@ -17,6 +17,7 @@ namespace SPF.Runtime.World
         NativeArray<EntityHandle> m_Handles;
 
         ChangeLog m_Changes;
+        readonly List<ChangeLog> m_Logs = new List<ChangeLog>();
 
         public TableKey Key { get; }
         public int TableIndex { get; }
@@ -50,14 +51,35 @@ namespace SPF.Runtime.World
         internal void EnableChangeTracking()
         {
             if (m_Changes == null)
-                m_Changes = new ChangeLog(Capacity);
+                m_Changes = CreateChangeLog();
+        }
+
+        /// <summary>
+        /// Adds an independent change log (each consumer clears its own). Used by derived structures that
+        /// update incrementally, e.g. a spatial index of the table's rows.
+        /// </summary>
+        public ChangeLog CreateChangeLog()
+        {
+            var log = new ChangeLog(Capacity);
+            m_Logs.Add(log);
+            return log;
+        }
+
+        void Mark(int row)
+        {
+            for (int i = 0; i < m_Logs.Count; i++) m_Logs[i].Mark(row);
+        }
+
+        void MarkAll()
+        {
+            for (int i = 0; i < m_Logs.Count; i++) m_Logs[i].MarkAll();
         }
 
         /// <summary>Marks a row whose data changed outside of structural operations (main thread).</summary>
         public void MarkChanged(int row)
         {
             Version++;
-            m_Changes?.Mark(row);
+            Mark(row);
         }
 
         internal void AddColumn<T>(ColumnKey<T> key) where T : unmanaged
@@ -89,7 +111,7 @@ namespace SPF.Runtime.World
             int row = Count++;
             Version++;
             m_Handles[row] = handle;
-            m_Changes?.Mark(row);
+            Mark(row);
             for (int i = 0; i < m_ColumnList.Count; i++)
                 m_ColumnList[i].Reset(row);
             return row;
@@ -104,7 +126,7 @@ namespace SPF.Runtime.World
             int last = Count - 1;
             Count = last;
             Version++;
-            m_Changes?.Mark(row);
+            Mark(row);
             if (row == last)
                 return EntityHandle.Null;
 
@@ -118,7 +140,7 @@ namespace SPF.Runtime.World
         {
             Count = 0;
             Version++;
-            m_Changes?.MarkAll();
+            MarkAll();
         }
 
         public void Dispose()
@@ -145,13 +167,6 @@ namespace SPF.Runtime.World
         }
 
         public int Count { get; private set; }
-
-        /// <summary>
-        /// Incremented by every structural change (add, remove / swap-back, clear) and by
-        /// <see cref="MarkChanged"/>. Lets consumers skip rebuilding derived data (e.g. a spatial grid of
-        /// static items) when nothing changed. In-place column writes must call MarkChanged to count.
-        /// </summary>
-        public uint Version { get; private set; }
 
         /// <summary>True when everything must be treated as changed (reset / overflow).</summary>
         public bool All { get; private set; } = true;

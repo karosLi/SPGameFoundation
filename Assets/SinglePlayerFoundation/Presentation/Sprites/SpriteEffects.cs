@@ -16,6 +16,8 @@ namespace SPF.Presentation.Sprites
             public float2 Velocity;
             public float2 Size;
             public float Rotation;
+            public float AngularVelocity;   // radians per second
+            public float Delay;             // seconds before it appears (e.g. a slash at the strike)
             public float Age;
             public float Life;          // seconds; 0 = clip duration
             public float4 Color;
@@ -39,7 +41,7 @@ namespace SPF.Presentation.Sprites
             var e = effect;
             if (e.Life <= 0f) e.Life = e.Clip.Duration;
             if (e.ScaleFrom == 0f && e.ScaleTo == 0f) e.ScaleFrom = e.ScaleTo = 1f;
-            e.Age = 0f;
+            e.Age = -math.max(e.Delay, 0f);
             // Prefer a free slot; otherwise overwrite the oldest (round robin).
             for (int k = 0; k < m_Effects.Length; k++)
             {
@@ -71,7 +73,9 @@ namespace SPF.Presentation.Sprites
                 e.Age += dt;
                 if (e.Age >= e.Life) continue;
                 active++;
+                if (e.Age < 0f) continue;   // delayed
                 e.Position += e.Velocity * dt;
+                e.Rotation += e.AngularVelocity * dt;
                 float t = e.Age / e.Life;
                 float scale = math.lerp(e.ScaleFrom, e.ScaleTo, t);
                 var color = e.Color;

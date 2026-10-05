@@ -33,8 +33,14 @@ namespace RpgFoundation.Game
         public Text EquippedText { get; private set; }
         public VirtualJoystick Joystick { get; private set; }
         public HoldButton AttackButton { get; private set; }
-        public TapButton SkillButton { get; private set; }
+        /// <summary>Skill slot 1 (kept for callers that only use one skill).</summary>
+        public TapButton SkillButton => SkillButtons[0];
+        public TapButton[] SkillButtons { get; private set; }
+        public Image[] SkillCooldowns { get; private set; }
+        public Text[] SkillLabels { get; private set; }
         public TapButton PotionButton { get; private set; }
+        public Image ManaFill { get; private set; }
+        public Text WeaponText { get; private set; }
         public Button BagButton { get; private set; }
         public Button NewGameButton { get; private set; }
         public Button ContinueButton { get; private set; }
@@ -60,20 +66,36 @@ namespace RpgFoundation.Game
             // HUD
             HudPanel = UIFactory.Panel(root, "HudPanel", Color.clear, Vector2.zero, Vector2.one);
             HealthFill = UIFactory.Bar(HudPanel, "HealthBar", new Color(0f, 0f, 0f, 0.55f), new Color(0.85f, 0.2f, 0.25f, 0.95f), new Vector2(0.02f, 0.93f), new Vector2(0.32f, 0.97f));
-            XpFill = UIFactory.Bar(HudPanel, "XpBar", new Color(0f, 0f, 0f, 0.55f), new Color(0.95f, 0.8f, 0.25f, 0.95f), new Vector2(0.02f, 0.905f), new Vector2(0.32f, 0.92f));
+            ManaFill = UIFactory.Bar(HudPanel, "ManaBar", new Color(0f, 0f, 0f, 0.55f), new Color(0.3f, 0.5f, 1f, 0.95f), new Vector2(0.02f, 0.905f), new Vector2(0.32f, 0.925f));
+            XpFill = UIFactory.Bar(HudPanel, "XpBar", new Color(0f, 0f, 0f, 0.55f), new Color(0.95f, 0.8f, 0.25f, 0.95f), new Vector2(0.02f, 0.89f), new Vector2(0.32f, 0.9f));
             StatsText = UIFactory.Label(HudPanel, "StatsText", "", 30, TextAnchor.UpperLeft, new Vector2(0.01f, 0.7f), new Vector2(0.5f, 0.9f));
             MessageText = UIFactory.Label(HudPanel, "MessageText", "", 40, TextAnchor.UpperCenter, new Vector2(0.25f, 0.82f), new Vector2(0.75f, 0.97f));
             var joystickArea = UIFactory.Panel(HudPanel, "Joystick", new Color(1f, 1f, 1f, 0.02f), new Vector2(0f, 0f), new Vector2(0.45f, 0.65f));
             Joystick = joystickArea.gameObject.AddComponent<VirtualJoystick>();
-            var attack = UIFactory.Button(HudPanel, "AttackButton", "ATK", new Vector2(-170, 170), new Vector2(220, 220), new Color(0.9f, 0.4f, 0.3f, 0.5f), new Vector2(1f, 0f));
+            var attack = UIFactory.Button(HudPanel, "AttackButton", "ATK", new Vector2(-180, 180), new Vector2(230, 230), new Color(0.9f, 0.4f, 0.3f, 0.5f), new Vector2(1f, 0f));
             AttackButton = attack.gameObject.AddComponent<HoldButton>();
-            var skill = UIFactory.Button(HudPanel, "SkillButton", "FIRE", new Vector2(-420, 120), new Vector2(160, 160), new Color(1f, 0.6f, 0.2f, 0.5f), new Vector2(1f, 0f), 34);
-            SkillButton = skill.gameObject.AddComponent<TapButton>();
-            var potion = UIFactory.Button(HudPanel, "PotionButton", "POT", new Vector2(-170, 420), new Vector2(150, 150), new Color(0.9f, 0.25f, 0.4f, 0.5f), new Vector2(1f, 0f), 34);
+            WeaponText = UIFactory.Label(attack.transform, "Weapon", "", 24, TextAnchor.LowerCenter, new Vector2(0f, 0f), new Vector2(1f, 0.35f));
+            // Four skill buttons around the attack button, each with a cooldown overlay.
+            var positions = new[] { new Vector2(-440, 110), new Vector2(-420, 300), new Vector2(-300, 440), new Vector2(-110, 470) };
+            var colors = new[] { new Color(1f, 0.55f, 0.2f, 0.55f), new Color(0.4f, 0.8f, 1f, 0.55f), new Color(0.85f, 0.85f, 0.9f, 0.55f), new Color(0.5f, 0.75f, 1f, 0.55f) };
+            SkillButtons = new TapButton[RpgButton.SkillSlots];
+            SkillCooldowns = new Image[RpgButton.SkillSlots];
+            SkillLabels = new Text[RpgButton.SkillSlots];
+            for (int i = 0; i < SkillButtons.Length; i++)
+            {
+                var b = UIFactory.Button(HudPanel, "SkillButton" + (i + 1), "", positions[i], new Vector2(150, 150), colors[i], new Vector2(1f, 0f), 26);
+                SkillButtons[i] = b.gameObject.AddComponent<TapButton>();
+                SkillLabels[i] = b.GetComponentInChildren<Text>();
+                // Cooldown: dark overlay shrinking from the top.
+                var overlay = UIFactory.Panel(b.transform, "Cooldown", new Color(0f, 0f, 0f, 0.6f), Vector2.zero, Vector2.one, raycast: false);
+                SkillCooldowns[i] = overlay.GetComponent<Image>();
+            }
+            var potion = UIFactory.Button(HudPanel, "PotionButton", "POT", new Vector2(-560, 300), new Vector2(130, 130), new Color(0.9f, 0.25f, 0.4f, 0.5f), new Vector2(1f, 0f), 30);
             PotionButton = potion.gameObject.AddComponent<TapButton>();
             BagButton = UIFactory.Button(HudPanel, "BagButton", "BAG", new Vector2(-110, -70), new Vector2(180, 100), new Color(0.4f, 0.4f, 0.55f, 0.85f), new Vector2(1f, 1f), 34);
             BagButton.onClick.AddListener(() => BagPanel.gameObject.SetActive(!BagPanel.gameObject.activeSelf));
-            TouchInput = new TouchInputSource(Joystick).Hold(AttackButton, RpgButton.Attack).Tap(SkillButton, RpgButton.Skill).Tap(PotionButton, RpgButton.Potion);
+            TouchInput = new TouchInputSource(Joystick).Hold(AttackButton, RpgButton.Attack).Tap(PotionButton, RpgButton.Potion);
+            for (int i = 0; i < SkillButtons.Length; i++) TouchInput.Tap(SkillButtons[i], RpgButton.Skill1 + i);
 
             // Bag (inventory)
             BagPanel = UIFactory.Panel(root, "BagPanel", new Color(0.05f, 0.05f, 0.08f, 0.9f), new Vector2(0.55f, 0.15f), new Vector2(0.98f, 0.85f));
@@ -121,15 +143,13 @@ namespace RpgFoundation.Game
 
         void OnFeedback(FeedbackEvent e)
         {
+            // Damage / heal / gold numbers are drawn in the world by the renderer (pixel font sprites).
             switch (e.Kind)
             {
-                case FeedbackKind.Damage: FloatingText.Spawn(e.Position, e.Value.ToString("0"), new Color(1f, 0.95f, 0.85f)); break;
-                case FeedbackKind.Crit: FloatingText.Spawn(e.Position, e.Value.ToString("0") + "!", new Color(1f, 0.75f, 0.2f)); break;
-                case FeedbackKind.HeroHurt: FloatingText.Spawn(e.Position, "-" + e.Value.ToString("0"), new Color(1f, 0.3f, 0.3f)); break;
-                case FeedbackKind.Heal: FloatingText.Spawn(e.Position, "+" + e.Value.ToString("0"), new Color(0.4f, 1f, 0.5f)); break;
-                case FeedbackKind.Gold: FloatingText.Spawn(e.Position, "+" + e.Value.ToString("0") + "g", new Color(1f, 0.85f, 0.3f)); break;
-                case FeedbackKind.Item: FloatingText.Spawn(e.Position, e.Value > 0 ? "GEAR" : "POTION", new Color(0.8f, 0.6f, 1f)); break;
-                case FeedbackKind.LevelUp: FloatingText.Spawn(e.Position, "LEVEL " + e.Value.ToString("0") + "!", new Color(1f, 1f, 0.5f)); break;
+                case FeedbackKind.LevelUp: FloatingText.Spawn(e.Position + new Unity.Mathematics.float2(0f, 1f), "LEVEL " + e.Value.ToString("0") + "!", new Color(1f, 1f, 0.5f)); break;
+                case FeedbackKind.Item:
+                    if (e.Value > 0) FloatingText.Spawn(e.Position + new Unity.Mathematics.float2(0f, 0.8f), m_Game.Runtime.GearName((int)e.Value), new Color(0.85f, 0.7f, 1f));
+                    break;
             }
         }
 
@@ -159,6 +179,21 @@ namespace RpgFoundation.Game
             {
                 session.Sync();
                 UIFactory.SetFill(HealthFill, world.Column(RpgKeys.Health)[row].Fraction);
+                UIFactory.SetFill(ManaFill, world.Column(RpgKeys.Mana)[row].Fraction);
+                var combat = world.Column(RpgKeys.Combat)[row];
+                var loadout = world.Column(RpgKeys.Loadout)[row];
+                var skills = m_Game.Runtime.Skills;
+                float mana = world.Column(RpgKeys.Mana)[row].Current;
+                for (int i = 0; i < SkillCooldowns.Length; i++)
+                {
+                    byte id = loadout.Skill(i);
+                    float fraction = id == 0 ? 1f : combat.SkillCooldown[i] / math.max(skills[id - 1].Cooldown, 0.01f);
+                    // Overlay covers the cooling-down part (from the top); locked or unaffordable skills stay dark.
+                    var rect = SkillCooldowns[i].rectTransform;
+                    rect.anchorMin = new Vector2(0f, 1f - math.saturate(fraction));
+                    bool affordable = id != 0 && mana >= skills[id - 1].ManaCost;
+                    SkillCooldowns[i].color = new Color(0f, 0f, 0f, id == 0 || !affordable ? 0.7f : 0.55f);
+                }
             }
             var levels = m_Game.Runtime.Settings.Levels;
             UIFactory.SetFill(XpFill, profile.Level >= levels.MaxLevel ? 1f : profile.Xp / (float)math.max(levels.XpToNext(profile.Level), 1));
@@ -185,7 +220,15 @@ namespace RpgFoundation.Game
             StatsText.text = $"Floor {profile.Floor}   Lv {profile.Level}   {hp}\nGold {profile.Gold}   Potions {profile.Potions}   Monsters {state.MonstersAlive}/{state.FloorMonsters}";
             MessageText.text = state.Message;
             ClearText.text = state.Message + $"\nLevel {profile.Level}, gold {profile.Gold}";
-            EquippedText.text = $"Weapon: {config.GearName(profile.Weapon)}\nArmour: {config.GearName(profile.Armour)}";
+            EquippedText.text = $"Weapon: {(profile.Weapon > 0 ? config.GearName(profile.Weapon) : "Rusty Sword")}\nArmour: {config.GearName(profile.Armour)}";
+            WeaponText.text = config.WeaponNames[(int)config.HeroWeapon(profile.Weapon)];
+            for (int i = 0; i < SkillLabels.Length; i++)
+            {
+                int id = i < config.HeroSkillSlots.Length ? config.HeroSkillSlots[i] : 0;
+                if (id <= 0 || id > config.SkillNames.Length) { SkillLabels[i].text = "-"; continue; }
+                var def = config.Skills[id - 1];
+                SkillLabels[i].text = profile.Level >= def.UnlockLevel ? $"{config.SkillNames[id - 1]}\n{def.ManaCost:0} MP" : $"Lv {def.UnlockLevel}";
+            }
             for (int i = 0; i < BagSlots.Length; i++)
             {
                 bool has = i < profile.Inventory.Count;

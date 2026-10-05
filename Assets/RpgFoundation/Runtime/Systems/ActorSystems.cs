@@ -543,6 +543,7 @@ namespace RpgFoundation.Systems
                         // Faster attack rates shorten the wind-up too (animations stay in sync).
                         float speed = math.max(rate / math.max(weapon.AttackRate, 0.05f), 0.25f);
                         Enter(ref c, ActionPhase.Windup, weapon.Windup / speed);
+                        c.PhaseSkill = 0;   // a weapon attack, not a skill
                         c.Attack.Start(1f / rate);
                         Facing[i] = c.Aim;
                         Feedback.TryAdd(new FeedbackEvent { Kind = FeedbackKind.Swing, Position = p, Direction = c.Aim, Actor = info.Kind, Weapon = loadout.Weapon, Value = c.PhaseDuration });

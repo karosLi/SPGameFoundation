@@ -21,6 +21,7 @@ namespace SPF.Shell.CameraRig
 
         Camera m_Camera;
         float2 m_Position;
+        float m_ShakeAmplitude, m_ShakeTime, m_ShakeDuration;
         float m_CurrentSize;
         bool m_Initialised;
 
@@ -56,9 +57,27 @@ namespace SPF.Shell.CameraRig
             }
             var cam = Camera;
             cam.orthographicSize = m_CurrentSize;
-            transform.position = new Vector3(m_Position.x, m_Position.y, -50f);
+            float2 shake = float2.zero;
+            if (m_ShakeTime < m_ShakeDuration)
+            {
+                m_ShakeTime += dt;
+                float k = m_ShakeAmplitude * (1f - m_ShakeTime / m_ShakeDuration);
+                float t = Time.unscaledTime * 55f;
+                shake = new float2(math.sin(t), math.cos(t * 1.37f)) * k;
+            }
+            transform.position = new Vector3(m_Position.x + shake.x, m_Position.y + shake.y, -50f);
             float halfH = m_CurrentSize, halfW = m_CurrentSize * cam.aspect;
             ViewRect = new float4(m_Position.x - halfW, m_Position.y - halfH, m_Position.x + halfW, m_Position.y + halfH);
+        }
+
+        /// <summary>Screen shake (impacts): decays linearly over <paramref name="duration"/>; the strongest request wins.</summary>
+        public void Shake(float amplitude, float duration)
+        {
+            float remaining = m_ShakeDuration > 0f ? m_ShakeAmplitude * (1f - m_ShakeTime / m_ShakeDuration) : 0f;
+            if (amplitude < remaining) return;
+            m_ShakeAmplitude = amplitude;
+            m_ShakeDuration = math.max(duration, 0.01f);
+            m_ShakeTime = 0f;
         }
 
         /// <summary>Jump to the target next frame (level start, teleport).</summary>

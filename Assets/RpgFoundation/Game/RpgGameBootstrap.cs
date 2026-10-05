@@ -112,8 +112,10 @@ namespace RpgFoundation.Game
             }
             InputRouter.AddSource(new KeyboardInputSource()
                 .Map(KeyCode.Space, RpgButton.Attack).Map(KeyCode.J, RpgButton.Attack)
-                .Map(KeyCode.E, RpgButton.Skill).Map(KeyCode.K, RpgButton.Skill)
-                .Map(KeyCode.Q, RpgButton.Potion).Map(KeyCode.L, RpgButton.Potion));
+                .Map(KeyCode.Alpha1, RpgButton.Skill1).Map(KeyCode.Alpha2, RpgButton.Skill2)
+                .Map(KeyCode.Alpha3, RpgButton.Skill3).Map(KeyCode.Alpha4, RpgButton.Skill4)
+                .Map(KeyCode.E, RpgButton.Skill1).Map(KeyCode.LeftShift, RpgButton.Skill2)
+                .Map(KeyCode.Q, RpgButton.Potion));
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (m_PerfHud)

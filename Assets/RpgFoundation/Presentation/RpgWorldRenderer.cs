@@ -1,5 +1,7 @@
+using SPF.Contracts;
 using SPF.L1.Spatial;
 using SPF.Presentation;
+using SPF.Presentation.Sprites;
 using SPF.Runtime.Session;
 using SPF.Shell.CameraRig;
 using Unity.Mathematics;
@@ -8,42 +10,68 @@ using UnityEngine;
 namespace RpgFoundation.Presentation
 {
     /// <summary>
-    /// Draws the dungeon with the foundation's batches: the tile map as one quad mesh (rebuilt only when
-    /// the floor changes), actors / items / projectiles as disc batches (both render tiers), health bars as
-    /// overlay quads. Interpolates between ticks, drives the follow camera, and forwards feedback events
-    /// (damage numbers...) to <see cref="Feedback"/>. Runs after the camera (order 500).
+    /// Draws the dungeon with sprites from the procedural atlas (<see cref="RpgArt"/>), on both render tiers:
+    /// <list type="bullet">
+    /// <item>tile map as a static sprite batch (re-uploaded only when the floor changes);</item>
+    /// <item>actors with state animations picked from the simulated action phase (idle, walk, wind-up /
+    /// strike, cast, hit, death), mirrored by facing, hit flash, weapon overlays posed by the phase;</item>
+    /// <item>items, projectiles, shadows; effects from feedback events: hit sparks, slashes, explosions,
+    /// frost nova, whirlwind, the boss's slam warning and shockwave, dash afterimages, deaths, level-ups;</item>
+    /// <item>damage / heal / gold numbers in the pixel font (same batches, no UI text), screen shake on
+    /// heavy impacts; health bars as overlay quads.</item>
+    /// </list>
+    /// Runs after the camera (order 500); interpolates between ticks.
     /// </summary>
     [DefaultExecutionOrder(500)]
     public sealed class RpgWorldRenderer : MonoBehaviour
     {
-        const float FloorDepth = 6f, WallDepth = 5f, ItemDepth = 0.9f, ActorDepth = 0.5f, ProjectileDepth = 0.2f;
+        const float TileDepth = 6f, WallDepth = 5.9f, ActorDepth = 1f, DepthPerY = 0.002f;
 
         public SessionHost Host;
         public FollowCamera2D Camera;
-        public float ViewSize = 9f;
+        public float ViewSize = 7.5f;
 
-        /// <summary>Feedback events drained this frame (damage numbers, level-up toasts...).</summary>
+        /// <summary>Feedback events drained this frame (the HUD shows level-ups, etc.).</summary>
         public System.Action<FeedbackEvent> Feedback;
 
+        struct ActorView
+        {
+            public int Generation;
+            public SpriteAnimator Anim;
+            public float2 LastPosition;
+            public float Speed;
+            public float Ghost;
+            public float DeathTime;
+        }
+
         RenderAssets m_Assets;
-        CircleBatch m_Actors, m_Items, m_Glow;
-        QuadBatch m_Tiles, m_Bars;
+        RpgArt m_Art;
+        SpriteBatch m_Tiles, m_Opaque, m_Effects, m_Additive;
+        QuadBatch m_Bars;
+        SpriteEffects m_Fx;
+        ActorView[] m_Views;
         int m_TileBuild = -1;
         uint m_TileVersion = uint.MaxValue;
         SimSession m_Session;
+        Unity.Mathematics.Random m_Random = new Unity.Mathematics.Random(17);
 
         public RenderTier Tier => m_Assets?.Tier ?? RenderTier.DataTexture;
         public int LastActorsDrawn { get; private set; }
         public int TileQuads => m_Tiles?.Count ?? 0;
+        public int SpritesDrawn { get; private set; }
+        public int EffectsActive => m_Fx?.Active ?? 0;
+        public RpgArt Art => m_Art;
 
         void OnDestroy() => Release();
 
         void Release()
         {
-            m_Actors?.Dispose(); m_Items?.Dispose(); m_Glow?.Dispose();
-            m_Tiles?.Dispose(); m_Bars?.Dispose();
-            m_Actors = m_Items = m_Glow = null;
-            m_Tiles = m_Bars = null;
+            m_Tiles?.Dispose(); m_Opaque?.Dispose(); m_Effects?.Dispose(); m_Additive?.Dispose();
+            m_Bars?.Dispose();
+            m_Art?.Dispose();
+            m_Tiles = m_Opaque = m_Effects = m_Additive = null;
+            m_Bars = null;
+            m_Art = null;
             m_Assets?.Dispose();
             m_Assets = null;
         }
@@ -53,14 +81,24 @@ namespace RpgFoundation.Presentation
             Release();
             m_Session = session;
             var world = session.World;
+            var config = world.Resource(RpgKeys.Config);
             m_Assets = new RenderAssets(RenderCapabilities.Detect());
-            int actors = world.Table(RpgKeys.Actor).Capacity;
-            m_Actors = new CircleBatch(m_Assets, BlendKind.Opaque, actors * 3);
-            m_Items = new CircleBatch(m_Assets, BlendKind.Opaque, world.Table(RpgKeys.Item).Capacity * 2);
-            m_Glow = new CircleBatch(m_Assets, BlendKind.Additive, world.Table(RpgKeys.Projectile).Capacity * 2 + 8, shaded: false);
+            m_Art = RpgArt.Build(config.Monsters.Length, k =>
+            {
+                var c = config.Monsters[k].Color;
+                return new Color(c.x, c.y, c.z, 1f);
+            });
+            var tier = m_Assets.Tier;
+            var atlas = m_Art.Sheet.Texture;
             var map = world.Resource(RpgKeys.Map);
-            m_Tiles = new QuadBatch(map.Size.x * map.Size.y, overlay: false);
-            m_Bars = new QuadBatch(actors * 2, overlay: true);
+            int actors = world.Table(RpgKeys.Actor).Capacity;
+            m_Tiles = new SpriteBatch(tier, atlas, BlendKind.Opaque, map.Size.x * map.Size.y, queueOffset: -10);
+            m_Opaque = new SpriteBatch(tier, atlas, BlendKind.Opaque, actors * 3 + world.Table(RpgKeys.Item).Capacity * 2 + world.Table(RpgKeys.Projectile).Capacity);
+            m_Effects = new SpriteBatch(tier, atlas, BlendKind.Translucent, 4096);
+            m_Additive = new SpriteBatch(tier, atlas, BlendKind.Additive, 1024);
+            m_Bars = new QuadBatch(actors * 2 + 8, overlay: true);
+            m_Fx = new SpriteEffects(512);
+            m_Views = new ActorView[world.Registry.Capacity];
             m_TileBuild = -1;
         }
 
@@ -72,113 +110,407 @@ namespace RpgFoundation.Presentation
             var world = session.World;
             var game = world.Resource(RpgKeys.Game);
             var map = world.Resource(RpgKeys.Map);
+            var config = world.Resource(RpgKeys.Config);
             float alpha = session.InterpolationAlpha;
+            float dt = Time.deltaTime;
             var bounds = new Bounds(Vector3.zero, new Vector3(1e5f, 1e5f, 100f));
 
-            if (game.FloorBuilds != m_TileBuild || map.Version != m_TileVersion)
+            if (Camera != null && Camera.UpdateTarget == null)
+                Camera.UpdateTarget = AimCamera;
+
+            bool tilesDirty = game.FloorBuilds != m_TileBuild || map.Version != m_TileVersion;
+            if (tilesDirty)
             {
                 BuildTiles(map, game);
                 m_TileBuild = game.FloorBuilds;
                 m_TileVersion = map.Version;
+                m_Fx.Clear();
             }
 
+            float4 view = Camera != null ? Camera.ViewRect : new float4(-1e5f, -1e5f, 1e5f, 1e5f);
+            view += new float4(-3f, -3f, 3f, 3f);
+            m_Opaque.Clear();
+            m_Effects.Clear();
+            m_Additive.Clear();
+            m_Bars.Clear();
+
+            DrainFeedback(world, config, game);
+            DrawActors(world, config, game, alpha, dt, view);
+            DrawItems(world, view);
+            DrawProjectiles(world, alpha, view);
+            DrawStairs(map, game);
+            m_Fx.UpdateAndDraw(dt, m_Effects, m_Art.Sheet, m_Art.Font);
+
+            m_Tiles.Draw(bounds, dirty: tilesDirty);
+            m_Opaque.Draw(bounds);
+            m_Effects.Draw(bounds);
+            m_Additive.Draw(bounds);
+            m_Bars.Draw(bounds);
+            SpritesDrawn = m_Tiles.Count + m_Opaque.Count + m_Effects.Count + m_Additive.Count;
+        }
+
+        // ---- Actors ----
+
+        void DrawActors(SPF.Runtime.World.SimWorld world, RpgRuntimeConfig config, RpgGameState game, float alpha, float dt, float4 view)
+        {
             var positions = world.Column(RpgKeys.Position);
             var prev = world.Column(RpgKeys.PrevPosition);
             var infos = world.Column(RpgKeys.Info);
             var healths = world.Column(RpgKeys.Health);
             var facings = world.Column(RpgKeys.Facing);
             var combat = world.Column(RpgKeys.Combat);
-            var config = world.Resource(RpgKeys.Config);
+            var loadouts = world.Column(RpgKeys.Loadout);
+            var handles = world.Table(RpgKeys.Actor).Handles;
             int count = world.Table(RpgKeys.Actor).Count;
-
-            if (Camera != null && Camera.UpdateTarget == null)
-                Camera.UpdateTarget = AimCamera;
-            float4 view = Camera != null ? Camera.ViewRect : new float4(-1e5f, -1e5f, 1e5f, 1e5f);
-            view += new float4(-2f, -2f, 2f, 2f);
-
-            m_Actors.Count = 0;
-            m_Bars.Clear();
             int drawn = 0;
             for (int i = 0; i < count; i++)
             {
                 var info = infos[i];
-                if (info.Has(ActorFlags.Dead)) continue;
                 float2 p = math.lerp(prev[i], positions[i], alpha);
                 if (p.x < view.x || p.y < view.y || p.x > view.z || p.y > view.w) continue;
                 drawn++;
-                bool hero = info.Has(ActorFlags.Hero);
-                float4 color = hero ? new float4(0.3f, 0.6f, 1f, 1f) : config.Monsters[info.Kind - 1].Color;
-                if (combat[i].HitFlash > 0f) color = math.lerp(color, new float4(1f, 1f, 1f, 1f), 0.7f);
-                float depth = ActorDepth - i * 1e-4f;
-                if (info.Has(ActorFlags.Boss))
-                    m_Actors.Add(p, info.Radius * 1.15f, depth + 0.05f, new float4(0.25f, 0.1f, 0.35f, 1f));
-                m_Actors.Add(p, info.Radius, depth, color);
-                float2 eye = p + math.normalizesafe(facings[i], new float2(0f, -1f)) * info.Radius * 0.55f;
-                m_Actors.Add(eye, info.Radius * 0.28f, depth - 0.01f, hero ? new float4(1f, 0.9f, 0.4f, 1f) : new float4(0.1f, 0.05f, 0.05f, 1f));
+                var handle = handles[i];
+                ref var v = ref m_Views[handle.Index];
+                if (v.Generation != handle.Generation)
+                    v = new ActorView { Generation = handle.Generation, LastPosition = p, Anim = new SpriteAnimator { Clip = -1 } };
+                float2 moved = p - v.LastPosition;
+                v.LastPosition = p;
+                v.Speed = math.lerp(v.Speed, dt > 0f ? math.length(moved) / dt : 0f, 0.3f);
 
-                var h = healths[i];
-                if (hero || h.Current < h.Max)
+                bool hero = info.Has(ActorFlags.Hero);
+                var art = hero ? m_Art.Hero : m_Art.Monsters[info.Kind - 1];
+                var c = combat[i];
+                float2 facing = c.Phase != ActionPhase.None && c.Phase != ActionPhase.Stagger && math.lengthsq(c.Aim) > 0f ? c.Aim : facings[i];
+                float side = facing.x < -0.05f ? -1f : 1f;
+
+                // Pick the animation from the simulated state.
+                int frame;
+                CharacterClip clip;
+                float progress = c.PhaseProgress;
+                if (info.Has(ActorFlags.Dead))
                 {
-                    float w = math.max(info.Radius * 2f, 0.8f);
-                    float2 min = p + new float2(-w * 0.5f, info.Radius + 0.15f);
-                    m_Bars.Add(min, new float2(w, 0.12f), 0f, new Color32(20, 20, 20, 200));
-                    var fill = hero ? new Color32(80, 200, 255, 230) : new Color32(230, 60, 50, 230);
-                    m_Bars.Add(min, new float2(w * h.Fraction, 0.12f), -0.01f, fill);
+                    clip = CharacterClip.Death;
+                    v.DeathTime += dt;
+                    frame = art.Clip(clip).FrameAt(v.DeathTime);
+                }
+                else if (c.Phase == ActionPhase.Stagger || c.HitFlash > 0.08f)
+                {
+                    clip = CharacterClip.Hit;
+                    frame = art.Clip(clip).FrameAtProgress(c.Phase == ActionPhase.Stagger ? progress : 1f - c.HitFlash / 0.15f);
+                }
+                else if (c.Phase == ActionPhase.Windup)
+                {
+                    clip = CharacterClip.Attack;
+                    frame = art.Clip(clip).FrameAtProgress(progress * 0.5f);
+                }
+                else if (c.Phase == ActionPhase.Recover && c.PhaseSkill == 0)
+                {
+                    clip = CharacterClip.Attack;
+                    frame = art.Clip(clip).FrameAtProgress(0.5f + progress * 0.5f);
+                }
+                else if (c.Phase == ActionPhase.Cast || c.Phase == ActionPhase.Channel)
+                {
+                    clip = CharacterClip.Cast;
+                    v.Anim.Play((int)clip);
+                    v.Anim.Advance(dt);
+                    frame = art.Clip(clip).FrameAt(v.Anim.Time);
+                }
+                else
+                {
+                    bool walking = v.Speed > 0.4f || c.Phase == ActionPhase.Dash;
+                    clip = walking ? CharacterClip.Walk : CharacterClip.Idle;
+                    v.Anim.Play((int)clip);
+                    v.Anim.Advance(dt * (walking ? math.clamp(v.Speed / 3f, 0.6f, 2.2f) : 1f));
+                    frame = art.Clip(clip).FrameAt(v.Anim.Time);
+                }
+                if (clip != CharacterClip.Cast && clip != CharacterClip.Walk && clip != CharacterClip.Idle) v.Anim.Clip = -1;
+
+                float depth = ActorDepth + p.y * DepthPerY;
+                float flash = math.saturate(c.HitFlash / 0.15f) * 0.85f;
+                float4 tint = new float4(1f);
+                if (c.Invulnerable > 0f) tint = new float4(0.7f, 0.9f, 1f, 1f);
+                if (!hero && world.Column(RpgKeys.Mods)[i].HasSource(ModSource.Slow)) tint = new float4(0.65f, 0.85f, 1.15f, 1f);
+                float2 size = art.Size;
+                float2 center = p + art.Center;
+                m_Opaque.Add(center, new float2(size.x * side, size.y), m_Art.Sheet[frame].Uv, depth, tint, 0f, flash);
+                // Shadow under the feet.
+                float shadowW = math.max(info.Radius * 2.1f, 0.6f);
+                m_Effects.Add(p + new float2(0f, -0.04f), new float2(shadowW, shadowW * 0.45f), m_Art.Sheet[m_Art.Shadow].Uv, depth + 0.5f, new float4(1f));
+
+                if (!info.Has(ActorFlags.Dead))
+                {
+                    DrawWeapon(art, loadouts[i].Weapon, c, p, facing, side, depth, flash);
+                    if (c.Phase == ActionPhase.Dash)
+                    {
+                        v.Ghost -= dt;
+                        if (v.Ghost <= 0f)
+                        {
+                            v.Ghost = 0.04f;
+                            m_Fx.Spawn(new SpriteEffects.Effect
+                            {
+                                Clip = new SpriteClip(frame, 1, 1f, false), Position = center, Size = new float2(size.x * side, size.y),
+                                Life = 0.25f, Color = new float4(0.5f, 0.8f, 1f, 0.6f), Fade = true, Depth = depth + 0.01f,
+                            });
+                        }
+                    }
+                    var h = healths[i];
+                    if (hero || h.Current < h.Max)
+                    {
+                        float w = math.max(info.Radius * 2f, 0.8f);
+                        float2 min = p + new float2(-w * 0.5f, size.y + 0.05f);
+                        m_Bars.Add(min, new float2(w, 0.1f), 0f, new Color32(20, 20, 20, 200));
+                        var fill = hero ? new Color32(80, 200, 255, 230) : info.Has(ActorFlags.Boss) ? new Color32(200, 90, 255, 230) : new Color32(230, 60, 50, 230);
+                        m_Bars.Add(min, new float2(w * h.Fraction, 0.1f), -0.01f, fill);
+                    }
                 }
             }
             LastActorsDrawn = drawn;
+        }
 
-            // Items: gold coins, potions, gear (pulsing).
-            m_Items.Count = 0;
-            var itemPos = world.Column(RpgKeys.ItemPosition);
-            var itemInfo = world.Column(RpgKeys.ItemInfo);
-            float pulse = 0.85f + 0.15f * math.sin(Time.time * 6f);
+        /// <summary>Weapon overlay posed by the action phase: swings arc through the aim, spears thrust, bows and staves point.</summary>
+        void DrawWeapon(CharacterArt art, WeaponKind kind, in CombatState c, float2 p, float2 facing, float side, float depth, float flash)
+        {
+            var weapon = m_Art.Weapons[(int)kind];
+            if (weapon == null) return;
+            float aim = math.atan2(facing.y, facing.x);
+            float rest = side > 0f ? -0.7f : math.PI + 0.7f;
+            float angle = rest, reach = 0f;
+            float t = c.PhaseProgress;
+            bool ranged = kind == WeaponKind.Bow || kind == WeaponKind.Staff;
+            switch (c.Phase)
+            {
+                case ActionPhase.Windup:
+                    angle = kind == WeaponKind.Spear || ranged ? aim : aim + side * math.lerp(0.3f, 1.9f, t);
+                    reach = kind == WeaponKind.Spear ? -0.25f * t : 0f;
+                    break;
+                case ActionPhase.Recover when c.PhaseSkill == 0:
+                    if (kind == WeaponKind.Spear || ranged) { angle = aim; reach = kind == WeaponKind.Spear ? math.lerp(0.55f, 0f, t) : 0f; }
+                    else angle = aim - side * math.lerp(1.3f, 0.6f, t);
+                    break;
+                case ActionPhase.Cast:
+                    angle = side > 0f ? 1.2f : math.PI - 1.2f;
+                    break;
+                case ActionPhase.Channel:
+                    angle = aim + c.PhaseTime * 18f;   // whirlwind spin
+                    break;
+                default:
+                    if (ranged) angle = side > 0f ? 0.5f : math.PI - 0.5f;
+                    break;
+            }
+            float2 dir = new float2(math.cos(angle), math.sin(angle));
+            float2 hand = p + new float2(art.Hand.x * side, art.Hand.y);
+            float2 center = hand + dir * (weapon.Size.x * 0.5f - weapon.Grip + reach);
+            // Keep the weapon's top side up whichever way it points.
+            float flipY = math.cos(angle) < 0f ? -1f : 1f;
+            bool behind = math.sin(angle) > 0.3f && c.Phase != ActionPhase.Channel;
+            m_Opaque.Add(center, new float2(weapon.Size.x, weapon.Size.y * flipY), m_Art.Sheet[weapon.Frame].Uv, depth + (behind ? 0.004f : -0.004f), new float4(1f), angle, flash);
+        }
+
+        // ---- Items, projectiles, stairs ----
+
+        void DrawItems(SPF.Runtime.World.SimWorld world, float4 view)
+        {
+            var positions = world.Column(RpgKeys.ItemPosition);
+            var infos = world.Column(RpgKeys.ItemInfo);
+            var config = world.Resource(RpgKeys.Config);
+            float time = Time.time;
             for (int i = 0; i < world.Table(RpgKeys.Item).Count; i++)
             {
-                var item = itemInfo[i];
-                float2 p = itemPos[i];
-                float4 c = item.Kind == ItemKind.Gold ? new float4(1f, 0.82f, 0.2f, 1f)
-                    : item.Kind == ItemKind.Potion ? new float4(0.95f, 0.25f, 0.35f, 1f)
-                    : new float4(0.75f, 0.45f, 1f, 1f);
-                m_Items.Add(p, item.Radius * (item.Kind == ItemKind.Gear ? pulse : 1f), ItemDepth - i * 1e-5f, c);
+                float2 p = positions[i];
+                if (p.x < view.x || p.y < view.y || p.x > view.z || p.y > view.w) continue;
+                var item = infos[i];
+                float bob = 0.06f * math.sin(time * 4f + i);
+                float depth = ActorDepth + p.y * DepthPerY + 0.01f;
+                int frame;
+                float2 size;
+                float rotation = 0f;
+                switch (item.Kind)
+                {
+                    case ItemKind.Gold: frame = m_Art.Coin.FrameAt(time + i * 0.13f); size = new float2(9, 9) / RpgArt.PixelsPerUnit; break;
+                    case ItemKind.Potion: frame = m_Art.Potion; size = new float2(10, 12) / RpgArt.PixelsPerUnit; break;
+                    default:
+                    {
+                        var g = config.Gear[item.Value];
+                        if (g.Slot == GearSlot.Weapon && m_Art.Weapons[(int)g.Weapon] != null)
+                        {
+                            var w = m_Art.Weapons[(int)g.Weapon];
+                            frame = w.Frame; size = w.Size; rotation = 0.6f;
+                        }
+                        else { frame = m_Art.ArmourIcon; size = new float2(12, 12) / RpgArt.PixelsPerUnit; }
+                        // Glow under gear.
+                        m_Additive.Add(p, new float2(0.9f), m_Art.Sheet[m_Art.Disc].Uv, depth + 0.02f, new float4(0.7f, 0.4f, 1f, 0.35f + 0.15f * math.sin(time * 5f)));
+                        break;
+                    }
+                }
+                m_Opaque.Add(p + new float2(0f, 0.1f + bob), size, m_Art.Sheet[frame].Uv, depth, new float4(1f), rotation);
+                m_Effects.Add(p + new float2(0f, -0.04f), new float2(0.35f, 0.14f), m_Art.Sheet[m_Art.Shadow].Uv, depth + 0.3f, new float4(1f));
             }
+        }
 
-            // Projectiles and the stairs glow.
-            m_Glow.Count = 0;
-            var projPos = world.Column(RpgKeys.ProjectilePosition);
-            var projPrev = world.Column(RpgKeys.ProjectilePrev);
-            var projInfo = world.Column(RpgKeys.ProjectileInfo);
+        void DrawProjectiles(SPF.Runtime.World.SimWorld world, float alpha, float4 view)
+        {
+            var positions = world.Column(RpgKeys.ProjectilePosition);
+            var prev = world.Column(RpgKeys.ProjectilePrev);
+            var infos = world.Column(RpgKeys.ProjectileInfo);
+            float time = Time.time;
             for (int i = 0; i < world.Table(RpgKeys.Projectile).Count; i++)
             {
-                var pr = projInfo[i];
-                float2 p = math.lerp(projPrev[i], projPos[i], alpha);
-                if (pr.Visual == ProjectileVisual.Fireball)
+                var pr = infos[i];
+                float2 p = math.lerp(prev[i], positions[i], alpha);
+                if (p.x < view.x || p.y < view.y || p.x > view.z || p.y > view.w) continue;
+                float angle = math.atan2(pr.Velocity.y, pr.Velocity.x);
+                float depth = ActorDepth + p.y * DepthPerY - 0.05f;
+                switch (pr.Visual)
                 {
-                    m_Glow.Add(p, pr.Radius * 2.2f, ProjectileDepth, new float4(1f, 0.35f, 0.05f, 0.35f));
-                    m_Glow.Add(p, pr.Radius, ProjectileDepth - 0.01f, new float4(1f, 0.8f, 0.3f, 0.9f));
+                    case ProjectileVisual.Fireball:
+                        m_Additive.Add(p, new float2(1.1f), m_Art.Sheet[m_Art.Disc].Uv, depth, new float4(1f, 0.45f, 0.1f, 0.55f));
+                        m_Opaque.Add(p, new float2(14, 14) / RpgArt.PixelsPerUnit * 1.3f, m_Art.Sheet[m_Art.Fireball.FrameAt(time)].Uv, depth - 0.01f, new float4(1f), angle);
+                        break;
+                    case ProjectileVisual.Bolt:
+                        m_Additive.Add(p, new float2(0.7f), m_Art.Sheet[m_Art.Disc].Uv, depth, new float4(0.6f, 0.3f, 1f, 0.5f));
+                        m_Opaque.Add(p, new float2(10, 10) / RpgArt.PixelsPerUnit, m_Art.Sheet[m_Art.Bolt.FrameAt(time)].Uv, depth - 0.01f, new float4(1f));
+                        break;
+                    case ProjectileVisual.Spit:
+                        m_Opaque.Add(p, new float2(8, 8) / RpgArt.PixelsPerUnit, m_Art.Sheet[m_Art.Spit].Uv, depth, new float4(1f));
+                        break;
+                    default:
+                        m_Opaque.Add(p, new float2(12, 5) / RpgArt.PixelsPerUnit * 1.2f, m_Art.Sheet[m_Art.Arrow].Uv, depth, new float4(1f), angle);
+                        break;
                 }
-                else
-                    m_Glow.Add(p, pr.Radius, ProjectileDepth, new float4(0.9f, 0.9f, 1f, 0.8f));
             }
-            if (game.Flow != RpgFlow.Menu)
-            {
-                float2 stairs = map.AsView().CenterOf(game.StairsCell);
-                float s = 0.5f + 0.5f * math.sin(Time.time * 2.5f);
-                var glow = game.BossAlive ? new float4(0.6f, 0.15f, 0.2f, 0.25f) : new float4(0.3f, 0.9f, 1f, 0.2f + 0.2f * s);
-                m_Glow.Add(stairs, 0.9f + 0.15f * s, ProjectileDepth + 0.3f, glow);
-            }
+        }
 
-            m_Tiles.Draw(bounds, dirty: false);
-            m_Items.Draw(bounds);
-            m_Actors.Draw(bounds);
-            m_Glow.Draw(bounds);
-            m_Bars.Draw(bounds);
+        void DrawStairs(TileMap map, RpgGameState game)
+        {
+            if (game.Flow == RpgFlow.Menu) return;
+            float2 stairs = map.AsView().CenterOf(game.StairsCell);
+            float time = Time.time;
+            m_Opaque.Add(stairs, new float2(1f), m_Art.Sheet[m_Art.Stairs.FrameAt(time)].Uv, TileDepth - 0.5f, game.BossAlive ? new float4(0.8f, 0.5f, 0.5f, 1f) : new float4(1f));
+            var glow = game.BossAlive ? new float4(0.7f, 0.15f, 0.2f, 0.3f) : new float4(0.3f, 0.9f, 1f, 0.25f + 0.15f * math.sin(time * 3f));
+            m_Additive.Add(stairs, new float2(1.8f), m_Art.Sheet[m_Art.Disc].Uv, TileDepth - 0.6f, glow);
+        }
 
+        // ---- Feedback: effects and numbers ----
+
+        void DrainFeedback(SPF.Runtime.World.SimWorld world, RpgRuntimeConfig config, RpgGameState game)
+        {
             var feedback = world.Resource(RpgKeys.Feedback);
-            if (Feedback != null)
-                for (int i = 0; i < feedback.Count; i++) Feedback(feedback[i]);
+            for (int i = 0; i < feedback.Count; i++)
+            {
+                var e = feedback[i];
+                Spawn(e, config);
+                Feedback?.Invoke(e);
+            }
             feedback.Clear();
         }
+
+        void Spawn(in FeedbackEvent e, RpgRuntimeConfig config)
+        {
+            float depthFx = ActorDepth + e.Position.y * DepthPerY - 0.2f;
+            float2 drift = new float2(m_Random.NextFloat(-0.4f, 0.4f), 1.6f);
+            switch (e.Kind)
+            {
+                case FeedbackKind.Damage:
+                case FeedbackKind.Crit:
+                case FeedbackKind.HeroHurt:
+                {
+                    bool crit = e.Kind == FeedbackKind.Crit;
+                    bool hurt = e.Kind == FeedbackKind.HeroHurt;
+                    float2 at = e.Position + new float2(0f, 0.35f);
+                    float sparkSize = crit ? 1.1f : 0.7f;
+                    if (e.Source == HitSource.Explosion || e.Source == HitSource.Slam) sparkSize = 0.9f;
+                    m_Fx.Spawn(new SpriteEffects.Effect { Clip = m_Art.Spark, Position = at - e.Direction * 0.2f, Size = new float2(sparkSize), Color = hurt ? new float4(1f, 0.5f, 0.5f, 1f) : new float4(1f), Depth = depthFx, Rotation = m_Random.NextFloat(6.28f) });
+                    m_Fx.Spawn(new SpriteEffects.Effect
+                    {
+                        NumberMode = true, Number = (int)math.round(e.Value), Prefix = hurt ? '-' : '\0', Suffix = crit ? '!' : '\0',
+                        Position = at + new float2(0f, 0.2f), Velocity = drift, Size = new float2(0.3f), Life = crit ? 0.95f : 0.75f,
+                        ScaleFrom = crit ? 1.9f : 1.3f, ScaleTo = crit ? 1.2f : 0.9f, Fade = true, Depth = depthFx - 0.1f,
+                        Color = hurt ? new float4(1f, 0.35f, 0.3f, 1f) : crit ? new float4(1f, 0.78f, 0.2f, 1f) : new float4(1f, 0.97f, 0.9f, 1f),
+                    });
+                    if (crit) Camera?.Shake(0.08f, 0.15f);
+                    if (hurt) Camera?.Shake(0.06f, 0.12f);
+                    break;
+                }
+                case FeedbackKind.Heal:
+                    m_Fx.Spawn(new SpriteEffects.Effect { NumberMode = true, Number = (int)math.round(e.Value), Prefix = '+', Position = e.Position + new float2(0f, 0.6f), Velocity = new float2(0f, 1.2f), Size = new float2(0.3f), Life = 0.9f, ScaleFrom = 1.4f, ScaleTo = 1f, Fade = true, Depth = depthFx - 0.1f, Color = new float4(0.4f, 1f, 0.5f, 1f) });
+                    for (int k = 0; k < 4; k++)
+                        m_Fx.Spawn(new SpriteEffects.Effect { Clip = m_Art.Sparkle, Position = e.Position + m_Random.NextFloat2(-0.4f, 0.4f) + new float2(0f, 0.4f), Velocity = new float2(0f, 0.8f), Size = new float2(0.35f), Delay = k * 0.08f, Color = new float4(1f), Depth = depthFx });
+                    break;
+                case FeedbackKind.Gold:
+                    m_Fx.Spawn(new SpriteEffects.Effect { NumberMode = true, Number = (int)math.round(e.Value), Prefix = '+', Suffix = 'G', Position = e.Position + new float2(0f, 0.4f), Velocity = new float2(0f, 1f), Size = new float2(0.26f), Life = 0.8f, Fade = true, Depth = depthFx - 0.1f, Color = new float4(1f, 0.85f, 0.25f, 1f) });
+                    break;
+                case FeedbackKind.Item:
+                    m_Fx.Spawn(new SpriteEffects.Effect { Clip = m_Art.Sparkle, Position = e.Position + new float2(0f, 0.3f), Size = new float2(0.6f), Color = new float4(0.9f, 0.7f, 1f, 1f), Depth = depthFx });
+                    break;
+                case FeedbackKind.LevelUp:
+                    m_Fx.Spawn(new SpriteEffects.Effect { Clip = m_Art.Pillar, Position = e.Position + new float2(0f, 0.8f), Size = new float2(0.8f, 2f), Life = 1.2f, Fade = true, Color = new float4(1f), Depth = depthFx });
+                    break;
+                case FeedbackKind.Death:
+                {
+                    var art = e.Actor == 0 ? m_Art.Hero : m_Art.Monsters[math.clamp(e.Actor - 1, 0, m_Art.Monsters.Length - 1)];
+                    if (e.Actor != 0)
+                    {
+                        // The corpse plays its death clip (falling away from the blow), then fades.
+                        float side = e.Direction.x > 0f ? -1f : 1f;
+                        var clip = art.Clip(CharacterClip.Death);
+                        m_Fx.Spawn(new SpriteEffects.Effect { Clip = clip, Position = e.Position + art.Center, Size = new float2(art.Size.x * side, art.Size.y), Life = clip.Duration + 0.6f, Fade = true, Color = new float4(1f), Depth = ActorDepth + e.Position.y * DepthPerY + 0.01f });
+                    }
+                    m_Fx.Spawn(new SpriteEffects.Effect { Clip = m_Art.Puff, Position = e.Position + new float2(0f, 0.3f), Size = new float2(math.max(e.Value * 2.6f, 0.9f)), Delay = 0.25f, Color = new float4(1f, 1f, 1f, 0.9f), Depth = depthFx });
+                    if (e.Actor > 0 && config.Monsters[e.Actor - 1].Boss) Camera?.Shake(0.25f, 0.5f);
+                    break;
+                }
+                case FeedbackKind.Swing:
+                {
+                    // Slash crescent at the strike (after the wind-up) for melee weapons.
+                    if (e.Weapon == WeaponKind.Bow || e.Weapon == WeaponKind.Staff) break;
+                    var w = config.Weapons[(int)e.Weapon];
+                    float reach = w.Range * 0.6f + 0.3f;
+                    float size = e.Weapon == WeaponKind.Hammer || e.Weapon == WeaponKind.Axe ? 1.6f : e.Weapon == WeaponKind.Spear ? 1.3f : 1.2f;
+                    if (e.Actor > 0 && config.Monsters[e.Actor - 1].Boss) size *= 1.6f;
+                    m_Fx.Spawn(new SpriteEffects.Effect
+                    {
+                        Clip = m_Art.Slash, Position = e.Position + e.Direction * reach + new float2(0f, 0.35f), Size = new float2(size), Rotation = math.atan2(e.Direction.y, e.Direction.x),
+                        Delay = e.Value, Color = e.Weapon == WeaponKind.Claw ? new float4(0.7f, 1f, 0.6f, 0.8f) : new float4(1f, 1f, 1f, 0.9f), Depth = depthFx,
+                    });
+                    break;
+                }
+                case FeedbackKind.Explosion:
+                    m_Fx.Spawn(new SpriteEffects.Effect { Clip = m_Art.Explosion, Position = e.Position, Size = new float2(e.Value * 2.2f), Color = new float4(1f), Depth = depthFx - 0.2f });
+                    Camera?.Shake(0.12f, 0.2f);
+                    break;
+                case FeedbackKind.Nova:
+                    m_Fx.Spawn(new SpriteEffects.Effect { Clip = new SpriteClip(m_Art.Ring, 1, 1f, false), Position = e.Position, Size = new float2(e.Value * 2f), Life = 0.45f, ScaleFrom = 0.15f, ScaleTo = 1f, Fade = true, Color = new float4(0.6f, 0.9f, 1f, 0.9f), Depth = depthFx });
+                    m_Fx.Spawn(new SpriteEffects.Effect { Clip = new SpriteClip(m_Art.Disc, 1, 1f, false), Position = e.Position, Size = new float2(e.Value * 2f), Life = 0.5f, ScaleFrom = 0.3f, ScaleTo = 1f, Fade = true, Color = new float4(0.5f, 0.8f, 1f, 0.35f), Depth = depthFx + 0.1f });
+                    break;
+                case FeedbackKind.Whirlwind:
+                    for (int k = 0; k < 3; k++)
+                        m_Fx.Spawn(new SpriteEffects.Effect { Clip = new SpriteClip(m_Art.Slash.First, 1, 1f, false), Position = e.Position + new float2(0f, 0.3f), Size = new float2(e.Value * 1.6f), Rotation = k * 2.09f, AngularVelocity = -14f, Life = 0.9f, Fade = true, Color = new float4(0.9f, 0.95f, 1f, 0.7f), Depth = depthFx });
+                    break;
+                case FeedbackKind.SlamWarning:
+                {
+                    float cast = 0.9f;
+                    for (int s = 0; s < config.Skills.Length; s++) if (config.Skills[s].Kind == SkillKind.Slam) cast = config.Skills[s].CastTime;
+                    m_Fx.Spawn(new SpriteEffects.Effect { Clip = new SpriteClip(m_Art.Disc, 1, 1f, false), Position = e.Position, Size = new float2(e.Value * 2f), Life = cast, ScaleFrom = 0.4f, ScaleTo = 1f, Color = new float4(1f, 0.2f, 0.15f, 0.4f), Depth = TileDepth - 1f });
+                    m_Fx.Spawn(new SpriteEffects.Effect { Clip = new SpriteClip(m_Art.Ring, 1, 1f, false), Position = e.Position, Size = new float2(e.Value * 2f), Life = cast, Color = new float4(1f, 0.3f, 0.2f, 0.8f), Depth = TileDepth - 1.1f });
+                    break;
+                }
+                case FeedbackKind.Slam:
+                    m_Fx.Spawn(new SpriteEffects.Effect { Clip = new SpriteClip(m_Art.Ring, 1, 1f, false), Position = e.Position, Size = new float2(e.Value * 2.2f), Life = 0.4f, ScaleFrom = 0.2f, ScaleTo = 1f, Fade = true, Color = new float4(1f, 0.8f, 0.5f, 1f), Depth = depthFx });
+                    for (int k = 0; k < 8; k++)
+                        m_Fx.Spawn(new SpriteEffects.Effect { Clip = m_Art.Puff, Position = e.Position + new float2(math.cos(k * 0.785f), math.sin(k * 0.785f)) * e.Value * 0.6f, Size = new float2(0.9f), Color = new float4(0.8f, 0.7f, 0.6f, 0.8f), Depth = depthFx });
+                    Camera?.Shake(0.3f, 0.4f);
+                    break;
+                case FeedbackKind.Dash:
+                    for (int k = 0; k < 3; k++)
+                        m_Fx.Spawn(new SpriteEffects.Effect { Clip = m_Art.Dust, Position = e.Position - e.Direction * (0.2f * k), Size = new float2(0.5f, 0.33f), Delay = k * 0.05f, Color = new float4(1f), Depth = depthFx + 0.2f });
+                    break;
+                case FeedbackKind.Cast:
+                    m_Fx.Spawn(new SpriteEffects.Effect { Clip = new SpriteClip(m_Art.Disc, 1, 1f, false), Position = e.Position + new float2(0f, 0.9f), Size = new float2(0.9f), Life = math.max(e.Value, 0.2f), ScaleFrom = 0.3f, ScaleTo = 1.1f, Fade = true, Color = new float4(1f, 0.6f, 0.2f, 0.6f), Depth = depthFx });
+                    break;
+            }
+        }
+
+        // ---- Camera, tiles ----
 
         /// <summary>Camera callback (runs before this renderer): follow the interpolated hero.</summary>
         void AimCamera(FollowCamera2D camera)
@@ -189,7 +521,7 @@ namespace RpgFoundation.Presentation
             var game = world.Resource(RpgKeys.Game);
             camera.Size = ViewSize;
             if (world.Registry.TryResolve(game.Hero, out _, out int row))
-                camera.Target = math.lerp(world.Column(RpgKeys.PrevPosition)[row], world.Column(RpgKeys.Position)[row], session.InterpolationAlpha);
+                camera.Target = math.lerp(world.Column(RpgKeys.PrevPosition)[row], world.Column(RpgKeys.Position)[row], session.InterpolationAlpha) + new float2(0f, 0.4f);
             else if (game.Flow == RpgFlow.Menu)
             {
                 var map = world.Resource(RpgKeys.Map);
@@ -208,12 +540,11 @@ namespace RpgFoundation.Presentation
                 var cell = new int2(x, y);
                 bool solid = view.IsSolid(cell);
                 if (solid && !TouchesFloor(view, cell)) continue;   // buried rock is never visible
-                float2 min = map.Origin + (float2)cell * t;
-                Color32 c;
-                if (solid) c = new Color32(70, 64, 78, 255);
-                else if (game.Flow != RpgFlow.Menu && math.all(cell == game.StairsCell)) c = new Color32(40, 120, 140, 255);
-                else c = ((x + y) & 1) == 0 ? new Color32(34, 32, 40, 255) : new Color32(38, 36, 45, 255);
-                m_Tiles.Add(min, new float2(t, t), solid ? WallDepth : FloorDepth, c);
+                uint hash = math.hash(cell);
+                int frame = solid ? m_Art.Wall[hash % (uint)m_Art.Wall.Length] : m_Art.Floor[hash % (uint)m_Art.Floor.Length];
+                // Walls with floor below them get a darker lower edge (fake height).
+                float4 tint = solid ? (view.IsSolid(cell - new int2(0, 1)) ? new float4(0.85f, 0.85f, 0.9f, 1f) : new float4(1f)) : new float4(1f);
+                m_Tiles.Add(view.CenterOf(cell), new float2(t, t), m_Art.Sheet[frame].Uv, solid ? WallDepth : TileDepth, tint);
             }
         }
 

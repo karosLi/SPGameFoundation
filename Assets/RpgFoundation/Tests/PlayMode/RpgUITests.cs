@@ -134,13 +134,43 @@ namespace RpgFoundation.Tests.PlayMode
             float end = Time.realtimeSinceStartup + 8f;
             while (State.MonstersAlive > 0 && Time.realtimeSinceStartup < end)
             {
-                maxText = Mathf.Max(maxText, m_Game.Hud.FloatingText.Active);
+                maxText = Mathf.Max(maxText, m_Game.WorldRenderer.EffectsActive);
                 yield return null;
             }
             UIDriver.Release(m_Game.Hud.AttackButton.gameObject);
             Assert.AreEqual(0, State.MonstersAlive, "the slime died");
             Assert.AreEqual(1, State.Profile.Kills);
-            Assert.Greater(maxText, 0, "damage numbers were shown");
+            Assert.Greater(maxText, 0, "hit sparks and damage numbers were shown");
+        }
+
+        [UnityTest]
+        public IEnumerator SkillButtonCastsAFireballWithEffects()
+        {
+            yield return StartNewGame();
+            ClearMonsters();
+            var world = World;
+            float2 hero = world.Column(RpgKeys.Position)[HeroRow];
+            var map = world.Resource(RpgKeys.Map).AsView();
+            float2 spot = hero;
+            for (int k = 0; k < 16; k++)
+            {
+                float2 p = hero + new float2(math.cos(k * 0.39f), math.sin(k * 0.39f)) * 4f;
+                if (!map.IsSolidAt(p) && map.LineOfSight(hero, p)) { spot = p; break; }
+            }
+            var target = RpgSpawner.SpawnMonster(world, m_Game.Runtime, 3, spot, 1);
+            State.MonstersAlive = 1;
+            float mana = World.Column(RpgKeys.Mana)[HeroRow].Current;
+            UIDriver.Click(m_Game.Hud.SkillButtons[0].gameObject);
+            bool exploded = false;
+            float end = Time.realtimeSinceStartup + 4f;
+            while (!exploded && Time.realtimeSinceStartup < end)
+            {
+                yield return null;
+                exploded = !World.Registry.TryResolve(target, out _, out int row) || World.Column(RpgKeys.Health)[row].Current < World.Column(RpgKeys.Health)[row].Max;
+            }
+            Assert.IsTrue(exploded, "the fireball hit the brute");
+            Assert.Less(World.Column(RpgKeys.Mana)[HeroRow].Current, mana + 1f, "mana was spent (regen aside)");
+            Assert.Greater(m_Game.WorldRenderer.EffectsActive, 0, "explosion / numbers on screen");
         }
 
         [UnityTest]
@@ -246,6 +276,7 @@ namespace RpgFoundation.Tests.PlayMode
                 game.Session.Sync();
                 Assert.Greater(state.Profile.Kills, 0, "the bot fought");
                 Assert.Greater(game.WorldRenderer.LastActorsDrawn, 0);
+                Assert.Greater(game.WorldRenderer.SpritesDrawn, 500, "tiles, actors, weapons, effects are sprites");
 
                 game.CameraRig.Camera.targetTexture = target;
                 yield return null;

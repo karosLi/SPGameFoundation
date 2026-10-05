@@ -1,0 +1,2 @@
+=== Skeletal crowd: 1000 characters x 11 bones / sprites ===
+pose + sprite jobs ms per frame 0.067 (11000 packed sprites, 343 KiB)

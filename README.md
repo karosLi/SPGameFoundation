@@ -1,0 +1,40 @@
+# CI screenshots
+
+- source commit: f6e122cebd695ef4f0ea8e5de9dfd0336d34c2c5
+- run: https://github.com/karosLi/SPGameFoundation/actions/runs/37388225776
+- files:
+  - brawler-datatex.png
+  - brawler-gpu.png
+  - compaction-off-repeat.png
+  - compaction-off.png
+  - compaction-on.png
+  - defense-datatex.png
+  - defense-gpu.png
+  - discs16-datatex.png
+  - discs16-gpu.png
+  - discs16-repeat-datatex.png
+  - discs16-repeat-gpu.png
+  - discs8-datatex.png
+  - discs8-gpu.png
+  - platformer-datatex.png
+  - platformer-gpu.png
+  - platformer-night-datatex.png
+  - platformer-night-gpu.png
+  - prefix-off.png
+  - prefix-on.png
+  - puzzle-datatex.png
+  - puzzle-gpu.png
+  - reuse-off-datatex.png
+  - reuse-off-gpu.png
+  - reuse-on-datatex.png
+  - reuse-on-gpu.png
+  - rpg-datatex.png
+  - rpg-gpu.png
+  - sling-datatex.png
+  - sling-gpu.png
+  - sprites-datatex.png
+  - sprites-gpu.png
+  - survivor-datatex.png
+  - survivor-gpu.png
+  - survivor-stress-datatex.png
+  - survivor-stress-gpu.png

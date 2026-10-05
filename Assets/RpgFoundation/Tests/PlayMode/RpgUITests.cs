@@ -237,9 +237,13 @@ namespace RpgFoundation.Tests.PlayMode
                 yield return null;
                 game.NewGame(4242);
                 game.AutoPlay = true;
-                yield return UIDriver.WaitSeconds(12f);
-                game.Session.Sync();
+                // Real time, not ticks: the first run in an editor pays Burst / shader compilation, so wait
+                // for progress (with a generous timeout) instead of a fixed duration.
                 var state = game.State;
+                float end = Time.realtimeSinceStartup + 45f;
+                yield return UIDriver.WaitSeconds(6f);
+                while (state.Profile.Kills < 2 && Time.realtimeSinceStartup < end) yield return null;
+                game.Session.Sync();
                 Assert.Greater(state.Profile.Kills, 0, "the bot fought");
                 Assert.Greater(game.WorldRenderer.LastActorsDrawn, 0);
 

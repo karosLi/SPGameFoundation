@@ -10,6 +10,18 @@ namespace SurvivorFoundation.Game
     {
         SvGameBootstrap m_Game;
         int m_Version = -1;
+        Text[] m_ChoiceLabels;
+        /// <summary>Every choice label (upgrade × current level), built once: the level-up screen then allocates nothing.</summary>
+        static readonly string[,] s_ChoiceText = BuildChoiceText();
+
+        static string[,] BuildChoiceText()
+        {
+            var text = new string[SvGameState.UpgradeCount, SvGameState.MaxLevel + 1];
+            for (int u = 0; u < SvGameState.UpgradeCount; u++)
+                for (int level = 0; level <= SvGameState.MaxLevel; level++)
+                    text[u, level] = level == 0 ? "NEW: " + SvRules.Names[u] : SvRules.Names[u] + "  " + level + " > " + (level + 1);
+            return text;
+        }
         SvFlow m_Flow = (SvFlow)255;
 
         public Canvas Canvas { get; private set; }
@@ -44,11 +56,13 @@ namespace SurvivorFoundation.Game
             LevelUpPanel = UIFactory.Panel(root, "LevelUpPanel", new Color(0f, 0f, 0.05f, 0.75f), Vector2.zero, Vector2.one);
             UIFactory.Label(LevelUpPanel, "Title", "LEVEL UP", 100, TextAnchor.MiddleCenter, new Vector2(0f, 0.7f), new Vector2(1f, 0.9f));
             ChoiceButtons = new Button[SvGameState.ChoiceCount];
+            m_ChoiceLabels = new Text[SvGameState.ChoiceCount];
             for (int i = 0; i < ChoiceButtons.Length; i++)
             {
                 int choice = i;
                 ChoiceButtons[i] = UIFactory.Button(LevelUpPanel, "Choice" + i, "", new Vector2(0, 180 - i * 170), new Vector2(620, 140), new Color(0.3f, 0.45f, 0.75f, 0.95f), new Vector2(0.5f, 0.5f), 36);
                 ChoiceButtons[i].onClick.AddListener(() => m_Game.Choose(choice));
+                m_ChoiceLabels[i] = ChoiceButtons[i].GetComponentInChildren<Text>();
             }
 
             DeadPanel = UIFactory.Panel(root, "DeadPanel", new Color(0.15f, 0f, 0f, 0.7f), Vector2.zero, Vector2.one);
@@ -96,10 +110,10 @@ namespace SurvivorFoundation.Game
                 ChoiceButtons[i].gameObject.SetActive(shown);
                 if (!shown) continue;
                 int u = state.Choices[i];
-                int level = state.Upgrades[u];
-                UIFactory.SetText(ChoiceButtons[i], level == 0 ? $"NEW: {SvRules.Names[u]}" : $"{SvRules.Names[u]}  {level} > {level + 1}");
+                int level = Mathf.Clamp(state.Upgrades[u], 0, SvGameState.MaxLevel);
+                m_ChoiceLabels[i].text = s_ChoiceText[u, level];   // prebuilt: offers can change every tick after a big pickup
             }
-            DeadText.text = $"YOU FELL\nsurvived {seconds / 60:00}:{seconds % 60:00}, {state.Kills} kills";
+            if (state.Flow == SvFlow.Dead) DeadText.text = $"YOU FELL\nsurvived {seconds / 60:00}:{seconds % 60:00}, {state.Kills} kills";
         }
     }
 }

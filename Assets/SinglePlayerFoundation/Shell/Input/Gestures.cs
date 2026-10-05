@@ -22,6 +22,7 @@ namespace SPF.Shell.Input
         readonly List<Pointer> m_Pointers = new List<Pointer>();
         readonly List<float2> m_Taps = new List<float2>();
         readonly List<(float2 from, float2 to)> m_Swipes = new List<(float2, float2)>();
+        readonly List<(float2 from, float2 to)> m_Releases = new List<(float2, float2)>();
         float m_LastSpread;
 
         /// <summary>Pixels a pointer may move and still count as a tap.</summary>
@@ -38,6 +39,17 @@ namespace SPF.Shell.Input
         public float2 PinchCentre { get; private set; }
         public IReadOnlyList<float2> Taps => m_Taps;
         public IReadOnlyList<(float2 from, float2 to)> Swipes => m_Swipes;
+        /// <summary>Single-pointer drags that ended this frame (aim-and-release controls: slingshots, pull shots).</summary>
+        public IReadOnlyList<(float2 from, float2 to)> Releases => m_Releases;
+
+        /// <summary>The first pointer still down: where it started and where it is now.</summary>
+        public bool TryGetPrimary(out float2 start, out float2 position)
+        {
+            if (m_Pointers.Count == 0) { start = position = default; return false; }
+            start = m_Pointers[0].Start;
+            position = m_Pointers[0].Position;
+            return true;
+        }
         public int Active => m_Pointers.Count;
 
         /// <summary>Call once per frame before feeding this frame's events: clears the per-frame outputs.</summary>
@@ -47,6 +59,7 @@ namespace SPF.Shell.Input
             Pinch = 1f;
             m_Taps.Clear();
             m_Swipes.Clear();
+            m_Releases.Clear();
         }
 
         public void Down(int id, float2 position, float time)
@@ -86,6 +99,7 @@ namespace SPF.Shell.Input
             var p = m_Pointers[i];
             bool alone = m_Pointers.Count == 1;
             float duration = time - p.StartTime;
+            if (alone && p.Dragging) m_Releases.Add((p.Start, position));
             if (alone && !p.Dragging && duration <= TapMaxSeconds) m_Taps.Add(p.Start);
             else if (alone && duration <= SwipeMaxSeconds && math.distance(p.Start, position) >= SwipeMinDistance) m_Swipes.Add((p.Start, position));
             m_Pointers.RemoveAt(i);

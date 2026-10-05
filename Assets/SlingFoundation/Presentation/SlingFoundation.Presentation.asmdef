@@ -1,0 +1,26 @@
+{
+    "name": "SlingFoundation.Presentation",
+    "rootNamespace": "SlingFoundation.Presentation",
+    "references": [
+        "SPF.Contracts",
+        "SPF.L1Simulation",
+        "SPF.L2Gameplay",
+        "SPF.Runtime.Core",
+        "SPF.Runtime",
+        "Unity.Collections",
+        "Unity.Mathematics",
+        "Unity.Burst",
+        "SPF.Presentation",
+        "SPF.Shell",
+        "SlingFoundation.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -4,23 +4,23 @@ using Unity.Mathematics;
 namespace SPF.L2.Stats
 {
     /// <summary>
-    /// Eight game-defined stats stored inline (two float4): the game assigns meanings to indices
+    /// Twelve game-defined stats stored inline (three float4): the game assigns meanings to indices
     /// (e.g. 0 = max health, 1 = attack, ...). Burst friendly, no allocation.
     /// </summary>
     public struct StatBlock
     {
-        public const int Count = 8;
-        public float4 A, B;
+        public const int Count = 12;
+        public float4 A, B, C;
 
         public float this[int stat]
         {
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get => stat < 4 ? A[stat] : B[stat - 4];
+            get => stat < 4 ? A[stat] : stat < 8 ? B[stat - 4] : C[stat - 8];
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            set { if (stat < 4) A[stat] = value; else B[stat - 4] = value; }
+            set { if (stat < 4) A[stat] = value; else if (stat < 8) B[stat - 4] = value; else C[stat - 8] = value; }
         }
 
-        public static StatBlock operator +(StatBlock x, StatBlock y) => new StatBlock { A = x.A + y.A, B = x.B + y.B };
+        public static StatBlock operator +(StatBlock x, StatBlock y) => new StatBlock { A = x.A + y.A, B = x.B + y.B, C = x.C + y.C };
     }
 
     public enum ModifierOp : byte
@@ -121,7 +121,12 @@ namespace SPF.L2.Stats
                 if (m.Op == ModifierOp.Add) add[m.Stat] += m.Value;
                 else mul[m.Stat] += m.Value;
             }
-            return new StatBlock { A = (baseStats.A + add.A) * (1f + mul.A), B = (baseStats.B + add.B) * (1f + mul.B) };
+            return new StatBlock
+            {
+                A = (baseStats.A + add.A) * (1f + mul.A),
+                B = (baseStats.B + add.B) * (1f + mul.B),
+                C = (baseStats.C + add.C) * (1f + mul.C),
+            };
         }
     }
 }

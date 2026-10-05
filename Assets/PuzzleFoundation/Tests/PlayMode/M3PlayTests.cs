@@ -31,6 +31,9 @@ namespace PuzzleFoundation.Tests.PlayMode
                 uint ticks = game.Session.Clock.NextTickIndex;
                 yield return UIDriver.WaitSeconds(0.5f);
                 Assert.AreEqual(ticks, game.Session.Clock.NextTickIndex, "no ticks without moves");
+                yield return UIDriver.WaitUntil(() => game.Governor.IsIdle, 3f);
+                Assert.IsTrue(game.Governor.IsIdle, "a board at rest drops to the idle frame rate");
+                Assert.AreEqual(game.Governor.IdleFrameRate, Application.targetFrameRate);
 
                 game.Session.Sync();
                 Assert.IsTrue(M3Rules.FindMove(game.Board, out var move));
@@ -38,6 +41,8 @@ namespace PuzzleFoundation.Tests.PlayMode
                 Assert.IsFalse(game.TrySwap(move.Cell, move.Direction), "input waits for the move");
                 yield return UIDriver.WaitUntil(() => game.Renderer.Busy, 2f);
                 Assert.IsTrue(game.Renderer.Busy, "the move animates");
+                Assert.IsFalse(game.Governor.IsIdle, "animation runs at the active frame rate");
+                Assert.AreEqual(game.Governor.ActiveFrameRate, Application.targetFrameRate);
                 yield return UIDriver.WaitUntil(() => !game.InputLocked, 5f);
                 yield return null;
                 Assert.Greater(game.Board.Score, 0);

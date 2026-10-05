@@ -1,3 +1,4 @@
+using UnityEngine.TestTools.Constraints;
 using System;
 using NUnit.Framework;
 using SPF.L1.Navigation;
@@ -9,6 +10,11 @@ using Unity.Mathematics;
 
 namespace DefenseFoundation.Tests
 {
+    static class AllocConstraint
+    {
+        public static AllocatingGCMemoryConstraint None => UnityEngine.TestTools.Constraints.Is.Not.AllocatingGCMemory();
+    }
+
     sealed class TdTestWorld : IDisposable
     {
         public readonly SimSession Session;
@@ -218,6 +224,17 @@ namespace DefenseFoundation.Tests
                 r.Step();
             }
             CollectionAssert.AreEqual(a, r.Session.CaptureSnapshot());
+        }
+    
+        [Test]
+        public void SteadyStateWaveTicksDoNotAllocate()
+        {
+            using var t = new TdTestWorld();
+            t.Game.Gold = 1000;
+            for (int x = 6; x <= 16; x += 2) t.Build(new int2(x, 8), x % 4 == 0 ? TowerKind.Cannon : TowerKind.Arrow);
+            t.Game.Send(TdCommandKind.NextWave);
+            t.Step(120);
+            Assert.That(() => t.Step(240), AllocConstraint.None);
         }
     }
 }

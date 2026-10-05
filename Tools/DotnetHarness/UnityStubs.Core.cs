@@ -232,6 +232,7 @@ namespace UnityEngine
         public static Vector3 mousePosition => default;
         public static bool mousePresent => false;
         public static int touchCount => 0;
+        public static bool anyKey => false;
         public static Touch GetTouch(int i) => default;
         public static float GetAxisRaw(string a) => 0f;
         public static bool multiTouchEnabled { get; set; }

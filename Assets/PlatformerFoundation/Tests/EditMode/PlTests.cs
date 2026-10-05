@@ -1,3 +1,4 @@
+using UnityEngine.TestTools.Constraints;
 using System;
 using NUnit.Framework;
 using SPF.Contracts;
@@ -8,6 +9,11 @@ using Unity.Mathematics;
 
 namespace PlatformerFoundation.Tests
 {
+    static class AllocConstraint
+    {
+        public static AllocatingGCMemoryConstraint None => UnityEngine.TestTools.Constraints.Is.Not.AllocatingGCMemory();
+    }
+
     sealed class PlTestWorld : IDisposable
     {
         public readonly SimSession Session;
@@ -189,6 +195,14 @@ namespace PlatformerFoundation.Tests
             r.Session.RestoreSnapshot(midA);
             for (int i = 301; i < 600; i++) r.Hold(math.sin(i * 0.02f) > -0.3f ? 1f : -0.5f, 1, jump: i % 45 < 12);
             CollectionAssert.AreEqual(a, r.Session.CaptureSnapshot());
+        }
+    
+        [Test]
+        public void SteadyStateTicksDoNotAllocate()
+        {
+            using var t = new PlTestWorld();
+            t.Hold(1f, 120, jump: true);
+            Assert.That(() => { t.Hold(1f, 60, jump: true); t.Hold(-1f, 60); }, AllocConstraint.None);
         }
     }
 }

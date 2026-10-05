@@ -121,6 +121,8 @@ namespace SurvivorFoundation.Tests.PlayMode
                 game.AutoPlay = true;
                 yield return UIDriver.WaitSeconds(3f);   // bullets build up; shaders / Burst compiled
 
+                game.Governor.AdaptiveQuality = false;   // measure one fixed quality level
+                game.Governor.ResetGcStats();
                 const int Frames = 240;
                 double total = 0, worst = 0;
                 long bytes = 0;
@@ -142,6 +144,9 @@ namespace SurvivorFoundation.Tests.PlayMode
                 sb.AppendLine($"frame ms mean {total / Frames:F2}  worst {worst:F2}  (editor, vsync / target frame rate apply)");
                 sb.AppendLine($"sprites per frame up to {sprites} (bullets drawn up to {bullets}); instance upload {bytes / Frames / 1024.0:F1} KiB per frame");
                 var stats = game.Session.Pipeline.Stats;
+                sb.AppendLine(game.Governor.GcCounterValid
+                    ? $"GC: {game.Governor.GcFramesSinceReset} of {game.Governor.FramesSinceReset} frames allocated, {game.Governor.GcBytesSinceReset} bytes total (HUD text included)"
+                    : "GC: counter unavailable");
                 sb.AppendLine($"sim: schedule {stats.ScheduleMs:F3} ms, sync wait {stats.SyncWaitMs:F3} ms (last tick)");
                 string report = sb.ToString();
                 TestContext.WriteLine(report);

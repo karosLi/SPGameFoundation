@@ -3,6 +3,7 @@ using SPF.Presentation.Audio;
 using SPF.Runtime.Composition;
 using SPF.Runtime.Session;
 using SPF.Shell.Input;
+using SPF.Shell.Performance;
 using SPF.Shell.UI;
 using Unity.Mathematics;
 using UnityEngine;
@@ -26,6 +27,7 @@ namespace PuzzleFoundation.Game
         int m_RecordedSerial = -1;
 
         public SessionHost Host { get; private set; }
+        public FrameGovernor Governor { get; private set; }
         public M3Renderer Renderer { get; private set; }
         public GestureInput Gestures { get; private set; }
         public SnapshotHistory History { get; private set; }
@@ -55,7 +57,9 @@ namespace PuzzleFoundation.Game
 
         void Awake()
         {
-            Application.targetFrameRate = 60;
+            Governor = gameObject.AddComponent<FrameGovernor>();
+            Governor.ThrottleWhenIdle = true;
+            Governor.SetFrameRates(60, 30);
             m_Mode = M3Mode.Create(out m_Module);
             var sim = new GameObject("Simulation");
             sim.transform.SetParent(transform, false);
@@ -162,6 +166,7 @@ namespace PuzzleFoundation.Game
         {
             var board = Board;
             if (board == null) return;
+            if (InputLocked) Governor.KeepAwake();   // tweens play at full rate; a board at rest drops to the idle rate
             var tracker = Gestures.Tracker;
             foreach (var (from, to) in tracker.Swipes)
             {

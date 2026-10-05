@@ -1,9 +1,15 @@
+using UnityEngine.TestTools.Constraints;
 using NUnit.Framework;
 using SPF.Contracts;
 using Unity.Mathematics;
 
 namespace SurvivorFoundation.Tests
 {
+    static class AllocConstraint
+    {
+        public static AllocatingGCMemoryConstraint None => UnityEngine.TestTools.Constraints.Is.Not.AllocatingGCMemory();
+    }
+
     public class SvGameTests
     {
         [Test]
@@ -139,6 +145,23 @@ namespace SurvivorFoundation.Tests
             t.Game.Upgrades[(int)Upgrade.Spiral] = 0;
             t.Step(60);
             Assert.AreEqual(0, t.Bullets, "expired bullets were compacted away");
+        }
+    
+        [Test]
+        public void SteadyStateTicksDoNotAllocate()
+        {
+            using var t = new SvTestWorld(seed: 11, tweak: c => c.Settings.SpawnPerSecond = 20f);
+            void Run(int ticks, int offset)
+            {
+                for (int i = 0; i < ticks; i++)
+                {
+                    t.Input(new float2(math.sin((i + offset) * 0.05f), math.cos((i + offset) * 0.031f)));
+                    t.Step();
+                    if (t.Game.Flow == SvFlow.LevelUp) t.Game.Send(SvCommandKind.Choose, i % 3);
+                }
+            }
+            Run(600, 0);   // warm up: pools, queues and per-system scratch reach their working size
+            Assert.That(() => Run(300, 600), AllocConstraint.None);
         }
     }
 }

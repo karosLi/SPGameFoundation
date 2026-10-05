@@ -4,6 +4,7 @@ using SPF.Runtime.Composition;
 using SPF.Runtime.Session;
 using SPF.Shell.CameraRig;
 using SPF.Shell.Input;
+using SPF.Shell.Performance;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -24,6 +25,7 @@ namespace DefenseFoundation.Game
         float2 m_View;
 
         public SessionHost Host { get; private set; }
+        public FrameGovernor Governor { get; private set; }
         public FollowCamera2D CameraRig { get; private set; }
         public TdRenderer Renderer { get; private set; }
         public TdHud Hud { get; private set; }
@@ -43,7 +45,9 @@ namespace DefenseFoundation.Game
 
         void Awake()
         {
-            Application.targetFrameRate = 60;
+            Governor = gameObject.AddComponent<FrameGovernor>();
+            Governor.ThrottleWhenIdle = true;
+            Governor.SetFrameRates(60, 30);
             m_Mode = TdMode.Create(out m_Module);
             var sim = new GameObject("Simulation");
             sim.transform.SetParent(transform, false);
@@ -98,6 +102,8 @@ namespace DefenseFoundation.Game
 
         void Update()
         {
+            // Waves run at full rate; the build phase drops to the idle rate until the player touches the screen.
+            if (Session != null && Session.World.Resource(TdKeys.Game).Flow == TdFlow.Wave) Governor.KeepAwake();
             var tracker = Gestures.Tracker;
             var cam = CameraRig.Camera;
             float unitsPerPixel = 2f * CameraRig.Size / math.max(Screen.height, 1);

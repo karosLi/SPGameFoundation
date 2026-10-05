@@ -3,6 +3,7 @@ using SPF.Runtime.Composition;
 using SPF.Runtime.Session;
 using SPF.Shell.CameraRig;
 using SPF.Shell.Input;
+using SPF.Shell.Performance;
 using SurvivorFoundation.Presentation;
 using UnityEngine;
 
@@ -24,6 +25,7 @@ namespace SurvivorFoundation.Game
         SvBot m_Bot;
 
         public SessionHost Host { get; private set; }
+        public FrameGovernor Governor { get; private set; }
         public FollowCamera2D CameraRig { get; private set; }
         public SvRenderer Renderer { get; private set; }
         public SvHud Hud { get; private set; }
@@ -50,7 +52,9 @@ namespace SurvivorFoundation.Game
 
         void Awake()
         {
-            Application.targetFrameRate = m_TargetFrameRate;
+            Governor = gameObject.AddComponent<FrameGovernor>();
+            Governor.ThrottleWhenIdle = false;
+            Governor.SetFrameRates(m_TargetFrameRate, 30);
             if (m_Config == null) { m_Config = SvConfig.CreateDefault(); m_OwnsConfig = true; }
             m_Mode = SvMode.Create(m_Config, out m_Module);
 

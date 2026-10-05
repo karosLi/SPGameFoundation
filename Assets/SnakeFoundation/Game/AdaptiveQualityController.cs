@@ -1,4 +1,5 @@
 using SPF.Runtime.Session;
+using SPF.Shell.Performance;
 using UnityEngine;
 #if SPF_URP
 using UnityEngine.Rendering;
@@ -27,9 +28,7 @@ namespace SnakeFoundation.Game
         static readonly int[] s_DiscSegments = { 16, 16, 8, 8 };
         static readonly float[] s_RenderScale = { 1f, 0.9f, 0.8f, 0.7f };
 
-        float m_Average = 16f;
-        float m_SlowTime;
-        float m_FastTime;
+        readonly FrameBudget m_Budget = new FrameBudget { MaxLevel = MaxLevel };
 
         public int Level { get; private set; }
 
@@ -48,20 +47,16 @@ namespace SnakeFoundation.Game
         {
             var session = Host != null ? Host.Session : null;
             if (session == null) return;
-            float ms = Time.unscaledDeltaTime * 1000f;
-            m_Average += (ms - m_Average) * 0.05f;
-
-            if (m_Average > TargetFrameMs * 1.15f) { m_SlowTime += Time.unscaledDeltaTime; m_FastTime = 0f; }
-            else if (m_Average < TargetFrameMs * 0.8f) { m_FastTime += Time.unscaledDeltaTime; m_SlowTime = 0f; }
-            else { m_SlowTime = 0f; m_FastTime = 0f; }
-
-            if (m_SlowTime > DegradeAfterSeconds && Level < MaxLevel) { SetLevel(session, Level + 1); m_SlowTime = 0f; }
-            else if (m_FastTime > RecoverAfterSeconds && Level > 0) { SetLevel(session, Level - 1); m_FastTime = 0f; }
+            m_Budget.TargetMs = TargetFrameMs;
+            m_Budget.DegradeAfterSeconds = DegradeAfterSeconds;
+            m_Budget.RecoverAfterSeconds = RecoverAfterSeconds;
+            if (m_Budget.Feed(Time.unscaledDeltaTime)) SetLevel(session, m_Budget.Level);
         }
 
         public void SetLevel(SimSession session, int level)
         {
             Level = Mathf.Clamp(level, 0, MaxLevel);
+            if (m_Budget.Level != Level) m_Budget.Reset(Level);
             var quality = session.World.Resource(SnakeKeys.Quality);
             quality.Level = Level;
             quality.AIDecisionIntervalTicks = s_AIInterval[Level];

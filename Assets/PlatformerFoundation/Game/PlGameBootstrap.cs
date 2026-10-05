@@ -5,6 +5,7 @@ using SPF.Runtime.Composition;
 using SPF.Runtime.Session;
 using SPF.Shell.CameraRig;
 using SPF.Shell.Input;
+using SPF.Shell.Performance;
 using UnityEngine;
 
 namespace PlatformerFoundation.Game
@@ -22,6 +23,7 @@ namespace PlatformerFoundation.Game
         int m_Jump, m_Coin, m_Stomp, m_Die, m_Goal;
 
         public SessionHost Host { get; private set; }
+        public FrameGovernor Governor { get; private set; }
         public FollowCamera2D CameraRig { get; private set; }
         public PlRenderer Renderer { get; private set; }
         public PlHud Hud { get; private set; }
@@ -45,7 +47,9 @@ namespace PlatformerFoundation.Game
 
         void Awake()
         {
-            Application.targetFrameRate = m_TargetFrameRate;
+            Governor = gameObject.AddComponent<FrameGovernor>();
+            Governor.ThrottleWhenIdle = false;
+            Governor.SetFrameRates(m_TargetFrameRate, 30);
             m_Mode = PlMode.Create(out m_Module);
             var sim = new GameObject("Simulation");
             sim.transform.SetParent(transform, false);

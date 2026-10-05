@@ -35,6 +35,8 @@ namespace SPF.Shell.UI
         public Button TapCatcher { get; private set; }
         public RectTransform ChoiceRoot { get; private set; }
         public int ChoicesShown => m_ShownCount;
+        /// <summary>String table version the box last drew (diagnostics).</summary>
+        public int StringsVersionShown => m_StringsVersion;
         public Button Choice(int i) => m_Shown[i];
         public bool Typing => BodyText != null && BodyText.MaxVisible < BodyText.Length;
         /// <summary>Choice buttons ever created (stays at the prewarmed count: they are pooled).</summary>

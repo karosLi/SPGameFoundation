@@ -75,7 +75,8 @@ namespace StoryFoundation.Tests.PlayMode
 
                 game.ToggleLanguage();
                 yield return UIDriver.WaitUntil(() => game.Dialogue.SpeakerText.ToString() != "Mira", 2f);
-                Assert.AreEqual("米拉", game.Dialogue.SpeakerText.ToString());
+                Assert.AreEqual("米拉", game.Dialogue.SpeakerText.ToString(),
+                    $"language {game.Strings.Language} v{game.Strings.Version}, box drew v{game.Dialogue.StringsVersionShown}, speaker key '{run.Speaker}' -> '{game.Strings.Get(run.Speaker)}', state {run.State}");
                 StringAssert.Contains("灯笼", game.Dialogue.BodyText.ToString());
                 yield return Shot(game, "story-zh.png");
 

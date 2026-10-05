@@ -249,7 +249,9 @@ namespace SPF.Tests.EditMode
             string dir = Path.Combine(UnityEngine.Application.dataPath, "..", "Artifacts");
             Directory.CreateDirectory(dir);
             File.WriteAllText(Path.Combine(dir, "perf-physics.txt"), report);
-            Assert.Less(mean, 50.0);
+#if !SPF_DOTNET_HARNESS
+            Assert.Less(mean, 4.0, "Burst step budget for 600 bodies");   // the .NET harness runs it unoptimised: report only
+#endif
         }
     }
 }

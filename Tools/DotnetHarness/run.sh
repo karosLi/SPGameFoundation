@@ -5,7 +5,7 @@ cd "$(dirname "$0")"
 ./fetch-deps.sh
 python3 generate.py
 dotnet build .gen/Harness.proj -nologo -v q -warnaserror:CS0246,CS0234
-dotnet test .gen/Harness.proj -nologo -v q --no-build "$@"
+dotnet test .gen/Harness.proj -nologo -v q --no-build --logger "console;verbosity=minimal" "$@"
 
 # Optional headless preview: PREVIEW=1 Tools/DotnetHarness/run.sh  → Docs/preview/frame*.png (needs Pillow)
 if [ "${PREVIEW:-0}" = "1" ]; then

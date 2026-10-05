@@ -59,6 +59,7 @@ namespace UnityEngine
         public static void DisableKeyword(string k) { }
         public static void SetGlobalFloat(int id, float v) { }
         public static void SetGlobalVector(int id, Vector4 v) { }
+        public static void SetGlobalVectorArray(int id, Vector4[] v) { }
     }
 
     public class Material : Object

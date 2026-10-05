@@ -70,6 +70,23 @@ namespace SPF.Presentation.Sprites
 
         public void Clear() => Count = 0;
 
+        /// <summary>
+        /// Lights this batch: <paramref name="normalAtlas"/> must share the colour atlas layout (see
+        /// <see cref="NormalMapBaker"/>); lights come from <see cref="SpriteLighting"/>. Pass null to turn it off.
+        /// </summary>
+        public void SetLighting(Texture normalAtlas)
+        {
+            if (m_Material == null) return;
+            if (normalAtlas != null)
+            {
+                m_Material.SetTexture(Ids.NormalTex, normalAtlas);
+                m_Material.EnableKeyword("SPF_LIT");
+            }
+            else m_Material.DisableKeyword("SPF_LIT");
+        }
+
+        public bool Lit => m_Material != null && m_Material.IsKeywordEnabled("SPF_LIT");
+
         /// <summary>Appends a sprite; returns false when full. Negative <paramref name="size"/>.x mirrors it.</summary>
         public bool Add(float2 center, float2 size, float4 uv, float depth, float4 color, float rotation = 0f, float flash = 0f)
         {
@@ -148,6 +165,7 @@ namespace SPF.Presentation.Sprites
             public static readonly int Cutoff = Shader.PropertyToID("_Cutoff");
             public static readonly int Sprites = Shader.PropertyToID("_Sprites");
             public static readonly int PackedTex = Shader.PropertyToID("_PackedTex");
+            public static readonly int NormalTex = Shader.PropertyToID("_NormalTex");
         }
 
         /// <summary>Data-texture page: 8 RGBA8 texels (one 32-bit word each) per sprite + a quad mesh with prefix submeshes.</summary>

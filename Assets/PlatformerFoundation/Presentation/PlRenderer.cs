@@ -25,6 +25,9 @@ namespace PlatformerFoundation.Presentation
         PlArt m_Art;
         SpriteBatch m_Tiles, m_Dynamic, m_Effects;
         SpriteEffects m_Fx;
+        Texture2D m_Normals;
+        readonly float2[] m_Torches = new float2[32];
+        int m_TorchCount;
         SimSession m_Session;
         int m_Built = -1;
         float m_Look;
@@ -34,6 +37,10 @@ namespace PlatformerFoundation.Presentation
         public int SpritesDrawn { get; private set; }
         /// <summary>Times the static tile batch was uploaded (once per level build).</summary>
         public int TileUploads { get; private set; }
+        /// <summary>The current level is drawn lit (night).</summary>
+        public bool Night { get; private set; }
+        public int LightsUsed { get; private set; }
+        public int Torches => m_TorchCount;
 
         void OnDestroy() => Release();
 
@@ -43,6 +50,8 @@ namespace PlatformerFoundation.Presentation
             m_Tiles = m_Dynamic = m_Effects = null;
             m_Art?.Dispose();
             m_Art = null;
+            if (m_Normals != null) SPF.Presentation.RenderObjects.Destroy(m_Normals);
+            m_Normals = null;
             m_Assets?.Dispose();
             m_Assets = null;
         }
@@ -53,6 +62,7 @@ namespace PlatformerFoundation.Presentation
             m_Session = session;
             m_Assets = new RenderAssets(RenderCapabilities.Detect());
             m_Art = PlArt.Build();
+            m_Normals = NormalMapBaker.Bake(m_Art.Sheet);
             var atlas = m_Art.Sheet.Texture;
             var size = PlModule.MapSize;
             m_Tiles = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Opaque, size.x * size.y, queueOffset: -10);
@@ -78,6 +88,7 @@ namespace PlatformerFoundation.Presentation
             if (rebuild)
             {
                 BuildTiles(world);
+                SetupNight(game);
                 m_Built = game.LevelBuilds;
                 TileUploads++;
                 m_Fx.Clear();
@@ -124,6 +135,7 @@ namespace PlatformerFoundation.Presentation
                     m_Dynamic.Add(hero + new float2(0f, 0.12f), new float2(game.Facing, 1.125f), m_Art.Sheet[frame].Uv, ActorDepth - 0.1f, new float4(1f));
                 }
             }
+            if (Night && game.Flow != PlFlow.Menu) Light(game, alpha, time);
             m_Fx.UpdateAndDraw(Time.deltaTime, m_Effects, m_Art.Sheet, null);
 
             m_Tiles.Draw(bounds, dirty: rebuild);
@@ -131,6 +143,57 @@ namespace PlatformerFoundation.Presentation
             m_Effects.Draw(bounds);
             SpritesDrawn = m_Tiles.Count + m_Dynamic.Count + m_Effects.Count;
         }
+
+        void SetupNight(PlGameState game)
+        {
+            int level = math.clamp(game.Level, 0, PlLevels.All.Length - 1);
+            Night = PlLevels.Night[level];
+            m_Tiles.SetLighting(Night ? m_Normals : null);
+            m_Dynamic.SetLighting(Night ? m_Normals : null);
+            if (Camera != null && Camera.Camera != null)
+                Camera.Camera.backgroundColor = Night ? new Color(0.05f, 0.06f, 0.14f) : new Color(0.45f, 0.7f, 0.95f);
+            m_TorchCount = 0;
+            var rows = PlLevels.All[level];
+            for (int r = 0; r < rows.Length; r++)
+                for (int x = 0; x < rows[r].Length; x++)
+                    if (rows[r][x] == 't' && m_TorchCount < m_Torches.Length)
+                        m_Torches[m_TorchCount++] = new float2(x + 0.5f, rows.Length - 1 - r + 0.5f);
+        }
+
+        /// <summary>Night lighting: the hero's lantern plus the torches nearest the camera (the shader takes eight).</summary>
+        void Light(PlGameState game, float alpha, float time)
+        {
+            SpriteLighting.Begin(new Color(0.16f, 0.18f, 0.32f));
+            float2 hero = math.lerp(game.HeroPrev, game.Hero, alpha);
+            SpriteLighting.Add(hero + new float2(game.Facing * 0.3f, 0.4f), 6.5f, new Color(1f, 0.9f, 0.7f), 1.1f, 1.5f);
+            float2 view = Camera != null ? Camera.Target : hero;
+            for (int pick = 0; pick < SpriteLighting.MaxLights - 1; pick++)
+            {
+                // Selection by distance without sorting or allocating: take the nearest not yet taken.
+                int best = -1;
+                float bestD = float.MaxValue;
+                for (int i = 0; i < m_TorchCount; i++)
+                {
+                    float d = math.distancesq(m_Torches[i], view);
+                    if (d < bestD && (pick == 0 || d > m_LastPicked || d == m_LastPicked && i > m_LastIndex)) { bestD = d; best = i; }
+                }
+                if (best < 0 || bestD > 30f * 30f) break;
+                m_LastPicked = bestD;
+                m_LastIndex = best;
+                float flicker = 0.9f + 0.1f * math.sin(time * 13f + best * 2.1f) + 0.05f * math.sin(time * 29f + best);
+                SpriteLighting.Add(m_Torches[best] + new float2(0f, 0.4f), 5f, new Color(1f, 0.6f, 0.25f), 1.3f * flicker, 1.1f);
+            }
+            LightsUsed = SpriteLighting.Count;
+            SpriteLighting.Apply();
+            for (int i = 0; i < m_TorchCount; i++)
+            {
+                m_Dynamic.Add(m_Torches[i], new float2(0.5f, 1f), m_Art.Sheet[m_Art.Torch.FrameAt(time + i * 0.17f)].Uv, PropDepth + 0.1f, new float4(1.6f, 1.6f, 1.6f, 1f));
+                m_Effects.Add(m_Torches[i] + new float2(0f, 0.35f), new float2(1.6f), m_Art.Sheet[m_Art.Glow].Uv, FxDepth, new float4(1f, 0.6f, 0.25f, 0.35f));
+            }
+        }
+
+        float m_LastPicked;
+        int m_LastIndex;
 
         void AimCamera(FollowCamera2D camera)
         {

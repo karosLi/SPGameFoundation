@@ -10,8 +10,8 @@ namespace PlatformerFoundation.Presentation
     {
         public const float PixelsPerUnit = 16f;
         public SpriteSheet Sheet { get; private set; }
-        public SpriteClip HeroIdle, HeroRun, Coin, Walker, Flag, Sparkle;
-        public int HeroJump, HeroFall, WalkerSquashed, Ground, GroundTop, Plank, Spikes, Platform, Sky;
+        public SpriteClip HeroIdle, HeroRun, Coin, Walker, Flag, Sparkle, Torch;
+        public int HeroJump, HeroFall, WalkerSquashed, Ground, GroundTop, Plank, Spikes, Platform, Sky, Glow;
 
         static Color32 C(byte r, byte g, byte b, byte a = 255) => new Color32(r, g, b, a);
         static readonly Color32 Outline = C(24, 20, 32);
@@ -84,6 +84,19 @@ namespace PlatformerFoundation.Presentation
                 c.Rect(4 - r, 4, r * 2 + 1, 1, C(255, 250, 200));
             }), 4, 14f, false);
             art.Sky = Single(atlas, 4, 4, c => c.Rect(0, 0, 4, 4, C(255, 255, 255)));
+            art.Torch = new SpriteClip(atlas.AddStrip(3, 8, 16, (c, f) =>
+            {
+                c.Rect(3, 0, 2, 9, C(110, 75, 40));
+                c.Rect(2, 8, 4, 2, C(80, 80, 90));
+                float sway = f == 1 ? 0.6f : f == 2 ? -0.6f : 0f;
+                c.Ellipse(4 + sway, 12, 2.6f, 3.4f, C(255, 150, 40));
+                c.Ellipse(4 + sway * 0.5f, 11.5f, 1.4f, 2f, C(255, 235, 150));
+                c.Outline(Outline);
+            }), 3, 9f, true);
+            art.Glow = Single(atlas, 16, 16, c =>
+            {
+                for (int r = 8; r >= 1; r--) c.Ellipse(8, 8, r, r, C(255, 255, 255, (byte)(255 * (1f - r / 8.5f) * (1f - r / 8.5f))));
+            });
             art.Sheet = atlas.Build();
             return art;
         }

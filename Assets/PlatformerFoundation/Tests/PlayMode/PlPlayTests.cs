@@ -86,5 +86,63 @@ namespace PlatformerFoundation.Tests.PlayMode
                 Object.Destroy(read);
             }
         }
+    
+        [UnityTest]
+        public IEnumerator NightLevelIsLitByTorchesAndLantern([Values(RenderTier.GpuDriven, RenderTier.DataTexture)] RenderTier tier)
+        {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null) Assert.Ignore("No graphics device");
+            if (tier == RenderTier.GpuDriven && !SystemInfo.supportsComputeShaders) Assert.Ignore("No compute shader support");
+            RenderCapabilities.Override = tier;
+            var game = PlGameBootstrap.Create(ui: false);
+            var target = new RenderTexture(960, 540, 24, RenderTextureFormat.ARGB32);
+            var read = new Texture2D(960, 540, TextureFormat.RGBA32, false);
+            try
+            {
+                yield return null;
+                game.StartGame();
+                yield return UIDriver.WaitUntil(() => game.State.Flow == PlFlow.Playing, 5f);
+                game.Session.Sync();
+                PlLoader.Load(game.Session.World, game.State, 2);
+                for (int f = 0; f < 20; f++) yield return null;
+                Assert.IsTrue(game.Renderer.Night);
+                Assert.Greater(game.Renderer.Torches, 2);
+                Assert.Greater(game.Renderer.LightsUsed, 1, "lantern and torches");
+
+                game.CameraRig.Camera.targetTexture = target;
+                yield return null;
+                yield return null;
+                var previous = RenderTexture.active;
+                RenderTexture.active = target;
+                read.ReadPixels(new Rect(0, 0, 960, 540), 0, 0);
+                read.Apply(false);
+                RenderTexture.active = previous;
+                game.CameraRig.Camera.targetTexture = null;
+                string dir = Path.Combine(Application.dataPath, "..", "Artifacts", "Screenshots");
+                Directory.CreateDirectory(dir);
+                File.WriteAllBytes(Path.Combine(dir, $"platformer-night-{(tier == RenderTier.GpuDriven ? "gpu" : "datatex")}.png"), read.EncodeToPNG());
+
+                // Lit night: mostly dark, with a bright pool somewhere (torch light on the ground, the lantern).
+                var pixels = read.GetPixels32();
+                int dark = 0, bright = 0, n = 0;
+                for (int i = 0; i < pixels.Length; i += 5, n++)
+                {
+                    int lum = (pixels[i].r * 3 + pixels[i].g * 6 + pixels[i].b) / 10;
+                    if (lum < 50) dark++;
+                    if (lum > 150) bright++;
+                }
+                TestContext.WriteLine($"night ({tier}): dark {dark * 100 / n}%, bright {bright * 100 / n}%");
+                Assert.Greater(dark, n / 3, "night: most of the frame is dark");
+                Assert.Greater(bright, n / 400, "lights make bright spots");
+            }
+            finally
+            {
+                RenderCapabilities.Override = null;
+                if (Camera.main != null) Object.Destroy(Camera.main.gameObject);
+                Object.Destroy(game.gameObject);
+                target.Release();
+                Object.Destroy(target);
+                Object.Destroy(read);
+            }
+        }
     }
 }

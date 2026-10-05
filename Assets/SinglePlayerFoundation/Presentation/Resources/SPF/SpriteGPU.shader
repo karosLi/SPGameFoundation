@@ -11,6 +11,7 @@ Shader "SPF/SpriteGPU"
         [Enum(Off, 0, On, 1)] _ZWrite ("ZWrite", Float) = 1
         [Enum(UnityEngine.Rendering.CompareFunction)] _ZTest ("ZTest", Float) = 4
         _Cutoff ("Alpha cut-off (0 = blend)", Float) = 0.5
+        _NormalTex ("Normals (SPF_LIT)", 2D) = "bump" {}
     }
     SubShader
     {
@@ -26,6 +27,7 @@ Shader "SPF/SpriteGPU"
             #pragma target 4.5
             #pragma vertex vert
             #pragma fragment frag
+            #pragma multi_compile_local __ SPF_LIT
             #include "UnityCG.cginc"
             #include "../../Shaders/SPFSprite.hlsl"
 

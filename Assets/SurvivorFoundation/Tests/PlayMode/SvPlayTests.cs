@@ -80,12 +80,35 @@ namespace SurvivorFoundation.Tests.PlayMode
                 while (game.State.Kills < 10 && Time.realtimeSinceStartup < end) yield return null;
                 game.Session.Sync();
                 Assert.Greater(game.State.Kills, 0, "the bot fought");
+                // Per frame: bytes allocated (the governor reads the previous frame's counter) and whether a screen
+                // changed (level-up choices, flow). Allocation next to a screen change is UI work; anything else is a leak.
+                const int Window = 180;
+                var bytes = new long[Window];
+                var changed = new bool[Window];
+                int level = game.State.Level;
+                var flow = game.State.Flow;
                 game.Governor.ResetGcStats();
-                for (int f = 0; f < 180; f++) { yield return null; }
+                for (int f = 0; f < Window; f++)
+                {
+                    yield return null;
+                    bytes[f] = game.Governor.GcBytesLastFrame;
+                    changed[f] = game.State.Level != level || game.State.Flow != flow;
+                    level = game.State.Level;
+                    flow = game.State.Flow;
+                }
                 if (game.Governor.GcCounterValid)
                 {
-                    GcReport.Write($"survivor auto-play ({tier})", game.Governor.FramesSinceReset, game.Governor.GcFramesSinceReset, game.Governor.GcBytesSinceReset);
-                    Assert.LessOrEqual(game.Governor.GcFramesSinceReset, 2, "steady-state play allocates (almost) nothing per frame");
+                    int steady = 0, near = 0;
+                    for (int f = 0; f < Window; f++)
+                    {
+                        if (bytes[f] == 0) continue;
+                        bool ui = false;
+                        for (int k = math.max(0, f - 3); k <= math.min(Window - 1, f + 1); k++) ui |= changed[k];
+                        if (ui) near++; else steady++;
+                    }
+                    GcReport.Write($"survivor auto-play ({tier}): {near} frames next to level-up / flow screens, {steady} steady frames",
+                        game.Governor.FramesSinceReset, game.Governor.GcFramesSinceReset, game.Governor.GcBytesSinceReset);
+                    Assert.LessOrEqual(steady, 1, "steady-state play allocates nothing per frame");
                 }
                 Assert.Greater(game.Renderer.EnemiesDrawn + game.Renderer.BulletsDrawn, 0);
                 yield return Screenshot(game, $"survivor-{(tier == RenderTier.GpuDriven ? "gpu" : "datatex")}.png");

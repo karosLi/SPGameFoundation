@@ -269,5 +269,55 @@ namespace RpgFoundation.Tests
             TestContext.WriteLine($"floor {t.Game.Profile.Floor}, level {t.Game.Profile.Level}, kills {t.Game.Profile.Kills}, gold {t.Game.Profile.Gold}");
             Assert.AreEqual(2, cleared, "two floors cleared within five simulated minutes");
         }
+    
+        [Test]
+        public void ElitesLeadPacksWithAffixesAndDropGear()
+        {
+            using var t = new RpgTestWorld(tweak: c => { c.Dungeon.EliteChance = 1f; c.Dungeon.EliteFromFloor = 1; c.Loot.DropChance = 0f; });
+            var infos = t.World.Column(RpgKeys.Info);
+            int elites = 0, eliteRow = -1;
+            for (int row = 0; row < t.World.Table(RpgKeys.Actor).Count; row++)
+            {
+                if (!infos[row].Has(ActorFlags.Elite)) continue;
+                elites++;
+                eliteRow = row;
+                Assert.AreNotEqual(Affix.None, infos[row].Affixes, "elites have affixes");
+                var def = t.Runtime.Monsters[infos[row].Kind - 1];
+                Assert.Greater(t.World.Column(RpgKeys.Health)[row].Max, def.Health * 2f, "elites are tougher");
+            }
+            Assert.Greater(elites, 2, "one elite per pack");
+
+            var affixes = infos[eliteRow].Affixes;
+            if ((affixes & (Affix.Burning | Affix.Venomous)) != 0)
+                Assert.AreNotEqual(StatusKind.None, t.World.Column(RpgKeys.Status)[eliteRow].OnHit, "elemental affixes add a status");
+
+            // Killing an elite: guaranteed gear and gold, triple XP.
+            int xp = t.Game.Profile.Xp, level = t.Game.Profile.Level;
+            var healths = t.World.Column(RpgKeys.Health);
+            var h = healths[eliteRow]; h.Current = 0.5f; healths[eliteRow] = h;
+            t.World.Resource(RpgKeys.Hits).TryAdd(new HitEvent { AttackerId = -1, TargetRow = eliteRow, Damage = 5f, IgnoreArmour = true });
+            t.Step(2);
+            bool gear = false, gold = false;
+            var items = t.World.Column(RpgKeys.ItemInfo);
+            for (int i = 0; i < t.World.Table(RpgKeys.Item).Count; i++)
+            {
+                gear |= items[i].Kind == ItemKind.Gear;
+                gold |= items[i].Kind == ItemKind.Gold;
+            }
+            Assert.IsTrue(gear && gold, "elite loot");
+            Assert.IsTrue(t.Game.Profile.Level > level || t.Game.Profile.Xp - xp >= 20, "elite XP");
+        }
+
+        [Test]
+        public void RandomAffixesAreDistinctAndElementsExclusive()
+        {
+            var random = new Random(5);
+            for (int i = 0; i < 200; i++)
+            {
+                var a = RpgSpawner.RandomAffixes(3, ref random);
+                Assert.AreEqual(3, math.countbits((int)a));
+                Assert.IsFalse((a & Affix.Burning) != 0 && (a & Affix.Venomous) != 0);
+            }
+        }
     }
 }

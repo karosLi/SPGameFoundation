@@ -241,9 +241,16 @@ namespace RpgFoundation.Presentation
                         Size = new float2(0.3f), Life = 0.4f, Fade = true, Depth = depth - 0.02f,
                         Color = status.Burning ? new float4(1f, 0.55f, 0.15f, 0.9f) : new float4(0.5f, 1f, 0.3f, 0.8f),
                     });
-                float2 size = art.Size;
-                float2 center = p + art.Center;
+                bool elite = info.Has(ActorFlags.Elite);
+                float2 size = art.Size * (elite ? 1.15f : 1f);
+                float2 center = p + art.Center * (elite ? 1.15f : 1f);
                 m_Opaque.Add(center, new float2(size.x * side, size.y), m_Art.Sheet[frame].Uv, depth, tint, 0f, flash);
+                if (elite && !info.Has(ActorFlags.Dead))
+                {
+                    // Pulsing aura coloured by the leading affix.
+                    float pulse = 0.35f + 0.15f * math.sin(Time.time * 4f + i);
+                    m_Additive.Add(p + new float2(0f, 0.05f), new float2(info.Radius * 3.2f, info.Radius * 1.6f), m_Art.Sheet[m_Art.Ring].Uv, depth + 0.4f, AffixColor(info.Affixes, pulse));
+                }
                 // Shadow under the feet.
                 float shadowW = math.max(info.Radius * 2.1f, 0.6f);
                 m_Effects.Add(p + new float2(0f, -0.04f), new float2(shadowW, shadowW * 0.45f), m_Art.Sheet[m_Art.Shadow].Uv, depth + 0.5f, new float4(1f));
@@ -399,6 +406,15 @@ namespace RpgFoundation.Presentation
             m_Opaque.Add(stairs, new float2(1f), m_Art.Sheet[m_Art.Stairs.FrameAt(time)].Uv, TileDepth - 0.5f, game.BossAlive ? new float4(0.8f, 0.5f, 0.5f, 1f) : new float4(1f));
             var glow = game.BossAlive ? new float4(0.7f, 0.15f, 0.2f, 0.3f) : new float4(0.3f, 0.9f, 1f, 0.25f + 0.15f * math.sin(time * 3f));
             m_Additive.Add(stairs, new float2(1.8f), m_Art.Sheet[m_Art.Disc].Uv, TileDepth - 0.6f, glow);
+        }
+
+        public static float4 AffixColor(Affix affixes, float alpha)
+        {
+            if ((affixes & Affix.Burning) != 0) return new float4(1f, 0.45f, 0.1f, alpha);
+            if ((affixes & Affix.Venomous) != 0) return new float4(0.4f, 1f, 0.2f, alpha);
+            if ((affixes & Affix.Frenzied) != 0) return new float4(1f, 0.15f, 0.2f, alpha);
+            if ((affixes & Affix.Swift) != 0) return new float4(0.3f, 0.8f, 1f, alpha);
+            return new float4(1f, 0.85f, 0.3f, alpha);
         }
 
         // ---- Feedback: effects and numbers ----

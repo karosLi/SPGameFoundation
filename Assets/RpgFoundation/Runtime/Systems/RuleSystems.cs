@@ -152,7 +152,7 @@ namespace RpgFoundation.Systems
                     Feedback.TryAdd(new FeedbackEvent { Kind = FeedbackKind.Death, Position = Position[row], Value = info.Radius, Actor = info.Kind, Direction = hit.Direction });
                     if (!hero)
                     {
-                        Deaths.TryAdd(new DeathEvent { Kind = info.Kind, Position = Position[row], Floor = Floor, Boss = info.Has(ActorFlags.Boss) });
+                        Deaths.TryAdd(new DeathEvent { Kind = info.Kind, Position = Position[row], Floor = Floor, Boss = info.Has(ActorFlags.Boss), Elite = info.Has(ActorFlags.Elite) });
                         Destroy.TryAdd(Handles[row]);
                     }
                 }
@@ -216,7 +216,7 @@ namespace RpgFoundation.Systems
                 game.MonstersAlive = math.max(game.MonstersAlive - 1, 0);
                 if (death.Boss) game.BossAlive = false;
                 profile.Kills++;
-                int xp = (int)math.round(def.Xp * (1f + 0.25f * (death.Floor - 1)));
+                int xp = (int)math.round(def.Xp * (1f + 0.25f * (death.Floor - 1)) * (death.Elite ? config.Dungeon.EliteXp : 1f));
                 int levels = config.Settings.Levels.AddXp(ref profile.Level, ref profile.Xp, xp);
                 if (levels > 0 && heroAlive)
                     LevelUp(world, config, profile, heroRow, feedback);
@@ -250,6 +250,12 @@ namespace RpgFoundation.Systems
             {
                 Drop(world, death.Position, ItemKind.Gear, RandomGear(config, gearTier, ref random), ref random);
                 Drop(world, death.Position, ItemKind.Potion, 1, ref random);
+            }
+            if (death.Elite)
+            {
+                Drop(world, death.Position, ItemKind.Gear, RandomGear(config, math.min(gearTier + 1, l.GearTiers), ref random), ref random);
+                Drop(world, death.Position, ItemKind.Gold, (l.GoldMax + 2) * (1 + death.Floor / 2), ref random);
+                return;
             }
             if (random.NextFloat() >= l.DropChance) return;
             System.Span<LootEntry> table = stackalloc LootEntry[3];

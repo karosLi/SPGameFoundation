@@ -85,13 +85,20 @@ namespace RpgFoundation.Systems
             {
                 var room = m_Rooms[r];
                 int count = (int)math.round(room.Area * density);
+                var leader = EntityHandle.Null;
                 for (int i = 0; i < count; i++)
                 {
                     int kind = PickKind(config, ref random);
                     if (kind == 0) break;
                     float2 p = view.CenterOf(room.Min + new int2(random.NextInt(1, room.Size.x - 1), random.NextInt(1, room.Size.y - 1)));
-                    if (!RpgSpawner.SpawnMonster(world, config, kind, p, floor).IsNull) spawned++;
+                    var monster = RpgSpawner.SpawnMonster(world, config, kind, p, floor);
+                    if (monster.IsNull) continue;
+                    spawned++;
+                    if (leader.IsNull) leader = monster;
                 }
+                // Some packs are led by an elite: more affixes deeper down.
+                if (!leader.IsNull && floor >= d.EliteFromFloor && random.NextFloat() < d.EliteChance)
+                    RpgSpawner.MakeElite(world, config, leader, RpgSpawner.RandomAffixes(math.min(1 + floor / 3, 3), ref random));
             }
             game.BossAlive = false;
             int boss = config.BossKind;

@@ -57,6 +57,19 @@ namespace RpgFoundation
         Dead = 2,
         Boss = 4,
         Ranged = 8,
+        Elite = 16,
+    }
+
+    /// <summary>Elite monster modifiers (several can combine).</summary>
+    [Flags]
+    public enum Affix : byte
+    {
+        None = 0,
+        Swift = 1,      // much faster
+        Tough = 2,      // more health and armour
+        Burning = 4,    // hits set the hero on fire
+        Venomous = 8,   // hits poison
+        Frenzied = 16,  // attacks much faster
     }
 
     public struct ActorInfo
@@ -65,6 +78,7 @@ namespace RpgFoundation
         public byte Kind;          // 0 = hero, 1.. = monster kind (index + 1 into Config.Monsters)
         public Team Team;
         public ActorFlags Flags;
+        public Affix Affixes;
         public float Radius;
         public bool Has(ActorFlags f) => (Flags & f) != 0;
     }
@@ -239,6 +253,7 @@ namespace RpgFoundation
         public float2 Position;
         public int Floor;
         public bool Boss;
+        public bool Elite;
     }
 
     public enum FeedbackKind : byte

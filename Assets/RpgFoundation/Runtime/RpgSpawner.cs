@@ -86,6 +86,45 @@ namespace RpgFoundation
             return handle;
         }
 
+        /// <summary>Turns a freshly spawned monster into an elite with the given affixes.</summary>
+        public static void MakeElite(SimWorld world, RpgRuntimeConfig config, EntityHandle handle, Affix affixes)
+        {
+            if (!world.Registry.TryResolve(handle, out _, out int row)) return;
+            var d = config.Dungeon;
+            var info = world.Column(RpgKeys.Info)[row];
+            info.Flags |= ActorFlags.Elite;
+            info.Affixes = affixes;
+            info.Radius *= 1.15f;
+            var b = world.Column(RpgKeys.BaseStats)[row];
+            b[Stat.MaxHealth] *= d.EliteHealth * ((affixes & Affix.Tough) != 0 ? 1.5f : 1f);
+            b[Stat.Attack] *= d.EliteAttack;
+            if ((affixes & Affix.Tough) != 0) b[Stat.Armour] += 10f;
+            if ((affixes & Affix.Swift) != 0) b[Stat.Speed] *= 1.5f;
+            if ((affixes & Affix.Frenzied) != 0) b[Stat.AttackRate] *= 1.6f;
+            world.Column(RpgKeys.Info).Set(row, info);
+            world.Column(RpgKeys.BaseStats).Set(row, b);
+            world.Column(RpgKeys.Stats).Set(row, b);
+            world.Column(RpgKeys.Health).Set(row, new Health { Current = b[Stat.MaxHealth], Max = b[Stat.MaxHealth] });
+            var status = world.Column(RpgKeys.Status)[row];
+            if ((affixes & Affix.Burning) != 0) { status.OnHit = StatusKind.Burn; status.OnHitPower = 0.6f; status.OnHitDuration = 3f; }
+            if ((affixes & Affix.Venomous) != 0) { status.OnHit = StatusKind.Poison; status.OnHitPower = 0.8f; status.OnHitDuration = 4f; }
+            world.Column(RpgKeys.Status).Set(row, status);
+        }
+
+        /// <summary><paramref name="count"/> distinct random affixes (Burning and Venomous exclude each other).</summary>
+        public static Affix RandomAffixes(int count, ref Unity.Mathematics.Random random)
+        {
+            Affix result = Affix.None;
+            for (int guard = 0; guard < 32 && math.countbits((int)result) < count; guard++)
+            {
+                var a = (Affix)(1 << random.NextInt(5));
+                if (a == Affix.Burning && (result & Affix.Venomous) != 0) continue;
+                if (a == Affix.Venomous && (result & Affix.Burning) != 0) continue;
+                result |= a;
+            }
+            return result;
+        }
+
         static void Write(SimWorld world, int row, float2 position, in ActorInfo info, in StatBlock baseStats, in StatBlock stats, in ModifierSet mods, float health)
         {
             world.Column(RpgKeys.Position).Set(row, position);

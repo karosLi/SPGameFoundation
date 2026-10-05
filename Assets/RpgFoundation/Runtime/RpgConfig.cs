@@ -42,6 +42,11 @@ namespace RpgFoundation
             public int BossEvery = 3;
             [Tooltip("Floor whose stairs end the run (victory)")]
             public int FinalFloor = 9;
+            [Tooltip("Chance that a room's pack is led by an elite (from EliteFromFloor on)")]
+            public float EliteChance = 0.3f;
+            public int EliteFromFloor = 2;
+            [Tooltip("Elite health / attack / XP multipliers")]
+            public float EliteHealth = 2.5f, EliteAttack = 1.35f, EliteXp = 3f;
         }
 
         [Serializable]

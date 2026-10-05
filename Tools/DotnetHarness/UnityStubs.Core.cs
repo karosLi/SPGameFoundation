@@ -389,7 +389,7 @@ namespace UnityEngine
     public class GUIStyle { public GUIStyle() { } public GUIStyle(GUIStyle o) { } public TextAnchor alignment; public int fontSize; public bool richText; public GUIStyleState normal = new GUIStyleState(); public Vector2 CalcSize(GUIContent c) => default; }
     public class GUISkin { public GUIStyle box => new GUIStyle(); public GUIStyle label => new GUIStyle(); }
     public class GUIContent { public GUIContent(string t) { text = t; } public string text; }
-    public static class GUI { public static GUISkin skin => new GUISkin(); public static void Box(Rect r, GUIContent c, GUIStyle s) { } public static void Label(Rect r, string t) { } }
+    public static class GUI { public static GUISkin skin => new GUISkin(); public static void Box(Rect r, GUIContent c, GUIStyle s) { } public static void Label(Rect r, string t) { } public static void Box(Rect r, string t, GUIStyle s) { } }
 
     public enum ScreenOrientation { Portrait, LandscapeLeft, LandscapeRight, AutoRotation }
     public static class SystemInfo
@@ -400,6 +400,7 @@ namespace UnityEngine
         public static int systemMemorySize => 4096;
         public static int processorCount => 4;
         public static string deviceModel => "Harness";
+        public static string graphicsDeviceName => "Harness";
         public static Rendering.GraphicsDeviceType graphicsDeviceType => Rendering.GraphicsDeviceType.Null;
         public static bool SupportsTextureFormat(TextureFormat f) => true;
         public static int maxTextureSize => 4096;
@@ -415,5 +416,20 @@ namespace UnityEngine
     {
         public static Texture2D CaptureScreenshotAsTexture() => new Texture2D(1, 1);
         public static void CaptureScreenshot(string path) { }
+    }
+}
+
+namespace UnityEngine
+{
+    public struct FrameTiming
+    {
+        public double cpuFrameTime, gpuFrameTime, cpuMainThreadFrameTime, cpuRenderThreadFrameTime;
+    }
+
+    public static class FrameTimingManager
+    {
+        public static bool IsFeatureEnabled() => false;
+        public static void CaptureFrameTimings() { }
+        public static uint GetLatestTimings(uint numFrames, FrameTiming[] timings) => 0;
     }
 }

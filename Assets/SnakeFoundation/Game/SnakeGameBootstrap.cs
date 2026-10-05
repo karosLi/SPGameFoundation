@@ -104,6 +104,10 @@ namespace SnakeFoundation.Game
             Quality.Host = Host;
             Quality.SetLevel(Host.Session, 0);
 
+#if SPF_GPU_BENCH
+            // Device GPU benchmark build (menu SPF/Snake/Build GPU Benchmark).
+            gameObject.AddComponent<GpuBenchmarkRunner>().Game = this;
+#endif
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (m_PerfHud)
             {

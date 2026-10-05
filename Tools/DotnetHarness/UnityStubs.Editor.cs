@@ -4,6 +4,11 @@ using UnityEngine;
 
 namespace UnityEditor
 {
+    [AttributeUsage(AttributeTargets.Class)] public sealed class InitializeOnLoadAttribute : Attribute { }
+    [Flags] public enum BuildOptions { None = 0, Development = 1 }
+    public struct BuildPlayerOptions { public string[] scenes; public string locationPathName; public BuildTarget target; public BuildOptions options; public string[] extraScriptingDefines; }
+    namespace Build.Reporting { public enum BuildResult { Unknown, Succeeded, Failed, Cancelled } public struct BuildSummary { public BuildResult result; } public sealed class BuildReport { public BuildSummary summary; } }
+    public static class BuildPipeline { public static Build.Reporting.BuildReport BuildPlayer(BuildPlayerOptions o) => new Build.Reporting.BuildReport(); }
     [AttributeUsage(AttributeTargets.Method)] public sealed class MenuItem : Attribute { public MenuItem(string path) { } public MenuItem(string path, bool validate, int priority) { } }
     public enum BuildTargetGroup { Standalone, Android, iOS }
     public enum BuildTarget { StandaloneLinux64, Android, iOS, StandaloneWindows64 }
@@ -14,6 +19,7 @@ namespace UnityEditor
     {
         public static ColorSpace colorSpace { get; set; }
         public static bool gcIncremental { get; set; }
+        public static bool enableFrameTimingStats { get; set; }
         public static UIOrientation defaultInterfaceOrientation { get; set; }
         public static void SetScriptingBackend(BuildTargetGroup g, ScriptingImplementation s) { }
         public static void SetUseDefaultGraphicsAPIs(BuildTarget t, bool v) { }

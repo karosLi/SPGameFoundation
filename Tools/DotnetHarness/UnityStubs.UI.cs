@@ -29,7 +29,13 @@ namespace UnityEngine.Events
 namespace UnityEngine.EventSystems
 {
     public class UIBehaviour : MonoBehaviour { }
-    public class EventSystem : UIBehaviour { public static EventSystem current { get; set; } public bool IsPointerOverGameObject() => false; }
+    public struct RaycastResult { public GameObject gameObject { get; set; } }
+    public class EventSystem : UIBehaviour
+    {
+        public static EventSystem current { get; set; }
+        public bool IsPointerOverGameObject() => false;
+        public void RaycastAll(PointerEventData eventData, System.Collections.Generic.List<RaycastResult> raycastResults) { }
+    }
     public class BaseInputModule : UIBehaviour { }
     public class StandaloneInputModule : BaseInputModule { }
     public class BaseEventData { public BaseEventData(EventSystem es) { } }

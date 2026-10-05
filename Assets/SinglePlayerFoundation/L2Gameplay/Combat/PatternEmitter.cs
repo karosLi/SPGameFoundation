@@ -15,6 +15,7 @@ namespace SPF.L2.Combat
     /// (spirals) and optionally aimed at a target (aimed spreads). Covers rings, spirals, flowers, aimed
     /// fans and shotgun bursts with one deterministic, allocation-free struct.
     /// </summary>
+    [System.Serializable]
     public struct PatternEmitter
     {
         public int Arms;          // directions around the emitter (1 = single stream)

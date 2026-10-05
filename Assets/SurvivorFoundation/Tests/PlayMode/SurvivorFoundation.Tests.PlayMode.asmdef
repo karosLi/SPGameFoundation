@@ -1,0 +1,36 @@
+{
+    "name": "SurvivorFoundation.Tests.PlayMode",
+    "rootNamespace": "SurvivorFoundation.Tests.PlayMode",
+    "references": [
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "SPF.Contracts",
+        "SPF.L1Simulation",
+        "SPF.L2Gameplay",
+        "SPF.Runtime.Core",
+        "SPF.Runtime",
+        "Unity.Collections",
+        "Unity.Mathematics",
+        "Unity.Burst",
+        "SPF.Presentation",
+        "SPF.Shell",
+        "SPF.Testing",
+        "SurvivorFoundation.Runtime",
+        "SurvivorFoundation.Presentation",
+        "SurvivorFoundation.Game",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

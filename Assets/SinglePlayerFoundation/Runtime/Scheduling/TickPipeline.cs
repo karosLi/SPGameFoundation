@@ -120,6 +120,11 @@ namespace SPF.Runtime.Scheduling
                 long start = Stopwatch.GetTimestamp();
                 entry.Marker.Begin();
                 var dependency = m_Tracker.GetDependency(entry.Access);
+                // A system that declares nothing is a barrier, typically main-thread work (spawning,
+                // rules, flow) that touches arbitrary data directly: finish everything scheduled before it
+                // so it never reads a container a job is still writing.
+                if (entry.Access.IsBarrier)
+                    dependency.Complete();
                 var handle = entry.System.OnTick(context, dependency);
                 if (SerialProfiling)
                 {

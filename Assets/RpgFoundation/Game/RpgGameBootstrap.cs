@@ -98,6 +98,8 @@ namespace RpgFoundation.Game
                 if (AutoPlay && Session != null)
                 {
                     m_Bot ??= new RpgBot();
+                    // Ticks overlap rendering: complete the in-flight one before the bot reads the world.
+                    Session.Sync();
                     frame = m_Bot.Think(Session.World);
                 }
                 state.Input = InputFrame.Latch(state.Input, frame);

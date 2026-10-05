@@ -5,7 +5,8 @@ namespace SPF.Runtime.Scheduling
 {
     /// <summary>
     /// Read / write set of one system. A system that declares nothing is treated as a barrier:
-    /// it waits for all previously scheduled work and everything after it waits for it.
+    /// all previously scheduled work is completed before it runs (so main-thread code may touch any
+    /// data) and everything after it waits for it.
     /// </summary>
     public sealed class AccessDeclaration
     {

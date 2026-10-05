@@ -79,6 +79,7 @@ namespace Unity.Collections
 }
 namespace Unity.Collections.LowLevel.Unsafe
 {
+    [AttributeUsage(AttributeTargets.Field)] public sealed class NativeDisableContainerSafetyRestrictionAttribute : Attribute { }
     public static class NativeArrayUnsafeUtility
     {
         public static unsafe void* GetUnsafePtr<T>(this NativeArray<T> a) where T : struct => a.m_Ptr;

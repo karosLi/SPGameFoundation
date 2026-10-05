@@ -145,6 +145,42 @@ namespace SPF.Tests.EditMode
             Assert.AreEqual(64 * 1 + 63 * 64 / 2, snapshot.Previous[0]);
         }
 
+        sealed class ThrowingSystem : SimSystemBase
+        {
+            public bool Throw = true;
+            public override SimPhase Phase => SimPhase.Snapshot;
+            public override void Declare(AccessDeclaration access) => access.Read(TestKeys.Value);
+
+            public override JobHandle OnTick(in SimContext context, JobHandle dependency)
+            {
+                if (Throw) throw new System.InvalidOperationException("system failed while scheduling");
+                return dependency;
+            }
+        }
+
+        /// <summary>
+        /// A system throwing while scheduling must not leave earlier systems' jobs running: their data
+        /// stays accessible from the main thread and the next tick schedules normally.
+        /// </summary>
+        [Test]
+        public void ExceptionWhileSchedulingCompletesAlreadyScheduledJobs()
+        {
+            using var world = TestKeys.CreateWorld(64);
+            var thrower = new ThrowingSystem();
+            using var pipeline = new TickPipeline(world, new ISimSystem[] { new SpawnSystem(), new FillSystem(), thrower });
+
+            Assert.Throws<System.InvalidOperationException>(() => pipeline.BeginTick(new TickTime(0, 0.033f, 0)));
+            Assert.IsFalse(pipeline.HasPendingTick);
+            var values = world.Table(TestKeys.Item).Column(TestKeys.Value);
+            Assert.AreEqual(5, values[5], "the fill job finished and its column is readable (no job left running)");
+            values[0] = 0;   // writable from the main thread as well
+
+            thrower.Throw = false;
+            pipeline.BeginTick(new TickTime(1, 0.033f, 0));
+            pipeline.EndTick();
+            Assert.AreEqual(6, world.Table(TestKeys.Item).Column(TestKeys.Value)[5]);
+        }
+
         [Test]
         public void BeginTickTwiceWithoutEndThrows()
         {

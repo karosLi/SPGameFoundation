@@ -88,6 +88,32 @@ namespace SPF.Runtime.Scheduling
             s_PlaybackMarker.End();
 
             var context = new SimContext(m_World, time);
+            try
+            {
+                ScheduleSystems(context);
+            }
+            catch
+            {
+                // A system threw mid-schedule: finish what was already scheduled so no job is left running
+                // unowned (it would make every later access to its data throw), then report the error.
+                m_Tracker.All.Complete();
+                m_Tracker.Reset();
+                m_World.Sync();
+                s_BeginMarker.End();
+                throw;
+            }
+
+            m_Pending = m_Tracker.All;
+            JobHandle.ScheduleBatchedJobs();
+            HasPendingTick = true;
+            LastTickTime = time;
+
+            s_BeginMarker.End();
+            m_Stats.RecordScheduleTotal(Stopwatch.GetTimestamp() - m_BeginTimestamp);
+        }
+
+        void ScheduleSystems(in SimContext context)
+        {
             for (int i = 0; i < m_Systems.Length; i++)
             {
                 ref var entry = ref m_Systems[i];
@@ -105,14 +131,6 @@ namespace SPF.Runtime.Scheduling
                 entry.Marker.End();
                 m_Stats.RecordSchedule(i, entry.System.Phase, Stopwatch.GetTimestamp() - start);
             }
-
-            m_Pending = m_Tracker.All;
-            JobHandle.ScheduleBatchedJobs();
-            HasPendingTick = true;
-            LastTickTime = time;
-
-            s_BeginMarker.End();
-            m_Stats.RecordScheduleTotal(Stopwatch.GetTimestamp() - m_BeginTimestamp);
         }
 
         public void EndTick()

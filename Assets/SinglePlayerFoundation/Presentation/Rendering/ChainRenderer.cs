@@ -2,6 +2,7 @@ using System;
 using SPF.L1.Body;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
@@ -357,6 +358,8 @@ namespace SPF.Presentation
             }
 
             var meshData = Mesh.AllocateWritableMeshData(3);
+            try
+            {
             for (int b = 0; b < 3; b++)
             {
                 int c = 3 + b;
@@ -381,7 +384,13 @@ namespace SPF.Presentation
                     }.Schedule(m_HeaderCounts[c], 4, handle);
                 }
             }
-            handle.Complete();
+            }
+            finally
+            {
+                // Always complete: a job left running would block the next tick's writers of the trail
+                // points (and the exception would cascade into the simulation).
+                handle.Complete();
+            }
 
             for (int b = 0; b < 3; b++)
             {
@@ -469,8 +478,10 @@ namespace SPF.Presentation
         {
             [ReadOnly] public NativeArray<ChainHeader> Headers;
             [ReadOnly] public NativeArray<float2> Points;
-            [NativeDisableParallelForRestriction] public NativeArray<StripVertex> Vertices;
-            [NativeDisableParallelForRestriction] public NativeArray<uint> Indices;
+            // Vertex and index arrays of one MeshData share a safety handle, which the job system reports
+            // as aliasing; they are distinct buffers, and each chain writes only its own disjoint ranges.
+            [NativeDisableParallelForRestriction, NativeDisableContainerSafetyRestriction] public NativeArray<StripVertex> Vertices;
+            [NativeDisableParallelForRestriction, NativeDisableContainerSafetyRestriction] public NativeArray<uint> Indices;
             public float Alpha;
 
             public void Execute(int c)

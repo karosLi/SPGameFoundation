@@ -1,0 +1,28 @@
+{
+    "name": "StoryFoundation.Game",
+    "rootNamespace": "StoryFoundation.Game",
+    "references": [
+        "SPF.Contracts",
+        "SPF.L1Simulation",
+        "SPF.L2Gameplay",
+        "SPF.Runtime.Core",
+        "SPF.Runtime",
+        "Unity.Collections",
+        "Unity.Mathematics",
+        "Unity.Burst",
+        "SPF.Presentation",
+        "SPF.Shell",
+        "StoryFoundation.Runtime",
+        "StoryFoundation.Presentation",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -317,6 +317,7 @@ namespace RpgFoundation.Tests.PlayMode
             world.Column(RpgKeys.Position).Set(HeroRow, map.CenterOf(State.StairsCell));
             world.Column(RpgKeys.PrevPosition).Set(HeroRow, map.CenterOf(State.StairsCell));
             yield return UIDriver.WaitUntil(() => m_Game.Hud.ClearPanel.gameObject.activeInHierarchy, 3f);
+            yield return UIDriver.WaitUntil(() => minimap.IsExplored(State.StairsCell), 2f);   // refreshes every 0.15 s
             Assert.IsTrue(minimap.IsExplored(State.StairsCell));
             Assert.Greater(minimap.ExploredCount, explored);
 

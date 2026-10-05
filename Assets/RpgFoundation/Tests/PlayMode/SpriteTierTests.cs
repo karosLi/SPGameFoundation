@@ -38,23 +38,14 @@ namespace RpgFoundation.Tests.PlayMode
             var target = new RenderTexture(Width, Height, 24, RenderTextureFormat.ARGB32);
             camera.targetTexture = target;
             var read = new Texture2D(Width, Height, TextureFormat.RGBA32, false);
-            var frames = new Color32[3][];
+            var frames = new Color32[2][];
             try
             {
-                // GPU tier, data-texture tier with packed (RGBA32UI) instances, data-texture float fallback.
-                for (int pass = 0; pass < 3; pass++)
+                // GPU tier (structured buffer) and data-texture tier (RGBA8 words), both with packed instances.
+                for (int pass = 0; pass < 2; pass++)
                 {
                     var tier = pass == 0 ? RenderTier.GpuDriven : RenderTier.DataTexture;
-                    SpriteBatch.PackedTexturesOverride = pass == 2 ? false : (bool?)null;
                     using var batch = new SpriteBatch(tier, art.Sheet.Texture, BlendKind.Opaque, 512);
-                    if (pass == 1)
-                    {
-                        TestContext.WriteLine($"packed data textures supported: {batch.PackedTextures}");
-                        var api = SystemInfo.graphicsDeviceType;
-                        if (api == GraphicsDeviceType.Metal || api == GraphicsDeviceType.Vulkan || api == GraphicsDeviceType.Direct3D11 || api == GraphicsDeviceType.Direct3D12)
-                            Assert.IsTrue(batch.PackedTextures, "desktop / modern APIs take the packed (RGBA32UI) path");
-                    }
-                    if (pass == 2) Assert.IsFalse(batch.PackedTextures);
                     for (int f = 0; f < 4; f++)
                     {
                         Fill(batch, art);
@@ -69,13 +60,13 @@ namespace RpgFoundation.Tests.PlayMode
                     frames[pass] = read.GetPixels32();
                     string dir = Path.Combine(Application.dataPath, "..", "Artifacts", "Screenshots");
                     Directory.CreateDirectory(dir);
-                    File.WriteAllBytes(Path.Combine(dir, $"sprites-{(pass == 0 ? "gpu" : pass == 1 ? "datatex" : "datatex-float")}.png"), read.EncodeToPNG());
+                    File.WriteAllBytes(Path.Combine(dir, $"sprites-{(pass == 0 ? "gpu" : "datatex")}.png"), read.EncodeToPNG());
                 }
 
                 int lit = 0;
                 foreach (var a in frames[0]) if (a.r + a.g + a.b > 60) lit++;
                 Assert.Greater(lit, frames[0].Length / 50, "sprites were drawn");
-                for (int other = 1; other < 3; other++)
+                for (int other = 1; other < 2; other++)
                 {
                     int differing = 0;
                     for (int i = 0; i < frames[0].Length; i++)
@@ -85,13 +76,12 @@ namespace RpgFoundation.Tests.PlayMode
                         int d = math.max(math.abs(a.r - b.r), math.max(math.abs(a.g - b.g), math.abs(a.b - b.b)));
                         if (d > 24) differing++;
                     }
-                    TestContext.WriteLine($"sprites: {lit} lit pixels, {differing} differ from the GPU tier ({(other == 1 ? "packed" : "float")} data texture)");
+                    TestContext.WriteLine($"sprites: {lit} lit pixels, {differing} differ from the GPU tier (data texture)");
                     Assert.Less(differing, frames[0].Length / 200, "every path draws the same image");
                 }
             }
             finally
             {
-                SpriteBatch.PackedTexturesOverride = null;
                 camera.targetTexture = null;
                 Object.Destroy(cameraObject);
                 target.Release();

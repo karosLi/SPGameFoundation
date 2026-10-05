@@ -13,7 +13,8 @@
         "SPF.Samples.DriftSmoke",
         "Unity.Collections",
         "Unity.Mathematics",
-        "Unity.Burst"
+        "Unity.Burst",
+        "SPF.Shell"
     ],
     "includePlatforms": [
         "Editor"

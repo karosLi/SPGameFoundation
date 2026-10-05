@@ -120,26 +120,18 @@ namespace SPF.Tests.EditMode
         }
 
         [Test]
-        public void ReservedSlotsAreFilledByJobsAndTheFloatFallbackDecodes()
+        public void ReservedSlotsAreFilledByJobs()
         {
-            SpriteBatch.PackedTexturesOverride = false;
-            try
-            {
-                using var batch = new SpriteBatch(RenderTier.DataTexture, null, BlendKind.Opaque, 8);
-                Assert.IsFalse(batch.PackedTextures);
-                Assert.AreEqual(64, batch.BytesPerInstance);
-                batch.Add(float2.zero, new float2(1f), new float4(0f, 0f, 1f, 1f), 0f, new float4(1f));
-                var slots = batch.Reserve(10);
-                Assert.AreEqual(7, slots.Length, "clamped to capacity");
-                Assert.AreEqual(8, batch.Count);
-                for (int i = 0; i < slots.Length; i++) slots[i] = PackedSprite.Pack(new float2(i, 0f), new float2(1f), new float4(0f, 0f, 1f, 1f), 0f, new float4(1f));
-                batch.Trim(5);
-                Assert.AreEqual(5, batch.Count);
-                Assert.AreEqual(new float2(3f, 0f), batch.Instances[4].Center);
-            }
-            finally { SpriteBatch.PackedTexturesOverride = null; }
-            using var packed = new SpriteBatch(RenderTier.GpuDriven, null, BlendKind.Opaque, 8);
-            Assert.AreEqual(32, packed.BytesPerInstance);
+            using var batch = new SpriteBatch(RenderTier.DataTexture, null, BlendKind.Opaque, 8);
+            Assert.AreEqual(32, batch.BytesPerInstance);
+            batch.Add(float2.zero, new float2(1f), new float4(0f, 0f, 1f, 1f), 0f, new float4(1f));
+            var slots = batch.Reserve(10);
+            Assert.AreEqual(7, slots.Length, "clamped to capacity");
+            Assert.AreEqual(8, batch.Count);
+            for (int i = 0; i < slots.Length; i++) slots[i] = PackedSprite.Pack(new float2(i, 0f), new float2(1f), new float4(0f, 0f, 1f, 1f), 0f, new float4(1f));
+            batch.Trim(5);
+            Assert.AreEqual(5, batch.Count);
+            Assert.AreEqual(new float2(3f, 0f), batch.Instances[4].Center);
         }
     }
 }

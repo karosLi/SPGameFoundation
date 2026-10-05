@@ -1,10 +1,7 @@
 using System;
-using Unity.Burst;
 using Unity.Collections;
-using Unity.Jobs;
 using Unity.Mathematics;
 using UnityEngine;
-using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 
 namespace SPF.Presentation.Sprites
@@ -13,8 +10,8 @@ namespace SPF.Presentation.Sprites
     /// Instanced sprites from one atlas texture, on both render tiers (like <see cref="CircleBatch"/>), with
     /// 32-byte packed instances (<see cref="PackedSprite"/>): GPU-driven tier draws a single quad with a
     /// structured buffer; the GLES 3 data-texture tier draws prefix submeshes of prebuilt quad pages that
-    /// fetch instances from an RGBA32UI texture (2 texels each). Devices without 32-bit integer textures
-    /// fall back to 4 RGBA32F texels per instance. Opaque batches cut out alpha and write depth (no sorting
+    /// fetch instances from a linear RGBA8 texture holding one 32-bit word per texel (8 texels each;
+    /// sampleable on every device, decoded exactly). Opaque batches cut out alpha and write depth (no sorting
     /// needed); translucent / additive ones blend. Static content (tile maps) skips re-uploading with
     /// <c>Draw(dirty: false)</c>. Bulk producers write instances from Burst jobs through <see cref="Reserve"/>.
     /// </summary>
@@ -23,11 +20,7 @@ namespace SPF.Presentation.Sprites
         public const int PageSize = 4096;
         const int TextureWidth = 2048;
 
-        /// <summary>Set before batches are created to force the float data-texture path (tests, broken drivers).</summary>
-        public static bool? PackedTexturesOverride;
-
         readonly RenderTier m_Tier;
-        readonly bool m_PackedTextures;
         readonly Material m_Material;
         NativeArray<PackedSprite> m_Instances;
         int m_Uploaded = -1;
@@ -37,17 +30,12 @@ namespace SPF.Presentation.Sprites
         Mesh m_Quad;
         Page[] m_Pages;
 
-        public static bool SupportsPackedTextures =>
-            PackedTexturesOverride ?? SystemInfo.IsFormatSupported(GraphicsFormat.R32G32B32A32_UInt, FormatUsage.Sample);
-
         public SpriteBatch(RenderTier tier, Texture atlas, BlendKind blend, int capacity, int queueOffset = 0)
         {
             m_Tier = tier;
             Capacity = capacity;
-            m_PackedTextures = tier == RenderTier.DataTexture && SupportsPackedTextures;
             m_Instances = new NativeArray<PackedSprite>(capacity, Allocator.Persistent);
-            string shaderName = tier == RenderTier.GpuDriven ? "SPF/SpriteGPU" : m_PackedTextures ? "SPF/SpriteTex" : "SPF/SpriteTexFloat";
-            var shader = Resources.Load<Shader>(shaderName);
+            var shader = Resources.Load<Shader>(tier == RenderTier.GpuDriven ? "SPF/SpriteGPU" : "SPF/SpriteTex");
             m_Material = RenderAssets.CreateMaterial(shader, blend, false, queueOffset);
             if (m_Material != null)
             {
@@ -77,11 +65,8 @@ namespace SPF.Presentation.Sprites
         public NativeArray<PackedSprite> Instances => m_Instances;
         public Material Material => m_Material;
 
-        /// <summary>True when the data-texture tier uploads packed instances (2 texels each).</summary>
-        public bool PackedTextures => m_PackedTextures;
-
-        /// <summary>Bytes uploaded per instance on this batch's path.</summary>
-        public int BytesPerInstance => m_Tier == RenderTier.DataTexture && !m_PackedTextures ? 64 : PackedSprite.Stride;
+        /// <summary>Bytes uploaded per instance (both tiers upload the packed layout).</summary>
+        public int BytesPerInstance => PackedSprite.Stride;
 
         public void Clear() => Count = 0;
 
@@ -129,7 +114,7 @@ namespace SPF.Presentation.Sprites
             }
             for (int p = 0; p * PageSize < count; p++)
             {
-                var page = m_Pages[p] ??= new Page(math.min(PageSize, Capacity - p * PageSize), m_PackedTextures);
+                var page = m_Pages[p] ??= new Page(math.min(PageSize, Capacity - p * PageSize));
                 int n = math.min(PageSize, count - p * PageSize);
                 if (upload) page.Upload(m_Instances, p * PageSize, n);
                 rp.matProps = page.Properties;
@@ -163,52 +148,33 @@ namespace SPF.Presentation.Sprites
             public static readonly int Cutoff = Shader.PropertyToID("_Cutoff");
             public static readonly int Sprites = Shader.PropertyToID("_Sprites");
             public static readonly int PackedTex = Shader.PropertyToID("_PackedTex");
-            public static readonly int PackedWidth = Shader.PropertyToID("_PackedWidth");
         }
 
-        [BurstCompile(CompileSynchronously = true)]
-        struct UnpackJob : IJobParallelFor
-        {
-            [ReadOnly] public NativeArray<PackedSprite> Source;
-            [NativeDisableParallelForRestriction] public NativeArray<float4> Texels;
-
-            public void Execute(int i)
-            {
-                Source[i].Unpack(out var posSize, out var uv, out var param, out var color);
-                Texels[i * 4] = posSize;
-                Texels[i * 4 + 1] = uv;
-                Texels[i * 4 + 2] = param;
-                Texels[i * 4 + 3] = color;
-            }
-        }
-
-        /// <summary>Data-texture page: 2 RGBA32UI texels (or 4 RGBA32F) per sprite + a quad mesh with prefix submeshes.</summary>
+        /// <summary>Data-texture page: 8 RGBA8 texels (one 32-bit word each) per sprite + a quad mesh with prefix submeshes.</summary>
         sealed class Page : IDisposable
         {
+            const int TexelsPerSprite = PackedSprite.Stride / 4;
             readonly Texture2D m_Texture;
-            readonly bool m_Packed;
             int m_LastCount;
 
-            public Page(int instances, bool packed)
+            public Page(int instances)
             {
                 Instances = instances;
-                m_Packed = packed;
-                int texelsPer = packed ? 2 : 4;
-                int width = math.min(TextureWidth, math.ceilpow2(instances * texelsPer));
-                int height = (instances * texelsPer + width - 1) / width;
-                m_Texture = packed
-                    ? new Texture2D(width, height, GraphicsFormat.R32G32B32A32_UInt, TextureCreationFlags.None)
-                    : new Texture2D(width, height, TextureFormat.RGBAFloat, false, true);
-                m_Texture.filterMode = FilterMode.Point;
-                m_Texture.wrapMode = TextureWrapMode.Clamp;
-                m_Texture.hideFlags = HideFlags.HideAndDontSave;
-                var texels = m_Texture.GetPixelData<uint4>(0);
-                for (int i = 0; i < texels.Length; i++) texels[i] = uint4.zero;
+                int width = math.min(TextureWidth, math.ceilpow2(instances * TexelsPerSprite));
+                int height = (instances * TexelsPerSprite + width - 1) / width;
+                // Linear (no sRGB decode) and point sampled: every channel comes back as its exact byte.
+                m_Texture = new Texture2D(width, height, TextureFormat.RGBA32, false, true)
+                {
+                    filterMode = FilterMode.Point,
+                    wrapMode = TextureWrapMode.Clamp,
+                    hideFlags = HideFlags.HideAndDontSave,
+                };
+                var texels = m_Texture.GetPixelData<uint>(0);
+                for (int i = 0; i < texels.Length; i++) texels[i] = 0u;
                 m_Texture.Apply(false, false);
                 Mesh = CreatePageMesh(instances);
                 Properties = new MaterialPropertyBlock();
-                Properties.SetTexture(packed ? Ids.PackedTex : RenderAssets.Ids.DataTex, m_Texture);
-                Properties.SetFloat(Ids.PackedWidth, width);
+                Properties.SetTexture(Ids.PackedTex, m_Texture);
             }
 
             public int Instances { get; }
@@ -217,19 +183,11 @@ namespace SPF.Presentation.Sprites
 
             public void Upload(NativeArray<PackedSprite> source, int start, int count)
             {
-                if (m_Packed)
-                {
-                    var texels = m_Texture.GetPixelData<uint4>(0);
-                    NativeArray<uint4>.Copy(source.Reinterpret<uint4>(PackedSprite.Stride), start * 2, texels, 0, count * 2);
-                    // Unused slots collapse to zero-size quads.
-                    for (int i = count; i < m_LastCount; i++) texels[i * 2] = uint4.zero;
-                }
-                else
-                {
-                    var texels = m_Texture.GetPixelData<float4>(0);
-                    new UnpackJob { Source = source.GetSubArray(start, count), Texels = texels }.Schedule(count, 256).Complete();
-                    for (int i = count; i < m_LastCount; i++) texels[i * 4] = float4.zero;
-                }
+                // The packed bytes go to the texture unchanged (one word per RGBA8 texel, little endian = R first).
+                var texels = m_Texture.GetPixelData<uint>(0);
+                NativeArray<uint>.Copy(source.Reinterpret<uint>(PackedSprite.Stride), start * TexelsPerSprite, texels, 0, count * TexelsPerSprite);
+                // Unused slots collapse to zero-size quads (the size word is the third).
+                for (int i = count; i < m_LastCount; i++) texels[i * TexelsPerSprite + 2] = 0u;
                 m_LastCount = count;
                 m_Texture.Apply(false, false);
             }

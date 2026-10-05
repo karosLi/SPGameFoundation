@@ -36,7 +36,7 @@ namespace SPF.Presentation.Sprites
             };
         }
 
-        // Decoding (tests, tools, the float fallback upload); mirrors SPFUnpackSprite.
+        // Decoding (tests, tools); mirrors SPFUnpackSprite.
         public float2 Center => new float2(math.asfloat(A.x), math.asfloat(A.y));
         public float2 Size => math.f16tof32(new uint2(A.z & 0xFFFF, A.z >> 16));
         public float Depth => math.asfloat(A.w);
@@ -45,7 +45,7 @@ namespace SPF.Presentation.Sprites
         public float Rotation => math.f16tof32(B.w & 0xFFFF);
         public float Flash => ((B.w >> 16) & 0xFF) / 255f;
 
-        /// <summary>The 64-byte float layout (posSize, uv, param, colour) of the fallback data-texture path.</summary>
+        /// <summary>The unpacked float layout (posSize, uv, param, colour) the shaders work with.</summary>
         public void Unpack(out float4 posSize, out float4 uv, out float4 param, out float4 color)
         {
             posSize = new float4(Center, Size);

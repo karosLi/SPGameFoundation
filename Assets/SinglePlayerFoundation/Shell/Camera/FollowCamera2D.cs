@@ -27,6 +27,12 @@ namespace SPF.Shell.CameraRig
 
         public float2 Target { get; set; }
         public float Size { get; set; } = 10f;
+
+        /// <summary>Half extents of a box around the view centre the target can move in without the camera following (platformers).</summary>
+        public float2 DeadZone { get; set; }
+
+        /// <summary>World rectangle (min.xy, max.zw) the view stays inside (level edges); zero = unbounded.</summary>
+        public float4 Bounds { get; set; }
         public Camera Camera => m_Camera != null ? m_Camera : (m_Camera = GetComponent<Camera>());
 
         /// <summary>World rectangle visible this frame (min.xy, max.zw).</summary>
@@ -44,6 +50,7 @@ namespace SPF.Shell.CameraRig
         {
             UpdateTarget?.Invoke(this);
             float dt = Time.unscaledDeltaTime;
+            var cam = Camera;
             if (!m_Initialised || math.distancesq(Target, m_Position) > SnapDistance * SnapDistance)
             {
                 m_Position = Target;
@@ -52,10 +59,10 @@ namespace SPF.Shell.CameraRig
             }
             else
             {
-                m_Position = math.lerp(m_Position, Target, 1f - math.exp(-Follow * dt));
+                m_Position = math.lerp(m_Position, Goal(m_Position, Target, DeadZone), 1f - math.exp(-Follow * dt));
                 m_CurrentSize = math.lerp(m_CurrentSize, Size, 1f - math.exp(-Zoom * dt));
             }
-            var cam = Camera;
+            m_Position = Clamp(m_Position, new float2(m_CurrentSize * cam.aspect, m_CurrentSize), Bounds);
             cam.orthographicSize = m_CurrentSize;
             float2 shake = float2.zero;
             if (m_ShakeTime < m_ShakeDuration)
@@ -68,6 +75,21 @@ namespace SPF.Shell.CameraRig
             transform.position = new Vector3(m_Position.x + shake.x, m_Position.y + shake.y, -50f);
             float halfH = m_CurrentSize, halfW = m_CurrentSize * cam.aspect;
             ViewRect = new float4(m_Position.x - halfW, m_Position.y - halfH, m_Position.x + halfW, m_Position.y + halfH);
+        }
+
+        /// <summary>Where the view centre should go: unchanged while the target is inside the dead zone, otherwise just far enough.</summary>
+        public static float2 Goal(float2 view, float2 target, float2 deadZone)
+        {
+            float2 offset = target - view;
+            return view + offset - math.clamp(offset, -deadZone, deadZone);
+        }
+
+        /// <summary>Keeps a view of the given half extents inside <paramref name="bounds"/> (centred when the bounds are smaller).</summary>
+        public static float2 Clamp(float2 view, float2 halfExtents, float4 bounds)
+        {
+            if (math.all(bounds == 0f)) return view;
+            float2 min = bounds.xy + halfExtents, max = bounds.zw - halfExtents;
+            return math.select(math.clamp(view, min, max), (bounds.xy + bounds.zw) * 0.5f, min > max);
         }
 
         /// <summary>Screen shake (impacts): decays linearly over <paramref name="duration"/>; the strongest request wins.</summary>

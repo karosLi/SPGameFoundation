@@ -137,3 +137,20 @@ namespace SPF.Tests.EditMode
         }
     }
 }
+
+namespace SPF.Tests.EditMode
+{
+    public class CameraRigTests
+    {
+        [Test]
+        public void DeadZoneAndBounds()
+        {
+            var zone = new Unity.Mathematics.float2(2f, 1f);
+            Assert.AreEqual(new Unity.Mathematics.float2(0f, 0f), SPF.Shell.CameraRig.FollowCamera2D.Goal(0f, new Unity.Mathematics.float2(1.5f, -0.5f), zone), "inside: stay");
+            Assert.AreEqual(new Unity.Mathematics.float2(3f, 0f), SPF.Shell.CameraRig.FollowCamera2D.Goal(0f, new Unity.Mathematics.float2(5f, 0.5f), zone), "outside: just enough");
+            var bounds = new Unity.Mathematics.float4(0f, 0f, 40f, 20f);
+            Assert.AreEqual(new Unity.Mathematics.float2(8f, 5f), SPF.Shell.CameraRig.FollowCamera2D.Clamp(new Unity.Mathematics.float2(2f, -3f), new Unity.Mathematics.float2(8f, 5f), bounds));
+            Assert.AreEqual(new Unity.Mathematics.float2(20f, 10f), SPF.Shell.CameraRig.FollowCamera2D.Clamp(new Unity.Mathematics.float2(2f, -3f), new Unity.Mathematics.float2(30f, 15f), bounds), "a small level is centred");
+        }
+    }
+}

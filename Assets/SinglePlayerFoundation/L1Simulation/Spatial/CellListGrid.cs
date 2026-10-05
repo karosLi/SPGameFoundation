@@ -19,7 +19,7 @@ namespace SPF.L1.Spatial
     /// rebuild (<see cref="Writer.Clear"/> then re-insert). Queries match <see cref="GridReader"/>.
     /// </para>
     /// </summary>
-    public sealed class CellListGrid : IDisposable, IResettableResource
+    public sealed class CellListGrid : IDisposable, IResettableResource, IJobData
     {
         public const int BlockSize = 4;
         const int BlockShift = 2, LaneMask = BlockSize - 1;

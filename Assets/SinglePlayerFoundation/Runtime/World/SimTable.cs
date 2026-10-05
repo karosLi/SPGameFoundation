@@ -96,8 +96,11 @@ namespace SPF.Runtime.World
         public bool HasColumn(AccessKey key) => m_Columns.ContainsKey(key.Id);
 
         /// <summary>Full-capacity array of the column; only [0, Count) is meaningful.</summary>
+        internal AccessGuard Guard;
+
         public NativeArray<T> Column<T>(ColumnKey<T> key) where T : unmanaged
         {
+            Guard?.CheckColumn(key);
             if (!m_Columns.TryGetValue(key.Id, out var column))
                 throw new ArgumentException($"Table {Key} has no column {key}. Declare it in the module's DeclareData.");
             return ((Column<T>)column).Data;

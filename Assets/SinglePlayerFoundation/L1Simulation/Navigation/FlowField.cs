@@ -1,3 +1,4 @@
+using SPF.Contracts;
 using System;
 using SPF.L1.Spatial;
 using Unity.Burst;
@@ -13,7 +14,7 @@ namespace SPF.L1.Navigation
     /// direction in O(1) instead of running its own path search. Rebuilt by a Burst job when the goal tile
     /// changes; <see cref="MaxDistance"/> bounds the search for large maps.
     /// </summary>
-    public sealed class FlowField : IDisposable
+    public sealed class FlowField : IDisposable, IJobData
     {
         public const ushort Unreachable = ushort.MaxValue;
 

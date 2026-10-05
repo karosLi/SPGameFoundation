@@ -125,7 +125,10 @@ namespace SPF.Runtime.Scheduling
                 // so it never reads a container a job is still writing.
                 if (entry.Access.IsBarrier)
                     dependency.Complete();
-                var handle = entry.System.OnTick(context, dependency);
+                JobHandle handle;
+                m_World.Guard.Begin(entry.Allowed, entry.Name);
+                try { handle = entry.System.OnTick(context, dependency); }
+                finally { m_World.Guard.End(); }
                 if (SerialProfiling)
                 {
                     // Attribute worker time to this system: its jobs (still internally parallel) run now.
@@ -178,12 +181,20 @@ namespace SPF.Runtime.Scheduling
             public readonly AccessDeclaration Access;
             public readonly int RegistrationIndex;
             public readonly string Name;
+            public readonly bool[] Allowed;   // null for barriers (may touch anything)
             public ProfilerMarker Marker;
 
             public SystemEntry(ISimSystem system, AccessDeclaration access, int registrationIndex)
             {
                 System = system;
                 Access = access;
+                if (access.IsBarrier) Allowed = null;
+                else
+                {
+                    Allowed = new bool[access.MaxId + 1];
+                    foreach (int id in access.Reads) Allowed[id] = true;
+                    foreach (int id in access.Writes) Allowed[id] = true;
+                }
                 RegistrationIndex = registrationIndex;
                 Name = system.GetType().Name;
                 Marker = new ProfilerMarker("SPF." + Name);

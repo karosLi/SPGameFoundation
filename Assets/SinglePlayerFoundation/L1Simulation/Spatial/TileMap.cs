@@ -11,7 +11,7 @@ namespace SPF.L1.Spatial
     /// is a game-defined solid kind. Written on the main thread when a level is built, read by jobs
     /// through <see cref="TileMapView"/> (collision, line of sight, flow fields).
     /// </summary>
-    public sealed class TileMap : IDisposable, IResettableResource
+    public sealed class TileMap : IDisposable, IResettableResource, IJobData
     {
         NativeArray<byte> m_Tiles;
 

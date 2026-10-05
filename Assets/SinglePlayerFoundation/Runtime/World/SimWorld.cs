@@ -24,6 +24,9 @@ namespace SPF.Runtime.World
         readonly DestroyQueue m_DestroyQueue;
 
         public EntityRegistry Registry { get; }
+
+        /// <summary>Development check of undeclared accesses during system scheduling (see <see cref="AccessGuard"/>).</summary>
+        public AccessGuard Guard { get; } = new AccessGuard();
         public IReadOnlyList<SimTable> Tables => m_Tables;
         public uint Seed { get; }
 
@@ -43,6 +46,7 @@ namespace SPF.Runtime.World
                     addColumn(table);
                 if (spec.TrackChanges)
                     table.EnableChangeTracking();
+                table.Guard = Guard;
                 m_Tables.Add(table);
                 m_TablesByKey.Add(spec.Key.Id, table);
                 totalCapacity += spec.Capacity;
@@ -78,6 +82,7 @@ namespace SPF.Runtime.World
         {
             if (!m_Resources.TryGetValue(key.Id, out var resource))
                 throw new ArgumentException($"Resource {key} was not registered by any module.");
+            Guard.CheckResource(key, resource);
             return (T)resource;
         }
 
@@ -168,7 +173,7 @@ namespace SPF.Runtime.World
     }
 
     /// <summary>Deferred entity destruction requested from jobs or main-thread systems.</summary>
-    public sealed class DestroyQueue : IDisposable, IResettableResource
+    public sealed class DestroyQueue : IDisposable, IResettableResource, IJobData
     {
         ParallelQueue<EntityHandle> m_Queue;
 

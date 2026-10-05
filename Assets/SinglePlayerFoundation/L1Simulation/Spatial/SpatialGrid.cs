@@ -54,7 +54,7 @@ namespace SPF.L1.Spatial
     /// maximum radius. Readers see one grid; visiting order is small layer first, then large.
     /// </para>
     /// </summary>
-    public sealed class SpatialGrid : IDisposable, IResettableResource
+    public sealed class SpatialGrid : IDisposable, IResettableResource, IJobData
     {
         NativeArray<GridEntry> m_Staging;
         NativeArray<int> m_StagingCount;

@@ -9,7 +9,7 @@ namespace SPF.Runtime.World
     /// World resource wrapping a <see cref="ParallelQueue{T}"/>: jobs append through <see cref="AsWriter"/>,
     /// a later system (or the main thread after sync) reads and clears it. Overflow is counted, never fatal.
     /// </summary>
-    public sealed class EventQueue<T> : IDisposable, IResettableResource where T : unmanaged
+    public sealed class EventQueue<T> : IDisposable, IResettableResource, IJobData where T : unmanaged
     {
         ParallelQueue<T> m_Queue;
 

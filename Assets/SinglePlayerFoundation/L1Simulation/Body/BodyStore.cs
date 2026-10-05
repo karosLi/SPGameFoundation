@@ -10,7 +10,7 @@ namespace SPF.L1.Body
     /// with a free list per class, so growth never fragments beyond one class and nothing is allocated
     /// during a session. Allocation and resize are main-thread only (ApplyCommands phase).
     /// </summary>
-    public sealed class BodyStore : IDisposable, IResettableResource
+    public sealed class BodyStore : IDisposable, IResettableResource, IJobData
     {
         public const int MinSlab = 16;
 

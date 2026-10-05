@@ -140,7 +140,7 @@ namespace RpgFoundation.Systems
 
         public override void Declare(AccessDeclaration access) => access
             .Write(RpgKeys.MoveIntent).Write(RpgKeys.Facing).Write(RpgKeys.Combat).Write(RpgKeys.Health)
-            .Read(RpgKeys.Stats).Read(RpgKeys.Loadout).Read(RpgKeys.Mana).Write(RpgKeys.Feedback);
+            .Read(RpgKeys.Stats).Read(RpgKeys.Loadout).Read(RpgKeys.Mana).Read(RpgKeys.Position).Write(RpgKeys.Feedback);
 
         public override JobHandle OnTick(in SimContext context, JobHandle dependency)
         {

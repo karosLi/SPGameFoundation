@@ -19,7 +19,8 @@ namespace SnakeFoundation.Systems
             .Write(SnakeKeys.Head).Write(SnakeKeys.PrevHead).Write(SnakeKeys.Heading)
             .Write(SnakeKeys.Speed).Write(SnakeKeys.Mass).Write(SnakeKeys.Info)
             .Write(SnakeKeys.Buffs).Write(SnakeKeys.Stats)
-            .Read(SnakeKeys.Radius);
+            .Read(SnakeKeys.Radius)
+            .Read(SnakeKeys.BodyGrid);   // window bounds (edge margin)
 
         public override JobHandle OnTick(in SimContext context, JobHandle dependency)
         {

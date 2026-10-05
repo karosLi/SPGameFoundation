@@ -42,7 +42,7 @@ namespace SnakeFoundation
             layout.Table(SnakeKeys.Snake, cap.Snakes)
                 .Column(SnakeKeys.Head).Column(SnakeKeys.PrevHead).Column(SnakeKeys.Heading)
                 .Column(SnakeKeys.Speed).Column(SnakeKeys.Mass).Column(SnakeKeys.Radius).Column(SnakeKeys.Length)
-                .Column(SnakeKeys.Trail).Column(SnakeKeys.PrevArc).Column(SnakeKeys.Bounds)
+                .Column(SnakeKeys.Trail).Column(SnakeKeys.PrevArc).Column(SnakeKeys.Bounds).Column(SnakeKeys.BoundsVersion)
                 .Column(SnakeKeys.Info).Column(SnakeKeys.Control).Column(SnakeKeys.Contact).Column(SnakeKeys.AI)
                 .Column(SnakeKeys.Buffs).Column(SnakeKeys.Stats);
             layout.Table(SnakeKeys.Food, cap.Food).TrackChangedRows()

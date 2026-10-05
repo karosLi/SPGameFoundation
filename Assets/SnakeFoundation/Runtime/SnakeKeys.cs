@@ -20,6 +20,8 @@ namespace SnakeFoundation
         public static readonly ColumnKey<TrailState> Trail = new ColumnKey<TrailState>(Snake, "Trail");
         public static readonly ColumnKey<float> PrevArc = new ColumnKey<float>(Snake, "PrevArc");
         public static readonly ColumnKey<float4> Bounds = new ColumnKey<float4>(Snake, "Bounds");
+        /// <summary>Trail version the block bounds were built for (see TrailBounds); 0 = not built.</summary>
+        public static readonly ColumnKey<uint> BoundsVersion = new ColumnKey<uint>(Snake, "BoundsVersion");
         public static readonly ColumnKey<SnakeInfo> Info = new ColumnKey<SnakeInfo>(Snake, "Info");
         public static readonly ColumnKey<SnakeControl> Control = new ColumnKey<SnakeControl>(Snake, "Control");
         public static readonly ColumnKey<SnakeContact> Contact = new ColumnKey<SnakeContact>(Snake, "Contact");

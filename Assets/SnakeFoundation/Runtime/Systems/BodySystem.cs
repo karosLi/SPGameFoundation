@@ -17,7 +17,7 @@ namespace SnakeFoundation.Systems
         public override void Declare(AccessDeclaration access) => access
             .Read(SnakeKeys.Head).Read(SnakeKeys.PrevHead).Read(SnakeKeys.Mass)
             .Write(SnakeKeys.Trail).Write(SnakeKeys.PrevArc).Write(SnakeKeys.Radius).Write(SnakeKeys.Length)
-            .Write(SnakeKeys.Bounds).Write(SnakeKeys.Info)
+            .Write(SnakeKeys.Bounds).Write(SnakeKeys.BoundsVersion).Write(SnakeKeys.Info)
             .Write(SnakeKeys.Bodies).Write(SnakeKeys.FoodSpawns);
 
         public override JobHandle OnTick(in SimContext context, JobHandle dependency)
@@ -34,8 +34,10 @@ namespace SnakeFoundation.Systems
                 Radius = context.Column(SnakeKeys.Radius),
                 Length = context.Column(SnakeKeys.Length),
                 Bounds = context.Column(SnakeKeys.Bounds),
+                BoundsVersion = context.Column(SnakeKeys.BoundsVersion),
                 Info = context.Column(SnakeKeys.Info),
                 Points = world.Resource(SnakeKeys.Bodies).Points,
+                BlockBounds = world.Resource(SnakeKeys.Bodies).BlockBounds,
                 FoodSpawns = world.Resource(SnakeKeys.FoodSpawns).AsWriter(),
                 Settings = config.Settings,
                 ActiveRegion = world.Resource(SnakeKeys.Game).ActiveRegion,
@@ -53,9 +55,11 @@ namespace SnakeFoundation.Systems
             public NativeArray<float> Radius;
             public NativeArray<float> Length;
             public NativeArray<float4> Bounds;
+            public NativeArray<uint> BoundsVersion;
             public NativeArray<SnakeInfo> Info;
             // Each snake writes only inside its own slab.
             [NativeDisableParallelForRestriction] public NativeArray<float2> Points;
+            [NativeDisableParallelForRestriction] public NativeArray<float4> BlockBounds;
             public ParallelQueue<FoodSpawnRequest>.Writer FoodSpawns;
             public SnakeSettings Settings;
             public int ActiveRegion;
@@ -81,17 +85,18 @@ namespace SnakeFoundation.Systems
                 TrailMath.Advance(ref trail, Points, head, TrailMath.PointsForLength(length, trail.Spacing));
                 PrevArc[i] = TrailMath.PreviousArc(pushedBefore, gapBefore, trail);
 
-                // Bounds from every 4th kept point (spacing ≪ radius, so the error is below the padding).
-                float2 min = head, max = head;
-                uint newest = trail.Pushed - 1;
-                for (int k = 0; k < trail.Count; k += 4)
+                // Bounds from per-16-point block boxes: only blocks completed this tick are scanned.
+                if (BoundsVersion[i] != trail.Version)
                 {
-                    float2 p = Points[trail.Slot(newest - (uint)k)];
-                    min = math.min(min, p);
-                    max = math.max(max, p);
+                    TrailBounds.Rebuild(trail, Points, BlockBounds);
+                    BoundsVersion[i] = trail.Version;
                 }
-                float pad = radius + trail.Spacing * 4f;
-                Bounds[i] = new float4(min - pad, max + pad);
+                else
+                    TrailBounds.Append(trail, Points, BlockBounds, pushedBefore);
+                float4 box = TrailBounds.Compute(trail, Points, BlockBounds, head);
+                // One spacing of slack: renderers interpolate the tail up to a tick behind.
+                float pad = radius + trail.Spacing;
+                Bounds[i] = new float4(box.xy - pad, box.zw + pad);
 
                 if (info.BoostDropAccumulator >= s.BoostDropMass)
                 {

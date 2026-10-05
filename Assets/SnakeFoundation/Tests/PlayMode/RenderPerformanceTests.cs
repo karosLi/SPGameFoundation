@@ -21,7 +21,28 @@ namespace SnakeFoundation.Tests.PlayMode
         const float MeasureSeconds = 4f;
 
         [UnityTest]
-        public IEnumerator RendererCpuWithAndWithoutReuse([Values(RenderTier.GpuDriven, RenderTier.DataTexture)] RenderTier tier)
+        public IEnumerator RendererCpuWithAndWithoutReuse([Values(RenderTier.GpuDriven, RenderTier.DataTexture)] RenderTier tier) =>
+            Measure(tier, null, $"perf-render-{(tier == RenderTier.GpuDriven ? "gpu" : "datatex")}.txt", "production population");
+
+        /// <summary>
+        /// Late-game scene: 60 thick AI snakes (mass 800-3000) mostly near the player, with fixed 0.4 m trail
+        /// spacing vs spacing scaled with radius (fewer trail points to sample, upload and strip).
+        /// </summary>
+        [UnityTest]
+        public IEnumerator BigSnakeRendererCpu([Values(RenderTier.GpuDriven, RenderTier.DataTexture)] RenderTier tier, [Values(0f, 0.25f)] float spacingPerRadius) =>
+            Measure(tier, c =>
+                {
+                    c.AI.SnakesPerRegion = 60;
+                    c.AI.StartMassMin = 800f;
+                    c.AI.StartMassMax = 3000f;
+                    c.AI.MaxMass = 3000f;
+                    c.AI.SpawnNearFocusRatio = 0.8f;
+                    c.Body.TrailSpacingPerRadius = spacingPerRadius;
+                },
+                $"perf-render-bigsnakes-{(tier == RenderTier.GpuDriven ? "gpu" : "datatex")}-spacing{spacingPerRadius * 100:0}.txt",
+                $"60 big snakes, trail spacing per radius {spacingPerRadius}");
+
+        static IEnumerator Measure(RenderTier tier, System.Action<SnakeConfig> tweak, string fileName, string scene)
         {
             if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
                 Assert.Ignore("No graphics device");
@@ -32,6 +53,7 @@ namespace SnakeFoundation.Tests.PlayMode
             int previousVSync = QualitySettings.vSyncCount;
             RenderCapabilities.Override = tier;
             var config = SnakeConfig.CreateDefault();
+            tweak?.Invoke(config);
             var game = SnakeGameBootstrap.Create(config, seed: 99, ui: false);
             try
             {
@@ -47,7 +69,7 @@ namespace SnakeFoundation.Tests.PlayMode
 
                 var renderer = game.WorldRenderer;
                 var report = new StringBuilder();
-                report.AppendLine($"=== renderer CPU ({tier}) ===");
+                report.AppendLine($"=== renderer CPU ({tier}), {scene} ===");
                 double[] perFrame = new double[2];
                 for (int pass = 0; pass < 2; pass++)
                 {
@@ -66,7 +88,7 @@ namespace SnakeFoundation.Tests.PlayMode
                 TestContext.WriteLine(report.ToString());
                 string dir = Path.Combine(Application.dataPath, "..", "Artifacts");
                 Directory.CreateDirectory(dir);
-                File.WriteAllText(Path.Combine(dir, $"perf-render-{(tier == RenderTier.GpuDriven ? "gpu" : "datatex")}.txt"), report.ToString());
+                File.WriteAllText(Path.Combine(dir, fileName), report.ToString());
             }
             finally
             {

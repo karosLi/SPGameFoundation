@@ -2,6 +2,9 @@ using SPF.Contracts;
 using SPF.L1.Body;
 using SPF.L1.Geometry;
 using SPF.Runtime.Scheduling;
+using SPF.Runtime.World;
+using Unity.Burst;
+using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
 
@@ -17,6 +20,23 @@ namespace SnakeFoundation.Systems
         public override int Order => 10;
         public override void Declare(AccessDeclaration access) { }
 
+        const int CountWork = 0, CountAI = 1;
+        NativeArray<int> m_Work;
+        NativeArray<int> m_Counts;
+
+        public override void OnCreate(SimWorld world)
+        {
+            int capacity = world.Table(SnakeKeys.Snake).Capacity;
+            m_Work = new NativeArray<int>(capacity, Allocator.Persistent);
+            m_Counts = new NativeArray<int>(2, Allocator.Persistent);
+        }
+
+        public override void OnDestroy(SimWorld world)
+        {
+            if (m_Work.IsCreated) m_Work.Dispose();
+            if (m_Counts.IsCreated) m_Counts.Dispose();
+        }
+
         public override JobHandle OnTick(in SimContext context, JobHandle dependency)
         {
             var world = context.World;
@@ -31,17 +51,26 @@ namespace SnakeFoundation.Systems
             var heads = table.Column(SnakeKeys.Head);
             int region = game.ActiveRegion;
 
-            int aiInRegion = 0;
-            for (int row = 0; row < table.Count; row++)
+            // Burst scan on the main thread (Run, no scheduling): count AI and find the rare rows whose slab
+            // needs work; the slab operations themselves are main-thread only.
+            new ScanJob
             {
-                var info = infos[row];
-                if (info.Region != region) continue;
-                if (info.Has(SnakeFlags.AI)) aiInRegion++;
-
+                Info = infos,
+                Trail = trails,
+                Mass = masses,
+                Work = m_Work,
+                Counts = m_Counts,
+                Settings = s,
+                Region = region,
+                Count = table.Count,
+            }.Run();
+            int aiInRegion = m_Counts[CountAI];
+            for (int i = 0; i < m_Counts[CountWork]; i++)
+            {
+                int row = m_Work[i];
                 var trail = trails[row];
                 float mass = masses[row];
                 float radius = s.Growth.Radius(mass);
-                if (!trail.IsAllocated) continue;
                 if (s.NeedsRespace(trail.Spacing, radius))
                 {
                     // Thicker (or thinner) body: rewrite the trail with a spacing that fits its radius.
@@ -54,11 +83,8 @@ namespace SnakeFoundation.Systems
                 {
                     // Grow the slab before the body needs it (+50% headroom so moves are rare).
                     int needed = TrailMath.PointsForLength(s.Growth.Length(mass), trail.Spacing) + 8;
-                    if (needed > trail.Capacity && trail.Capacity < s.MaxTrailPoints)
-                    {
-                        if (bodies.Resize(ref trail, math.min(needed + needed / 2, s.MaxTrailPoints)))
-                            trails[row] = trail;
-                    }
+                    if (bodies.Resize(ref trail, math.min(needed + needed / 2, s.MaxTrailPoints)))
+                        trails[row] = trail;
                 }
             }
 
@@ -94,6 +120,38 @@ namespace SnakeFoundation.Systems
                 if (handle.IsNull) break;
             }
             return dependency;
+        }
+
+        [BurstCompile(CompileSynchronously = true)]
+        struct ScanJob : IJob
+        {
+            [ReadOnly] public NativeArray<SnakeInfo> Info;
+            [ReadOnly] public NativeArray<TrailState> Trail;
+            [ReadOnly] public NativeArray<float> Mass;
+            public NativeArray<int> Work;
+            public NativeArray<int> Counts;
+            public SnakeSettings Settings;
+            public int Region, Count;
+
+            public void Execute()
+            {
+                int ai = 0, work = 0;
+                for (int row = 0; row < Count; row++)
+                {
+                    var info = Info[row];
+                    if (info.Region != Region) continue;
+                    if (info.Has(SnakeFlags.AI)) ai++;
+                    var trail = Trail[row];
+                    if (!trail.IsAllocated) continue;
+                    float mass = Mass[row];
+                    bool respace = Settings.NeedsRespace(trail.Spacing, Settings.Growth.Radius(mass));
+                    bool grow = TrailMath.PointsForLength(Settings.Growth.Length(mass), trail.Spacing) + 8 > trail.Capacity &&
+                                trail.Capacity < Settings.MaxTrailPoints;
+                    if (respace || grow) Work[work++] = row;
+                }
+                Counts[CountWork] = work;
+                Counts[CountAI] = ai;
+            }
         }
     }
 }

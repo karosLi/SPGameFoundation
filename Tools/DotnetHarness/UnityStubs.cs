@@ -96,7 +96,11 @@ namespace Unity.Jobs
     }
     public interface IJob { void Execute(); }
     public interface IJobParallelFor { void Execute(int index); }
-    public static class IJobExtensions { public static JobHandle Schedule<T>(this T job, JobHandle dependsOn = default) where T : struct, IJob { job.Execute(); return default; } }
+    public static class IJobExtensions
+    {
+        public static JobHandle Schedule<T>(this T job, JobHandle dependsOn = default) where T : struct, IJob { job.Execute(); return default; }
+        public static void Run<T>(this T job) where T : struct, IJob => job.Execute();
+    }
     public static class IJobParallelForExtensions
     {
         static uint s_Call;

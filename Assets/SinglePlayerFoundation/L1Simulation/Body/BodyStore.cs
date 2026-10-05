@@ -20,12 +20,14 @@ namespace SPF.L1.Body
         readonly int[] m_FreeCounts;
         int m_Top;
         NativeArray<float2> m_Points;
+        NativeArray<float4> m_BlockBounds;
 
         public BodyStore(int totalPoints, int maxSlab)
         {
             if (!math.ispow2(maxSlab) || maxSlab < MinSlab)
                 throw new ArgumentException("maxSlab must be a power of two ≥ 16", nameof(maxSlab));
             m_Points = new NativeArray<float2>(totalPoints, Allocator.Persistent);
+            m_BlockBounds = new NativeArray<float4>(totalPoints / TrailBounds.BlockSize + 1, Allocator.Persistent);
             m_MinShift = math.tzcnt(MinSlab);
             m_MaxShift = math.tzcnt(maxSlab);
             int classes = m_MaxShift - m_MinShift + 1;
@@ -36,6 +38,9 @@ namespace SPF.L1.Body
         }
 
         public NativeArray<float2> Points => m_Points;
+
+        /// <summary>Per-block bounding boxes of the trails (see <see cref="TrailBounds"/>), parallel to the slabs.</summary>
+        public NativeArray<float4> BlockBounds => m_BlockBounds;
         public int TotalPoints => m_Points.Length;
         public int MaxSlab => 1 << m_MaxShift;
         public int UsedPoints { get; private set; }
@@ -144,6 +149,7 @@ namespace SPF.L1.Body
         public void Dispose()
         {
             if (m_Points.IsCreated) m_Points.Dispose();
+            if (m_BlockBounds.IsCreated) m_BlockBounds.Dispose();
         }
     }
 }

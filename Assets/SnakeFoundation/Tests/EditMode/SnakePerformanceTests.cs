@@ -68,6 +68,72 @@ namespace SnakeFoundation.Tests
             Assert.Greater(world.World.Table(SnakeKeys.Snake).Count, 100, "population should be alive");
         }
 
+        /// <summary>
+        /// Late-game population: 60 thick AI snakes (mass 800-3000, radius 3-4 m, up to 360 m long) with
+        /// fixed 0.4 m trail spacing vs spacing scaled with radius. Reports live trail points, points pushed
+        /// per tick (= GPU trail upload volume), body grid entries and the tick / per-system cost.
+        /// Writes Artifacts/perf-bigsnakes-spacing&lt;n&gt;.txt.
+        /// </summary>
+        [TestCase(0f)]
+        [TestCase(0.25f)]
+        public void BigSnakeBenchmark(float spacingPerRadius)
+        {
+            using var world = new SnakeTestWorld(aiPerRegion: 60, foodPerChunk: 60, propsPerChunk: 1, seed: 2024,
+                tweak: c =>
+                {
+                    c.Body.TrailSpacingPerRadius = spacingPerRadius;
+                    c.AI.StartMassMin = 800f;
+                    c.AI.StartMassMax = 3000f;
+                    c.AI.MaxMass = 3000f;
+                    c.AI.SpawnNearFocusRatio = 0.8f;
+                });
+            world.StartPlayer();
+            world.Step(WarmupTicks);
+
+            var table = world.World.Table(SnakeKeys.Snake);
+            var trails = world.World.Column(SnakeKeys.Trail);
+            var samples = new double[MeasuredTicks];
+            var stats = world.Session.Pipeline.Stats;
+            double scheduleSum = 0, waitSum = 0;
+            long pushed = 0, livePoints = 0;
+            var before = new uint[table.Capacity];
+            var version = new uint[table.Capacity];
+            for (int i = 0; i < MeasuredTicks; i++)
+            {
+                for (int row = 0; row < table.Count; row++) { before[row] = trails[row].Pushed; version[row] = trails[row].Version; }
+                int rowsBefore = table.Count;
+                long t0 = Stopwatch.GetTimestamp();
+                world.Session.Step();
+                samples[i] = (Stopwatch.GetTimestamp() - t0) * 1000.0 / Stopwatch.Frequency;
+                scheduleSum += stats.ScheduleMs;
+                waitSum += stats.SyncWaitMs;
+                // Rows that kept their snake and trail: count appended points (rewrites re-upload anyway).
+                for (int row = 0; row < math.min(rowsBefore, table.Count); row++)
+                    if (trails[row].Version == version[row] && trails[row].Pushed >= before[row])
+                        pushed += trails[row].Pushed - before[row];
+                for (int row = 0; row < table.Count; row++) livePoints += trails[row].Count;
+            }
+
+            var pipeline = world.Session.Pipeline;
+            pipeline.SerialProfiling = true;
+            stats.ClearExecuteTimes();
+            world.Step(SerialTicks);
+            pipeline.SerialProfiling = false;
+
+            var radii = world.World.Column(SnakeKeys.Radius);
+            float radiusSum = 0f, spacingSum = 0f;
+            for (int row = 0; row < table.Count; row++) { radiusSum += radii[row]; spacingSum += trails[row].Spacing; }
+            var header = new StringBuilder();
+            header.AppendLine($"big snakes, trail spacing per radius {spacingPerRadius} (0 = fixed 0.4 m)");
+            header.AppendLine($"mean radius {radiusSum / math.max(table.Count, 1):F2} m, mean trail spacing {spacingSum / math.max(table.Count, 1):F2} m");
+            header.AppendLine($"live trail points {livePoints / (double)MeasuredTicks:F0} (sum of Count, per tick average), points pushed per tick {pushed / (double)MeasuredTicks:F1}");
+            var report = header + BuildReport(world, samples, scheduleSum / MeasuredTicks, waitSum / MeasuredTicks, pipeline);
+            TestContext.WriteLine(report);
+            Console.WriteLine(report);
+            WriteArtifact($"perf-bigsnakes-spacing{spacingPerRadius * 100:0}.txt", report);
+            Assert.Greater(table.Count, 30, "population should be alive");
+        }
+
         struct CountVisitor : IGridVisitor
         {
             public int Hits;

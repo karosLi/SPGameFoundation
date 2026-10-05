@@ -104,6 +104,42 @@ namespace SPF.Tests.EditMode
             Assert.AreEqual(1.25f, math.distance(a0, a1), 1e-3f);
         }
 
+        /// <summary>
+        /// Incremental block bounds against a brute-force scan: the result must contain every kept point and
+        /// the head, and may only add points of the oldest block (expired up to one block ago).
+        /// </summary>
+        [Test]
+        public void TrailBoundsMatchBruteForce()
+        {
+            using var store = new BodyStore(8192, 1024);
+            store.TryAllocate(64, out var trail);
+            TrailMath.Reset(ref trail, store.Points, float2.zero, new float2(-1, 0), Spacing, 30);
+            uint built = 0;
+            var random = new Random(9);
+            float2 head = float2.zero, heading = new float2(1, 0);
+            for (int tick = 0; tick < 3000; tick++)
+            {
+                heading = math.normalize(heading + random.NextFloat2(-0.4f, 0.4f));
+                head += heading * random.NextFloat(0.1f, 1.7f);
+                int desired = 20 + (int)(60 + 50 * math.sin(tick * 0.01f));   // grows and shrinks
+                if (tick % 700 == 350) Assert.IsTrue(store.Resize(ref trail, trail.Capacity * 2));
+                if (desired > trail.Capacity) desired = trail.Capacity;   // full slab: oldest block slot gets reused
+                uint pushedBefore = trail.Pushed;
+                TrailMath.Advance(ref trail, store.Points, head, desired);
+                if (built != trail.Version) { TrailBounds.Rebuild(trail, store.Points, store.BlockBounds); built = trail.Version; }
+                else TrailBounds.Append(trail, store.Points, store.BlockBounds, pushedBefore);
+                float4 box = TrailBounds.Compute(trail, store.Points, store.BlockBounds, head);
+
+                float2 min = head, max = head;
+                uint oldest = trail.Pushed - (uint)trail.Count;
+                for (uint g = oldest; g < trail.Pushed; g++) { min = math.min(min, store.Points[trail.Slot(g)]); max = math.max(max, store.Points[trail.Slot(g)]); }
+                Assert.IsTrue(math.all(box.xy <= min) && math.all(box.zw >= max), $"tick {tick}: bounds contain every kept point");
+                // Slack: at most the expired part of the oldest block (< 16 points, each ≤ Spacing apart).
+                float slack = TrailBounds.BlockSize * Spacing + 1e-3f;
+                Assert.IsTrue(math.all(box.xy >= min - slack) && math.all(box.zw <= max + slack), $"tick {tick}: bounds stay tight");
+            }
+        }
+
         [Test]
         public void PoolExhaustionFailsWithoutCorruption()
         {

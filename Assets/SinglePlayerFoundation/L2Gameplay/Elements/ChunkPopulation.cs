@@ -21,6 +21,7 @@ namespace SPF.L2.Elements
         readonly int m_TargetPerChunk;
         int m_ActiveCount;
         int m_Cursor;
+        int2 m_From, m_To;
 
         public ChunkPopulation(ChunkLayout layout, int targetPerChunk)
         {
@@ -68,6 +69,11 @@ namespace SPF.L2.Elements
             int2 to = Layout.CoordOf(max);
             EnteringCount = 0;
             LeavingCount = 0;
+            // Same chunk range as last time (the usual case: the window moves rarely): nothing to do.
+            if (m_ActiveCount > 0 && math.all(from == m_From) && math.all(to == m_To))
+                return;
+            m_From = from;
+            m_To = to;
 
             for (int i = 0; i < m_ActiveCount; i++)
             {

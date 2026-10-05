@@ -59,7 +59,7 @@ namespace StoryFoundation.Tests.PlayMode
                 // Choose "ask" (second button), save, play on, load: back at the saved line.
                 UIDriver.Click(game.Dialogue.Choice(1).gameObject);
                 yield return UIDriver.WaitUntil(() => run.State == DialogueRunner.Mode.Line, 2f);
-                Assert.AreEqual(1, run["trust"]);
+                Assert.AreEqual("m.story", run.Text, "asked about the festival");   // trust rises after this line
                 int created = game.Dialogue.ChoiceButtonsCreated;
                 UIDriver.Click(game.SaveButton.gameObject);
                 string savedText = run.Text;
@@ -76,7 +76,7 @@ namespace StoryFoundation.Tests.PlayMode
                 UIDriver.Click(game.LoadButton.gameObject);
                 yield return null;
                 Assert.AreEqual(savedText, run.Text, "LOAD restored the saved line");
-                Assert.AreEqual(1, run["trust"]);
+                Assert.AreEqual(0, run["trust"], "variables restored with it");
             }
             finally
             {

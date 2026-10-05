@@ -85,6 +85,11 @@ namespace SurvivorFoundation.Tests.PlayMode
                 game.Session.Sync();
                 game.AutoPlay = false;
                 game.State.MaxHp = game.State.Hp = 1e9f;
+                for (int f = 0; f < 120; f++)   // warm-up in the measured conditions (first hits, first sounds, first effects)
+                {
+                    yield return null;
+                    if (game.State.Flow == SvFlow.LevelUp) game.Choose(0);
+                }
                 // Per frame: bytes allocated (the governor reads the previous frame's counter) and whether a screen
                 // changed (level-up choices, flow). Allocation next to a screen change is UI work; anything else is a leak.
                 const int Window = 180;

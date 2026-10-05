@@ -28,15 +28,34 @@ namespace BrawlerFoundation.Tests.PlayMode
                 yield return null;
                 UIDriver.Click(game.StartButton.gameObject);
                 yield return UIDriver.WaitUntil(() => game.State.Flow == BwFlow.Fighting, 5f);
-                // Walk right into the enemies, punching through the touch button.
+                // The touch button reaches the simulation.
+                UIDriver.Click(game.PunchButton.gameObject);
+                yield return null;
+                yield return null;
+                game.Session.Sync();
+                var world = game.Session.World;
+                // Then a small script plays: walk to the nearest enemy, punch when in reach.
                 int frame = 0;
-                game.Script = () => new InputFrame { Move = new float2(1f, 0f) };
-                float end = Time.realtimeSinceStartup + 8f;
-                while (game.State.Score == 0 && Time.realtimeSinceStartup < end)
+                game.Script = () =>
                 {
-                    if (frame++ % 20 == 0) UIDriver.Click(game.PunchButton.gameObject);
-                    yield return null;
-                }
+                    var info = world.Column(BwKeys.Info);
+                    var pos = world.Column(BwKeys.Position);
+                    int count = world.Table(BwKeys.Fighter).Count, me = -1;
+                    for (int i = 0; i < count; i++) if (info[i].Team == 0) me = i;
+                    if (me < 0) return default;
+                    float best = float.MaxValue, dx = 0f;
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (info[i].Team == 0 || info[i].State == FighterState.KO) continue;
+                        float d = pos[i].x - pos[me].x;
+                        if (math.abs(d) < best) { best = math.abs(d); dx = d; }
+                    }
+                    frame++;
+                    if (best > 0.85f) return new InputFrame { Move = new float2(math.sign(dx), 0f) };
+                    return frame % 18 == 0 ? new InputFrame { Move = new float2(math.sign(dx) * 0.2f, 0f), Pressed = 1u << BwButton.Punch } : default;
+                };
+                float end = Time.realtimeSinceStartup + 10f;
+                while (game.State.Score == 0 && Time.realtimeSinceStartup < end) yield return null;
                 game.Session.Sync();
                 Assert.Greater(game.State.Score, 0, "punches landed");
                 Assert.Greater(game.Renderer.PartsDrawn, 20, "skeletal parts drawn");

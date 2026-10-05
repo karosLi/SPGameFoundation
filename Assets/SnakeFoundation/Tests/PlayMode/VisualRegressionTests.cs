@@ -250,5 +250,39 @@ namespace SnakeFoundation.Tests.PlayMode
             Assert.Less(ratio, 0.04f, "8-segment discs differ from 16-segment ones only along silhouettes");
             Assert.Greater(result.differing, 0, "the segment count actually changed what was drawn");
         }
+
+        /// <summary>
+        /// Data-texture pages draw the smallest prefix submesh that covers the used discs instead of the
+        /// whole page (unused discs have zero radius): the frame must not change.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator PagePrefixSubmeshesArePixelIdentical()
+        {
+            SkipWithoutGpu(RenderTier.DataTexture);
+            yield return Setup(RenderTier.DataTexture);
+            SpawnSnakesCrossingTheViewEdges();
+            for (int i = 0; i < 3; i++) yield return null;
+
+            var frames = new Color32[3][];
+            try
+            {
+                CircleBatch.UsePrefixSubmeshes = false;
+                yield return Capture(frames, 0, "prefix-off");
+                yield return Capture(frames, 1);
+                CircleBatch.UsePrefixSubmeshes = true;
+                yield return Capture(frames, 2, "prefix-on");
+            }
+            finally
+            {
+                CircleBatch.UsePrefixSubmeshes = true;
+            }
+
+            AssertHasContent(frames[0]);
+            var baseline = Compare(frames[0], frames[1], 0);
+            Assert.AreEqual(0, baseline.differing, $"frozen scene renders identically twice; differing box {baseline.box}");
+            var result = Compare(frames[0], frames[2], 0);
+            TestContext.WriteLine($"page prefix submeshes: differing pixels {result.differing}, max delta {result.maxDelta}");
+            Assert.AreEqual(0, result.differing, $"prefix submeshes changed {result.differing} pixels; box {result.box}");
+        }
     }
 }

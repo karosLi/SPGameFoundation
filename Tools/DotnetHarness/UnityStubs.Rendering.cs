@@ -179,6 +179,7 @@ namespace UnityEngine
         public void SetIndexBufferParams(int count, Rendering.IndexFormat f) { }
         public void SetVertexBufferData<T>(NativeArray<T> data, int start, int meshStart, int count, int stream = 0, MeshUpdateFlags flags = MeshUpdateFlags.Default) where T : struct { }
         public void SetIndexBufferData<T>(NativeArray<T> data, int start, int meshStart, int count, MeshUpdateFlags flags = MeshUpdateFlags.Default) where T : struct { }
+        public void SetIndexBufferData<T>(T[] data, int start, int meshStart, int count, MeshUpdateFlags flags = MeshUpdateFlags.Default) where T : struct { }
         public void RecalculateBounds() { }
         public void UploadMeshData(bool noLongerReadable) { }
         public void Clear() { }
@@ -187,6 +188,7 @@ namespace UnityEngine
         public static MeshDataArray AllocateWritableMeshData(int count) => new MeshDataArray(count);
         public static void ApplyAndDisposeWritableMeshData(MeshDataArray data, Mesh mesh, MeshUpdateFlags flags = MeshUpdateFlags.Default) { }
         public static void ApplyAndDisposeWritableMeshData(MeshDataArray data, Mesh[] meshes, MeshUpdateFlags flags = MeshUpdateFlags.Default) { }
+        public static void ApplyAndDisposeWritableMeshData(MeshDataArray data, System.Collections.Generic.List<Mesh> meshes, MeshUpdateFlags flags = MeshUpdateFlags.Default) { }
 
         public struct MeshDataArray : IDisposable
         {

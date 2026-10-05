@@ -37,9 +37,29 @@ namespace SPF.Presentation
             return mesh;
         }
 
+        /// <summary>Smallest prefix submesh drawn by an indexed page (see <see cref="CreateIndexed"/>).</summary>
+        public const int MinPrefix = 256;
+
+        /// <summary>Number of prefix submeshes of an indexed mesh with this many discs.</summary>
+        public static int PrefixCount(int instances)
+        {
+            int n = 1;
+            for (int size = MinPrefix; size < instances; size <<= 1) n++;
+            return n;
+        }
+
+        /// <summary>Submesh that draws at least <paramref name="count"/> discs (at most twice that, or 256).</summary>
+        public static int PrefixFor(int count, int instances)
+        {
+            int submesh = 0;
+            for (int size = MinPrefix; size < count && size < instances; size <<= 1) submesh++;
+            return submesh;
+        }
+
         /// <summary>
         /// Many discs in one mesh, each carrying its instance id in vertex.z (data-texture path).
-        /// Draw a prefix of it by shrinking the submesh index count.
+        /// Submesh i draws the first min(256 &lt;&lt; i, instances) discs (overlapping prefixes of one index
+        /// buffer), so a partly used page does not vertex-process its unused discs.
         /// </summary>
         public static Mesh CreateIndexed(int instances, int segments = Segments)
         {
@@ -50,7 +70,15 @@ namespace SPF.Presentation
                 Fill(vertices, indices, i, i, segments);
             var mesh = new Mesh { name = "SPF Disc Page " + segments, hideFlags = HideFlags.HideAndDontSave, indexFormat = IndexFormat.UInt32 };
             mesh.SetVertices(vertices);
-            mesh.SetIndices(indices, MeshTopology.Triangles, 0, false);
+            int prefixes = PrefixCount(instances);
+            mesh.SetIndexBufferParams(indices.Length, IndexFormat.UInt32);
+            mesh.SetIndexBufferData(indices, 0, 0, indices.Length, MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontRecalculateBounds);
+            mesh.subMeshCount = prefixes;
+            for (int p = 0; p < prefixes; p++)
+            {
+                int discs = math.min(MinPrefix << p, instances);
+                mesh.SetSubMesh(p, new SubMeshDescriptor(0, discs * ipd), MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontRecalculateBounds);
+            }
             mesh.bounds = new Bounds(Vector3.zero, new Vector3(1e6f, 1e6f, 1e6f));
             mesh.UploadMeshData(true);
             return mesh;

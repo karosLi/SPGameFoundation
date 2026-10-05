@@ -79,6 +79,10 @@ namespace SPF.Presentation
         // Data texture
         readonly CircleBatch[] m_NodeBatches = new CircleBatch[3];
         readonly Mesh[] m_StripMeshes = new Mesh[3];
+        // Data-texture tier: strip meshes rebuilt this frame (only those with content, or that just lost it).
+        readonly bool[] m_StripMeshUsed = new bool[3];
+        readonly System.Collections.Generic.List<Mesh> m_StripUpdates = new System.Collections.Generic.List<Mesh>(3);
+        readonly int[] m_StripUpdateBlend = new int[3];
 
         public ChainRenderer(RenderAssets assets, int maxChains, int maxNodes, int trailPoolSize, int maxKeys, int maxTrailDeltasPerFrame = 65536)
         {
@@ -357,50 +361,71 @@ namespace SPF.Presentation
                 }.Schedule(headers, 4));
             }
 
-            var meshData = Mesh.AllocateWritableMeshData(3);
-            try
-            {
+            // Strip meshes: rebuild only those with segments this frame or last frame (to empty them).
+            // Most scenes have no strip skins on screen, and allocating / applying mesh data has a fixed cost.
+            m_StripUpdates.Clear();
             for (int b = 0; b < 3; b++)
             {
-                int c = 3 + b;
-                int segments = m_HeaderCounts[c] > 0 ? m_Totals[c] : 0;
-                var data = meshData[b];
-                data.SetVertexBufferParams(segments * 4,
-                    new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 3),
-                    new VertexAttributeDescriptor(VertexAttribute.Color, VertexAttributeFormat.UNorm8, 4),
-                    new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 3),
-                    new VertexAttributeDescriptor(VertexAttribute.TexCoord1, VertexAttributeFormat.UNorm8, 4));
-                data.SetIndexBufferParams(segments * 6, IndexFormat.UInt32);
-                if (segments > 0)
+                bool used = m_HeaderCounts[3 + b] > 0 && m_Totals[3 + b] > 0;
+                if (used || m_StripMeshUsed[b])
                 {
-                    // Chained, not parallel: the vertex / index arrays share the MeshDataArray's safety handle.
-                    handle = new BuildStripsJob
-                    {
-                        Headers = m_Headers[c],
-                        Points = m_Points,
-                        Vertices = data.GetVertexData<StripVertex>(),
-                        Indices = data.GetIndexData<uint>(),
-                        Alpha = alpha,
-                    }.Schedule(m_HeaderCounts[c], 4, handle);
+                    m_StripUpdateBlend[m_StripUpdates.Count] = b;
+                    m_StripUpdates.Add(m_StripMeshes[b]);
                 }
+                m_StripMeshUsed[b] = used;
             }
-            }
-            finally
+            if (m_StripUpdates.Count == 0)
             {
-                // Always complete: a job left running would block the next tick's writers of the trail
-                // points (and the exception would cascade into the simulation).
                 handle.Complete();
             }
-
-            for (int b = 0; b < 3; b++)
+            else
             {
-                int segments = m_HeaderCounts[3 + b] > 0 ? m_Totals[3 + b] : 0;
-                var data = meshData[b];
-                data.subMeshCount = 1;
-                data.SetSubMesh(0, new SubMeshDescriptor(0, segments * 6), MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices);
+                var meshData = Mesh.AllocateWritableMeshData(m_StripUpdates.Count);
+                try
+                {
+                    for (int u = 0; u < m_StripUpdates.Count; u++)
+                    {
+                        int c = 3 + m_StripUpdateBlend[u];
+                        int segments = m_HeaderCounts[c] > 0 ? m_Totals[c] : 0;
+                        var data = meshData[u];
+                        data.SetVertexBufferParams(segments * 4,
+                            new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 3),
+                            new VertexAttributeDescriptor(VertexAttribute.Color, VertexAttributeFormat.UNorm8, 4),
+                            new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.Float32, 3),
+                            new VertexAttributeDescriptor(VertexAttribute.TexCoord1, VertexAttributeFormat.UNorm8, 4));
+                        data.SetIndexBufferParams(segments * 6, IndexFormat.UInt32);
+                        if (segments > 0)
+                        {
+                            // Chained, not parallel: the vertex / index arrays share the MeshDataArray's safety handle.
+                            handle = new BuildStripsJob
+                            {
+                                Headers = m_Headers[c],
+                                Points = m_Points,
+                                Vertices = data.GetVertexData<StripVertex>(),
+                                Indices = data.GetIndexData<uint>(),
+                                Alpha = alpha,
+                            }.Schedule(m_HeaderCounts[c], 4, handle);
+                        }
+                    }
+                }
+                finally
+                {
+                    // Always complete: a job left running would block the next tick's writers of the trail
+                    // points (and the exception would cascade into the simulation).
+                    handle.Complete();
+                }
+
+                for (int u = 0; u < m_StripUpdates.Count; u++)
+                {
+                    int c = 3 + m_StripUpdateBlend[u];
+                    int segments = m_HeaderCounts[c] > 0 ? m_Totals[c] : 0;
+                    var data = meshData[u];
+                    data.subMeshCount = 1;
+                    data.SetSubMesh(0, new SubMeshDescriptor(0, segments * 6), MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices);
+                }
+                Mesh.ApplyAndDisposeWritableMeshData(meshData, m_StripUpdates,
+                    MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontNotifyMeshUsers);
             }
-            Mesh.ApplyAndDisposeWritableMeshData(meshData, m_StripMeshes,
-                MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices | MeshUpdateFlags.DontNotifyMeshUsers);
 
             for (int b = 0; b < 3; b++)
             {

@@ -175,5 +175,22 @@ namespace SPF.Tests.EditMode
                 headers.Dispose();
             }
         }
+
+        [Test]
+        public void PagePrefixSubmeshesCoverTheUsedDiscs()
+        {
+            Assert.AreEqual(5, DiscMesh.PrefixCount(4096));   // 256, 512, 1024, 2048, 4096
+            Assert.AreEqual(1, DiscMesh.PrefixCount(200));
+            Assert.AreEqual(3, DiscMesh.PrefixCount(700));    // 256, 512, 700
+            for (int instances = 1; instances <= 4096; instances += 37)
+                for (int count = 1; count <= instances; count += 13)
+                {
+                    int p = DiscMesh.PrefixFor(count, instances);
+                    Assert.Less(p, DiscMesh.PrefixCount(instances));
+                    int drawn = System.Math.Min(DiscMesh.MinPrefix << p, instances);
+                    Assert.GreaterOrEqual(drawn, count);
+                    Assert.LessOrEqual(drawn, System.Math.Max(2 * count, DiscMesh.MinPrefix));
+                }
+        }
     }
 }

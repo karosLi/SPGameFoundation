@@ -14,6 +14,9 @@ namespace SPF.Presentation
     public sealed class CircleBatch : IDisposable
     {
         public const int PageSize = 4096;
+
+        /// <summary>Data-texture tier: draw only a prefix submesh covering the used discs (A/B tests switch it off).</summary>
+        public static bool UsePrefixSubmeshes = true;
         const int TextureWidth = 2048;
 
         readonly RenderTier m_Tier;
@@ -114,7 +117,8 @@ namespace SPF.Presentation
                 int n = math.min(PageSize, count - p * PageSize);
                 page.Upload(m_Instances, p * PageSize, n);
                 rp.matProps = page.Properties;
-                Graphics.RenderMesh(rp, page.Mesh, 0, Matrix4x4.identity);
+                // Smallest prefix submesh covering the used discs (unused ones are zero-radius anyway).
+                Graphics.RenderMesh(rp, page.Mesh, UsePrefixSubmeshes ? DiscMesh.PrefixFor(n, page.Instances) : DiscMesh.PrefixCount(page.Instances) - 1, Matrix4x4.identity);
             }
         }
 
@@ -150,12 +154,14 @@ namespace SPF.Presentation
                 var texels = m_Texture.GetPixelData<float4>(0);
                 for (int i = 0; i < texels.Length; i++) texels[i] = float4.zero;
                 m_Texture.Apply(false, false);
+                Instances = instances;
                 Mesh = DiscMesh.CreateIndexed(instances, segments);
                 Properties = new MaterialPropertyBlock();
                 Properties.SetTexture(RenderAssets.Ids.DataTex, m_Texture);
             }
 
             public Mesh Mesh { get; }
+            public int Instances { get; }
             public MaterialPropertyBlock Properties { get; }
 
             /// <summary>

@@ -28,6 +28,9 @@ namespace PlatformerFoundation.Tests.PlayMode
                 yield return null;
                 UIDriver.Click(game.Hud.StartButton.gameObject);
                 yield return UIDriver.WaitUntil(() => game.State.Flow == PlFlow.Playing, 5f);
+                yield return null;
+                yield return null;
+                int uploads = game.Renderer.TileUploads;   // the menu's empty map, then the level
                 float x0 = game.State.Hero.x;
                 // Run right, jumping now and then (jump button through the touch UI).
                 float end = Time.realtimeSinceStartup + 3f;
@@ -42,7 +45,7 @@ namespace PlatformerFoundation.Tests.PlayMode
                 }
                 game.Session.Sync();
                 Assert.Greater(game.State.Hero.x, x0 + 3f, "ran right");
-                Assert.AreEqual(1, game.Renderer.TileUploads, "the static tile layer was uploaded once");
+                Assert.AreEqual(uploads, game.Renderer.TileUploads, "the static tile layer is not re-uploaded while playing");
                 Assert.Greater(game.Renderer.TileSprites, 200);
 
                 game.CameraRig.Camera.targetTexture = target;

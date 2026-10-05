@@ -21,7 +21,10 @@ namespace SPF.L2.Progression
     /// </summary>
     public static class WaveSchedule
     {
-        /// <summary>Spawns of <paramref name="group"/> at times in (from, to].</summary>
+        /// <summary>
+        /// Spawns of <paramref name="group"/> at times in (from, to]. The window is open at <paramref name="from"/>, so start a
+        /// wave clock slightly below 0 (or count <see cref="Spawned"/> at the first step) for groups starting at 0.
+        /// </summary>
         public static int Due(in WaveGroup group, float from, float to)
         {
             if (group.Count <= 0 || to <= from) return 0;

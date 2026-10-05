@@ -1,0 +1,26 @@
+{
+    "name": "PuzzleFoundation.Presentation",
+    "rootNamespace": "PuzzleFoundation.Presentation",
+    "references": [
+        "SPF.Contracts",
+        "SPF.L1Simulation",
+        "SPF.L2Gameplay",
+        "SPF.Runtime.Core",
+        "SPF.Runtime",
+        "Unity.Collections",
+        "Unity.Mathematics",
+        "Unity.Burst",
+        "SPF.Presentation",
+        "SPF.Shell",
+        "PuzzleFoundation.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

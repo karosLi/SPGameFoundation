@@ -1,0 +1,36 @@
+{
+    "name": "PuzzleFoundation.Tests.PlayMode",
+    "rootNamespace": "PuzzleFoundation.Tests.PlayMode",
+    "references": [
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "SPF.Contracts",
+        "SPF.L1Simulation",
+        "SPF.L2Gameplay",
+        "SPF.Runtime.Core",
+        "SPF.Runtime",
+        "Unity.Collections",
+        "Unity.Mathematics",
+        "Unity.Burst",
+        "SPF.Presentation",
+        "SPF.Shell",
+        "SPF.Testing",
+        "PuzzleFoundation.Runtime",
+        "PuzzleFoundation.Presentation",
+        "PuzzleFoundation.Game",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

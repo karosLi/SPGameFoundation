@@ -34,6 +34,9 @@ namespace SPF.Presentation.Animation
         [ReadOnly] public NativeArray<float4> Tint;
         [ReadOnly] public NativeArray<float> Flash;
         [ReadOnly] public NativeArray<float> Depth;     // per character (nearer = smaller)
+        /// <summary>Optional skins: per-character palette row (<see cref="Palette"/>[skin * attachments + k] tints part k).</summary>
+        [ReadOnly] public NativeArray<int> Skin;
+        [ReadOnly] public NativeArray<float4> Palette;
         /// <summary>Depth step between parts of one character.</summary>
         public float LayerStep;
         [NativeDisableParallelForRestriction] public NativeArray<PackedSprite> Out;
@@ -51,7 +54,9 @@ namespace SPF.Presentation.Animation
                 float rotation = bone.Rotation + a.Rotation * mirror;
                 // Mirrored frames flip the sprite's y (see BoneWorld.Transform), so it reads correctly facing left.
                 float2 size = new float2(a.Size.x, a.Size.y * mirror);
-                Out[index * count + k] = PackedSprite.Pack(centre, size, a.Uv, Depth[index] - a.Layer * LayerStep, Tint[index] * a.Tint, rotation, Flash[index]);
+                float4 tint = Tint[index] * a.Tint;
+                if (Palette.Length > 0) tint *= Palette[Skin[index] * count + k];
+                Out[index * count + k] = PackedSprite.Pack(centre, size, a.Uv, Depth[index] - a.Layer * LayerStep, tint, rotation, Flash[index]);
             }
         }
     }

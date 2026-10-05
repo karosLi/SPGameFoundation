@@ -121,6 +121,8 @@ namespace SPF.Tests.EditMode
             var world = new NativeArray<BoneWorld>(N * bones, Allocator.TempJob);
             var attachments = new NativeArray<BoneAttachment>(bones, Allocator.TempJob);
             var output = new NativeArray<PackedSprite>(N * bones, Allocator.TempJob);
+            var skin = new NativeArray<int>(N, Allocator.TempJob);
+            var palette = new NativeArray<float4>(0, Allocator.TempJob);   // no skins (containers must still exist)
             try
             {
                 for (int i = 0; i < bones; i++) attachments[i] = new BoneAttachment { Bone = i, Size = new float2(0.4f, 0.15f), Offset = new float2(0.2f, 0f), Tint = 1f, Uv = new float4(0f, 0f, 0.1f, 0.1f) };
@@ -137,7 +139,7 @@ namespace SPF.Tests.EditMode
                 JobHandle Schedule(float offset)
                 {
                     var pose = new SkeletonPoseJob { View = asset.View, Animators = animators, Roots = roots, Facing = facing, Scale = 1f, TimeOffset = offset, Scratch = scratch, World = world }.Schedule(N, 32);
-                    return new SkeletonSpriteJob { Bones = bones, World = world, Attachments = attachments, Facing = facing, Tint = tint, Flash = flash, Depth = depth, LayerStep = 0.001f, Out = output }.Schedule(N, 32, pose);
+                    return new SkeletonSpriteJob { Bones = bones, World = world, Attachments = attachments, Facing = facing, Tint = tint, Flash = flash, Depth = depth, Skin = skin, Palette = palette, LayerStep = 0.001f, Out = output }.Schedule(N, 32, pose);
                 }
                 for (int i = 0; i < 10; i++) Schedule(i * 0.01f).Complete();   // warm-up (Burst compile in the editor)
                 var watch = Stopwatch.StartNew();
@@ -157,7 +159,7 @@ namespace SPF.Tests.EditMode
             finally
             {
                 animators.Dispose(); roots.Dispose(); facing.Dispose(); tint.Dispose(); flash.Dispose(); depth.Dispose();
-                scratch.Dispose(); world.Dispose(); attachments.Dispose(); output.Dispose();
+                scratch.Dispose(); world.Dispose(); attachments.Dispose(); output.Dispose(); skin.Dispose(); palette.Dispose();
             }
         }
     }

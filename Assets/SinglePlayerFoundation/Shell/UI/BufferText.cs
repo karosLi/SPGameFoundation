@@ -16,6 +16,15 @@ namespace SPF.Shell.UI
     public sealed class BufferText : MaskableGraphic
     {
         static readonly string[] s_CharStrings = new string[0x10000];
+        /// <summary>Printable ASCII, requested from the font atlas up front so HUD digits never grow it mid-game.</summary>
+        static readonly string s_Ascii = BuildAscii();
+
+        static string BuildAscii()
+        {
+            var chars = new char[126 - 32 + 1];
+            for (int i = 0; i < chars.Length; i++) chars[i] = (char)(32 + i);
+            return new string(chars);
+        }
 
         [SerializeField] Font m_Font;
         [SerializeField] int m_FontSize = 32;
@@ -30,6 +39,8 @@ namespace SPF.Shell.UI
         float[] m_LineWidths = new float[8];
         int[] m_LineEnds = new int[8];
         int m_Rebuilds;
+        int m_PrewarmedSize = -1;
+        bool m_Populating, m_FontDirty;
 
         public Font Font
         {
@@ -100,7 +111,16 @@ namespace SPF.Shell.UI
 
         void OnFontRebuilt(Font font)
         {
-            if (font == m_Font) SetVerticesDirty();
+            // The atlas can rebuild inside UGUI's graphic rebuild (another label requesting glyphs): marking dirty there
+            // is not allowed, so re-mesh on the next LateUpdate. Our own requests happen before we read any glyph.
+            if (font == m_Font && !m_Populating) m_FontDirty = true;
+        }
+
+        void LateUpdate()
+        {
+            if (!m_FontDirty) return;
+            m_FontDirty = false;
+            SetVerticesDirty();
         }
 
         static string CharString(char c) => s_CharStrings[c] ??= c.ToString();
@@ -136,6 +156,23 @@ namespace SPF.Shell.UI
             int size = Mathf.Clamp(Mathf.RoundToInt(m_FontSize * scale), 1, 512);
             float inv = 1f / scale;
             var rect = GetPixelAdjustedRect();
+
+            // Pass 0: make sure every glyph is in the atlas before reading any (a request can rebuild the atlas
+            // and move earlier glyphs). ASCII once per size, then only characters outside it.
+            m_Populating = true;
+            if (size != m_PrewarmedSize)
+            {
+                m_Font.RequestCharactersInTexture(s_Ascii, size, FontStyle.Normal);
+                m_PrewarmedSize = size;
+            }
+            for (int i = 0; i < m_ShownLength; i++)
+            {
+                char c = m_Shown[i];
+                if (c >= 32 && c <= 126) continue;
+                if (!m_Font.GetCharacterInfo(c, out _, size, FontStyle.Normal))
+                    m_Font.RequestCharactersInTexture(CharString(c), size, FontStyle.Normal);
+            }
+            m_Populating = false;
 
             // Pass 1: line breaks (explicit, and word wrap at the rect width).
             int lines = 0;

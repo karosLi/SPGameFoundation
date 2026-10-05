@@ -99,14 +99,15 @@ namespace SurvivorFoundation.Tests.PlayMode
                 if (game.Governor.GcCounterValid)
                 {
                     int steady = 0, near = 0;
+                    var detail = new StringBuilder();
                     for (int f = 0; f < Window; f++)
                     {
                         if (bytes[f] == 0) continue;
                         bool ui = false;
                         for (int k = math.max(0, f - 3); k <= math.min(Window - 1, f + 1); k++) ui |= changed[k];
-                        if (ui) near++; else steady++;
+                        if (ui) near++; else { steady++; detail.Append(" f").Append(f).Append(':').Append(bytes[f]).Append('B'); }
                     }
-                    GcReport.Write($"survivor auto-play ({tier}): {near} frames next to level-up / flow screens, {steady} steady frames",
+                    GcReport.Write($"survivor auto-play ({tier}): {near} frames next to level-up / flow screens, {steady} steady frames{detail}",
                         game.Governor.FramesSinceReset, game.Governor.GcFramesSinceReset, game.Governor.GcBytesSinceReset);
                     Assert.LessOrEqual(steady, 1, "steady-state play allocates nothing per frame");
                 }

@@ -794,6 +794,12 @@ Tier B 的 CPU 成本预估：节点展开 + 剔除约 0.6 ms（工作线程）�
   - 所有蛇的删除在插入之前完成：本 tick 释放的 slab 可能已分配给别的蛇，旧主人的清理不能删掉新主人的键。
   - `CellListGrid` 增加 `BuiltOrigin`：读者使用内容对应的原点，窗口移动后到下次更新之间运行的 Job（如用上一 tick 网格的 AI）不会错位（物品网格原先也有这个小问题，一并修正）。
   - 测试 `BodyGridHoldsExactlyTheAnchoredNodes` 在生成、死亡、成长、重采样的长时间运行中，逐条目对拍“每个活跃蛇一个头 + 每第 k 个保留轨迹点一个节点”。
+- 实测（M5 Pro，Burst）：BodyGridSystem 0.063 → 0.017 ms，tick 均值 0.218 → 0.18 ms。
+
+第六轮：
+- **轨迹包围盒增量化**（`TrailBounds`）：每 16 个轨迹点的 AABB 存在 slab 旁（`BodyStore.BlockBounds`），块写满时算一次；蛇的包围盒 = 约 Count/16 个盒子的并 + 最新未满块的直接扫描。轨迹 `Version` 变化时整条重建（`BoundsVersion` 列）。BodySystem 不再随总轨迹点数线性增长。
+- **主线程系统**：PopulationSystem 改为主线程 `Run()` 的 Burst 扫描（只挑出需要扩容 / 重采样的行），0.026 → 0.001 ms；`ChunkPopulation.SetWindow` 在 chunk 范围不变时直接返回，WindowSystem 0.022 → 0.016 ms。主线程调度耗时 0.077 → **0.042 ms**，tick 均值 0.18 → **0.152 ms**。
+- **大蛇基准**（`BigSnakeBenchmark` / `BigSnakeRendererCpu`，60 条质量 800–3000、半径约 3.9 m 的蛇）：间距随半径（平均 0.96 m）对比固定 0.4 m——存活轨迹点 53.8k → 22.5k（−58%），slab 占用 61440 → 30720 点（480 → 240 KB），每 tick 新增点（= GPU 轨迹上传量）45 → 19；GPU 档渲染器主线程 0.089 → 0.078 ms（复用开启 0.077 → 0.071 ms）。模拟 tick 本身无差别（0.132 vs 0.136 ms）：包围盒和身体网格都已是增量的，不再随点数增长。数据纹理档单次测量无可见收益（0.197 vs 0.205 ms，噪声范围内，可见蛇仅 5–6 条）。
 
 5. **跨平台确定性**：模拟 Job 目前用 `FloatMode.Fast`，同一构建 / 同一 CPU 可复现；若需要跨设备回放，改为 `FloatMode.Deterministic`（约 5–15% 代价）。
 

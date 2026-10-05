@@ -1,4 +1,7 @@
 using SPF.Contracts;
+using SPF.Contracts.Collections;
+using SPF.L2.Stats;
+using Unity.Burst;
 using SPF.L2.Combat;
 using SPF.L2.Progression;
 using SPF.Runtime.Scheduling;
@@ -11,14 +14,20 @@ using System.Collections.Generic;
 namespace RpgFoundation.Systems
 {
     /// <summary>
-    /// Resolve (main thread): applies hits in a deterministic order (parallel jobs queue them in thread
-    /// order), rolls damage, provokes monsters, kills (death events, hero death ends the run), then spawns
-    /// the requested projectiles.
+    /// Resolve (Burst job, so the tick keeps overlapping rendering): applies the queued hits in a
+    /// deterministic order (parallel jobs queue them in thread order), rolls damage, provokes monsters,
+    /// marks the dead (monsters: death event + destroy request; the hero: Dead flag). Everything
+    /// structural or main-thread (loot, XP, flow, projectile spawns) happens at the start of the next
+    /// tick in ApplyCommands, where no job is running.
     /// </summary>
     sealed class ResolveSystem : SimSystemBase
     {
         public override SimPhase Phase => SimPhase.Resolve;
-        public override void Declare(AccessDeclaration access) { }
+
+        public override void Declare(AccessDeclaration access) => access
+            .Read(RpgKeys.Actor).Read(RpgKeys.Stats).Read(RpgKeys.Position)
+            .Write(RpgKeys.Info).Write(RpgKeys.Health).Write(RpgKeys.Combat).Write(RpgKeys.Brain)
+            .Write(RpgKeys.Hits).Write(RpgKeys.Deaths).Write(RpgKeys.Feedback).Write(SimWorld.DestroyQueueKey);
 
         struct HitOrder : IComparer<HitEvent>
         {
@@ -32,70 +41,103 @@ namespace RpgFoundation.Systems
         {
             var world = context.World;
             var game = world.Resource(RpgKeys.Game);
-            var config = world.Resource(RpgKeys.Config);
-            var hitQueue = world.Resource(RpgKeys.Hits);
-            var feedback = world.Resource(RpgKeys.Feedback);
-            var deaths = world.Resource(RpgKeys.Deaths);
-            var infos = world.Column(RpgKeys.Info);
-            var healths = world.Column(RpgKeys.Health);
-            var stats = world.Column(RpgKeys.Stats);
-            var combat = world.Column(RpgKeys.Combat);
-            var brains = world.Column(RpgKeys.Brain);
-            var positions = world.Column(RpgKeys.Position);
-            var handles = world.Table(RpgKeys.Actor).Handles;
-            int count = world.Table(RpgKeys.Actor).Count;
-
-            var hits = hitQueue.AsArray();
-            hits.Sort(new HitOrder());
-            for (int h = 0; h < hits.Length; h++)
+            return new ResolveJob
             {
-                var hit = hits[h];
-                int row = hit.TargetRow;
-                if (row < 0 || row >= count) continue;
-                var info = infos[row];
-                if (info.Has(ActorFlags.Dead)) continue;
-                var random = SimRandom.Create(context.Seed, context.Time.Tick, (uint)h * 7919u + 13u);
-                var roll = CombatMath.Roll(hit.Damage, stats[row][Stat.Armour], hit.CritChance, config.Settings.CritMultiplier, 0.12f, ref random);
-                var health = healths[row];
-                health.Current -= roll.Amount;
-                healths[row] = health;
-                var c = combat[row];
-                c.HitFlash = 0.15f;
-                combat[row] = c;
-                bool hero = info.Has(ActorFlags.Hero);
-                feedback.TryAdd(new FeedbackEvent
-                {
-                    Kind = hero ? FeedbackKind.HeroHurt : roll.Critical ? FeedbackKind.Crit : FeedbackKind.Damage,
-                    Position = hit.Position,
-                    Value = roll.Amount,
-                });
-                if (!hero)
-                {
-                    var b = brains[row];
-                    b.Provoked = 4f;
-                    if (b.State == AIState.Idle || b.State == AIState.Return) { b.State = AIState.Chase; b.StateTime = 0f; }
-                    brains[row] = b;
-                }
-                if (health.Current <= 0f)
-                {
-                    info.Flags |= ActorFlags.Dead;
-                    infos[row] = info;
-                    feedback.TryAdd(new FeedbackEvent { Kind = FeedbackKind.Death, Position = positions[row], Value = info.Radius });
-                    if (hero)
-                    {
-                        game.Flow = RpgFlow.Dead;
-                        game.Message = "You died";
-                        game.Version++;
-                    }
-                    else
-                    {
-                        deaths.TryAdd(new DeathEvent { Kind = info.Kind, Position = positions[row], Floor = game.Profile.Floor, Boss = info.Has(ActorFlags.Boss) });
-                        world.Resource(SimWorld.DestroyQueueKey).Request(handles[row]);
-                    }
-                }
-            }
-            hitQueue.Clear();
+                Hits = world.Resource(RpgKeys.Hits).Raw,
+                Deaths = world.Resource(RpgKeys.Deaths).Raw,
+                Feedback = world.Resource(RpgKeys.Feedback).Raw,
+                Destroy = world.Resource(SimWorld.DestroyQueueKey).AsWriter(),
+                Handles = context.Handles(RpgKeys.Actor),
+                Info = context.Column(RpgKeys.Info),
+                Health = context.Column(RpgKeys.Health),
+                Stats = context.Column(RpgKeys.Stats),
+                Combat = context.Column(RpgKeys.Combat),
+                Brain = context.Column(RpgKeys.Brain),
+                Position = context.Column(RpgKeys.Position),
+                Count = context.Count(RpgKeys.Actor),
+                CritMultiplier = world.Resource(RpgKeys.Config).Settings.CritMultiplier,
+                Floor = game.Profile.Floor,
+                Seed = context.Seed,
+                Tick = context.Time.Tick,
+            }.Schedule(dependency);
+        }
 
+        [BurstCompile(CompileSynchronously = true)]
+        struct ResolveJob : IJob
+        {
+            public ParallelQueue<HitEvent> Hits;
+            public ParallelQueue<DeathEvent> Deaths;
+            public ParallelQueue<FeedbackEvent> Feedback;
+            public ParallelQueue<EntityHandle>.Writer Destroy;
+            [ReadOnly] public NativeArray<EntityHandle> Handles;
+            public NativeArray<ActorInfo> Info;
+            public NativeArray<Health> Health;
+            [ReadOnly] public NativeArray<StatBlock> Stats;
+            public NativeArray<CombatState> Combat;
+            public NativeArray<Brain> Brain;
+            [ReadOnly] public NativeArray<float2> Position;
+            public int Count, Floor;
+            public float CritMultiplier;
+            public uint Seed, Tick;
+
+            public void Execute()
+            {
+                var hits = Hits.AsArray();
+                hits.Sort(new HitOrder());
+                for (int h = 0; h < hits.Length; h++)
+                {
+                    var hit = hits[h];
+                    int row = hit.TargetRow;
+                    if (row < 0 || row >= Count) continue;
+                    var info = Info[row];
+                    if (info.Has(ActorFlags.Dead)) continue;
+                    var random = SimRandom.Create(Seed, Tick, (uint)h * 7919u + 13u);
+                    var roll = CombatMath.Roll(hit.Damage, Stats[row][Stat.Armour], hit.CritChance, CritMultiplier, 0.12f, ref random);
+                    var health = Health[row];
+                    health.Current -= roll.Amount;
+                    Health[row] = health;
+                    var c = Combat[row];
+                    c.HitFlash = 0.15f;
+                    Combat[row] = c;
+                    bool hero = info.Has(ActorFlags.Hero);
+                    Feedback.TryAdd(new FeedbackEvent
+                    {
+                        Kind = hero ? FeedbackKind.HeroHurt : roll.Critical ? FeedbackKind.Crit : FeedbackKind.Damage,
+                        Position = hit.Position,
+                        Value = roll.Amount,
+                    });
+                    if (!hero)
+                    {
+                        var b = Brain[row];
+                        b.Provoked = 4f;
+                        if (b.State == AIState.Idle || b.State == AIState.Return) { b.State = AIState.Chase; b.StateTime = 0f; }
+                        Brain[row] = b;
+                    }
+                    if (health.Current > 0f) continue;
+                    info.Flags |= ActorFlags.Dead;
+                    Info[row] = info;
+                    Feedback.TryAdd(new FeedbackEvent { Kind = FeedbackKind.Death, Position = Position[row], Value = info.Radius });
+                    if (!hero)
+                    {
+                        Deaths.TryAdd(new DeathEvent { Kind = info.Kind, Position = Position[row], Floor = Floor, Boss = info.Has(ActorFlags.Boss) });
+                        Destroy.TryAdd(Handles[row]);
+                    }
+                }
+                Hits.Clear();
+            }
+        }
+    }
+
+    /// <summary>ApplyCommands (main thread): spawns the projectiles requested by last tick's combat jobs.</summary>
+    sealed class ProjectileSpawnSystem : SimSystemBase
+    {
+        public override SimPhase Phase => SimPhase.ApplyCommands;
+        public override int Order => 20;
+        public override void Declare(AccessDeclaration access) { }
+
+        public override JobHandle OnTick(in SimContext context, JobHandle dependency)
+        {
+            var world = context.World;
             var requests = world.Resource(RpgKeys.ProjectileRequests);
             for (int i = 0; i < requests.Count; i++)
                 RpgSpawner.SpawnProjectile(world, requests[i]);
@@ -105,12 +147,12 @@ namespace RpgFoundation.Systems
     }
 
     /// <summary>
-    /// Resolve (main thread, after <see cref="ResolveSystem"/>): experience and level-ups, kill counts,
-    /// loot drops; then item pickups by the hero.
+    /// ApplyCommands (main thread, start of the tick after the resolve job): the hero's death ends the
+    /// run; experience and level-ups, kill counts, loot drops; then item pickups by the hero.
     /// </summary>
     sealed class RewardSystem : SimSystemBase
     {
-        public override SimPhase Phase => SimPhase.Resolve;
+        public override SimPhase Phase => SimPhase.ApplyCommands;
         public override int Order => 10;
         public override void Declare(AccessDeclaration access) { }
 
@@ -123,6 +165,16 @@ namespace RpgFoundation.Systems
             var feedback = world.Resource(RpgKeys.Feedback);
             var profile = game.Profile;
             bool heroAlive = world.Registry.TryResolve(game.Hero, out _, out int heroRow);
+            if (heroAlive && world.Column(RpgKeys.Info)[heroRow].Has(ActorFlags.Dead))
+            {
+                heroAlive = false;
+                if (game.Flow == RpgFlow.Playing)
+                {
+                    game.Flow = RpgFlow.Dead;
+                    game.Message = "You died";
+                    game.Version++;
+                }
+            }
 
             for (int i = 0; i < deaths.Count; i++)
             {
@@ -296,11 +348,11 @@ namespace RpgFoundation.Systems
         }
     }
 
-    /// <summary>Resolve (main thread): reaching the stairs (with the boss dead) clears the floor; the last floor wins the run.</summary>
+    /// <summary>ApplyCommands (main thread): reaching the stairs (with the boss dead) clears the floor; the last floor wins the run.</summary>
     sealed class StairsSystem : SimSystemBase
     {
-        public override SimPhase Phase => SimPhase.Resolve;
-        public override int Order => 30;
+        public override SimPhase Phase => SimPhase.ApplyCommands;
+        public override int Order => 15;
         public override void Declare(AccessDeclaration access) { }
 
         public override JobHandle OnTick(in SimContext context, JobHandle dependency)

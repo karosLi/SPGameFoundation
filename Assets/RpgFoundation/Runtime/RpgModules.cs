@@ -85,7 +85,8 @@ namespace RpgFoundation
             .Add(new MovementSystem())
             .Add(new ActorGridSystem())
             .Add(new CombatSystem())
-            .Add(new ResolveSystem());
+            .Add(new ResolveSystem())
+            .Add(new ProjectileSpawnSystem());
     }
 
     /// <summary>Loot on the ground, experience, pickups and the inventory.</summary>

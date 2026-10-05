@@ -78,8 +78,8 @@ namespace SnakeFoundation.Systems
 
                 uint pushedBefore = trail.Pushed;
                 float gapBefore = math.length(PrevHead[i] - trail.Last);
-                TrailMath.Advance(ref trail, Points, head, s.TrailSpacing, TrailMath.PointsForLength(length, s.TrailSpacing));
-                PrevArc[i] = TrailMath.PreviousArc(pushedBefore, gapBefore, trail.Pushed, s.TrailSpacing);
+                TrailMath.Advance(ref trail, Points, head, TrailMath.PointsForLength(length, trail.Spacing));
+                PrevArc[i] = TrailMath.PreviousArc(pushedBefore, gapBefore, trail);
 
                 // Bounds from every 4th kept point (spacing ≪ radius, so the error is below the padding).
                 float2 min = head, max = head;
@@ -90,13 +90,13 @@ namespace SnakeFoundation.Systems
                     min = math.min(min, p);
                     max = math.max(max, p);
                 }
-                float pad = radius + s.TrailSpacing * 4f;
+                float pad = radius + trail.Spacing * 4f;
                 Bounds[i] = new float4(min - pad, max + pad);
 
                 if (info.BoostDropAccumulator >= s.BoostDropMass)
                 {
                     info.BoostDropAccumulator -= s.BoostDropMass;
-                    float2 tail = TrailMath.SampleBehind(trail, Points, head, TrailMath.BodyLength(trail, head, s.TrailSpacing), s.TrailSpacing);
+                    float2 tail = TrailMath.SampleBehind(trail, Points, head, TrailMath.BodyLength(trail, head));
                     FoodSpawns.TryAdd(new FoodSpawnRequest
                     {
                         Position = tail,

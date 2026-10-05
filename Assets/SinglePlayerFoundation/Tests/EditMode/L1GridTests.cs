@@ -73,6 +73,7 @@ namespace SPF.Tests.EditMode
         {
             const int Keys = 600;
             using var grid = new CellListGrid(new int2(16, 16), 8f, Keys, Keys) { Origin = new float2(-64, -64) };
+            grid.MarkBuilt();
             var writer = grid.AsWriter();
             var random = new Random(77);
             var model = new GridEntry?[Keys];

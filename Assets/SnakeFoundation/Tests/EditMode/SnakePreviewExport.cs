@@ -81,7 +81,7 @@ namespace SnakeFoundation.Tests
                 var skin = skins[info.Skin % skins.Length];
                 float radius = radii[row];
                 float spacing = s.NodeSpacing(radius);
-                int nodes = TrailMath.NodeCount(trails[row], heads[row], s.TrailSpacing, spacing);
+                int nodes = TrailMath.NodeCount(trails[row], heads[row], spacing);
                 if (!first) sb.Append(','); first = false;
                 sb.Append("{\"player\":").Append(info.Has(SnakeFlags.Player) ? "true" : "false")
                   .Append(",\"mass\":").Append(masses[row].ToString("F1", inv))
@@ -94,7 +94,7 @@ namespace SnakeFoundation.Tests
                   .Append(",\"nodes\":[");
                 for (int n = 0; n < nodes; n++)
                 {
-                    float2 p = TrailMath.SampleBehind(trails[row], points, heads[row], n * spacing, s.TrailSpacing);
+                    float2 p = TrailMath.SampleBehind(trails[row], points, heads[row], n * spacing);
                     if (n > 0) sb.Append(',');
                     sb.Append('[').Append(p.x.ToString("F2", inv)).Append(',').Append(p.y.ToString("F2", inv)).Append(']');
                 }

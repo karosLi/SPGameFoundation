@@ -56,6 +56,7 @@ namespace SnakeFoundation.Systems
                 Position = context.Column(SnakeKeys.ProjectilePosition),
                 State = context.Column(SnakeKeys.ProjectileState),
                 SnakeInfo = context.Column(SnakeKeys.Info),
+                SnakeRadius = context.Column(SnakeKeys.Radius),
                 Bodies = world.Resource(SnakeKeys.BodyGrid).AsReader(),
                 Hits = hits.AsWriter(),
                 Destroy = world.Resource(SimWorld.DestroyQueueKey).AsWriter(),
@@ -67,28 +68,35 @@ namespace SnakeFoundation.Systems
         }
 
         /// <summary>
-        /// Picks the overlapping body entry closest to its owner's head (lowest node index, then lowest row).
-        /// A head touching another head also overlaps that snake's first few neck nodes, so stopping at
-        /// the first entry in cell order would make head-on vs body classification depend on direction.
-        /// Stops early only once another snake's head (node 0) of the lowest possible row is found.
+        /// Classifies a head's contact with other snakes: another snake's head entry in reach means a
+        /// head-on contact, otherwise any body node means a body hit; within a class the lowest row wins,
+        /// so the result does not depend on cell order. The grid's entry radius is rounded up (see
+        /// <see cref="BodyGridSystem"/>), so the exact test uses the Radius column; protection is read
+        /// from Info.
         /// </summary>
         struct FirstOtherBody : IGridVisitor
         {
             public int Self;
+            public float2 Center;
+            public float Reach;
+            [ReadOnly] public NativeArray<float> Radius;
+            [ReadOnly] public NativeArray<SnakeInfo> Info;
             public int Other;
-            public int Node;
+            public bool IsHead;
 
             public bool Visit(in GridEntry entry)
             {
-                if (entry.Owner == Self || (entry.Data & GridBits.ProtectedBit) != 0)
+                int owner = entry.Owner;
+                if (owner == Self) return true;
+                bool head = (entry.Data & GridBits.HeadBit) != 0;
+                // Cheap rejections first: this entry cannot improve the current result.
+                if (Other >= 0 && (IsHead && !head || head == IsHead && owner >= Other)) return true;
+                float r = Reach + Radius[owner];
+                if (math.distancesq(Center, entry.Position) >= r * r || Info[owner].Protection > 0f)
                     return true;
-                int node = entry.Data & GridBits.NodeMask;
-                if (Other < 0 || node < Node || (node == Node && entry.Owner < Other))
-                {
-                    Other = entry.Owner;
-                    Node = node;
-                }
-                return !(Node == 0 && Other == 0);
+                Other = owner;
+                IsHead = head;
+                return !(IsHead && Other == 0);
             }
         }
 
@@ -117,7 +125,7 @@ namespace SnakeFoundation.Systems
             [ReadOnly] public NativeArray<SnakeInfo> Info;
             [ReadOnly] public NativeArray<EffectiveStats> Stats;
             public NativeArray<SnakeContact> Contact;
-            public GridReader Bodies;
+            public CellListReader Bodies;
             public CellListReader Items;
             public ParallelQueue<EatCandidate>.Writer Eats;
             public SnakeSettings Settings;
@@ -144,11 +152,12 @@ namespace SnakeFoundation.Systems
                 }
                 else if (info.Protection <= 0f)
                 {
-                    var probe = new FirstOtherBody { Self = i, Other = -1 };
-                    Bodies.Query(head, radius * Settings.HitRadiusScale, ref probe);
+                    float reach = radius * Settings.HitRadiusScale;
+                    var probe = new FirstOtherBody { Self = i, Center = head, Reach = reach, Radius = Radius, Info = Info, Other = -1 };
+                    Bodies.Query(head, reach, ref probe);
                     if (probe.Other >= 0)
                     {
-                        contact.Kind = probe.Node == 0 ? ContactKind.Head : ContactKind.Body;
+                        contact.Kind = probe.IsHead ? ContactKind.Head : ContactKind.Body;
                         contact.OtherRow = probe.Other;
                     }
                 }
@@ -166,14 +175,16 @@ namespace SnakeFoundation.Systems
             public float Radius;
             public int OwnerId;
             [ReadOnly] public NativeArray<SnakeInfo> Info;
+            [ReadOnly] public NativeArray<float> SnakeRadius;
             public int Hit;
             public float HitT;
 
             public bool Visit(in GridEntry entry)
             {
-                if ((entry.Data & GridBits.ProtectedBit) != 0 || Info[entry.Owner].Id == OwnerId)
+                var info = Info[entry.Owner];
+                if (info.Protection > 0f || info.Id == OwnerId)
                     return true;
-                if (!GeoMath.SweptCircleHits(From, To, Radius, entry.Position, entry.Radius))
+                if (!GeoMath.SweptCircleHits(From, To, Radius, entry.Position, SnakeRadius[entry.Owner]))
                     return true;
                 float2 d = To - From;
                 float lenSq = math.lengthsq(d);
@@ -194,7 +205,8 @@ namespace SnakeFoundation.Systems
             public NativeArray<float2> Position;
             public NativeArray<ProjectileState> State;
             [ReadOnly] public NativeArray<SnakeInfo> SnakeInfo;
-            public GridReader Bodies;
+            [ReadOnly] public NativeArray<float> SnakeRadius;
+            public CellListReader Bodies;
             public ParallelQueue<ProjectileHit>.Writer Hits;
             public ParallelQueue<EntityHandle>.Writer Destroy;
             public float DeltaTime;
@@ -216,7 +228,7 @@ namespace SnakeFoundation.Systems
                     return;
                 }
 
-                var sweep = new FirstSweptHit { From = from, To = to, Radius = state.Radius, OwnerId = state.OwnerId, Info = SnakeInfo, Hit = -1 };
+                var sweep = new FirstSweptHit { From = from, To = to, Radius = state.Radius, OwnerId = state.OwnerId, Info = SnakeInfo, SnakeRadius = SnakeRadius, Hit = -1 };
                 float2 mid = (from + to) * 0.5f;
                 Bodies.Query(mid, math.length(to - from) * 0.5f + state.Radius, ref sweep);
                 if (sweep.Hit >= 0)

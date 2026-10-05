@@ -40,7 +40,7 @@ namespace SnakeFoundation
         public static readonly ColumnKey<ProjectileState> ProjectileState = new ColumnKey<ProjectileState>(Projectile, "State");
 
         public static readonly ResourceKey<BodyStore> Bodies = new ResourceKey<BodyStore>("Snake.Bodies");
-        public static readonly ResourceKey<SpatialGrid> BodyGrid = new ResourceKey<SpatialGrid>("Snake.BodyGrid");
+        public static readonly ResourceKey<CellListGrid> BodyGrid = new ResourceKey<CellListGrid>("Snake.BodyGrid");
         public static readonly ResourceKey<CellListGrid> ItemGrid = new ResourceKey<CellListGrid>("Snake.ItemGrid");
         public static readonly ResourceKey<SpatialGrid> HeadGrid = new ResourceKey<SpatialGrid>("Snake.HeadGrid");
         public static readonly ResourceKey<SnakeRuntimeConfig> Config = new ResourceKey<SnakeRuntimeConfig>("Snake.Config");

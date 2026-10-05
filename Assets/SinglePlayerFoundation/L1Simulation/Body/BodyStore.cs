@@ -89,6 +89,7 @@ namespace SPF.L1.Body
 
             moved.Pushed = trail.Pushed;
             moved.Last = trail.Last;
+            moved.Spacing = trail.Spacing;
             moved.Count = math.min(trail.Count, moved.Capacity);
             moved.Version = trail.Version + 1;
             for (int i = 0; i < moved.Count; i++)
@@ -96,6 +97,38 @@ namespace SPF.L1.Body
                 uint g = trail.Pushed - 1 - (uint)i;
                 m_Points[moved.Slot(g)] = m_Points[trail.Slot(g)];
             }
+            Free(ref trail);
+            trail = moved;
+            return true;
+        }
+
+        /// <summary>
+        /// Rewrites the trail with a new point spacing into a fresh slab of at least
+        /// <paramref name="minCapacity"/> points: the old path is resampled every <paramref name="spacing"/>
+        /// behind the newest point, which stays where it is (so the head gap and the body length are
+        /// kept). Bumps <see cref="TrailState.Version"/> so mirrors re-upload. Returns false (trail
+        /// unchanged) when the pool is exhausted. Main thread.
+        /// </summary>
+        public bool Respace(ref TrailState trail, float2 head, float spacing, int minCapacity)
+        {
+            float tailLength = math.max(trail.Count - 1, 0) * trail.Spacing;
+            int count = (int)(tailLength / spacing) + 1;
+            int size = SlabFor(math.max(minCapacity, count), MaxSlab);
+            if (!TryAllocate(size, out var moved))
+                return false;
+            count = math.min(count, moved.Capacity);
+            float gap = math.length(head - trail.Last);
+            for (int i = 0; i < count; i++)
+            {
+                // Oldest last: global index count-1 is the newest point.
+                float2 p = TrailMath.SampleAtArc(trail, m_Points, head, gap, gap + i * spacing);
+                m_Points[moved.Slot((uint)(count - 1 - i))] = p;
+            }
+            moved.Pushed = (uint)count;
+            moved.Count = count;
+            moved.Last = trail.Last;
+            moved.Spacing = spacing;
+            moved.Version = trail.Version + 1;
             Free(ref trail);
             trail = moved;
             return true;

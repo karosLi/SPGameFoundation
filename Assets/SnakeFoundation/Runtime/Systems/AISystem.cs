@@ -299,7 +299,7 @@ namespace SnakeFoundation.Systems
             [ReadOnly] public NativeArray<SnakeInfo> Info;
             [ReadOnly] public NativeArray<AIState> AI;
             public NativeArray<SnakeControl> Control;
-            public GridReader Bodies;
+            public CellListReader Bodies;
             public SnakeSettings Settings;
             public RegionDef Region;
             public int ActiveRegion;

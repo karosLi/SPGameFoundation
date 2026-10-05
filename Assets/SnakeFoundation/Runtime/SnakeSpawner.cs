@@ -44,7 +44,8 @@ namespace SnakeFoundation
             var s = config.Settings;
             var bodies = world.Resource(SnakeKeys.Bodies);
             float length = s.Growth.Length(mass);
-            int points = TrailMath.PointsForLength(length, s.TrailSpacing);
+            float spacing = s.TrailSpacingFor(s.Growth.Radius(mass));
+            int points = TrailMath.PointsForLength(length, spacing);
             if (!bodies.TryAllocate(math.min(points + 16, s.MaxTrailPoints), out var trail))
                 return EntityHandle.Null;
 
@@ -56,7 +57,7 @@ namespace SnakeFoundation
             }
 
             heading = math.normalizesafe(heading, new float2(1f, 0f));
-            TrailMath.Reset(ref trail, bodies.Points, position, -heading, s.TrailSpacing, math.min(points, trail.Capacity));
+            TrailMath.Reset(ref trail, bodies.Points, position, -heading, spacing, math.min(points, trail.Capacity));
 
             var table = world.Table(SnakeKeys.Snake);
             table.Column(SnakeKeys.Head).Set(row, position);

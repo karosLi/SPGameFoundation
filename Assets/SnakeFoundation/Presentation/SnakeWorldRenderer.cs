@@ -347,7 +347,7 @@ namespace SnakeFoundation.Presentation
                     HeadCurr = heads[row],
                     ArcPrev = prevArcs[row],
                     ArcCurr = math.length(heads[row] - trail.Last),
-                    Spacing = s.TrailSpacing,
+                    Spacing = trail.Spacing,
                     Radius = radius,
                     NodeSpacing = s.NodeSpacing(radius),
                     NodeStride = stride,

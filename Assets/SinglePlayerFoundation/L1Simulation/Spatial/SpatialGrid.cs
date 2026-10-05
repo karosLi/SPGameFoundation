@@ -124,16 +124,24 @@ namespace SPF.L1.Spatial
         /// </summary>
         public bool Follow(float2 focus, float2 regionMin, float2 regionMax)
         {
-            float2 size = Size;
-            float2 local = focus - Origin;
-            if (math.all(local >= size * 0.25f) && math.all(local <= size * 0.75f))
-                return false;
-            float2 origin = math.floor((focus - size * 0.5f) / CellSize) * CellSize;
-            float2 maxOrigin = math.max(regionMax - size, regionMin);
-            origin = math.clamp(origin, math.floor(regionMin / CellSize) * CellSize, math.ceil(maxOrigin / CellSize) * CellSize);
+            float2 origin = FollowOrigin(Origin, Size, CellSize, focus, regionMin, regionMax);
             bool moved = math.any(origin != Origin);
             Origin = origin;
             return moved;
+        }
+
+        /// <summary>
+        /// Window origin after following <paramref name="focus"/>: unchanged while the focus stays in the
+        /// middle half, otherwise re-centred on it (cell-aligned, clamped to the region).
+        /// </summary>
+        public static float2 FollowOrigin(float2 origin, float2 size, float cellSize, float2 focus, float2 regionMin, float2 regionMax)
+        {
+            float2 local = focus - origin;
+            if (math.all(local >= size * 0.25f) && math.all(local <= size * 0.75f))
+                return origin;
+            float2 centred = math.floor((focus - size * 0.5f) / cellSize) * cellSize;
+            float2 maxOrigin = math.max(regionMax - size, regionMin);
+            return math.clamp(centred, math.floor(regionMin / cellSize) * cellSize, math.ceil(maxOrigin / cellSize) * cellSize);
         }
 
         public JobHandle ScheduleBuild(JobHandle dependency)

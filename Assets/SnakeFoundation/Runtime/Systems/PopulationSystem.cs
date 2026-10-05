@@ -38,13 +38,27 @@ namespace SnakeFoundation.Systems
                 if (info.Region != region) continue;
                 if (info.Has(SnakeFlags.AI)) aiInRegion++;
 
-                // Grow the slab before the body needs it (+50% headroom so moves are rare).
                 var trail = trails[row];
-                int needed = TrailMath.PointsForLength(s.Growth.Length(masses[row]), s.TrailSpacing) + 8;
-                if (needed > trail.Capacity && trail.Capacity < s.MaxTrailPoints)
+                float mass = masses[row];
+                float radius = s.Growth.Radius(mass);
+                if (!trail.IsAllocated) continue;
+                if (s.NeedsRespace(trail.Spacing, radius))
                 {
-                    if (bodies.Resize(ref trail, math.min(needed + needed / 2, s.MaxTrailPoints)))
+                    // Thicker (or thinner) body: rewrite the trail with a spacing that fits its radius.
+                    float spacing = s.TrailSpacingFor(radius);
+                    int needed = TrailMath.PointsForLength(s.Growth.Length(mass), spacing) + 8;
+                    if (bodies.Respace(ref trail, heads[row], spacing, math.min(needed + needed / 2, s.MaxTrailPoints)))
                         trails[row] = trail;
+                }
+                else
+                {
+                    // Grow the slab before the body needs it (+50% headroom so moves are rare).
+                    int needed = TrailMath.PointsForLength(s.Growth.Length(mass), trail.Spacing) + 8;
+                    if (needed > trail.Capacity && trail.Capacity < s.MaxTrailPoints)
+                    {
+                        if (bodies.Resize(ref trail, math.min(needed + needed / 2, s.MaxTrailPoints)))
+                            trails[row] = trail;
+                    }
                 }
             }
 

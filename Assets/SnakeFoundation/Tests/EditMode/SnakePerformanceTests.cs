@@ -26,15 +26,15 @@ namespace SnakeFoundation.Tests
         const int WarmupTicks = 20, MeasuredTicks = 40, SerialTicks = 20;
 #endif
 
-        /// <param name="bodyCell">Body grid cell size: compares rebuild cost against query cost.</param>
-        /// <param name="largeRadius">Large-radius body layer threshold (0 = single layer).</param>
-        [TestCase(4f, 0f)]
+        /// <param name="bodyCell">Body grid cell size: compares update cost against query cost.</param>
+        /// <param name="spacingPerRadius">Trail spacing per radius (0 = fixed spacing for every snake).</param>
+        [TestCase(4f, 0.25f)]
+        [TestCase(8f, 0.25f)]
         [TestCase(8f, 0f)]
-        [TestCase(8f, 1.6f)]
-        public void TickBenchmark(float bodyCell, float largeRadius)
+        public void TickBenchmark(float bodyCell, float spacingPerRadius)
         {
             using var world = new SnakeTestWorld(aiPerRegion: 150, foodPerChunk: 150, propsPerChunk: 1, seed: 1234,
-                tweak: c => { c.Capacity.BodyGridCellSize = bodyCell; c.Capacity.LargeBodyRadius = largeRadius; });
+                tweak: c => { c.Capacity.BodyGridCellSize = bodyCell; c.Body.TrailSpacingPerRadius = spacingPerRadius; });
             world.StartPlayer();
             world.Step(WarmupTicks);
 
@@ -58,10 +58,10 @@ namespace SnakeFoundation.Tests
             world.Step(SerialTicks);
             pipeline.SerialProfiling = false;
 
-            var report = $"body grid cell: {bodyCell} m, large layer above radius {largeRadius} (0 = off)\n" + BuildReport(world, samples, scheduleSum / MeasuredTicks, waitSum / MeasuredTicks, pipeline);
+            var report = $"body grid cell: {bodyCell} m, trail spacing per radius {spacingPerRadius} (0 = fixed)\n" + BuildReport(world, samples, scheduleSum / MeasuredTicks, waitSum / MeasuredTicks, pipeline);
             TestContext.WriteLine(report);
             Console.WriteLine(report);
-            WriteArtifact($"perf-editmode-body{bodyCell:0}m-large{largeRadius * 10:0}.txt", report);
+            WriteArtifact($"perf-editmode-body{bodyCell:0}m-spacing{spacingPerRadius * 100:0}.txt", report);
 
             Array.Sort(samples);
             Assert.Greater(samples[samples.Length / 2], 0.0);
@@ -180,6 +180,7 @@ namespace SnakeFoundation.Tests
             var points = new NativeArray<float2>(queries, Allocator.TempJob);
             var hits = new NativeArray<long>(1, Allocator.TempJob);
             using var blocks = new CellListGrid(reference.Dimensions, reference.CellSize, foodCount, foodCount) { Origin = reference.Origin };
+            blocks.MarkBuilt();
             using var linked = new LinkedCellGridReference(reference.Dimensions, reference.CellSize, foodCount, foodCount) { Origin = reference.Origin };
             report.AppendLine($"-- {label}: food {foodCount}, {queries} queries (half in the hot spot, half on food)");
             try
@@ -274,6 +275,8 @@ namespace SnakeFoundation.Tests
             for (int i = 0; i < pipeline.SystemCount; i++)
                 if (pipeline.GetSystem(i) is SnakeFoundation.Systems.ItemGridSystem items)
                     sb.AppendLine($"item grid: {items.FullRebuilds} full rebuilds, {items.IncrementalUpdates} incremental updates ({items.DirtyRows} rows) in {pipeline.Stats.TickCount} ticks");
+                else if (pipeline.GetSystem(i) is SnakeFoundation.Systems.BodyGridSystem body)
+                    sb.AppendLine($"body grid: {body.FullRebuilds} full rebuilds; last tick {body.LastResyncs} snakes resynced, {body.LastAdded} nodes added, {body.LastRemoved} removed, {w.Resource(SnakeKeys.BodyGrid).Count} entries");
             sb.AppendLine("per-system ms (serial profiling, includes scheduling):");
             var stats = pipeline.Stats;
             var order = new int[stats.SystemCount];

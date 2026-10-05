@@ -17,7 +17,7 @@ namespace SnakeFoundation
         public float BaseSpeed, BoostSpeed, TurnRate, TurnReferenceRadius, TurnFalloff;
         public float MinBoostMass, BoostDrainPerSecond, BoostDropMass;
         // Body
-        public float TrailSpacing, NodeSpacingFactor, StartMass, MinMass;
+        public float TrailSpacing, TrailSpacingPerRadius, NodeSpacingFactor, StartMass, MinMass;
         public GrowthCurve Growth;
         public int MaxTrailPoints;
         // Food
@@ -35,6 +35,31 @@ namespace SnakeFoundation
 
         public float FoodRadius(float value) => FoodBaseRadius + FoodRadiusPerSqrtValue * math.sqrt(math.max(value, 0f));
         public float NodeSpacing(float radius) => math.max(radius * NodeSpacingFactor, TrailSpacing);
+
+        /// <summary>
+        /// Trail point spacing for a body radius: <see cref="TrailSpacing"/> for thin snakes, wider for thick
+        /// ones (they cannot turn sharply, so fewer points describe their path as well). Quantised to 5 cm.
+        /// </summary>
+        public float TrailSpacingFor(float radius) =>
+            TrailSpacingPerRadius <= 0f ? TrailSpacing : math.max(TrailSpacing, math.round(radius * TrailSpacingPerRadius * 20f) / 20f);
+
+        /// <summary>Respace only when the ideal spacing drifted more than 20% (no flapping while mass hovers).</summary>
+        public bool NeedsRespace(float current, float radius)
+        {
+            float ideal = TrailSpacingFor(radius);
+            return ideal > current * 1.2f || ideal < current / 1.2f;
+        }
+
+        /// <summary>
+        /// Body collision node step in trail points: nodes sit on every k-th trail point (anchored to the
+        /// path, see BodyGridSystem). Keeps <paramref name="current"/> while it stays within ±0.6 of ideal.
+        /// </summary>
+        public int NodeStep(float radius, float trailSpacing, int current)
+        {
+            float ideal = NodeSpacing(radius) / math.max(trailSpacing, 1e-3f);
+            if (current > 0 && math.abs(ideal - current) < 0.6f) return current;
+            return math.max(1, (int)math.round(ideal));
+        }
     }
 
     public struct RegionDef
@@ -92,7 +117,7 @@ namespace SnakeFoundation
                 BaseSpeed = m.BaseSpeed, BoostSpeed = m.BoostSpeed, TurnRate = m.TurnRate,
                 TurnReferenceRadius = m.TurnReferenceRadius, TurnFalloff = m.TurnFalloff,
                 MinBoostMass = m.MinBoostMass, BoostDrainPerSecond = m.BoostDrainPerSecond, BoostDropMass = math.max(m.BoostDropMass, 0.1f),
-                TrailSpacing = math.max(b.TrailSpacing, 0.05f), NodeSpacingFactor = b.NodeSpacingFactor,
+                TrailSpacing = math.max(b.TrailSpacing, 0.05f), TrailSpacingPerRadius = math.max(b.TrailSpacingPerRadius, 0f), NodeSpacingFactor = b.NodeSpacingFactor,
                 StartMass = b.StartMass, MinMass = b.MinMass,
                 Growth = new GrowthCurve
                 {

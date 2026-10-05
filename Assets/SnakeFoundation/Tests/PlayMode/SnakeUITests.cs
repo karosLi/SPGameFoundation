@@ -86,7 +86,7 @@ namespace SnakeFoundation.Tests.PlayMode
             var config = world.Resource(SnakeKeys.Config);
             var trails = world.Column(SnakeKeys.Trail);
             var trail = trails[row];
-            SPF.L1.Body.TrailMath.Reset(ref trail, world.Resource(SnakeKeys.Bodies).Points, head, -heading, config.Settings.TrailSpacing, trail.Count);
+            SPF.L1.Body.TrailMath.Reset(ref trail, world.Resource(SnakeKeys.Bodies).Points, head, -heading, trail.Spacing, trail.Count);
             trails[row] = trail;
             world.Column(SnakeKeys.Head).Set(row, head);
             world.Column(SnakeKeys.PrevHead).Set(row, head);

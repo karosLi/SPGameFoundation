@@ -68,14 +68,14 @@ namespace SnakeFoundation.Systems
         static void DropBody(SimWorld world, SPF.L2.Elements.ChunkPopulation population, in SnakeSettings s, BodyStore bodies,
             TrailState trail, float2 head, float mass, float radius, ref Random random)
         {
-            float length = TrailMath.BodyLength(trail, head, s.TrailSpacing);
+            float length = TrailMath.BodyLength(trail, head);
             float totalValue = mass * s.DeathDropRatio / math.max(s.MassPerFoodValue, 1e-3f);
             int drops = math.clamp((int)(length / math.max(radius * 1.5f, 0.5f)), 1, s.MaxDropsPerDeath);
             float value = totalValue / drops;
             uint color = SnakeSpawner.RandomFoodColor(ref random);
             for (int i = 0; i < drops; i++)
             {
-                float2 p = TrailMath.SampleBehind(trail, bodies.Points, head, length * i / drops, s.TrailSpacing);
+                float2 p = TrailMath.SampleBehind(trail, bodies.Points, head, length * i / drops);
                 p += random.NextFloat2(-radius, radius) * 0.6f;
                 SnakeSpawner.SpawnFood(world, population, s, p, value, color);
             }

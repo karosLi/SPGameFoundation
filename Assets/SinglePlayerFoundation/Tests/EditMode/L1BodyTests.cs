@@ -18,8 +18,8 @@ namespace SPF.Tests.EditMode
 
             // Move right 5 units in small steps, then up 5 units.
             float2 head = float2.zero;
-            for (int i = 0; i < 50; i++) { head.x += 0.1f; TrailMath.Advance(ref trail, store.Points, head, Spacing, 40); }
-            for (int i = 0; i < 50; i++) { head.y += 0.1f; TrailMath.Advance(ref trail, store.Points, head, Spacing, 40); }
+            for (int i = 0; i < 50; i++) { head.x += 0.1f; TrailMath.Advance(ref trail, store.Points, head, 40); }
+            for (int i = 0; i < 50; i++) { head.y += 0.1f; TrailMath.Advance(ref trail, store.Points, head, 40); }
 
             for (int i = 1; i < trail.Count; i++)
             {
@@ -29,10 +29,10 @@ namespace SPF.Tests.EditMode
             }
 
             // 2.5 units behind the head the body is on the vertical leg; 7.5 behind on the horizontal leg.
-            float2 onVertical = TrailMath.SampleBehind(trail, store.Points, head, 2.5f, Spacing);
+            float2 onVertical = TrailMath.SampleBehind(trail, store.Points, head, 2.5f);
             Assert.AreEqual(5f, onVertical.x, 0.05f);
             Assert.AreEqual(2.5f, onVertical.y, 0.05f);
-            float2 onHorizontal = TrailMath.SampleBehind(trail, store.Points, head, 7.5f, Spacing);
+            float2 onHorizontal = TrailMath.SampleBehind(trail, store.Points, head, 7.5f);
             Assert.AreEqual(2.5f, onHorizontal.x, 0.1f);
             Assert.AreEqual(0f, onHorizontal.y, 0.1f);
         }
@@ -43,10 +43,10 @@ namespace SPF.Tests.EditMode
             using var store = new BodyStore(1024, 256);
             store.TryAllocate(16, out var trail);
             TrailMath.Reset(ref trail, store.Points, new float2(3, 3), new float2(0, -1), Spacing, 5);
-            float2 tail = TrailMath.SampleBehind(trail, store.Points, new float2(3, 3), 100f, Spacing);
+            float2 tail = TrailMath.SampleBehind(trail, store.Points, new float2(3, 3), 100f);
             Assert.AreEqual(3f, tail.x, 1e-4f);
             Assert.AreEqual(1f, tail.y, 1e-4f);
-            Assert.AreEqual(2f, TrailMath.BodyLength(trail, new float2(3, 3), Spacing), 1e-4f);
+            Assert.AreEqual(2f, TrailMath.BodyLength(trail, new float2(3, 3)), 1e-4f);
         }
 
         [Test]
@@ -56,16 +56,52 @@ namespace SPF.Tests.EditMode
             store.TryAllocate(16, out var trail);
             TrailMath.Reset(ref trail, store.Points, float2.zero, new float2(-1, 0), Spacing, 16);
             var before = new float2[16];
-            for (int i = 0; i < 16; i++) before[i] = TrailMath.SampleBehind(trail, store.Points, float2.zero, i * Spacing, Spacing);
+            for (int i = 0; i < 16; i++) before[i] = TrailMath.SampleBehind(trail, store.Points, float2.zero, i * Spacing);
             int oldStart = trail.Start;
 
             Assert.IsTrue(store.Resize(ref trail, 100));
             Assert.AreEqual(128, trail.Capacity);
             for (int i = 0; i < 16; i++)
-                Assert.AreEqual(before[i], TrailMath.SampleBehind(trail, store.Points, float2.zero, i * Spacing, Spacing));
+                Assert.AreEqual(before[i], TrailMath.SampleBehind(trail, store.Points, float2.zero, i * Spacing));
 
             store.TryAllocate(10, out var other);
             Assert.AreEqual(oldStart, other.Start, "the freed 16-point slab is reused");
+        }
+
+        [Test]
+        public void RespaceKeepsThePathAndTheBodyLength()
+        {
+            using var store = new BodyStore(4096, 1024);
+            store.TryAllocate(256, out var trail);
+            TrailMath.Reset(ref trail, store.Points, float2.zero, new float2(-1, 0), Spacing, 20);
+            // A curved path: an arc of radius 6.
+            float2 head = float2.zero;
+            for (int i = 1; i <= 200; i++)
+            {
+                float a = i * 0.01f;
+                head = new float2(math.sin(a), 1f - math.cos(a)) * 6f;
+                TrailMath.Advance(ref trail, store.Points, head, 60);
+            }
+            float length = TrailMath.BodyLength(trail, head);
+            var before = new float2[20];
+            for (int i = 0; i < before.Length; i++) before[i] = TrailMath.SampleBehind(trail, store.Points, head, i * 1.3f);
+            uint version = trail.Version;
+
+            Assert.IsTrue(store.Respace(ref trail, head, 1.25f, 64));
+            Assert.AreEqual(1.25f, trail.Spacing);
+            Assert.Greater(trail.Version, version, "mirrors must re-upload");
+            Assert.AreEqual(length, TrailMath.BodyLength(trail, head), 1.25f, "length kept up to one new spacing");
+            for (int i = 0; i < before.Length && i * 1.3f < length - 1.25f; i++)
+            {
+                float2 after = TrailMath.SampleBehind(trail, store.Points, head, i * 1.3f);
+                // Chords of a radius-6 arc with 1.25 spacing stay within ~3 cm of the original path.
+                Assert.AreEqual(0f, math.distance(before[i], after), 0.05f, $"sample {i}");
+            }
+            // Advancing continues with the new spacing.
+            head += new float2(0f, 3f);
+            TrailMath.Advance(ref trail, store.Points, head, 60);
+            float2 a0 = store.Points[trail.Slot(trail.Pushed - 1)], a1 = store.Points[trail.Slot(trail.Pushed - 2)];
+            Assert.AreEqual(1.25f, math.distance(a0, a1), 1e-3f);
         }
 
         [Test]

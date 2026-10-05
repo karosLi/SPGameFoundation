@@ -15,6 +15,7 @@ namespace SPF.Presentation
             Pushed = h.Newest + 1,
             Count = (int)h.Count,
             Last = points[(int)(h.TrailStart + (h.Newest & h.TrailMask))],
+            Spacing = h.Spacing,
         };
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -33,7 +34,7 @@ namespace SPF.Presentation
         {
             float headArc = math.lerp(h.ArcPrev, h.ArcCurr, alpha);
             float2 head = math.lerp(h.HeadPrev, h.HeadCurr, alpha);
-            return TrailMath.SampleAtArc(trail, points, head, headArc, distance, h.Spacing);
+            return TrailMath.SampleAtArc(trail, points, head, headArc, distance);
         }
     }
 }

@@ -28,6 +28,12 @@ namespace SPF.L1.Body
         public float2 Last;
 
         /// <summary>
+        /// Arc distance between consecutive points. Per trail, so thick bodies (which cannot turn sharply)
+        /// can use fewer, wider-spaced points; changing it rewrites the trail (see <see cref="BodyStore.Respace"/>).
+        /// </summary>
+        public float Spacing;
+
+        /// <summary>
         /// Bumped whenever existing points are rewritten or moved (reset, slab resize, teleport), so
         /// mirrors (e.g. a GPU copy) know to re-upload instead of appending new points.
         /// </summary>
@@ -49,8 +55,9 @@ namespace SPF.L1.Body
         /// Pushes points toward the head until the head is less than one spacing away from the newest
         /// point. Writes only inside this trail's slab, so trails of different chains can advance in parallel.
         /// </summary>
-        public static void Advance(ref TrailState trail, NativeArray<float2> points, float2 head, float spacing, int desiredCount)
+        public static void Advance(ref TrailState trail, NativeArray<float2> points, float2 head, int desiredCount)
         {
+            float spacing = trail.Spacing;
             float2 delta = head - trail.Last;
             float lengthSq = math.lengthsq(delta);
             float spacingSq = spacing * spacing;
@@ -78,6 +85,7 @@ namespace SPF.L1.Body
         public static void Reset(ref TrailState trail, NativeArray<float2> points, float2 head, float2 backDirection, float spacing, int count)
         {
             count = math.clamp(count, 1, trail.Capacity);
+            trail.Spacing = spacing;
             float2 back = math.normalizesafe(backDirection, new float2(-1f, 0f));
             // Oldest first so the newest point ends up closest to the head.
             for (int i = count - 1; i >= 0; i--)
@@ -92,21 +100,22 @@ namespace SPF.L1.Body
 
         /// <summary>Arc length of the body from the head to the oldest kept point.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float BodyLength(in TrailState trail, float2 head, float spacing) =>
-            math.length(head - trail.Last) + math.max(trail.Count - 1, 0) * spacing;
+        public static float BodyLength(in TrailState trail, float2 head) =>
+            math.length(head - trail.Last) + math.max(trail.Count - 1, 0) * trail.Spacing;
 
         /// <summary>Position at arc distance <paramref name="distance"/> behind the head.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float2 SampleBehind(in TrailState trail, NativeArray<float2> points, float2 head, float distance, float spacing) =>
-            SampleAtArc(trail, points, head, math.length(head - trail.Last), distance, spacing);
+        public static float2 SampleBehind(in TrailState trail, NativeArray<float2> points, float2 head, float distance) =>
+            SampleAtArc(trail, points, head, math.length(head - trail.Last), distance);
 
         /// <summary>
         /// General form used for interpolation: <paramref name="headArc"/> is the head's arc position
         /// relative to the newest point (the head gap for the current tick; can be negative for an
         /// interpolated head that lies before the newest point).
         /// </summary>
-        public static float2 SampleAtArc(in TrailState trail, NativeArray<float2> points, float2 head, float headArc, float distance, float spacing)
+        public static float2 SampleAtArc(in TrailState trail, NativeArray<float2> points, float2 head, float headArc, float distance)
         {
+            float spacing = trail.Spacing;
             float a = headArc - distance;
             if (a >= 0f)
                 return headArc > 1e-6f ? math.lerp(trail.Last, head, a / headArc) : head;
@@ -127,12 +136,12 @@ namespace SPF.L1.Body
         /// can interpolate between ticks: lerp(PrevArc, currentGap, alpha).
         /// </summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static float PreviousArc(uint pushedBefore, float gapBefore, uint pushedAfter, float spacing) =>
-            gapBefore - (pushedAfter - pushedBefore) * spacing;
+        public static float PreviousArc(uint pushedBefore, float gapBefore, in TrailState after) =>
+            gapBefore - (after.Pushed - pushedBefore) * after.Spacing;
 
         /// <summary>Number of body nodes (including the head) for a node spacing.</summary>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static int NodeCount(in TrailState trail, float2 head, float spacing, float nodeSpacing) =>
-            (int)(BodyLength(trail, head, spacing) / nodeSpacing) + 1;
+        public static int NodeCount(in TrailState trail, float2 head, float nodeSpacing) =>
+            (int)(BodyLength(trail, head) / nodeSpacing) + 1;
     }
 }

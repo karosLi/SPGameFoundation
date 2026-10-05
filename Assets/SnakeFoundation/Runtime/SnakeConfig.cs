@@ -54,7 +54,8 @@ namespace SnakeFoundation
         [Serializable]
         public sealed class BodySection
         {
-            [Tooltip("Distance between trail points")] public float TrailSpacing = 0.4f;
+            [Tooltip("Distance between trail points (thin snakes)")] public float TrailSpacing = 0.4f;
+            [Tooltip("Trail spacing grows with radius (spacing = max(TrailSpacing, radius x this)); 0 = fixed spacing")] public float TrailSpacingPerRadius = 0.25f;
             [Tooltip("Body node spacing as a fraction of radius")] public float NodeSpacingFactor = 0.55f;
             public float StartMass = 10f;
             public float MinMass = 6f;
@@ -145,8 +146,6 @@ namespace SnakeFoundation
             public float GridCellSize = 4f;
             [Tooltip("Body grid cell size (0 = GridCellSize). Larger cells: cheaper rebuild, more entries per query. 8 m measured 0.229 vs 0.270 ms per tick at 4 m (query cost unchanged)")]
             public float BodyGridCellSize = 8f;
-            [Tooltip("Body nodes with a larger radius go to a coarse second grid layer so one big snake does not widen every query (0 = single layer)")]
-            public float LargeBodyRadius = 0f;
             [Tooltip("Item grid cell size; the item grid covers the same window as the body grid with fewer, larger cells (items are small and static, eat / food-scan queries are wide)")]
             public float ItemGridCellSize = 8f;
             public float ChunkSize = 125f;

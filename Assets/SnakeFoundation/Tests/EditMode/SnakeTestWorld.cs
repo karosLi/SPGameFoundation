@@ -59,7 +59,7 @@ namespace SnakeFoundation.Tests
             var bodies = World.Resource(SnakeKeys.Bodies);
             var trails = World.Column(SnakeKeys.Trail);
             var trail = trails[row];
-            SPF.L1.Body.TrailMath.Reset(ref trail, bodies.Points, head, -heading, Runtime.Settings.TrailSpacing, trail.Count);
+            SPF.L1.Body.TrailMath.Reset(ref trail, bodies.Points, head, -heading, trail.Spacing, trail.Count);
             trails[row] = trail;
             World.Column(SnakeKeys.Head).Set(row, head);
             World.Column(SnakeKeys.PrevHead).Set(row, head);

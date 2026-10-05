@@ -65,8 +65,29 @@ namespace SPF.L1.Spatial
         public int KeyCapacity => m_KeySlot.Length;
         public float2 Size => (float2)Dimensions * CellSize;
 
-        /// <summary>Window origin. Changing it invalidates the contents: clear and re-insert everything.</summary>
+        /// <summary>
+        /// Window origin used by the next update. Changing it invalidates the contents: the owner clears
+        /// and re-inserts everything, then calls <see cref="MarkBuilt"/>.
+        /// </summary>
         public float2 Origin { get; set; }
+
+        /// <summary>
+        /// Origin the current contents were built for. Readers use it, so jobs that run between a window
+        /// move and the next update (e.g. AI on last tick's grid) still find what is stored.
+        /// </summary>
+        public float2 BuiltOrigin { get; private set; }
+
+        /// <summary>Records that the contents now match <see cref="Origin"/> (call when scheduling the update).</summary>
+        public void MarkBuilt() => BuiltOrigin = Origin;
+
+        /// <summary>Same re-centring rule as <see cref="SpatialGrid.Follow"/>. Returns true when the window moved.</summary>
+        public bool Follow(float2 focus, float2 regionMin, float2 regionMax)
+        {
+            var origin = SpatialGrid.FollowOrigin(Origin, Size, CellSize, focus, regionMin, regionMax);
+            bool moved = math.any(origin != Origin);
+            Origin = origin;
+            return moved;
+        }
 
         /// <summary>Entries currently stored (valid when no job is writing).</summary>
         public int Count => m_Stats[StatCount];
@@ -79,7 +100,7 @@ namespace SPF.L1.Spatial
             Origin = Origin, InvCellSize = 1f / CellSize, Dimensions = Dimensions, Capacity = Capacity,
         };
 
-        public CellListReader AsReader() => new CellListReader(m_CellHead, m_CellCount, m_Slots, m_BlockNext, m_Stats, Origin, CellSize, Dimensions);
+        public CellListReader AsReader() => new CellListReader(m_CellHead, m_CellCount, m_Slots, m_BlockNext, m_Stats, BuiltOrigin, CellSize, Dimensions);
 
         public void OnReset() => AsWriter().Clear();
 

@@ -99,6 +99,117 @@ namespace SnakeFoundation.Tests
                 }
         }
 
+        struct CollectBody : SPF.L1.Spatial.IGridVisitor
+        {
+            public System.Collections.Generic.List<(int owner, bool head, float2 position, float radius)> Entries;
+            public bool Visit(in SPF.L1.Spatial.GridEntry entry)
+            {
+                Entries.Add((entry.Owner, (entry.Data & SnakeFoundation.Systems.GridBits.HeadBit) != 0, entry.Position, entry.Radius));
+                return true;
+            }
+        }
+
+        static SnakeFoundation.Systems.BodyGridSystem BodyGridSystem(SnakeTestWorld t)
+        {
+            for (int i = 0; i < t.Session.Pipeline.SystemCount; i++)
+                if (t.Session.Pipeline.GetSystem(i) is SnakeFoundation.Systems.BodyGridSystem body)
+                    return body;
+            throw new AssertionException("no body grid system");
+        }
+
+        /// <summary>
+        /// The body grid is updated incrementally (nodes added at the head end, removed at the tail);
+        /// after spawns, deaths (swap-back moves), growth and respacing it must hold exactly one head entry
+        /// per active snake plus a node on every k-th kept trail point, at the trail point's position.
+        /// </summary>
+        [Test]
+        public void BodyGridHoldsExactlyTheAnchoredNodes()
+        {
+            using var t = new SnakeTestWorld(aiPerRegion: 120, foodPerChunk: 60, seed: 7);
+            t.StartPlayer();
+            var system = BodyGridSystem(t);
+            var s = t.Runtime.Settings;
+            long resyncs = 0, added = 0;
+            for (int round = 0; round < 8; round++)
+            {
+                t.Step(round == 0 ? 40 : 25);
+                resyncs += system.LastResyncs;
+                added += system.LastAdded;
+                var grid = t.World.Resource(SnakeKeys.BodyGrid);
+                var reader = grid.AsReader();
+                var visitor = new CollectBody { Entries = new System.Collections.Generic.List<(int, bool, float2, float)>() };
+                reader.QueryCells(reader.Origin, reader.Max, ref visitor);
+
+                var table = t.World.Table(SnakeKeys.Snake);
+                var heads = t.World.Column(SnakeKeys.Head);
+                var trails = t.World.Column(SnakeKeys.Trail);
+                var radii = t.World.Column(SnakeKeys.Radius);
+                var infos = t.World.Column(SnakeKeys.Info);
+                var points = t.World.Resource(SnakeKeys.Bodies).Points;
+                var expected = new System.Collections.Generic.List<(int, bool, float2)>();
+                for (int row = 0; row < table.Count; row++)
+                {
+                    var rec = system.Record(row);
+                    var info = infos[row];
+                    if (!rec.Active)
+                    {
+                        Assert.IsFalse(info.Region == t.Game.ActiveRegion && !info.Has(SnakeFlags.Dead) && reader.Covers(heads[row]),
+                            $"row {row}: an alive snake with its head in the window has nodes");
+                        continue;
+                    }
+                    var trail = trails[row];
+                    Assert.AreEqual(trail.Version, rec.Version, $"row {row}");
+                    Assert.AreEqual(trail.Start, rec.Start);
+                    Assert.GreaterOrEqual(rec.Radius, radii[row], "stored radius bounds the real one");
+                    Assert.LessOrEqual(math.abs(rec.Step * trail.Spacing - s.NodeSpacing(radii[row])), trail.Spacing * 0.6f + 1e-4f, "node step follows the radius");
+                    uint oldest = trail.Pushed - (uint)trail.Count;
+                    for (uint g = oldest; g < trail.Pushed; g++)
+                        if (g % (uint)rec.Step == 0)
+                            expected.Add((row, false, points[trail.Slot(g)]));
+                    expected.Add((row, true, heads[row]));
+                }
+                var actual = new System.Collections.Generic.List<(int, bool, float2)>();
+                foreach (var e in visitor.Entries)
+                {
+                    actual.Add((e.owner, e.head, e.position));
+                    Assert.AreEqual(system.Record(e.owner).Radius, e.radius, "entry radius is the stored band radius");
+                }
+                // Positions outside the window are not stored: compare only entries the grid can hold.
+                expected.RemoveAll(e => !reader.Covers(e.Item3));
+                System.Comparison<(int, bool, float2)> order = (a, b) =>
+                    a.Item1 != b.Item1 ? a.Item1.CompareTo(b.Item1) : a.Item2 != b.Item2 ? a.Item2.CompareTo(b.Item2) :
+                    a.Item3.x != b.Item3.x ? a.Item3.x.CompareTo(b.Item3.x) : a.Item3.y.CompareTo(b.Item3.y);
+                expected.Sort(order);
+                actual.Sort(order);
+                Assert.AreEqual(expected.Count, actual.Count, $"round {round}: entry count");
+                for (int i = 0; i < expected.Count; i++)
+                    Assert.AreEqual(expected[i], actual[i], $"round {round} entry {i}");
+            }
+            TestContext.WriteLine($"body grid: {system.FullRebuilds} full rebuilds; sampled ticks resynced {resyncs} snakes, added {added} nodes");
+        }
+
+        /// <summary>A snake that grows thick gets a wider trail spacing (fewer points per metre of body).</summary>
+        [Test]
+        public void TrailSpacingGrowsWithRadius()
+        {
+            using var t = new SnakeTestWorld(foodPerChunk: 0);
+            t.StartPlayer();
+            var player = t.Game.Player;
+            var s = t.Runtime.Settings;
+            int row = t.Row(player);
+            float thin = t.World.Column(SnakeKeys.Trail)[row].Spacing;
+            Assert.AreEqual(s.TrailSpacingFor(s.Growth.Radius(t.World.Column(SnakeKeys.Mass)[row])), thin, 1e-5f);
+
+            t.World.Column(SnakeKeys.Mass).Set(row, 4000f);
+            t.Step(3);
+            row = t.Row(player);
+            var trail = t.World.Column(SnakeKeys.Trail)[row];
+            float radius = s.Growth.Radius(t.World.Column(SnakeKeys.Mass)[row]);
+            Assert.Greater(trail.Spacing, thin, "respaced for the thicker body");
+            Assert.IsFalse(s.NeedsRespace(trail.Spacing, radius));
+            Assert.AreEqual(s.TrailSpacingFor(radius), trail.Spacing, 1e-5f);
+        }
+
         [Test]
         public void AISnakesMostlySurviveAndStayInsideTheRegion()
         {

@@ -18,7 +18,7 @@ namespace SPF.Tests.EditMode
             for (int i = 0; i < 30; i++)
             {
                 head += new float2(0.13f, 0.07f * math.sin(i * 0.3f));
-                TrailMath.Advance(ref trail, store.Points, head, 0.4f, 60);
+                TrailMath.Advance(ref trail, store.Points, head, 60);
             }
             var header = new ChainHeader
             {
@@ -35,7 +35,7 @@ namespace SPF.Tests.EditMode
             var fromHeader = ChainMath.ToTrail(header, store.Points);
             for (float s = 0f; s < 20f; s += 0.77f)
             {
-                float2 expected = TrailMath.SampleBehind(trail, store.Points, head, s, 0.4f);
+                float2 expected = TrailMath.SampleBehind(trail, store.Points, head, s);
                 float2 actual = ChainMath.Sample(header, fromHeader, store.Points, 1f, s);
                 Assert.AreEqual(expected.x, actual.x, 1e-4f);
                 Assert.AreEqual(expected.y, actual.y, 1e-4f);
@@ -52,12 +52,12 @@ namespace SPF.Tests.EditMode
             uint pushedBefore = trail.Pushed;
             float gapBefore = math.length(prevHead - trail.Last);
             float2 head = new float2(1.3f, 0f);
-            TrailMath.Advance(ref trail, store.Points, head, 0.5f, 20);
+            TrailMath.Advance(ref trail, store.Points, head, 20);
             var header = new ChainHeader
             {
                 HeadPrev = prevHead,
                 HeadCurr = head,
-                ArcPrev = TrailMath.PreviousArc(pushedBefore, gapBefore, trail.Pushed, 0.5f),
+                ArcPrev = TrailMath.PreviousArc(pushedBefore, gapBefore, trail),
                 ArcCurr = math.length(head - trail.Last),
                 TrailStart = (uint)trail.Start,
                 TrailMask = (uint)(trail.Capacity - 1),

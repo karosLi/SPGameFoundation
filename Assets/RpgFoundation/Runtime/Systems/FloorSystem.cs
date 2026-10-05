@@ -61,15 +61,8 @@ namespace RpgFoundation.Systems
             game.Profile.HealthFraction = world.Column(RpgKeys.Health)[row].Fraction;
         }
 
-        static void Clear(SimWorld world)
-        {
-            RpgSpawner.DestroyAll(world, RpgKeys.Actor);
-            RpgSpawner.DestroyAll(world, RpgKeys.Projectile);
-            RpgSpawner.DestroyAll(world, RpgKeys.Item);
-            world.Resource(RpgKeys.Hits).Clear();
-            world.Resource(RpgKeys.ProjectileRequests).Clear();
-            world.Resource(RpgKeys.Deaths).Clear();
-        }
+        // Actors (hero included: respawned from the profile), projectiles, items and pending events.
+        static void Clear(SimWorld world) => world.ClearLevel();
 
         void BuildFloor(SimWorld world, RpgRuntimeConfig config, RpgGameState game, uint sessionSeed)
         {

@@ -36,7 +36,7 @@ namespace RpgFoundation
             layout.Resource(RpgKeys.Config, RpgRuntimeConfig.Bake(Config));
             layout.Resource(RpgKeys.Game, new RpgGameState());
             layout.Resource(RpgKeys.Feedback, new EventQueue<FeedbackEvent>(events, saved: false));
-            layout.Resource(RpgKeys.Deaths, new EventQueue<DeathEvent>(Config.Capacity.Actors));
+            layout.Resource(RpgKeys.Deaths, new EventQueue<DeathEvent>(Config.Capacity.Actors), levelScoped: true);
         }
 
         public override void RegisterSystems(SystemRegistry registry) { }
@@ -65,17 +65,17 @@ namespace RpgFoundation
         public override void DeclareData(WorldLayout layout)
         {
             var cap = Config.Capacity;
-            layout.Table(RpgKeys.Actor, cap.Actors)
+            layout.Table(RpgKeys.Actor, cap.Actors).LevelScoped()
                 .Column(RpgKeys.Position).Column(RpgKeys.PrevPosition).Column(RpgKeys.Facing).Column(RpgKeys.MoveIntent)
                 .Column(RpgKeys.Info).Column(RpgKeys.Health).Column(RpgKeys.Mana).Column(RpgKeys.Loadout).Column(RpgKeys.BaseStats).Column(RpgKeys.Stats)
                 .Column(RpgKeys.Mods).Column(RpgKeys.Combat).Column(RpgKeys.Brain);
-            layout.Table(RpgKeys.Projectile, cap.Projectiles)
+            layout.Table(RpgKeys.Projectile, cap.Projectiles).LevelScoped()
                 .Column(RpgKeys.ProjectilePosition).Column(RpgKeys.ProjectilePrev).Column(RpgKeys.ProjectileInfo);
             var d = Config.Dungeon;
             var cells = (int2)math.ceil(new float2(d.Width, d.Height) * d.TileSize / cap.GridCellSize);
             layout.Resource(RpgKeys.ActorGrid, new SpatialGrid(cells, cap.GridCellSize, cap.Actors));
-            layout.Resource(RpgKeys.Hits, new EventQueue<HitEvent>(cap.EventQueue));
-            layout.Resource(RpgKeys.ProjectileRequests, new EventQueue<ProjectileRequest>(cap.Projectiles));
+            layout.Resource(RpgKeys.Hits, new EventQueue<HitEvent>(cap.EventQueue), levelScoped: true);
+            layout.Resource(RpgKeys.ProjectileRequests, new EventQueue<ProjectileRequest>(cap.Projectiles), levelScoped: true);
             layout.DestroyQueueCapacity = math.max(layout.DestroyQueueCapacity, cap.Actors + cap.Projectiles);
         }
 
@@ -93,7 +93,7 @@ namespace RpgFoundation
     public sealed class RpgRewardsModule : RpgModuleBase
     {
         public override void DeclareData(WorldLayout layout) =>
-            layout.Table(RpgKeys.Item, Config.Capacity.Items).Column(RpgKeys.ItemPosition).Column(RpgKeys.ItemInfo);
+            layout.Table(RpgKeys.Item, Config.Capacity.Items).LevelScoped().Column(RpgKeys.ItemPosition).Column(RpgKeys.ItemInfo);
 
         public override void RegisterSystems(SystemRegistry registry) => registry
             .Add(new RewardSystem())

@@ -35,9 +35,21 @@ namespace SPF.Runtime.World
             return created;
         }
 
-        /// <summary>Registers a world-owned resource. IDisposable resources are disposed with the world.</summary>
-        public void Resource<T>(ResourceKey<T> key, T resource) where T : class
+        internal readonly HashSet<int> LevelResources = new HashSet<int>();
+
+        /// <summary>
+        /// Registers a world-owned resource. IDisposable resources are disposed with the world.
+        /// <paramref name="levelScoped"/> resources (must be <see cref="IResettableResource"/>) are reset by
+        /// <see cref="SimWorld.ClearLevel"/>, together with level-scoped tables.
+        /// </summary>
+        public void Resource<T>(ResourceKey<T> key, T resource, bool levelScoped = false) where T : class
         {
+            if (levelScoped)
+            {
+                if (!(resource is IResettableResource))
+                    throw new ArgumentException($"Level-scoped resource {key} must implement IResettableResource.");
+                LevelResources.Add(key.Id);
+            }
             foreach (var entry in Resources)
             {
                 if (entry.key == key)
@@ -54,6 +66,7 @@ namespace SPF.Runtime.World
             public TableKey Key { get; }
             public int Capacity { get; internal set; }
             public bool TrackChanges { get; private set; }
+            public bool IsLevelScoped { get; private set; }
 
             internal TableSpec(TableKey key, int capacity)
             {
@@ -65,6 +78,16 @@ namespace SPF.Runtime.World
             public TableSpec TrackChangedRows()
             {
                 TrackChanges = true;
+                return this;
+            }
+
+            /// <summary>
+            /// Entities of this table belong to the current level (monsters, pickups, projectiles):
+            /// <see cref="SimWorld.ClearLevel"/> removes them all at once.
+            /// </summary>
+            public TableSpec LevelScoped()
+            {
+                IsLevelScoped = true;
                 return this;
             }
 

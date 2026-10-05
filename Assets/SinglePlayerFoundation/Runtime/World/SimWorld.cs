@@ -23,6 +23,8 @@ namespace SPF.Runtime.World
         readonly List<ISyncResource> m_SyncResources = new List<ISyncResource>();
         readonly List<IResettableResource> m_ResettableResources = new List<IResettableResource>();
         readonly DestroyQueue m_DestroyQueue;
+        readonly List<SimTable> m_LevelTables = new List<SimTable>();
+        readonly List<IResettableResource> m_LevelResources = new List<IResettableResource>();
 
         public EntityRegistry Registry { get; }
 
@@ -48,6 +50,7 @@ namespace SPF.Runtime.World
                 if (spec.TrackChanges)
                     table.EnableChangeTracking();
                 table.Guard = Guard;
+                if (spec.IsLevelScoped) m_LevelTables.Add(table);
                 m_Tables.Add(table);
                 m_TablesByKey.Add(spec.Key.Id, table);
                 totalCapacity += spec.Capacity;
@@ -57,7 +60,36 @@ namespace SPF.Runtime.World
             m_DestroyQueue = new DestroyQueue(layout.DestroyQueueCapacity);
             AddResource(DestroyQueueKey, m_DestroyQueue);
             foreach (var (key, resource) in layout.Resources)
+            {
                 AddResource(key, resource);
+                if (layout.LevelResources.Contains(key.Id))
+                    m_LevelResources.Add((IResettableResource)resource);
+            }
+        }
+
+        /// <summary>Incremented by every <see cref="ClearLevel"/> (presentation drops per-level caches).</summary>
+        public int LevelVersion { get; private set; }
+
+        /// <summary>
+        /// Ends the current level: destroys every entity of the level-scoped tables (their handles become
+        /// stale) and resets the level-scoped resources. Session-scoped data (the hero, progress, config)
+        /// is untouched. Main thread, ApplyCommands phase or between ticks. Returns the entities removed.
+        /// </summary>
+        public int ClearLevel()
+        {
+            int removed = 0;
+            foreach (var table in m_LevelTables)
+            {
+                var handles = table.Handles;
+                // Last row first: the same handle release order as destroying the rows one by one.
+                for (int row = table.Count - 1; row >= 0; row--)
+                    if (Registry.Release(handles[row])) removed++;
+                table.Clear();
+            }
+            for (int i = 0; i < m_LevelResources.Count; i++)
+                m_LevelResources[i].OnReset();
+            LevelVersion++;
+            return removed;
         }
 
         void AddResource(AccessKey key, object resource)

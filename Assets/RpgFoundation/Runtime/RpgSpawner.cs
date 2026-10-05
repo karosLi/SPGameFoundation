@@ -133,13 +133,5 @@ namespace RpgFoundation
             });
             return true;
         }
-
-        public static void DestroyAll(SimWorld world, TableKey key)
-        {
-            var table = world.Table(key);
-            var handles = table.Handles;
-            for (int row = table.Count - 1; row >= 0; row--)
-                world.DestroyEntity(handles[row]);
-        }
     }
 }

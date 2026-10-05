@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using SPF.Contracts;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
+using Unity.Jobs;
 
 namespace SPF.Runtime.World
 {
@@ -10,7 +12,7 @@ namespace SPF.Runtime.World
     /// swap-back so rows stay contiguous for jobs. Capacity is fixed at creation (no growth in a session).
     /// Structural changes (Add / RemoveAtSwapBack / Clear) are main-thread only, while no jobs run.
     /// </summary>
-    public sealed class SimTable : IDisposable
+    public sealed unsafe class SimTable : IDisposable
     {
         readonly Dictionary<int, IColumn> m_Columns = new Dictionary<int, IColumn>();
         readonly List<IColumn> m_ColumnList = new List<IColumn>();
@@ -34,13 +36,31 @@ namespace SPF.Runtime.World
         /// <summary>Entity handle of each row. Access is declared through the TableKey.</summary>
         public NativeArray<EntityHandle> Handles => m_Handles;
 
-        internal SimTable(TableKey key, int tableIndex, int capacity)
+        Column<byte> m_Dead;
+
+        internal SimTable(TableKey key, int tableIndex, int capacity, bool pooled = false)
         {
             Key = key;
             TableIndex = tableIndex;
             Capacity = capacity;
             m_Handles = new NativeArray<EntityHandle>(capacity, Allocator.Persistent);
+            if (pooled)
+            {
+                // The dead flags are an ordinary (hidden) column: they move, reset and snapshot with the rows.
+                m_Dead = new Column<byte>(capacity);
+                m_ColumnList.Add(m_Dead);
+            }
         }
+
+        /// <summary>
+        /// Pooled tables hold handle-free rows (bullets, particles, pickups): no registry slot, created with
+        /// <see cref="SimWorld.Spawn"/>, removed by setting <see cref="DeadFlags"/> (from jobs, declared as a
+        /// write of the table key) and compacted in order at the start of the next tick.
+        /// </summary>
+        public bool IsPooled => m_Dead != null;
+
+        /// <summary>Pooled tables: 1 = remove this row at the next compaction. Writable from parallel jobs (own row).</summary>
+        public NativeArray<byte> DeadFlags => m_Dead != null ? m_Dead.Data : throw new InvalidOperationException($"Table {Key} is not pooled.");
 
         /// <summary>
         /// Rows created, removed or moved since the last <see cref="ChangeLog.Clear"/>, when change tracking
@@ -137,6 +157,61 @@ namespace SPF.Runtime.World
             for (int i = 0; i < m_ColumnList.Count; i++)
                 m_ColumnList[i].Move(last, row);
             return m_Handles[row];
+        }
+
+        internal int AddPooled()
+        {
+            if (Count >= Capacity)
+                return -1;
+            int row = Count++;
+            Version++;
+            m_Handles[row] = EntityHandle.Null;
+            Mark(row);
+            for (int i = 0; i < m_ColumnList.Count; i++)
+                m_ColumnList[i].Reset(row);
+            return row;
+        }
+
+        NativeArray<ColumnRef> ColumnRefs(Allocator allocator)
+        {
+            var refs = new NativeArray<ColumnRef>(m_ColumnList.Count + 1, allocator);
+            for (int i = 0; i < m_ColumnList.Count; i++)
+                refs[i] = new ColumnRef { Pointer = m_ColumnList[i].Pointer, Size = m_ColumnList[i].ElementSize };
+            refs[m_ColumnList.Count] = new ColumnRef { Pointer = (byte*)m_Handles.GetUnsafePtr(), Size = sizeof(EntityHandle) };
+            return refs;
+        }
+
+        /// <summary>Pooled tables: drops dead rows, keeping the survivors' order. Returns the rows removed.</summary>
+        internal int Compact()
+        {
+            if (m_Dead == null || Count == 0) return 0;
+            var refs = ColumnRefs(Allocator.TempJob);
+            var result = new NativeArray<int>(1, Allocator.TempJob);
+            new CompactJob { Dead = m_Dead.Pointer, Columns = refs, Count = Count, Result = result }.Run();
+            int removed = Count - result[0];
+            refs.Dispose();
+            result.Dispose();
+            if (removed > 0)
+            {
+                Count -= removed;
+                Version++;
+                MarkAll();
+            }
+            return removed;
+        }
+
+        /// <summary>Reorders rows [0, Count): new row i holds old row order[i]. Returns the handle of each new row.</summary>
+        internal void Permute(NativeArray<int> order)
+        {
+            int maxSize = sizeof(EntityHandle);
+            for (int i = 0; i < m_ColumnList.Count; i++) maxSize = Math.Max(maxSize, m_ColumnList[i].ElementSize);
+            var refs = ColumnRefs(Allocator.TempJob);
+            var scratch = new NativeArray<byte>(maxSize * Math.Max(Count, 1), Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+            new GatherJob { Columns = refs, Order = order, Scratch = (byte*)scratch.GetUnsafePtr() }.Run();
+            refs.Dispose();
+            scratch.Dispose();
+            Version++;
+            MarkAll();
         }
 
         internal void Clear()

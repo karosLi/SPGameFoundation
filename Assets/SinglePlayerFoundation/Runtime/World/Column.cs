@@ -1,18 +1,22 @@
 using System;
 using Unity.Collections;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace SPF.Runtime.World
 {
     /// <summary>Untyped view of a table column, used for structural operations on the main thread.</summary>
-    internal interface IColumn : IDisposable
+    internal unsafe interface IColumn : IDisposable
     {
         void Move(int from, int to);
         void Reset(int index);
         void WriteSnapshot(System.IO.BinaryWriter writer, int count);
         int ReadSnapshot(System.IO.BinaryReader reader);
+        /// <summary>Raw storage for bulk Burst operations (compaction, reordering).</summary>
+        byte* Pointer { get; }
+        int ElementSize { get; }
     }
 
-    internal sealed class Column<T> : IColumn where T : unmanaged
+    internal sealed unsafe class Column<T> : IColumn where T : unmanaged
     {
         public NativeArray<T> Data;
 
@@ -25,6 +29,8 @@ namespace SPF.Runtime.World
         public void Reset(int index) => Data[index] = default;
         public void WriteSnapshot(System.IO.BinaryWriter writer, int count) => SPF.Contracts.NativeIO.Write(writer, Data, count);
         public int ReadSnapshot(System.IO.BinaryReader reader) => SPF.Contracts.NativeIO.Read(reader, Data);
+        public byte* Pointer => (byte*)Data.GetUnsafePtr();
+        public int ElementSize => sizeof(T);
 
         public void Dispose()
         {

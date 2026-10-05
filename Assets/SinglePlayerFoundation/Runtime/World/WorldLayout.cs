@@ -67,6 +67,14 @@ namespace SPF.Runtime.World
             public int Capacity { get; internal set; }
             public bool TrackChanges { get; private set; }
             public bool IsLevelScoped { get; private set; }
+            public bool IsPooled { get; private set; }
+
+            /// <summary>Handle-free rows removed by dead flags and compacted every tick (see <see cref="SimTable.IsPooled"/>).</summary>
+            public TableSpec Pooled()
+            {
+                IsPooled = true;
+                return this;
+            }
 
             internal TableSpec(TableKey key, int capacity)
             {

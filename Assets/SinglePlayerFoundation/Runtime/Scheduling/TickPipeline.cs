@@ -85,6 +85,7 @@ namespace SPF.Runtime.Scheduling
 
             s_PlaybackMarker.Begin();
             m_World.PlaybackDestroys();
+            m_World.CompactPools();
             s_PlaybackMarker.End();
 
             var context = new SimContext(m_World, time);

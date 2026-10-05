@@ -24,6 +24,7 @@ namespace SPF.Runtime.World
         readonly List<IResettableResource> m_ResettableResources = new List<IResettableResource>();
         readonly DestroyQueue m_DestroyQueue;
         readonly List<SimTable> m_LevelTables = new List<SimTable>();
+        readonly List<SimTable> m_PooledTables = new List<SimTable>();
         readonly List<IResettableResource> m_LevelResources = new List<IResettableResource>();
 
         public EntityRegistry Registry { get; }
@@ -44,7 +45,8 @@ namespace SPF.Runtime.World
             {
                 if (m_Tables.Count >= short.MaxValue)
                     throw new InvalidOperationException("Too many tables.");
-                var table = new SimTable(spec.Key, m_Tables.Count, spec.Capacity);
+                var table = new SimTable(spec.Key, m_Tables.Count, spec.Capacity, spec.IsPooled);
+                if (spec.IsPooled) m_PooledTables.Add(table);
                 foreach (var addColumn in spec.ColumnFactories)
                     addColumn(table);
                 if (spec.TrackChanges)
@@ -129,6 +131,8 @@ namespace SPF.Runtime.World
         {
             var table = Table(key);
             row = -1;
+            if (table.IsPooled)
+                throw new InvalidOperationException($"Table {key} is pooled: use Spawn.");
             if (table.Count >= table.Capacity)
             {
                 CreateFailures++;
@@ -142,6 +146,59 @@ namespace SPF.Runtime.World
             }
             row = table.Add(handle);
             return handle;
+        }
+
+        /// <summary>Appends a zeroed row to a pooled table (no handle). Returns -1 (and counts a failure) when full.</summary>
+        public int Spawn(TableKey key)
+        {
+            var table = Table(key);
+            if (!table.IsPooled)
+                throw new InvalidOperationException($"Table {key} is not pooled: use CreateEntity.");
+            int row = table.AddPooled();
+            if (row < 0) CreateFailures++;
+            return row;
+        }
+
+        /// <summary>Compacts every pooled table (start of the tick, before systems run).</summary>
+        internal void CompactPools()
+        {
+            for (int i = 0; i < m_PooledTables.Count; i++)
+                m_PooledTables[i].Compact();
+        }
+
+        /// <summary>
+        /// Reorders a table's rows by <paramref name="sortKeys"/> (one per row, ascending; ties keep the
+        /// current order), keeping handles valid. Sorting by a spatial key (e.g. <c>Morton.Encode</c> of the
+        /// grid cell) every few dozen ticks keeps neighbours close in memory, so the row lookups of spatial
+        /// queries and the per-row jobs stay cache friendly. Main thread, between ticks or in ApplyCommands.
+        /// </summary>
+        public void SortRows(TableKey key, NativeArray<uint> sortKeys)
+        {
+            var table = Table(key);
+            int n = table.Count;
+            if (n < 2) return;
+            if (sortKeys.Length < n) throw new ArgumentException("One sort key per row is needed.", nameof(sortKeys));
+            var packed = new NativeArray<ulong>(n, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+            for (int i = 0; i < n; i++) packed[i] = ((ulong)sortKeys[i] << 32) | (uint)i;
+            packed.Sort();
+            var order = new NativeArray<int>(n, Allocator.TempJob, NativeArrayOptions.UninitializedMemory);
+            bool changed = false;
+            for (int i = 0; i < n; i++)
+            {
+                order[i] = (int)(packed[i] & 0xFFFFFFFFu);
+                changed |= order[i] != i;
+            }
+            packed.Dispose();
+            if (changed)
+            {
+                table.Permute(order);
+                if (!table.IsPooled)
+                {
+                    var handles = table.Handles;
+                    for (int i = 0; i < n; i++) Registry.SetRow(handles[i], i);
+                }
+            }
+            order.Dispose();
         }
 
         public bool DestroyEntity(EntityHandle handle)

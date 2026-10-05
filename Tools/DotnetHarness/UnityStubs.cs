@@ -80,6 +80,13 @@ namespace Unity.Collections
 namespace Unity.Collections.LowLevel.Unsafe
 {
     [AttributeUsage(AttributeTargets.Field)] public sealed class NativeDisableContainerSafetyRestrictionAttribute : Attribute { }
+    public static unsafe class UnsafeUtility
+    {
+        public static void MemCpy(void* destination, void* source, long size) => Buffer.MemoryCopy(source, destination, size, size);
+        public static void MemMove(void* destination, void* source, long size) => Buffer.MemoryCopy(source, destination, size, size);
+        public static int SizeOf<T>() where T : struct => System.Runtime.CompilerServices.Unsafe.SizeOf<T>();
+    }
+    [AttributeUsage(AttributeTargets.Field)] public sealed class NativeDisableUnsafePtrRestrictionAttribute : Attribute { }
     public static class NativeArrayUnsafeUtility
     {
         public static unsafe void* GetUnsafePtr<T>(this NativeArray<T> a) where T : struct => a.m_Ptr;

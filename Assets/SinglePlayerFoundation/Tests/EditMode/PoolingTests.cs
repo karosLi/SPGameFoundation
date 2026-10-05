@@ -56,11 +56,13 @@ namespace SPF.Tests.EditMode
 
             string shown = b.ToString();
             Assert.AreSame(shown, b.ToStringIfChanged(shown), "same characters, same string");
-            Assert.That(() =>
+            TestDelegate format = () =>
             {
                 b.Clear().Append("Kills ").Append(123456).Append(" / ").Append(99.5f, 1);
                 b.ContentEquals(shown);
-            }, Is.Not.AllocatingGCMemory());
+            };
+            format();   // JIT first: Mono materialises the delegate's string literals on its first call
+            Assert.That(format, Is.Not.AllocatingGCMemory());
             Assert.AreEqual("42", NumberStrings.Get(42));
             Assert.AreSame(NumberStrings.Get(42), NumberStrings.Get(42));
         }
@@ -80,7 +82,9 @@ namespace SPF.Tests.EditMode
                 }
                 Assert.AreEqual("Score 3", label.text);
                 Assert.AreEqual(4, text.Commits, "one string per visible change, not per frame");
-                Assert.That(() => { text.Begin().Append("Score ").Append(3); text.Commit(); }, Is.Not.AllocatingGCMemory());
+                TestDelegate same = () => { text.Begin().Append("Score ").Append(3); text.Commit(); };
+                same();
+                Assert.That(same, Is.Not.AllocatingGCMemory());
             }
             finally { Object.DestroyImmediate(go); }
         }
@@ -114,10 +118,12 @@ namespace SPF.Tests.EditMode
                 label.MaxVisible = int.MaxValue;
 
                 // Counters every frame: no allocation once the buffer has grown.
-                Assert.That(() =>
+                TestDelegate counters = () =>
                 {
                     for (int i = 0; i < 100; i++) { label.Begin().Append("Kills ").Append(i * 37); label.Commit(); }
-                }, Is.Not.AllocatingGCMemory());
+                };
+                counters();
+                Assert.That(counters, Is.Not.AllocatingGCMemory());
 
                 // Wrap: a narrow box pushes the second word onto a lower line.
                 ((RectTransform)go.transform).sizeDelta = new Vector2(80, 400);

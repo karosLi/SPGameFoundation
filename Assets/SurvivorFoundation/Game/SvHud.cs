@@ -87,7 +87,8 @@ namespace SurvivorFoundation.Game
             StatsText.Begin().Append(seconds / 60, 2).Append(':').Append(seconds % 60, 2).Append("   Lv ").Append(state.Level).Append("   Kills ").Append(state.Kills)
                 .Append("\nEnemies ").Append(world.Table(SvKeys.Enemy).Count).Append("   Bullets ").Append(world.Table(SvKeys.Bullet).Count);
             StatsText.Commit();
-            if (state.Version == m_Version) return;
+            // Choice and death texts are only visible on those screens: don't rebuild them for every gem picked up.
+            if (state.Version == m_Version || state.Flow != SvFlow.LevelUp && state.Flow != SvFlow.Dead) return;
             m_Version = state.Version;
             for (int i = 0; i < ChoiceButtons.Length; i++)
             {

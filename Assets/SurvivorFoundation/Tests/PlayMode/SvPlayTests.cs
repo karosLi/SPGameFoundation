@@ -131,8 +131,8 @@ namespace SurvivorFoundation.Tests.PlayMode
             {
                 yield return null;
                 game.StartRun();
-                yield return null;
-                yield return null;
+                // Spawn only once the run has started (the start command clears the level when it is applied).
+                yield return UIDriver.WaitUntil(() => game.State.Flow == SvFlow.Playing, 5f);
                 game.Session.Sync();
                 var world = game.Session.World;
                 var runtime = world.Resource(SvKeys.Config);
@@ -187,6 +187,48 @@ namespace SurvivorFoundation.Tests.PlayMode
                 File.AppendAllText(Path.Combine(dir, "perf-survivor-render.txt"), report);
                 yield return Screenshot(game, $"survivor-stress-{(tier == RenderTier.GpuDriven ? "gpu" : "datatex")}.png");
                 Assert.Greater(bullets, 1000, "a bullet storm was drawn");
+            }
+            finally { Cleanup(game, config); }
+        }
+    
+        /// <summary>Diagnostics: GC per frame with parts of the game switched off one by one (report only).</summary>
+        [UnityTest]
+        public IEnumerator AllocationSources()
+        {
+            SkipWithoutTier(RenderTier.GpuDriven);
+            RenderCapabilities.Override = RenderTier.GpuDriven;
+            var config = SvConfig.CreateDefault();
+            config.Settings.SpawnPerSecond = 8f;
+            var game = SvGameBootstrap.Create(config, seed: 3, ui: true);
+            try
+            {
+                yield return null;
+                game.StartRun();
+                yield return UIDriver.WaitUntil(() => game.State.Flow == SvFlow.Playing, 5f);
+                game.AutoPlay = true;
+                yield return UIDriver.WaitSeconds(5f);
+                if (!game.Governor.GcCounterValid) Assert.Ignore("GC counter unavailable");
+                var report = new StringBuilder();
+                for (int stage = 0; stage < 4; stage++)
+                {
+                    if (stage == 1) game.Renderer.Feedback = null;               // sounds and HUD reactions
+                    if (stage == 2) game.Hud.enabled = false;                    // HUD texts and bars
+                    if (stage == 3) { game.AutoPlay = false; game.State.Hp = game.State.MaxHp = 1e9f; }   // the bot
+                    game.Governor.ResetGcStats();
+                    int levels = 0, level = game.State.Level;
+                    for (int f = 0; f < 300; f++)
+                    {
+                        yield return null;
+                        if (game.State.Level != level) { levels++; level = game.State.Level; }
+                        if (game.State.Flow == SvFlow.LevelUp && stage == 3) game.Choose(0);
+                    }
+                    string name = stage == 0 ? "everything" : stage == 1 ? "no feedback handlers" : stage == 2 ? "no feedback, no HUD" : "no feedback, no HUD, no bot";
+                    report.Append("survivor sources [").Append(name).Append("]: ").Append(game.Governor.GcFramesSinceReset).Append(" of ")
+                        .Append(game.Governor.FramesSinceReset).Append(" frames, ").Append(game.Governor.GcBytesSinceReset).Append(" bytes, ")
+                        .Append(levels).Append(" level-ups");
+                    GcReport.Write(report.ToString(), game.Governor.FramesSinceReset, game.Governor.GcFramesSinceReset, game.Governor.GcBytesSinceReset);
+                    report.Clear();
+                }
             }
             finally { Cleanup(game, config); }
         }

@@ -74,7 +74,7 @@ namespace StoryFoundation.Tests.PlayMode
                 yield return Shot(game, "story-en.png");
 
                 game.ToggleLanguage();
-                yield return null;
+                yield return UIDriver.WaitUntil(() => game.Dialogue.SpeakerText.ToString() != "Mira", 2f);
                 Assert.AreEqual("米拉", game.Dialogue.SpeakerText.ToString());
                 StringAssert.Contains("灯笼", game.Dialogue.BodyText.ToString());
                 yield return Shot(game, "story-zh.png");

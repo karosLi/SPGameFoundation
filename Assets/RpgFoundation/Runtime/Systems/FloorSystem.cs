@@ -140,7 +140,7 @@ namespace RpgFoundation.Systems
 
         public override void Declare(AccessDeclaration access) => access
             .Write(RpgKeys.MoveIntent).Write(RpgKeys.Facing).Write(RpgKeys.Combat).Write(RpgKeys.Health)
-            .Read(RpgKeys.Stats).Write(RpgKeys.Feedback);
+            .Read(RpgKeys.Stats).Read(RpgKeys.Loadout).Read(RpgKeys.Mana).Write(RpgKeys.Feedback);
 
         public override JobHandle OnTick(in SimContext context, JobHandle dependency)
         {
@@ -163,13 +163,20 @@ namespace RpgFoundation.Systems
             c.Action = ActorAction.None;
             if (playing)
             {
+                // Only a castable skill (unlocked, off cooldown, affordable) replaces the attack: tapping a
+                // locked or cooling-down skill while holding attack must not stop the swings.
+                var loadout = world.Column(RpgKeys.Loadout)[row];
+                var config = world.Resource(RpgKeys.Config);
+                float mana = world.Column(RpgKeys.Mana)[row].Current;
                 for (int slot = 0; slot < RpgButton.SkillSlots; slot++)
-                    if (input.WasPressed(RpgButton.Skill1 + slot))
-                    {
-                        c.Action = ActorAction.Skill;
-                        c.RequestSlot = (byte)slot;
-                        break;
-                    }
+                {
+                    if (!input.WasPressed(RpgButton.Skill1 + slot)) continue;
+                    byte id = loadout.Skill(slot);
+                    if (id == 0 || c.SkillCooldown[slot] > 0f || mana < config.Skills[id - 1].ManaCost) continue;
+                    c.Action = ActorAction.Skill;
+                    c.RequestSlot = (byte)slot;
+                    break;
+                }
                 if (c.Action == ActorAction.None && (input.IsHeld(RpgButton.Attack) || input.WasPressed(RpgButton.Attack)))
                     c.Action = ActorAction.Attack;
             }

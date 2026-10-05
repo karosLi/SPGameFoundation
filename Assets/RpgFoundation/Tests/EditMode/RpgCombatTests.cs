@@ -188,5 +188,20 @@ namespace RpgFoundation.Tests
             Assert.Greater(hpAtWarning, 0f);
             Assert.Less(t.World.Column(RpgKeys.Health)[t.HeroRow].Current, hp, "the hero standing in it is hurt");
         }
+
+        [Test]
+        public void UnavailableSkillsDoNotBlockTheHeldAttack()
+        {
+            using var t = Arena();
+            var slime = t.SpawnMonster(1, t.FreeSpotNearHero(0.95f));
+            float before = Health(t, slime);
+            // Hold attack and keep tapping a skill that is still locked at level 1.
+            for (int i = 0; i < 12; i++)
+            {
+                t.Input(new InputFrame { Held = 1u << RpgButton.Attack, Pressed = 1u << RpgButton.Skill3 });
+                t.Step();
+            }
+            Assert.IsTrue(t.Row(slime) < 0 || Health(t, slime) < before, "the swings went on");
+        }
     }
 }

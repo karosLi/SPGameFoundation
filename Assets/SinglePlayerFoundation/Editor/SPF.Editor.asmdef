@@ -1,0 +1,20 @@
+{
+    "name": "SPF.Editor",
+    "rootNamespace": "SPF.Editor",
+    "references": [
+        "SPF.Contracts",
+        "SPF.L1Simulation",
+        "Unity.Mathematics"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

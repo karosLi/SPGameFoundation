@@ -206,3 +206,35 @@ namespace PlatformerFoundation.Tests
         }
     }
 }
+
+namespace PlatformerFoundation.Tests
+{
+    public class PlLevelAssetTests
+    {
+        [Test]
+        public void DesignerLevelsReplaceTheBuiltInOnes()
+        {
+            var level = SPF.L1.Spatial.TileLevelAsset.Create(PlLevels.Legend, 2, new[]
+            {
+                "              G ",
+                " S   o  w    ###",
+                "################",
+            });
+            PlLevels.Overrides = new[] { level };
+            try
+            {
+                using var t = new PlTestWorld();
+                Assert.AreEqual(1, PlLevels.Count);
+                Assert.AreEqual(1, t.Game.CoinsInLevel);
+                Assert.AreEqual(1, t.World.Table(PlKeys.Walker).Count);
+                Assert.AreEqual(PlTile.Solid, t.World.Resource(PlKeys.Map)[new Unity.Mathematics.int2(0, 0)]);
+                Assert.AreEqual(1.5f, t.Game.Start.x, 1e-4f);
+            }
+            finally
+            {
+                PlLevels.Overrides = null;
+                UnityEngine.Object.DestroyImmediate(level);
+            }
+        }
+    }
+}

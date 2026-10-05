@@ -146,18 +146,16 @@ namespace PlatformerFoundation.Presentation
 
         void SetupNight(PlGameState game)
         {
-            int level = math.clamp(game.Level, 0, PlLevels.All.Length - 1);
-            Night = PlLevels.Night[level];
+            int level = math.clamp(game.Level, 0, PlLevels.Count - 1);
+            Night = PlLevels.IsNight(level);
             m_Tiles.SetLighting(Night ? m_Normals : null);
             m_Dynamic.SetLighting(Night ? m_Normals : null);
             if (Camera != null && Camera.Camera != null)
                 Camera.Camera.backgroundColor = Night ? new Color(0.05f, 0.06f, 0.14f) : new Color(0.45f, 0.7f, 0.95f);
             m_TorchCount = 0;
-            var rows = PlLevels.All[level];
-            for (int r = 0; r < rows.Length; r++)
-                for (int x = 0; x < rows[r].Length; x++)
-                    if (rows[r][x] == 't' && m_TorchCount < m_Torches.Length)
-                        m_Torches[m_TorchCount++] = new float2(x + 0.5f, rows.Length - 1 - r + 0.5f);
+            foreach (var marker in PlLevels.Asset(level).Markers)
+                if (marker.Symbol == 't' && m_TorchCount < m_Torches.Length)
+                    m_Torches[m_TorchCount++] = new float2(marker.Cell.x + 0.5f, marker.Cell.y + 0.5f);
         }
 
         /// <summary>Night lighting: the hero's lantern plus the torches nearest the camera (the shader takes eight).</summary>
@@ -211,9 +209,7 @@ namespace PlatformerFoundation.Presentation
 
         static float LevelWidth(PlGameState game)
         {
-            int width = 0;
-            foreach (var row in PlLevels.All[math.clamp(game.Level, 0, PlLevels.All.Length - 1)]) width = math.max(width, row.Length);
-            return width;
+            return PlLevels.Asset(math.clamp(game.Level, 0, PlLevels.Count - 1)).Width;
         }
 
         void BuildTiles(SPF.Runtime.World.SimWorld world)

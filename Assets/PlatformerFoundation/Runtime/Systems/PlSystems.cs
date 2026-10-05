@@ -32,7 +32,7 @@ namespace PlatformerFoundation.Systems
                         break;
                     case PlCommandKind.NextLevel:
                         if (game.Flow != PlFlow.LevelComplete) break;
-                        if (game.Level + 1 >= PlLevels.All.Length) { game.Flow = PlFlow.Won; game.Version++; break; }
+                        if (game.Level + 1 >= PlLevels.Count) { game.Flow = PlFlow.Won; game.Version++; break; }
                         Load(world, game, game.Level + 1);
                         break;
                     case PlCommandKind.Retry:
@@ -72,59 +72,60 @@ namespace PlatformerFoundation.Systems
         public static void Load(SimWorld world, PlGameState game, int level)
         {
             world.ClearLevel();
-            var rows = PlLevels.All[level];
+            var asset = PlLevels.Asset(level);
             var map = world.Resource(PlKeys.Map);
             var hazards = world.Resource(PlKeys.Hazards);
-            map.Fill(PlTile.Empty);
-            hazards.Fill(PlTile.Empty);
-            int height = math.min(rows.Length, map.Size.y);
+            asset.CopyTo(0, map);
+            asset.CopyTo(1, hazards);
             game.CoinsInLevel = 0;
-            for (int r = 0; r < height; r++)
+            // Markers spawn in reading order (top row first, then left to right) whatever order they were painted in,
+            // so entity rows - and with them the whole simulation - only depend on the level's content.
+            var markers = asset.Markers.ToArray();
+            System.Array.Sort(markers, (a, b) => a.Cell.y != b.Cell.y ? b.Cell.y.CompareTo(a.Cell.y) : a.Cell.x.CompareTo(b.Cell.x));
+            foreach (var marker in markers)
             {
-                string row = rows[r];
-                int y = height - 1 - r;
-                for (int x = 0; x < math.min(row.Length, map.Size.x); x++)
+                int x = marker.Cell.x, y = marker.Cell.y;
+                if (x >= map.Size.x || y >= map.Size.y) continue;
+                var cell = new int2(x, y);
+                float2 centre = new float2(x + 0.5f, y + 0.5f);
+                switch (marker.Symbol)
                 {
-                    var cell = new int2(x, y);
-                    float2 centre = new float2(x + 0.5f, y + 0.5f);
-                    switch (row[x])
+                    case 'G':
+                        hazards[cell] = PlTile.Goal;
+                        if (y + 1 < map.Size.y) hazards[cell + new int2(0, 1)] = PlTile.Goal;
+                        game.GoalPosition = centre;
+                        break;
+                    case 'S': game.Start = new float2(x + 0.5f, y + PlGameState.HeroHalf.y); break;
+                    case 'o':
+                        world.Column(PlKeys.CoinPosition).Set(world.Spawn(PlKeys.Coin), centre);
+                        game.CoinsInLevel++;
+                        break;
+                    case 'w':
                     {
-                        case '#': map[cell] = PlTile.Solid; break;
-                        case '=': map[cell] = PlTile.OneWay; break;
-                        case '^': hazards[cell] = PlTile.Spikes; break;
-                        case 'G': hazards[cell] = PlTile.Goal; hazards[cell + new int2(0, 1)] = PlTile.Goal; game.GoalPosition = centre; break;
-                        case 'S': game.Start = new float2(x + 0.5f, y + PlGameState.HeroHalf.y); break;
-                        case 'o':
-                            world.Column(PlKeys.CoinPosition).Set(world.Spawn(PlKeys.Coin), centre);
-                            game.CoinsInLevel++;
-                            break;
-                        case 'w':
+                        var h = world.CreateEntity(PlKeys.Walker, out int row0);
+                        if (h.IsNull) break;
+                        var half = new float2(0.4f, 0.4f);
+                        var p = new float2(x + 0.5f, y + half.y);
+                        world.Column(PlKeys.WalkerPosition).Set(row0, p);
+                        world.Column(PlKeys.WalkerPrev).Set(row0, p);
+                        world.Column(PlKeys.WalkerInfo).Set(row0, new WalkerInfo { Dir = -1f, Speed = 1.6f, Half = half });
+                        break;
+                    }
+                    case '-':
+                    case '|':
+                    {
+                        var h = world.CreateEntity(PlKeys.Platform, out int row0);
+                        if (h.IsNull) break;
+                        var info = new PlatformInfo
                         {
-                            var h = world.CreateEntity(PlKeys.Walker, out int row0);
-                            if (h.IsNull) break;
-                            var half = new float2(0.4f, 0.4f);
-                            var p = new float2(x + 0.5f, y + half.y);
-                            world.Column(PlKeys.WalkerPosition).Set(row0, p);
-                            world.Column(PlKeys.WalkerPrev).Set(row0, p);
-                            world.Column(PlKeys.WalkerInfo).Set(row0, new WalkerInfo { Dir = -1f, Speed = 1.6f, Half = half });
-                            break;
-                        }
-                        case '-':
-                        case '|':
-                        {
-                            var h = world.CreateEntity(PlKeys.Platform, out int row0);
-                            if (h.IsNull) break;
-                            var info = new PlatformInfo
-                            {
-                                Origin = centre, Half = new float2(1.5f, 0.25f), Period = 4f, Phase = x * 0.37f,
-                                Travel = row[x] == '-' ? new float2(4f, 0f) : new float2(0f, 3f),
-                            };
-                            world.Column(PlKeys.PlatformInfo).Set(row0, info);
-                            var p = PlatformSystem.PositionAt(info, 0f);
-                            world.Column(PlKeys.PlatformPosition).Set(row0, p);
-                            world.Column(PlKeys.PlatformPrev).Set(row0, p);
-                            break;
-                        }
+                            Origin = centre, Half = new float2(1.5f, 0.25f), Period = 4f, Phase = x * 0.37f,
+                            Travel = marker.Symbol == '-' ? new float2(4f, 0f) : new float2(0f, 3f),
+                        };
+                        world.Column(PlKeys.PlatformInfo).Set(row0, info);
+                        var p = PlatformSystem.PositionAt(info, 0f);
+                        world.Column(PlKeys.PlatformPosition).Set(row0, p);
+                        world.Column(PlKeys.PlatformPrev).Set(row0, p);
+                        break;
                     }
                 }
             }

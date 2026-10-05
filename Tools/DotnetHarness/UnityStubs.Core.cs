@@ -328,6 +328,7 @@ namespace UnityEngine
         public float r, g, b, a;
         public Color(float r, float g, float b, float a = 1f) { this.r = r; this.g = g; this.b = b; this.a = a; }
         public static Color white => new Color(1, 1, 1);
+        public static Color magenta => new Color(1, 0, 1);
         public static Color black => new Color(0, 0, 0);
         public static Color clear => new Color(0, 0, 0, 0);
         public static Color cyan => new Color(0, 1, 1);
@@ -444,7 +445,7 @@ namespace UnityEngine
     public class GUIStyle { public GUIStyle() { } public GUIStyle(GUIStyle o) { } public TextAnchor alignment; public int fontSize; public bool richText; public GUIStyleState normal = new GUIStyleState(); public Vector2 CalcSize(GUIContent c) => default; }
     public class GUISkin { public GUIStyle box => new GUIStyle(); public GUIStyle label => new GUIStyle(); }
     public class GUIContent { public GUIContent(string t) { text = t; } public string text; }
-    public static class GUI { public static GUISkin skin => new GUISkin(); public static void Box(Rect r, GUIContent c, GUIStyle s) { } public static void Label(Rect r, string t) { } public static void Box(Rect r, string t, GUIStyle s) { } }
+    public static class GUI { public static Color backgroundColor { get; set; } = Color.white; public static GUISkin skin => new GUISkin(); public static void Box(Rect r, GUIContent c, GUIStyle s) { } public static void Label(Rect r, string t) { } public static void Box(Rect r, string t, GUIStyle s) { } }
 
     public enum ScreenOrientation { Portrait, LandscapeLeft, LandscapeRight, AutoRotation }
     public enum BatteryStatus { Unknown, Charging, Discharging, NotCharging, Full }

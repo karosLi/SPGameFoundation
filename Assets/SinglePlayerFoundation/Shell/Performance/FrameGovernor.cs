@@ -25,13 +25,25 @@ namespace SPF.Shell.Performance
         public int MaxLevel = 3;
 
         float m_Slow, m_Fast;
+        int m_Floor;
+
+        /// <summary>Lowest quality step allowed right now (device hot or saving power); raising it degrades at once.</summary>
+        public int Floor
+        {
+            get => m_Floor;
+            set
+            {
+                m_Floor = Math.Max(0, Math.Min(MaxLevel, value));
+                if (Level < m_Floor) Level = m_Floor;
+            }
+        }
 
         public float AverageMs { get; private set; } = 1000f / 60f;
         public int Level { get; private set; }
 
         public void Reset(int level = 0)
         {
-            Level = Math.Max(0, Math.Min(MaxLevel, level));
+            Level = Math.Max(m_Floor, Math.Min(MaxLevel, level));
             AverageMs = TargetMs;
             m_Slow = m_Fast = 0f;
         }
@@ -53,7 +65,7 @@ namespace SPF.Shell.Performance
                 AverageMs = TargetMs;   // give the cheaper level a fresh measurement
                 return true;
             }
-            if (m_Fast > RecoverAfterSeconds && Level > 0)
+            if (m_Fast > RecoverAfterSeconds && Level > m_Floor)
             {
                 Level--;
                 m_Fast = 0f;
@@ -112,6 +124,7 @@ namespace SPF.Shell.Performance
 
         public readonly FrameBudget Budget = new FrameBudget();
         public readonly IdleThrottle Idle = new IdleThrottle();
+        public readonly ThermalMonitor Thermal = new ThermalMonitor();
 
         /// <summary>Raised with the new level (0 = full quality).</summary>
         public event Action<int> LevelChanged;
@@ -124,6 +137,16 @@ namespace SPF.Shell.Performance
         public int GcFramesSinceReset { get; private set; }
         public int FramesSinceReset { get; private set; }
         public bool GcCounterValid => m_Gc.Valid;
+
+        /// <summary>The frame rate actually requested while active (the device state may cap it).</summary>
+        public int EffectiveFrameRate
+        {
+            get
+            {
+                int cap = Thermal.State.FrameRateCap;
+                return cap > 0 ? Math.Min(ActiveFrameRate, cap) : ActiveFrameRate;
+            }
+        }
 
         ProfilerRecorder m_Gc;
         int m_AwakeFrame = -1;
@@ -146,8 +169,23 @@ namespace SPF.Shell.Performance
         {
             ActiveFrameRate = active;
             IdleFrameRate = idle;
+            ApplyFrameRate();
+        }
+
+        void ApplyFrameRate()
+        {
+            int active = EffectiveFrameRate;
             Budget.TargetMs = 1000f / Math.Max(1, active);
-            Application.targetFrameRate = Idle.Idle && ThrottleWhenIdle ? idle : active;
+            Application.targetFrameRate = Idle.Idle && ThrottleWhenIdle ? Math.Min(IdleFrameRate, active) : active;
+        }
+
+        /// <summary>Re-applies the thermal / power policy (called when the monitor reports a change).</summary>
+        public void ApplyDeviceState()
+        {
+            int before = Budget.Level;
+            Budget.Floor = Thermal.State.QualityFloor(Budget.MaxLevel);
+            ApplyFrameRate();
+            if (Budget.Level != before) Apply();
         }
 
         public void SetLevel(int level)
@@ -160,10 +198,9 @@ namespace SPF.Shell.Performance
         {
             m_Gc = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC Allocated In Frame");
             Budget.MaxLevel = Math.Max(0, RenderScales.Length - 1);
-            Budget.TargetMs = 1000f / Math.Max(1, ActiveFrameRate);
             Budget.Reset(Budget.Level);
             Idle.Wake();
-            Application.targetFrameRate = ActiveFrameRate;
+            ApplyFrameRate();
         }
 
         void OnDisable()
@@ -188,11 +225,12 @@ namespace SPF.Shell.Performance
             }
             FramesSinceReset++;
 
+            if (Thermal.Poll(Time.unscaledTime)) ApplyDeviceState();
+
             if (ThrottleWhenIdle)
             {
                 bool activity = m_AwakeFrame >= Time.frameCount - 1 || AnyInput();
-                if (Idle.Feed(dt, activity))
-                    Application.targetFrameRate = Idle.Idle ? IdleFrameRate : ActiveFrameRate;
+                if (Idle.Feed(dt, activity)) ApplyFrameRate();
             }
 
             // Idle frames are slow on purpose; they say nothing about the device's headroom.

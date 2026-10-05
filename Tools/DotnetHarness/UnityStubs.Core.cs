@@ -446,8 +446,11 @@ namespace UnityEngine
     public static class GUI { public static GUISkin skin => new GUISkin(); public static void Box(Rect r, GUIContent c, GUIStyle s) { } public static void Label(Rect r, string t) { } public static void Box(Rect r, string t, GUIStyle s) { } }
 
     public enum ScreenOrientation { Portrait, LandscapeLeft, LandscapeRight, AutoRotation }
+    public enum BatteryStatus { Unknown, Charging, Discharging, NotCharging, Full }
     public static class SystemInfo
     {
+        public static float batteryLevel => -1f;
+        public static BatteryStatus batteryStatus => BatteryStatus.Unknown;
         public static bool supportsComputeShaders => true;
         public static int maxComputeBufferInputsVertex => 8;
         public static bool supportsInstancing => true;

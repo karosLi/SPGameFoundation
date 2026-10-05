@@ -70,6 +70,10 @@ namespace SPF.L1.Spatial
         }
     }
 
+    /// <summary>Sides a moving box touched (see <see cref="TileMapView.MoveBox"/>).</summary>
+    [System.Flags]
+    public enum BoxContacts : byte { None = 0, Left = 1, Right = 2, Ground = 4, Ceiling = 8 }
+
     /// <summary>Read-only job view of a <see cref="TileMap"/>. Outside the map counts as solid.</summary>
     public struct TileMapView
     {
@@ -183,5 +187,103 @@ namespace SPF.L1.Spatial
             }
             return true;
         }
-    }
+    
+        // ---- Axis-aligned boxes (platformers, top-down games with square bodies) ----
+
+        /// <summary>
+        /// Moves an axis-aligned box (centre, half extents) by <paramref name="delta"/>: first along x, then y,
+        /// each sweep stopping flush against the first blocking tile column / row it would enter, so the box
+        /// slides along walls and floors and never tunnels at any speed. Tiles equal to
+        /// <paramref name="oneWay"/> (0 = none) are platforms that only block a box falling onto them from
+        /// above (jump through from below, stand on top). Returns the new centre and what was hit.
+        /// </summary>
+        public float2 MoveBox(float2 center, float2 half, float2 delta, byte oneWay, out BoxContacts contacts)
+        {
+            contacts = BoxContacts.None;
+            const float Skin = 1e-4f;
+            // X
+            if (delta.x != 0f)
+            {
+                int y0 = Row(center.y - half.y + Skin), y1 = Row(center.y + half.y - Skin);
+                if (delta.x > 0f)
+                {
+                    int from = Col(center.x + half.x - Skin) + 1, to = Col(center.x + half.x + delta.x);
+                    for (int x = from; x <= to; x++)
+                        if (ColumnBlocks(x, y0, y1, oneWay)) { delta.x = math.max(0f, Origin.x + x * TileSize - (center.x + half.x)); contacts |= BoxContacts.Right; break; }
+                }
+                else
+                {
+                    int from = Col(center.x - half.x + Skin) - 1, to = Col(center.x - half.x + delta.x);
+                    for (int x = from; x >= to; x--)
+                        if (ColumnBlocks(x, y0, y1, oneWay)) { delta.x = math.min(0f, Origin.x + (x + 1) * TileSize - (center.x - half.x)); contacts |= BoxContacts.Left; break; }
+                }
+                center.x += delta.x;
+            }
+            // Y
+            if (delta.y != 0f)
+            {
+                int x0 = Col(center.x - half.x + Skin), x1 = Col(center.x + half.x - Skin);
+                if (delta.y > 0f)
+                {
+                    int from = Row(center.y + half.y - Skin) + 1, to = Row(center.y + half.y + delta.y);
+                    for (int y = from; y <= to; y++)
+                        if (RowBlocks(y, x0, x1, oneWay)) { delta.y = math.max(0f, Origin.y + y * TileSize - (center.y + half.y)); contacts |= BoxContacts.Ceiling; break; }
+                }
+                else
+                {
+                    // One-way platforms block only rows whose top is at or below the box's bottom before the move.
+                    int from = Row(center.y - half.y + Skin) - 1, to = Row(center.y - half.y + delta.y);
+                    for (int y = from; y >= to; y--)
+                        if (RowBlocks(y, x0, x1, 0)) { delta.y = math.min(0f, Origin.y + (y + 1) * TileSize - (center.y - half.y)); contacts |= BoxContacts.Ground; break; }
+                }
+                center.y += delta.y;
+            }
+            return center;
+        }
+
+        /// <summary>True when the box overlaps any tile equal to <paramref name="value"/> (hazards, pickups, goals).</summary>
+        public bool BoxTouches(float2 center, float2 half, byte value)
+        {
+            int2 a = CellOf(center - half + 1e-4f), b = CellOf(center + half - 1e-4f);
+            for (int y = a.y; y <= b.y; y++)
+                for (int x = a.x; x <= b.x; x++)
+                    if (InBounds(new int2(x, y)) && m_Tiles[y * Size.x + x] == value) return true;
+            return false;
+        }
+
+        /// <summary>True when a solid (or one-way) tile is right under the box (ground probe).</summary>
+        public bool BoxGrounded(float2 center, float2 half, byte oneWay)
+        {
+            MoveBox(center, half, new float2(0f, -0.01f), oneWay, out var contacts);
+            return (contacts & BoxContacts.Ground) != 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        int Col(float x) => (int)math.floor((x - Origin.x) * m_InvTile);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        int Row(float y) => (int)math.floor((y - Origin.y) * m_InvTile);
+
+        /// <summary>Any blocking tile in the column (one-way platforms never block sideways).</summary>
+        bool ColumnBlocks(int x, int y0, int y1, byte oneWay)
+        {
+            for (int y = y0; y <= y1; y++)
+            {
+                byte t = Get(new int2(x, y));
+                if (t != 0 && t != oneWay) return true;
+            }
+            return false;
+        }
+
+        /// <summary>Any blocking tile in the row; tiles equal to <paramref name="passThrough"/> (one-way, when rising) do not block.</summary>
+        bool RowBlocks(int y, int x0, int x1, byte passThrough)
+        {
+            for (int x = x0; x <= x1; x++)
+            {
+                byte t = Get(new int2(x, y));
+                if (t != 0 && t != passThrough) return true;
+            }
+            return false;
+        }
+}
 }

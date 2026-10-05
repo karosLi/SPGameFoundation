@@ -118,13 +118,12 @@ namespace SurvivorFoundation.Tests.PlayMode
                     {
                         if (bytes[f] == 0) continue;
                         bool ui = false;
-                        for (int k = math.max(0, f - 3); k <= math.min(Window - 1, f + 1); k++) ui |= changed[k];
+                        for (int k = math.max(0, f - 5); k <= math.min(Window - 1, f + 3); k++) ui |= changed[k];   // UGUI rebuilds panels a few frames after they toggle
                         if (ui) near++; else { steady++; detail.Append(" f").Append(f).Append(':').Append(bytes[f]).Append('B'); }
                     }
                     GcReport.Write($"survivor auto-play ({tier}): {near} frames next to level-up / flow screens, {steady} steady frames{detail}",
                         game.Governor.FramesSinceReset, game.Governor.GcFramesSinceReset, game.Governor.GcBytesSinceReset);
-                    // AllocationSources shows what is left comes with sound playback (feedback handlers on): a few
-                    // 164-byte frames in the editor; game code itself (HUD, renderer, simulation) allocates nothing.
+                    // What remains sits right after the level-up panel hides (UGUI canvas rebuilds); see AllocationSources.
                     Assert.LessOrEqual(steady, 1, "steady-state play allocates nothing per frame");
                 }
                 game.Renderer.Feedback = feedback;

@@ -1,0 +1,174 @@
+using BrawlerFoundation.Presentation;
+using SPF.Contracts;
+using SPF.Presentation.Audio;
+using SPF.Runtime.Composition;
+using SPF.Runtime.Session;
+using SPF.Shell.CameraRig;
+using SPF.Shell.Input;
+using SPF.Shell.Performance;
+using SPF.Shell.UI;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace BrawlerFoundation.Game
+{
+    /// <summary>
+    /// The brawler: a stick on the left, PUNCH and KICK on the right (J / K and the arrows on a keyboard), three waves,
+    /// skeletal fighters, an allocation-free HUD.
+    /// </summary>
+    [DisallowMultipleComponent]
+    public sealed class BwGameBootstrap : MonoBehaviour
+    {
+        [SerializeField] bool m_CreateUI = true;
+
+        ModeDefinition m_Mode;
+        GameplayModuleAsset m_Module;
+        SoundPlayer m_Sound;
+        int m_Swing, m_Hit, m_Ko, m_Wave, m_Lose;
+        BwFlow m_Flow = (BwFlow)255;
+
+        public SessionHost Host { get; private set; }
+        public FrameGovernor Governor { get; private set; }
+        public FollowCamera2D CameraRig { get; private set; }
+        public BwRenderer Renderer { get; private set; }
+        public InputRouter InputRouter { get; private set; }
+        public SimSession Session => Host != null ? Host.Session : null;
+        public BwGameState State => Session?.World.Resource(BwKeys.Game);
+
+        public BufferText StatsText { get; private set; }
+        public RectTransform MenuPanel { get; private set; }
+        public RectTransform EndPanel { get; private set; }
+        public Text EndText { get; private set; }
+        public Button StartButton { get; private set; }
+        public Button AgainButton { get; private set; }
+        public TapButton PunchButton { get; private set; }
+        public TapButton KickButton { get; private set; }
+        public VirtualJoystick Joystick { get; private set; }
+
+        /// <summary>Scripted input for tests and demos (replaces the stick; buttons add up).</summary>
+        public System.Func<InputFrame> Script { get; set; }
+
+        public static BwGameBootstrap Create(bool ui = true)
+        {
+            var go = new GameObject("BrawlerGame");
+            go.SetActive(false);
+            var game = go.AddComponent<BwGameBootstrap>();
+            game.m_CreateUI = ui;
+            go.SetActive(true);
+            return game;
+        }
+
+        void Awake()
+        {
+            Governor = gameObject.AddComponent<FrameGovernor>();
+            Governor.SetFrameRates(60, 30);
+            m_Mode = BwMode.Create(out m_Module);
+            var sim = new GameObject("Simulation");
+            sim.transform.SetParent(transform, false);
+            Host = sim.AddComponent<SessionHost>();
+            Host.Initialize(m_Mode, 1);
+
+            var cameraObject = UnityEngine.Camera.main != null ? UnityEngine.Camera.main.gameObject : new GameObject("Main Camera", typeof(UnityEngine.Camera));
+            cameraObject.tag = "MainCamera";
+            var camera = cameraObject.GetComponent<UnityEngine.Camera>();
+            camera.clearFlags = CameraClearFlags.SolidColor;
+            camera.backgroundColor = new Color(0.2f, 0.18f, 0.24f);
+            CameraRig = cameraObject.GetComponent<FollowCamera2D>();
+            if (CameraRig == null) CameraRig = cameraObject.AddComponent<FollowCamera2D>();
+            CameraRig.Follow = 20f;
+            if (cameraObject.GetComponent<AudioListener>() == null) cameraObject.AddComponent<AudioListener>();
+
+            var view = new GameObject("BwRenderer");
+            view.transform.SetParent(transform, false);
+            Renderer = view.AddComponent<BwRenderer>();
+            Renderer.Host = Host;
+            Renderer.Camera = CameraRig;
+            Renderer.Feedback += OnFeedback;
+
+            m_Sound = SoundPlayer.Create(transform, 8);
+            m_Swing = m_Sound.Register("swing", SfxDef.Create(SfxWave.Noise, 1500f, 600f, 0.08f, 0.25f).WithNoise(1f, 0.2f), maxVoices: 2);
+            m_Hit = m_Sound.Register("hit", SfxDef.Create(SfxWave.Noise, 700f, 120f, 0.12f, 0.55f).WithNoise(1f, 0.7f), maxVoices: 3, minInterval: 0.04f);
+            m_Ko = m_Sound.Register("ko", SfxDef.Create(SfxWave.Triangle, 500f, 70f, 0.5f, 0.5f), maxVoices: 2);
+            m_Wave = m_Sound.Register("wave", SfxDef.Create(SfxWave.Square, 392f, 784f, 0.4f, 0.35f).WithDuty(0.25f), maxVoices: 1, priority: 2);
+            m_Lose = m_Sound.Register("lose", SfxDef.Create(SfxWave.Triangle, 300f, 60f, 0.9f, 0.45f), maxVoices: 1, priority: 3);
+
+            InputRouter = gameObject.AddComponent<InputRouter>();
+            InputRouter.Sink = frame =>
+            {
+                var state = State;
+                if (state == null) return;
+                if (Script != null)
+                {
+                    var scripted = Script();
+                    scripted.Held |= frame.Held;
+                    scripted.Pressed |= frame.Pressed;
+                    frame = scripted;
+                }
+                state.Input = InputFrame.Latch(state.Input, frame);
+            };
+            if (m_CreateUI) BuildUi();
+            InputRouter.AddSource(new KeyboardInputSource().Map(KeyCode.J, BwButton.Punch).Map(KeyCode.K, BwButton.Kick));
+        }
+
+        void BuildUi()
+        {
+            var canvas = UIFactory.CreateCanvas(transform, "BrawlerUI");
+            var root = canvas.transform;
+            StatsText = BufferText.Create(root, "Stats", 40, TextAnchor.UpperLeft, new Vector2(0.01f, 0.86f), new Vector2(0.7f, 0.99f));
+            var stick = UIFactory.Panel(root, "Joystick", new Color(1f, 1f, 1f, 0.03f), Vector2.zero, new Vector2(0.45f, 0.6f));
+            Joystick = stick.gameObject.AddComponent<VirtualJoystick>();
+            var punch = UIFactory.Button(root, "PunchButton", "PUNCH", new Vector2(-420, 200), new Vector2(240, 240), new Color(0.9f, 0.45f, 0.3f, 0.55f), new Vector2(1f, 0f));
+            PunchButton = punch.gameObject.AddComponent<TapButton>();
+            var kick = UIFactory.Button(root, "KickButton", "KICK", new Vector2(-160, 300), new Vector2(220, 220), new Color(0.3f, 0.55f, 0.9f, 0.55f), new Vector2(1f, 0f));
+            KickButton = kick.gameObject.AddComponent<TapButton>();
+            InputRouter.AddSource(new TouchInputSource(Joystick).Tap(PunchButton, BwButton.Punch).Tap(KickButton, BwButton.Kick));
+
+            MenuPanel = UIFactory.Panel(root, "MenuPanel", new Color(0f, 0f, 0f, 0.5f), Vector2.zero, Vector2.one);
+            UIFactory.Label(MenuPanel, "Title", "BRAWL", 150, TextAnchor.MiddleCenter, new Vector2(0f, 0.6f), new Vector2(1f, 0.85f));
+            StartButton = UIFactory.Button(MenuPanel, "StartButton", "FIGHT", new Vector2(0, -20), new Vector2(460, 140), new Color(0.85f, 0.4f, 0.3f, 0.95f), new Vector2(0.5f, 0.5f));
+            StartButton.onClick.AddListener(() => State?.Send(BwCommandKind.Start));
+
+            EndPanel = UIFactory.Panel(root, "EndPanel", new Color(0f, 0f, 0f, 0.5f), Vector2.zero, Vector2.one);
+            EndText = UIFactory.Label(EndPanel, "EndText", "", 110, TextAnchor.MiddleCenter, new Vector2(0f, 0.6f), new Vector2(1f, 0.85f));
+            AgainButton = UIFactory.Button(EndPanel, "AgainButton", "AGAIN", new Vector2(0, -20), new Vector2(460, 140), new Color(0.85f, 0.4f, 0.3f, 0.95f), new Vector2(0.5f, 0.5f));
+            AgainButton.onClick.AddListener(() => State?.Send(BwCommandKind.Start));
+        }
+
+        void Update()
+        {
+            var state = State;
+            if (state == null || StatsText == null) return;
+            int hp = 0;
+            var world = Session.World;
+            var info = world.Column(BwKeys.Info);
+            for (int i = 0; i < world.Table(BwKeys.Fighter).Count; i++) if (info[i].Team == 0) { hp = (int)info[i].Hp; break; }
+            StatsText.Begin().Append("Wave ").Append(state.Wave).Append('/').Append(BwRules.Waves).Append("   KO ").Append(state.Kos)
+                .Append("\nHP ").Append(hp).Append("   Score ").Append(state.Score);
+            StatsText.Commit();
+            if (state.Flow == m_Flow) return;
+            m_Flow = state.Flow;
+            MenuPanel.gameObject.SetActive(state.Flow == BwFlow.Menu);
+            bool end = state.Flow == BwFlow.Won || state.Flow == BwFlow.Lost;
+            EndPanel.gameObject.SetActive(end);
+            if (end) EndText.text = state.Flow == BwFlow.Won ? "VICTORY" : "DOWN AND OUT";
+        }
+
+        void OnFeedback(BwFeedback e)
+        {
+            switch (e.Kind)
+            {
+                case BwFeedbackKind.Swing: m_Sound.Play(m_Swing); break;
+                case BwFeedbackKind.Hit: m_Sound.Play(m_Hit); break;
+                case BwFeedbackKind.KO: m_Sound.Play(m_Ko); break;
+                case BwFeedbackKind.Wave: m_Sound.Play(m_Wave); break;
+                case BwFeedbackKind.Lose: m_Sound.Play(m_Lose); break;
+            }
+        }
+
+        void OnDestroy()
+        {
+            if (m_Module != null) Destroy(m_Module);
+            if (m_Mode != null) Destroy(m_Mode);
+        }
+    }
+}

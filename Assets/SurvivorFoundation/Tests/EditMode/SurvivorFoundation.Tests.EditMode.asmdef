@@ -12,7 +12,8 @@
         "Unity.Collections",
         "Unity.Mathematics",
         "Unity.Burst",
-        "SurvivorFoundation.Runtime"
+        "SurvivorFoundation.Runtime",
+        "SPF.Presentation"
     ],
     "includePlatforms": [
         "Editor"

@@ -1,0 +1,158 @@
+using System.Collections;
+using System.IO;
+using System.Text;
+using NUnit.Framework;
+using SPF.Presentation;
+using SPF.Testing;
+using SurvivorFoundation.Game;
+using Unity.Mathematics;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.TestTools;
+
+namespace SurvivorFoundation.Tests.PlayMode
+{
+    /// <summary>The survivor game end to end on both render tiers, and a render stress run (frame time, upload bytes, screenshots).</summary>
+    public class SvPlayTests
+    {
+        static void SkipWithoutTier(RenderTier tier)
+        {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null) Assert.Ignore("No graphics device");
+            if (tier == RenderTier.GpuDriven && !SystemInfo.supportsComputeShaders) Assert.Ignore("No compute shader support");
+        }
+
+        static IEnumerator Screenshot(SvGameBootstrap game, string name)
+        {
+            var target = new RenderTexture(960, 540, 24, RenderTextureFormat.ARGB32);
+            var read = new Texture2D(960, 540, TextureFormat.RGBA32, false);
+            try
+            {
+                game.CameraRig.Camera.targetTexture = target;
+                yield return null;
+                yield return null;
+                var previous = RenderTexture.active;
+                RenderTexture.active = target;
+                read.ReadPixels(new Rect(0, 0, 960, 540), 0, 0);
+                read.Apply(false);
+                RenderTexture.active = previous;
+                string dir = Path.Combine(Application.dataPath, "..", "Artifacts", "Screenshots");
+                Directory.CreateDirectory(dir);
+                File.WriteAllBytes(Path.Combine(dir, name), read.EncodeToPNG());
+                var pixels = read.GetPixels32();
+                int lit = 0;
+                for (int i = 0; i < pixels.Length; i += 7) if (pixels[i].r + pixels[i].g + pixels[i].b > 150) lit++;
+                Assert.Greater(lit, pixels.Length / 7 / 200, "sprites drawn over the ground");
+            }
+            finally
+            {
+                game.CameraRig.Camera.targetTexture = null;
+                target.Release();
+                Object.Destroy(target);
+                Object.Destroy(read);
+            }
+        }
+
+        static void Cleanup(SvGameBootstrap game, SvConfig config)
+        {
+            RenderCapabilities.Override = null;
+            if (Camera.main != null) Object.Destroy(Camera.main.gameObject);
+            if (game != null) Object.Destroy(game.gameObject);
+            Object.Destroy(config);
+        }
+
+        [UnityTest]
+        public IEnumerator StartButtonAndAutoPlay([Values(RenderTier.GpuDriven, RenderTier.DataTexture)] RenderTier tier)
+        {
+            SkipWithoutTier(tier);
+            RenderCapabilities.Override = tier;
+            var config = SvConfig.CreateDefault();
+            config.Settings.SpawnPerSecond = 8f;
+            var game = SvGameBootstrap.Create(config, seed: 3, ui: true);
+            try
+            {
+                yield return null;
+                Assert.IsTrue(game.Hud.MenuPanel.gameObject.activeInHierarchy);
+                UIDriver.Click(game.Hud.StartButton.gameObject);
+                yield return UIDriver.WaitUntil(() => game.State.Flow == SvFlow.Playing, 5f);
+                game.AutoPlay = true;
+                float end = Time.realtimeSinceStartup + 45f;
+                yield return UIDriver.WaitSeconds(6f);
+                while (game.State.Kills < 10 && Time.realtimeSinceStartup < end) yield return null;
+                game.Session.Sync();
+                Assert.Greater(game.State.Kills, 0, "the bot fought");
+                Assert.Greater(game.Renderer.EnemiesDrawn + game.Renderer.BulletsDrawn, 0);
+                yield return Screenshot(game, $"survivor-{(tier == RenderTier.GpuDriven ? "gpu" : "datatex")}.png");
+                TestContext.WriteLine($"survivor bot ({tier}): {game.State.Time:F0} s, level {game.State.Level}, kills {game.State.Kills}");
+            }
+            finally { Cleanup(game, config); }
+        }
+
+        [UnityTest]
+        public IEnumerator RenderStress([Values(RenderTier.GpuDriven, RenderTier.DataTexture)] RenderTier tier)
+        {
+            SkipWithoutTier(tier);
+            RenderCapabilities.Override = tier;
+            var config = SvConfig.CreateDefault();
+            config.Settings.SpawnPerSecond = 0f; config.Settings.SpawnGrowth = 0f; config.Settings.EliteEvery = 0f;
+            config.Settings.HeroHp = 1e9f;
+            var game = SvGameBootstrap.Create(config, seed: 4, ui: false);
+            try
+            {
+                yield return null;
+                game.StartRun();
+                yield return null;
+                yield return null;
+                game.Session.Sync();
+                var world = game.Session.World;
+                var runtime = world.Resource(SvKeys.Config);
+                var state = game.State;
+                for (int u = 0; u < SvGameState.UpgradeCount; u++) state.Upgrades[u] = SvGameState.MaxLevel;
+                state.MaxHp = state.Hp = 1e9f;
+                int mage = 0;
+                for (int k = 0; k < runtime.EnemyKinds; k++) if (runtime.Enemies[k].Shooter) mage = k + 1;
+                var random = new Unity.Mathematics.Random(9);
+                for (int i = 0; i < 3000; i++)
+                {
+                    float a = random.NextFloat(math.PI * 2f), r = random.NextFloat(3f, 16f);
+                    var h = SvSpawner.SpawnEnemy(world, runtime, i % 5 == 0 ? mage : 1 + random.NextInt(3), new float2(math.cos(a), math.sin(a)) * r);
+                }
+                var infos = world.Column(SvKeys.Info);
+                for (int i = 0; i < world.Table(SvKeys.Enemy).Count; i++) { var e = infos[i]; e.Hp = e.MaxHp = 1e6f; infos[i] = e; }
+                game.AutoPlay = true;
+                yield return UIDriver.WaitSeconds(3f);   // bullets build up; shaders / Burst compiled
+
+                const int Frames = 240;
+                double total = 0, worst = 0;
+                long bytes = 0;
+                int sprites = 0, bullets = 0;
+                for (int f = 0; f < Frames; f++)
+                {
+                    yield return null;
+                    double ms = Time.unscaledDeltaTime * 1000.0;
+                    total += ms;
+                    worst = math.max(worst, ms);
+                    bytes += game.Renderer.BytesUploaded;
+                    sprites = math.max(sprites, game.Renderer.SpritesDrawn);
+                    bullets = math.max(bullets, game.Renderer.BulletsDrawn);
+                }
+                game.Session.Sync();
+                var sb = new StringBuilder();
+                sb.AppendLine($"=== Survivor render stress ({tier}) ===");
+                sb.AppendLine($"enemies {world.Table(SvKeys.Enemy).Count}  bullets {world.Table(SvKeys.Bullet).Count}  gems {world.Table(SvKeys.Gem).Count}");
+                sb.AppendLine($"frame ms mean {total / Frames:F2}  worst {worst:F2}  (editor, vsync / target frame rate apply)");
+                sb.AppendLine($"sprites per frame up to {sprites} (bullets drawn up to {bullets}); instance upload {bytes / Frames / 1024.0:F1} KiB per frame");
+                var stats = game.Session.Pipeline.Stats;
+                sb.AppendLine($"sim: schedule {stats.ScheduleMs:F3} ms, sync wait {stats.SyncWaitMs:F3} ms (last tick)");
+                string report = sb.ToString();
+                TestContext.WriteLine(report);
+                Debug.Log(report);
+                string dir = Path.Combine(Application.dataPath, "..", "Artifacts");
+                Directory.CreateDirectory(dir);
+                File.AppendAllText(Path.Combine(dir, "perf-survivor-render.txt"), report);
+                yield return Screenshot(game, $"survivor-stress-{(tier == RenderTier.GpuDriven ? "gpu" : "datatex")}.png");
+                Assert.Greater(bullets, 1000, "a bullet storm was drawn");
+            }
+            finally { Cleanup(game, config); }
+        }
+    }
+}

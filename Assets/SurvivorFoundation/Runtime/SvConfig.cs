@@ -63,7 +63,9 @@ namespace SurvivorFoundation
             SpiralInterval = 0.12f, SpiralDamage = 6f,
             OrbitRadius = 2.3f, OrbitDps = 30f,
             EnemyBulletDamage = 7f,
-            ReorderInterval = 30,
+            // Measured on the Mac at 3000 enemies: no gain (the table fits in cache), so off by default;
+            // the benchmark keeps the A/B for larger tables and cache-starved mobile CPUs.
+            ReorderInterval = 0,
             GridCell = 2f,
         };
 

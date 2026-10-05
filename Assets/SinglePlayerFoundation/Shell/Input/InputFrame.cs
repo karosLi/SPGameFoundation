@@ -53,6 +53,7 @@ namespace SPF.Shell.Input
             {
                 var (hold, tap, index) = m_Buttons[i];
                 if (hold != null && hold.Held) { result.Held |= 1u << index; any = true; }
+                if (hold != null && hold.ConsumePress()) { result.Pressed |= 1u << index; any = true; }
                 if (tap != null && tap.Consume()) { result.Pressed |= 1u << index; any = true; }
             }
             if (any) frame = result;

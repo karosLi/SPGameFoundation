@@ -82,6 +82,7 @@ namespace RpgFoundation
                 b, b, default, b[Stat.MaxHealth]);
             world.Column(RpgKeys.Loadout).Set(row, new Loadout { Weapon = def.Weapon, S0 = def.Skill });
             world.Column(RpgKeys.Brain).Set(row, new Brain { State = AIState.Idle, Home = position, WanderTarget = position });
+            world.Column(RpgKeys.Status).Set(row, new StatusState { OnHit = def.Status, OnHitPower = def.StatusPower, OnHitDuration = def.StatusDuration });
             return handle;
         }
 
@@ -130,6 +131,7 @@ namespace RpgFoundation
                 Team = r.Team,
                 OwnerId = r.OwnerId,
                 Visual = r.Visual,
+                Status = r.Status,
             });
             return true;
         }

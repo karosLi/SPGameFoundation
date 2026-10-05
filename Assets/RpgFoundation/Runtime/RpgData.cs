@@ -111,6 +111,57 @@ namespace RpgFoundation
         public bool Busy => Phase != ActionPhase.None && Phase != ActionPhase.Recover;
     }
 
+    /// <summary>Damage over time. Burn refreshes (strongest wins); poison stacks up to three applications.</summary>
+    public enum StatusKind : byte { None, Burn, Poison }
+
+    /// <summary>A status a hit applies: damage per second for a duration.</summary>
+    public struct StatusHit
+    {
+        public StatusKind Kind;
+        public float Dps, Duration;
+
+        public static StatusHit From(StatusKind kind, float hitDamage, float power, float duration) =>
+            kind == StatusKind.None || duration <= 0f ? default
+            : new StatusHit { Kind = kind, Dps = hitDamage * power / duration, Duration = duration };
+    }
+
+    /// <summary>Active damage-over-time effects on an actor, and the status its own hits apply.</summary>
+    public struct StatusState
+    {
+        public float Burn, BurnDps;        // seconds left, damage per second
+        public float Poison, PoisonDps;
+        public float Tick;                 // seconds to the next damage tick
+        /// <summary>Status this actor's own hits apply (total damage = hit x power, over the duration).</summary>
+        public StatusKind OnHit;
+        public float OnHitPower, OnHitDuration;
+
+        public StatusHit HitStatus(float hitDamage) => StatusHit.From(OnHit, hitDamage, OnHitPower, OnHitDuration);
+
+        public const float TickInterval = 0.5f;
+        public const int PoisonStacks = 3;
+
+        public bool Burning => Burn > 0f;
+        public bool Poisoned => Poison > 0f;
+
+        public void Apply(in StatusHit hit)
+        {
+            if (hit.Kind == StatusKind.None) return;
+            // Damage lands at the end of each interval (a fresh status first ticks after one interval).
+            if (!Burning && !Poisoned) Tick = TickInterval;
+            switch (hit.Kind)
+            {
+                case StatusKind.Burn:
+                    Burn = math.max(Burn, hit.Duration);
+                    BurnDps = math.max(Burn > 0f && BurnDps > 0f ? BurnDps : 0f, hit.Dps);
+                    break;
+                case StatusKind.Poison:
+                    PoisonDps = Poison > 0f ? math.min(PoisonDps + hit.Dps, hit.Dps * PoisonStacks) : hit.Dps;
+                    Poison = math.max(Poison, hit.Duration);
+                    break;
+            }
+        }
+    }
+
     /// <summary>Projectile look (presentation) and impact flavour.</summary>
     public enum ProjectileVisual : byte { Arrow, Fireball, Bolt, Spit }
 
@@ -128,6 +179,7 @@ namespace RpgFoundation
         public Team Team;
         public int OwnerId;
         public ProjectileVisual Visual;
+        public StatusHit Status;
     }
 
     public enum ItemKind : byte { None = 0, Gold = 1, Potion = 2, Gear = 3 }
@@ -145,7 +197,7 @@ namespace RpgFoundation
     // ---- Events between jobs and main-thread systems ----
 
     /// <summary>What dealt a hit (presentation picks the impact effect).</summary>
-    public enum HitSource : byte { Weapon, Projectile, Explosion, Whirlwind, Nova, Slam }
+    public enum HitSource : byte { Weapon, Projectile, Explosion, Whirlwind, Nova, Slam, Burn, Poison }
 
     public struct HitEvent
     {
@@ -158,6 +210,8 @@ namespace RpgFoundation
         public float Knockback;   // impulse (velocity) before the target's weight
         public float Stagger;     // seconds of stagger for light targets
         public SPF.L2.Stats.Modifier Mod;   // Source 0 = none (e.g. frost slow)
+        public StatusHit Status;            // damage over time to apply (Kind None = nothing)
+        public bool IgnoreArmour;           // status ticks: armour does not reduce them, no crits
         public HitSource Source;
     }
 
@@ -176,6 +230,7 @@ namespace RpgFoundation
         public Team Team;
         public int OwnerId;
         public ProjectileVisual Visual;
+        public StatusHit Status;
     }
 
     public struct DeathEvent

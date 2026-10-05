@@ -369,7 +369,7 @@ namespace RpgFoundation.Systems
         public override SimPhase Phase => SimPhase.Collision;
 
         public override void Declare(AccessDeclaration access) => access
-            .Read(RpgKeys.Position).Read(RpgKeys.Info).Read(RpgKeys.Stats).Read(RpgKeys.ActorGrid).Read(RpgKeys.Map).Read(RpgKeys.Loadout)
+            .Read(RpgKeys.Position).Read(RpgKeys.Info).Read(RpgKeys.Stats).Read(RpgKeys.ActorGrid).Read(RpgKeys.Map).Read(RpgKeys.Loadout).Read(RpgKeys.Status)
             .Write(RpgKeys.Combat).Write(RpgKeys.Facing).Write(RpgKeys.Mana).Write(RpgKeys.Hits).Write(RpgKeys.ProjectileRequests).Write(RpgKeys.Feedback)
             .Read(RpgKeys.Projectile).Write(RpgKeys.ProjectilePosition).Write(RpgKeys.ProjectilePrev).Write(RpgKeys.ProjectileInfo)
             .Write(SimWorld.DestroyQueueKey);
@@ -387,6 +387,7 @@ namespace RpgFoundation.Systems
                 Info = context.Column(RpgKeys.Info),
                 Stats = context.Column(RpgKeys.Stats),
                 Loadout = context.Column(RpgKeys.Loadout),
+                Status = context.Column(RpgKeys.Status),
                 Combat = context.Column(RpgKeys.Combat),
                 Facing = context.Column(RpgKeys.Facing),
                 Mana = context.Column(RpgKeys.Mana),
@@ -441,6 +442,7 @@ namespace RpgFoundation.Systems
             public float2 Origin, Facing;
             public float Range, Cos, Damage, Crit, Knockback, Stagger;
             public Modifier Mod;
+            public StatusHit Status;
             public HitSource Source;
             public ParallelQueue<HitEvent>.Writer Hits;
             public int Count;
@@ -452,7 +454,7 @@ namespace RpgFoundation.Systems
                 Hits.TryAdd(new HitEvent
                 {
                     AttackerId = AttackerId, TargetRow = e.Owner, Damage = Damage, CritChance = Crit, Position = e.Position,
-                    Direction = math.normalizesafe(e.Position - Origin, Facing), Knockback = Knockback, Stagger = Stagger, Mod = Mod, Source = Source,
+                    Direction = math.normalizesafe(e.Position - Origin, Facing), Knockback = Knockback, Stagger = Stagger, Mod = Mod, Status = Status, Source = Source,
                 });
                 Count++;
                 return true;
@@ -466,6 +468,7 @@ namespace RpgFoundation.Systems
             [ReadOnly] public NativeArray<ActorInfo> Info;
             [ReadOnly] public NativeArray<StatBlock> Stats;
             [ReadOnly] public NativeArray<Loadout> Loadout;
+            [ReadOnly] public NativeArray<StatusState> Status;
             public NativeArray<CombatState> Combat;
             public NativeArray<float2> Facing;
             public NativeArray<Health> Mana;
@@ -498,7 +501,7 @@ namespace RpgFoundation.Systems
                         case ActionPhase.Windup:
                             if (c.PhaseTime >= c.PhaseDuration)
                             {
-                                Strike(info, stats, weapon, p, c.Aim);
+                                Strike(info, stats, weapon, p, c.Aim, Status[i]);
                                 Enter(ref c, ActionPhase.Recover, weapon.Recover);
                             }
                             break;
@@ -593,21 +596,22 @@ namespace RpgFoundation.Systems
                 c.PhaseSkill = id;
             }
 
-            void Strike(in ActorInfo info, in StatBlock stats, in WeaponDef weapon, float2 p, float2 aim)
+            void Strike(in ActorInfo info, in StatBlock stats, in WeaponDef weapon, float2 p, float2 aim, in StatusState status)
             {
                 float damage = stats[Stat.Attack] * weapon.DamageMul;
+                var onHit = status.HitStatus(damage);
                 if (weapon.Ranged)
                 {
                     Requests.TryAdd(new ProjectileRequest
                     {
                         Position = p + aim * (info.Radius + 0.15f), Direction = aim, Speed = weapon.ProjectileSpeed, Radius = weapon.ProjectileRadius,
                         Damage = damage, CritChance = stats[Stat.Crit], Knockback = weapon.Knockback, Pierce = weapon.Pierce,
-                        Life = weapon.Range / math.max(weapon.ProjectileSpeed, 0.1f), Team = info.Team, OwnerId = info.Id, Visual = weapon.Visual,
+                        Life = weapon.Range / math.max(weapon.ProjectileSpeed, 0.1f), Team = info.Team, OwnerId = info.Id, Visual = weapon.Visual, Status = onHit,
                     });
                     return;
                 }
                 float cos = info.Has(ActorFlags.Hero) ? weapon.ArcCos : math.max(weapon.ArcCos, 0f);
-                Area(info, stats, p, aim, stats[Stat.Range] + info.Radius, cos, damage, weapon.Knockback, weapon.Stagger, default, HitSource.Weapon);
+                Area(info, stats, p, aim, stats[Stat.Range] + info.Radius, cos, damage, weapon.Knockback, weapon.Stagger, default, HitSource.Weapon, onHit);
             }
 
             void Release(in ActorInfo info, in StatBlock stats, byte id, float2 p, float2 aim)
@@ -622,6 +626,7 @@ namespace RpgFoundation.Systems
                             Position = p + aim * (info.Radius + 0.2f), Direction = aim, Speed = skill.Speed, Radius = 0.3f, Damage = damage,
                             CritChance = stats[Stat.Crit], Knockback = skill.Knockback, ExplodeRadius = skill.Radius, Life = 2f,
                             Team = info.Team, OwnerId = info.Id, Visual = ProjectileVisual.Fireball,
+                            Status = StatusHit.From(skill.Status, damage, skill.StatusPower, skill.StatusDuration),
                         });
                         break;
                     case SkillKind.Nova:
@@ -636,10 +641,11 @@ namespace RpgFoundation.Systems
                 }
             }
 
-            void Area(in ActorInfo info, in StatBlock stats, float2 p, float2 aim, float range, float cos, float damage, float knockback, float stagger, Modifier mod, HitSource source)
+            void Area(in ActorInfo info, in StatBlock stats, float2 p, float2 aim, float range, float cos, float damage, float knockback, float stagger, Modifier mod, HitSource source, StatusHit status = default)
             {
                 var area = new AreaHits
                 {
+                    Status = status,
                     Team = info.Team, AttackerId = info.Id, Origin = p, Facing = aim, Range = range, Cos = cos, Damage = damage,
                     Crit = stats[Stat.Crit], Knockback = knockback, Stagger = stagger, Mod = mod, Source = source, Hits = Hits,
                 };
@@ -725,7 +731,7 @@ namespace RpgFoundation.Systems
                         Hits.TryAdd(new HitEvent
                         {
                             AttackerId = info.OwnerId, TargetRow = hit.Row, Damage = info.Damage, CritChance = info.CritChance, Position = at,
-                            Direction = dir, Knockback = info.Knockback, Stagger = 0.1f, Source = HitSource.Projectile,
+                            Direction = dir, Knockback = info.Knockback, Stagger = 0.1f, Status = info.Status, Source = HitSource.Projectile,
                         });
                         if (info.Pierce > 0)
                         {
@@ -775,7 +781,7 @@ namespace RpgFoundation.Systems
                 {
                     AttackerId = Info.OwnerId, TargetRow = e.Owner, Damage = Info.Damage, CritChance = Info.CritChance, Position = e.Position,
                     Direction = math.normalizesafe(e.Position - Origin, new float2(1f, 0f)), Knockback = Info.Knockback, Stagger = 0.25f,
-                    Source = HitSource.Explosion,
+                    Status = Info.Status, Source = HitSource.Explosion,
                 });
                 return true;
             }

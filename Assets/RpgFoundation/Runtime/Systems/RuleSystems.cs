@@ -26,7 +26,7 @@ namespace RpgFoundation.Systems
 
         public override void Declare(AccessDeclaration access) => access
             .Read(RpgKeys.Actor).Read(RpgKeys.Stats).Read(RpgKeys.Position)
-            .Write(RpgKeys.Info).Write(RpgKeys.Health).Write(RpgKeys.Combat).Write(RpgKeys.Brain).Write(RpgKeys.Mods)
+            .Write(RpgKeys.Info).Write(RpgKeys.Health).Write(RpgKeys.Combat).Write(RpgKeys.Brain).Write(RpgKeys.Mods).Write(RpgKeys.Status)
             .Write(RpgKeys.Hits).Write(RpgKeys.Deaths).Write(RpgKeys.Feedback).Write(SimWorld.DestroyQueueKey);
 
         struct HitOrder : IComparer<HitEvent>
@@ -54,6 +54,7 @@ namespace RpgFoundation.Systems
                 Combat = context.Column(RpgKeys.Combat),
                 Brain = context.Column(RpgKeys.Brain),
                 Mods = context.Column(RpgKeys.Mods),
+                Status = context.Column(RpgKeys.Status),
                 Position = context.Column(RpgKeys.Position),
                 Count = context.Count(RpgKeys.Actor),
                 CritMultiplier = world.Resource(RpgKeys.Config).Settings.CritMultiplier,
@@ -77,6 +78,7 @@ namespace RpgFoundation.Systems
             public NativeArray<CombatState> Combat;
             public NativeArray<Brain> Brain;
             public NativeArray<ModifierSet> Mods;
+            public NativeArray<StatusState> Status;
             [ReadOnly] public NativeArray<float2> Position;
             public int Count, Floor;
             public float CritMultiplier;
@@ -96,13 +98,21 @@ namespace RpgFoundation.Systems
                     var c = Combat[row];
                     if (c.Invulnerable > 0f) continue;   // dashing: i-frames
                     var random = SimRandom.Create(Seed, Tick, (uint)h * 7919u + 13u);
-                    var roll = CombatMath.Roll(hit.Damage, Stats[row][Stat.Armour], hit.CritChance, CritMultiplier, 0.12f, ref random);
+                    var roll = hit.IgnoreArmour
+                        ? new DamageRoll { Amount = hit.Damage }
+                        : CombatMath.Roll(hit.Damage, Stats[row][Stat.Armour], hit.CritChance, CritMultiplier, 0.12f, ref random);
                     var health = Health[row];
                     health.Current -= roll.Amount;
                     Health[row] = health;
                     bool hero = info.Has(ActorFlags.Hero);
                     bool boss = info.Has(ActorFlags.Boss);
-                    c.HitFlash = 0.15f;
+                    if (hit.Status.Kind != StatusKind.None)
+                    {
+                        var status = Status[row];
+                        status.Apply(hit.Status);
+                        Status[row] = status;
+                    }
+                    if (!hit.IgnoreArmour) c.HitFlash = 0.15f;
                     // Knockback: lighter (smaller) actors fly further; bosses barely move.
                     float weight = math.max(info.Radius * info.Radius * 6f, 0.5f) * (boss ? 4f : 1f);
                     c.Knockback += hit.Direction * (hit.Knockback * (roll.Critical ? 1.5f : 1f) / weight);

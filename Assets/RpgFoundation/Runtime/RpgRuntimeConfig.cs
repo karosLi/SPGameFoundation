@@ -16,6 +16,8 @@ namespace RpgFoundation
         public bool Ranged, Boss;
         public WeaponKind Weapon;
         public byte Skill;
+        public StatusKind Status;
+        public float StatusPower, StatusDuration;
     }
 
     /// <summary>Blittable weapon family definition, indexed by <see cref="WeaponKind"/>.</summary>
@@ -34,6 +36,8 @@ namespace RpgFoundation
     {
         public SkillKind Kind;
         public float ManaCost, Cooldown, CastTime, Power, Radius, Duration, Speed, Knockback, Slow, SlowDuration;
+        public StatusKind Status;
+        public float StatusPower, StatusDuration;
         public int UnlockLevel;
     }
 
@@ -108,6 +112,7 @@ namespace RpgFoundation
                     Radius = m.Radius, Health = m.Health, Attack = m.Attack, Armour = m.Armour, Speed = m.Speed,
                     AttackRate = m.AttackRate, Range = m.Range, Aggro = m.Aggro, Xp = m.Xp, ProjectileSpeed = m.ProjectileSpeed,
                     SpawnWeight = m.SpawnWeight, Ranged = m.Ranged, Boss = m.Boss, Weapon = m.Weapon, Skill = (byte)math.max(m.Skill, 0),
+                    Status = m.Status, StatusPower = m.StatusPower, StatusDuration = m.StatusDuration,
                 };
             }
 
@@ -140,6 +145,7 @@ namespace RpgFoundation
                 {
                     Kind = s.Kind, ManaCost = s.ManaCost, Cooldown = s.Cooldown, CastTime = s.CastTime, Power = s.Power, Radius = s.Radius,
                     Duration = s.Duration, Speed = s.Speed, Knockback = s.Knockback, Slow = s.Slow, SlowDuration = s.SlowDuration,
+                    Status = s.Status, StatusPower = s.StatusPower, StatusDuration = s.StatusDuration,
                     UnlockLevel = s.UnlockLevel,
                 };
             }

@@ -24,6 +24,7 @@ namespace RpgFoundation
         public static readonly ColumnKey<ModifierSet> Mods = new ColumnKey<ModifierSet>(Actor, "Mods");
         public static readonly ColumnKey<CombatState> Combat = new ColumnKey<CombatState>(Actor, "Combat");
         public static readonly ColumnKey<Brain> Brain = new ColumnKey<Brain>(Actor, "Brain");
+        public static readonly ColumnKey<StatusState> Status = new ColumnKey<StatusState>(Actor, "Status");
 
         public static readonly TableKey Projectile = new TableKey("Rpg.Projectile");
         public static readonly ColumnKey<float2> ProjectilePosition = new ColumnKey<float2>(Projectile, "Position");

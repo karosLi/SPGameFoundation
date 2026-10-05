@@ -68,7 +68,7 @@ namespace RpgFoundation
             layout.Table(RpgKeys.Actor, cap.Actors).LevelScoped()
                 .Column(RpgKeys.Position).Column(RpgKeys.PrevPosition).Column(RpgKeys.Facing).Column(RpgKeys.MoveIntent)
                 .Column(RpgKeys.Info).Column(RpgKeys.Health).Column(RpgKeys.Mana).Column(RpgKeys.Loadout).Column(RpgKeys.BaseStats).Column(RpgKeys.Stats)
-                .Column(RpgKeys.Mods).Column(RpgKeys.Combat).Column(RpgKeys.Brain);
+                .Column(RpgKeys.Mods).Column(RpgKeys.Combat).Column(RpgKeys.Brain).Column(RpgKeys.Status);
             layout.Table(RpgKeys.Projectile, cap.Projectiles).LevelScoped()
                 .Column(RpgKeys.ProjectilePosition).Column(RpgKeys.ProjectilePrev).Column(RpgKeys.ProjectileInfo);
             var d = Config.Dungeon;
@@ -83,6 +83,7 @@ namespace RpgFoundation
             .Add(new HeroControlSystem())
             .Add(new MonsterAISystem())
             .Add(new MovementSystem())
+            .Add(new StatusSystem())
             .Add(new ActorGridSystem())
             .Add(new CombatSystem())
             .Add(new ResolveSystem())

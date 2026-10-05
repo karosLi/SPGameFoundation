@@ -160,6 +160,7 @@ namespace RpgFoundation.Presentation
             var facings = world.Column(RpgKeys.Facing);
             var combat = world.Column(RpgKeys.Combat);
             var loadouts = world.Column(RpgKeys.Loadout);
+            var statuses = world.Column(RpgKeys.Status);
             var handles = world.Table(RpgKeys.Actor).Handles;
             int count = world.Table(RpgKeys.Actor).Count;
             int drawn = 0;
@@ -230,6 +231,16 @@ namespace RpgFoundation.Presentation
                 float4 tint = new float4(1f);
                 if (c.Invulnerable > 0f) tint = new float4(0.7f, 0.9f, 1f, 1f);
                 if (!hero && world.Column(RpgKeys.Mods)[i].HasSource(ModSource.Slow)) tint = new float4(0.65f, 0.85f, 1.15f, 1f);
+                var status = statuses[i];
+                if (status.Burning) tint *= new float4(1.25f, 0.8f, 0.6f, 1f);
+                if (status.Poisoned) tint *= new float4(0.75f, 1.2f, 0.6f, 1f);
+                if ((status.Burning || status.Poisoned) && m_Random.NextFloat() < 0.12f)
+                    m_Fx.Spawn(new SpriteEffects.Effect
+                    {
+                        Clip = status.Burning ? m_Art.Spark : m_Art.Sparkle, Position = p + art.Center + m_Random.NextFloat2(-0.25f, 0.25f), Velocity = new float2(0f, 0.9f),
+                        Size = new float2(0.3f), Life = 0.4f, Fade = true, Depth = depth - 0.02f,
+                        Color = status.Burning ? new float4(1f, 0.55f, 0.15f, 0.9f) : new float4(0.5f, 1f, 0.3f, 0.8f),
+                    });
                 float2 size = art.Size;
                 float2 center = p + art.Center;
                 m_Opaque.Add(center, new float2(size.x * side, size.y), m_Art.Sheet[frame].Uv, depth, tint, 0f, flash);
@@ -417,6 +428,17 @@ namespace RpgFoundation.Presentation
                     bool crit = e.Kind == FeedbackKind.Crit;
                     bool hurt = e.Kind == FeedbackKind.HeroHurt;
                     float2 at = e.Position + new float2(0f, 0.35f);
+                    if (e.Source == HitSource.Burn || e.Source == HitSource.Poison)
+                    {
+                        // Damage over time: small coloured numbers, no spark or shake.
+                        m_Fx.Spawn(new SpriteEffects.Effect
+                        {
+                            NumberMode = true, Number = math.max((int)math.round(e.Value), 1), Prefix = hurt ? '-' : '\0', Position = at + new float2(0f, 0.3f), Velocity = drift * 0.6f,
+                            Size = new float2(0.22f), Life = 0.6f, Fade = true, Depth = depthFx - 0.1f,
+                            Color = e.Source == HitSource.Burn ? new float4(1f, 0.6f, 0.2f, 1f) : new float4(0.55f, 1f, 0.35f, 1f),
+                        });
+                        break;
+                    }
                     float sparkSize = crit ? 1.1f : 0.7f;
                     if (e.Source == HitSource.Explosion || e.Source == HitSource.Slam) sparkSize = 0.9f;
                     m_Fx.Spawn(new SpriteEffects.Effect { Clip = m_Art.Spark, Position = at - e.Direction * 0.2f, Size = new float2(sparkSize), Color = hurt ? new float4(1f, 0.5f, 0.5f, 1f) : new float4(1f), Depth = depthFx, Rotation = m_Random.NextFloat(6.28f) });

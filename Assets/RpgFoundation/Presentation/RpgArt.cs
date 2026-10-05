@@ -64,6 +64,8 @@ namespace RpgFoundation.Presentation
                     0 => Slime(atlas, tint),
                     1 => Humanoid(atlas, new Style { Skin = C(235, 230, 210), Shirt = C(200, 195, 175), Pants = C(170, 165, 150), Boots = C(140, 135, 120), Eye = C(255, 60, 40), Size = 24, Skeleton = true, Cast = C(200, 80, 255) }),
                     2 => Humanoid(atlas, new Style { Skin = Shade(tint, 1.1f), Hair = C(60, 40, 30), Shirt = C(90, 70, 50), Pants = C(70, 55, 40), Boots = C(50, 35, 25), Eye = C(255, 230, 120), Size = 32, Horns = true, Bulky = true, Cast = C(255, 90, 60) }),
+                    4 => Slime(atlas, tint),
+                    5 => Humanoid(atlas, new Style { Skin = tint, Shirt = Shade(tint, 0.6f), Pants = C(90, 30, 20), Boots = C(50, 20, 15), Eye = C(255, 240, 80), Size = 20, Horns = true, Cast = C(255, 120, 30) }),
                     _ => Humanoid(atlas, new Style { Skin = C(110, 100, 130), Shirt = Shade(tint, 0.8f), Pants = C(60, 55, 80), Boots = C(40, 36, 55), Eye = C(255, 90, 255), Size = 48, Helmet = true, Bulky = true, Cape = Shade(tint, 0.55f), Cast = C(220, 100, 255) }),
                 };
             }

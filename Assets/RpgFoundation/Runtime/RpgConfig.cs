@@ -84,6 +84,9 @@ namespace RpgFoundation
             public WeaponKind Weapon;
             [Tooltip("Skill id (1-based into Skills), 0 = none")]
             public int Skill;
+            [Tooltip("Damage over time its hits apply: total = hit damage x StatusPower over StatusDuration")]
+            public StatusKind Status;
+            public float StatusPower, StatusDuration;
 
             public static List<MonsterEntry> Defaults() => new List<MonsterEntry>
             {
@@ -91,6 +94,8 @@ namespace RpgFoundation
                 new MonsterEntry { Name = "Skeleton Archer", Color = new Color(0.9f, 0.88f, 0.78f), Radius = 0.38f, Health = 26f, Attack = 9f, Armour = 2f, Speed = 2.8f, AttackRate = 0.7f, Range = 6f, Aggro = 9f, Xp = 12f, Ranged = true, ProjectileSpeed = 10f, SpawnWeight = 3f, Weapon = WeaponKind.Bow },
                 new MonsterEntry { Name = "Brute", Color = new Color(0.85f, 0.3f, 0.25f), Radius = 0.6f, Health = 90f, Attack = 15f, Armour = 8f, Speed = 2f, AttackRate = 0.6f, Range = 0.8f, Aggro = 6f, Xp = 22f, SpawnWeight = 1.5f, Weapon = WeaponKind.Hammer },
                 new MonsterEntry { Name = "Warden", Color = new Color(0.65f, 0.35f, 0.95f), Radius = 0.95f, Health = 420f, Attack = 22f, Armour = 15f, Speed = 2.3f, AttackRate = 0.8f, Range = 1.1f, Aggro = 10f, Xp = 140f, SpawnWeight = 0f, Boss = true, Weapon = WeaponKind.Hammer, Skill = 5 },
+                new MonsterEntry { Name = "Toxic Slime", Color = new Color(0.65f, 0.9f, 0.2f), Radius = 0.44f, Health = 40f, Attack = 6f, Armour = 1f, Speed = 2.2f, AttackRate = 0.8f, Range = 0.6f, Aggro = 7f, Xp = 14f, SpawnWeight = 2f, Weapon = WeaponKind.Claw, Status = StatusKind.Poison, StatusPower = 0.9f, StatusDuration = 4f },
+                new MonsterEntry { Name = "Fire Imp", Color = new Color(0.95f, 0.45f, 0.15f), Radius = 0.34f, Health = 22f, Attack = 7f, Armour = 0f, Speed = 3.2f, AttackRate = 0.6f, Range = 5f, Aggro = 9f, Xp = 15f, Ranged = true, ProjectileSpeed = 8f, SpawnWeight = 1.5f, Weapon = WeaponKind.Staff, Status = StatusKind.Burn, StatusPower = 0.7f, StatusDuration = 3f },
             };
         }
 
@@ -134,11 +139,14 @@ namespace RpgFoundation
             public float Radius, Duration, Speed, Knockback;
             [Tooltip("Speed multiplier delta applied to targets (e.g. -0.5 = 50% slower) for SlowDuration")]
             public float Slow, SlowDuration;
+            [Tooltip("Damage over time applied to the targets: total = hit damage x StatusPower over StatusDuration")]
+            public StatusKind Status;
+            public float StatusPower, StatusDuration;
             public int UnlockLevel = 1;
 
             public static List<SkillEntry> Defaults() => new List<SkillEntry>
             {
-                new SkillEntry { Name = "Fireball", Kind = SkillKind.Projectile, ManaCost = 12f, Cooldown = 2.5f, CastTime = 0.25f, Power = 2f, Radius = 1.4f, Speed = 14f, Knockback = 4f, UnlockLevel = 1 },
+                new SkillEntry { Name = "Fireball", Kind = SkillKind.Projectile, ManaCost = 12f, Cooldown = 2.5f, CastTime = 0.25f, Power = 2f, Radius = 1.4f, Speed = 14f, Knockback = 4f, Status = StatusKind.Burn, StatusPower = 0.5f, StatusDuration = 3f, UnlockLevel = 1 },
                 new SkillEntry { Name = "Dash", Kind = SkillKind.Dash, ManaCost = 8f, Cooldown = 3f, Duration = 0.22f, Speed = 16f, UnlockLevel = 2 },
                 new SkillEntry { Name = "Whirlwind", Kind = SkillKind.Whirlwind, ManaCost = 20f, Cooldown = 6f, Power = 0.7f, Radius = 2f, Duration = 0.9f, Knockback = 3f, UnlockLevel = 4 },
                 new SkillEntry { Name = "Frost Nova", Kind = SkillKind.Nova, ManaCost = 25f, Cooldown = 9f, CastTime = 0.3f, Power = 0.8f, Radius = 4f, Knockback = 2f, Slow = -0.5f, SlowDuration = 3f, UnlockLevel = 6 },

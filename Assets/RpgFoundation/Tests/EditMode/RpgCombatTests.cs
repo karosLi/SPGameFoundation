@@ -203,5 +203,77 @@ namespace RpgFoundation.Tests
             }
             Assert.IsTrue(t.Row(slime) < 0 || Health(t, slime) < before, "the swings went on");
         }
+    
+        [Test]
+        public void PoisonStacksToACapAndBurnKeepsTheStrongest()
+        {
+            var s = new StatusState();
+            var poison = StatusHit.From(StatusKind.Poison, 10f, 1f, 4f);   // 2.5 dps for 4 s
+            Assert.AreEqual(2.5f, poison.Dps, 1e-5f);
+            for (int i = 0; i < 5; i++) s.Apply(poison);
+            Assert.AreEqual(2.5f * StatusState.PoisonStacks, s.PoisonDps, 1e-5f, "capped stacks");
+            s.Apply(new StatusHit { Kind = StatusKind.Burn, Dps = 5f, Duration = 2f });
+            s.Apply(new StatusHit { Kind = StatusKind.Burn, Dps = 3f, Duration = 3f });
+            Assert.AreEqual(5f, s.BurnDps, 1e-5f, "the weaker burn does not replace the stronger");
+            Assert.AreEqual(3f, s.Burn, 1e-5f, "but extends it");
+            Assert.AreEqual(default(StatusHit).Kind, StatusHit.From(StatusKind.None, 10f, 1f, 4f).Kind);
+        }
+
+        [Test]
+        public void DamageOverTimeIgnoresArmourAndExpires()
+        {
+            using var t = Arena();
+            var baseStats = t.World.Column(RpgKeys.BaseStats);
+            var b = baseStats[t.HeroRow];
+            b[Stat.Armour] = 10000f;
+            b[Stat.Regen] = 0f;
+            baseStats[t.HeroRow] = b;
+            t.Step();
+            var statuses = t.World.Column(RpgKeys.Status);
+            var st = statuses[t.HeroRow];
+            st.Apply(new StatusHit { Kind = StatusKind.Poison, Dps = 10f, Duration = 2f });
+            statuses[t.HeroRow] = st;
+            float before = t.World.Column(RpgKeys.Health)[t.HeroRow].Current;
+            t.Step(3 * 30);
+            float after = t.World.Column(RpgKeys.Health)[t.HeroRow].Current;
+            Assert.AreEqual(20f, before - after, 0.5f, "10 dps for 2 s, armour ignored");
+            Assert.IsFalse(t.World.Column(RpgKeys.Status)[t.HeroRow].Poisoned, "expired");
+        }
+
+        [Test]
+        public void ToxicSlimesPoisonTheHero()
+        {
+            using var t = Arena();
+            int toxic = 0;
+            for (int k = 0; k < t.Runtime.Monsters.Length; k++) if (t.Runtime.Monsters[k].Status == StatusKind.Poison) toxic = k + 1;
+            Assert.Greater(toxic, 0, "a poisonous monster exists");
+            t.SpawnMonster(toxic, t.FreeSpotNearHero(0.9f));
+            bool poisoned = false;
+            for (int i = 0; i < 200 && !poisoned; i++) { t.Step(); poisoned = t.World.Column(RpgKeys.Status)[t.HeroRow].Poisoned; }
+            Assert.IsTrue(poisoned, "its claws poison");
+        }
+
+        [Test]
+        public void FireballBurnsAndBurnKillsCountAsKills()
+        {
+            using var t = Arena();
+            var brute = t.SpawnMonster(3, t.FreeSpotNearHero(3f));
+            var aim = math.normalize(t.World.Column(RpgKeys.Position)[t.Row(brute)] - t.HeroPosition);
+            t.Input(new InputFrame { Pressed = 1u << RpgButton.Skill1, Aim = aim, Move = aim * 0.01f });
+            bool burning = false;
+            for (int i = 0; i < 60 && !burning; i++) { t.Step(); burning = t.World.Column(RpgKeys.Status)[t.Row(brute)].Burning; }
+            Assert.IsTrue(burning, "the fireball sets its target on fire");
+
+            // Leave it at 1 HP: the burn finishes it, with the usual rewards.
+            t.Game.MonstersAlive = 1;
+            var healths = t.World.Column(RpgKeys.Health);
+            var h = healths[t.Row(brute)];
+            h.Current = 1f;
+            healths[t.Row(brute)] = h;
+            int kills = t.Game.Profile.Kills;
+            t.Step(30);
+            Assert.IsFalse(t.World.Registry.IsAlive(brute), "burned to death");
+            Assert.AreEqual(kills + 1, t.Game.Profile.Kills);
+        }
     }
 }

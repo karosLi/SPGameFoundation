@@ -85,6 +85,7 @@ namespace Unity.Collections.LowLevel.Unsafe
         public static void MemCpy(void* destination, void* source, long size) => Buffer.MemoryCopy(source, destination, size, size);
         public static void MemMove(void* destination, void* source, long size) => Buffer.MemoryCopy(source, destination, size, size);
         public static int SizeOf<T>() where T : struct => System.Runtime.CompilerServices.Unsafe.SizeOf<T>();
+        public static void MemClear(void* destination, long size) => new Span<byte>(destination, checked((int)size)).Clear();
     }
     [AttributeUsage(AttributeTargets.Field)] public sealed class NativeDisableUnsafePtrRestrictionAttribute : Attribute { }
     public static class NativeArrayUnsafeUtility

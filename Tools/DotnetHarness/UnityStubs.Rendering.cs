@@ -242,7 +242,7 @@ namespace UnityEngine
 
 namespace UnityEngine.Rendering
 {
-    public enum GraphicsDeviceType { Null = 4, OpenGLES3 = 11, Metal = 16, Vulkan = 21, Direct3D11 = 2, OpenGLCore = 17 }
+    public enum GraphicsDeviceType { Null = 4, OpenGLES3 = 11, Metal = 16, Vulkan = 21, Direct3D11 = 2, Direct3D12 = 18, OpenGLCore = 17 }
     public enum ShadowCastingMode { Off, On }
     public enum IndexFormat { UInt16, UInt32 }
     public enum VertexAttribute { Position, Normal, Tangent, Color, TexCoord0, TexCoord1, TexCoord2, TexCoord3 }

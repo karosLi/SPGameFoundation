@@ -55,6 +55,24 @@ namespace SPF.Tests.EditMode
         }
 
         [Test]
+        public void SpawnRangeAddsZeroedRowsInBulk()
+        {
+            using var world = World(16);
+            for (int i = 0; i < 3; i++) world.Column(BulletId).Set(world.Spawn(Bullet), 7);
+            world.Table(Bullet).DeadFlags.Set(1, (byte)1);
+            world.CompactPools();
+            int start = world.SpawnRange(Bullet, 20, out int added);
+            Assert.AreEqual(2, start);
+            Assert.AreEqual(14, added, "clamped to capacity");
+            Assert.AreEqual(6, world.CreateFailures);
+            for (int r = start; r < 16; r++)
+            {
+                Assert.AreEqual(0, world.Column(BulletId)[r]);
+                Assert.AreEqual(0, world.Table(Bullet).DeadFlags[r]);
+            }
+        }
+
+        [Test]
         public void PooledTablesSnapshotIncludingPendingRemovals()
         {
             using var world = World(16);

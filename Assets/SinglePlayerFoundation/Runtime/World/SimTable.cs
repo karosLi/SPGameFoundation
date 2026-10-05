@@ -172,6 +172,25 @@ namespace SPF.Runtime.World
             return row;
         }
 
+        /// <summary>Pooled tables: appends up to <paramref name="count"/> zeroed rows; returns the first row (rows [start, Count)).</summary>
+        internal int AddPooledRange(int count, out int added)
+        {
+            int start = Count;
+            added = Math.Max(0, Math.Min(count, Capacity - Count));
+            if (added == 0) return start;
+            for (int i = 0; i < m_ColumnList.Count; i++)
+            {
+                var col = m_ColumnList[i];
+                UnsafeUtility.MemClear(col.Pointer + (long)start * col.ElementSize, (long)added * col.ElementSize);
+            }
+            UnsafeUtility.MemClear((byte*)m_Handles.GetUnsafePtr() + (long)start * sizeof(EntityHandle), (long)added * sizeof(EntityHandle));
+            Count += added;
+            Version++;
+            if (m_Logs.Count > 0)
+                for (int row = start; row < Count; row++) Mark(row);
+            return start;
+        }
+
         NativeArray<ColumnRef> ColumnRefs(Allocator allocator)
         {
             var refs = new NativeArray<ColumnRef>(m_ColumnList.Count + 1, allocator);

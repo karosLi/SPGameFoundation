@@ -159,6 +159,21 @@ namespace SPF.Runtime.World
             return row;
         }
 
+        /// <summary>
+        /// Appends <paramref name="count"/> zeroed rows to a pooled table at once (clears whole column ranges,
+        /// no per-row work) for a Burst job to fill. Returns the first row; <paramref name="added"/> may be
+        /// smaller than asked when the table is nearly full (the shortfall counts as create failures).
+        /// </summary>
+        public int SpawnRange(TableKey key, int count, out int added)
+        {
+            var table = Table(key);
+            if (!table.IsPooled)
+                throw new InvalidOperationException($"Table {key} is not pooled: use CreateEntity.");
+            int start = table.AddPooledRange(count, out added);
+            CreateFailures += Math.Max(0, count - added);
+            return start;
+        }
+
         /// <summary>Compacts every pooled table (start of the tick, before systems run).</summary>
         internal void CompactPools()
         {

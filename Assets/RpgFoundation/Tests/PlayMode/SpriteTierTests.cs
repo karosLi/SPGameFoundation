@@ -47,7 +47,14 @@ namespace RpgFoundation.Tests.PlayMode
                     var tier = pass == 0 ? RenderTier.GpuDriven : RenderTier.DataTexture;
                     SpriteBatch.PackedTexturesOverride = pass == 2 ? false : (bool?)null;
                     using var batch = new SpriteBatch(tier, art.Sheet.Texture, BlendKind.Opaque, 512);
-                    if (pass == 1) TestContext.WriteLine($"packed data textures supported: {batch.PackedTextures}");
+                    if (pass == 1)
+                    {
+                        TestContext.WriteLine($"packed data textures supported: {batch.PackedTextures}");
+                        var api = SystemInfo.graphicsDeviceType;
+                        if (api == GraphicsDeviceType.Metal || api == GraphicsDeviceType.Vulkan || api == GraphicsDeviceType.Direct3D11 || api == GraphicsDeviceType.Direct3D12)
+                            Assert.IsTrue(batch.PackedTextures, "desktop / modern APIs take the packed (RGBA32UI) path");
+                    }
+                    if (pass == 2) Assert.IsFalse(batch.PackedTextures);
                     for (int f = 0; f < 4; f++)
                     {
                         Fill(batch, art);

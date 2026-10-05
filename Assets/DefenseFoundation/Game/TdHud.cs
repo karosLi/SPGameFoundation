@@ -19,7 +19,7 @@ namespace DefenseFoundation.Game
         public RectTransform TowerPanel { get; private set; }
         public RectTransform MenuPanel { get; private set; }
         public RectTransform EndPanel { get; private set; }
-        public Text StatsText { get; private set; }
+        public BufferText StatsText { get; private set; }
         public Text EndText { get; private set; }
         public Button NextWaveButton { get; private set; }
         public Button[] BuildButtons { get; private set; }
@@ -33,7 +33,7 @@ namespace DefenseFoundation.Game
             m_Game = game;
             var root = UIFactory.CreateCanvas(transform, "DefenseUI").transform;
             HudPanel = UIFactory.Panel(root, "HudPanel", Color.clear, Vector2.zero, Vector2.one, raycast: false);
-            StatsText = UIFactory.Label(HudPanel, "StatsText", "", 34, TextAnchor.UpperLeft, new Vector2(0.01f, 0.88f), new Vector2(0.7f, 0.99f));
+            StatsText = BufferText.Create(HudPanel, "StatsText", 34, TextAnchor.UpperLeft, new Vector2(0.01f, 0.88f), new Vector2(0.7f, 0.99f));
             NextWaveButton = UIFactory.Button(HudPanel, "NextWaveButton", "NEXT WAVE", new Vector2(-170, -70), new Vector2(300, 100), new Color(0.8f, 0.45f, 0.25f, 0.9f), new Vector2(1f, 1f), 32);
             NextWaveButton.onClick.AddListener(() => m_Game.NextWave());
 
@@ -78,8 +78,10 @@ namespace DefenseFoundation.Game
             bool playing = state.Flow == TdFlow.Building || state.Flow == TdFlow.Wave;
             HudPanel.gameObject.SetActive(playing);
             var rules = m_Game.Session.World.Resource(TdKeys.Rules);
-            string phase = state.Flow == TdFlow.Building ? $"next wave in {math.max(state.BuildTimer, 0f):0}s" : $"wave {state.Wave + 1}/{rules.Waves.Count}";
-            StatsText.text = $"Gold {state.Gold}   Lives {state.Lives}   {phase}";
+            var stats = StatsText.Begin().Append("Gold ").Append(state.Gold).Append("   Lives ").Append(state.Lives).Append("   ");
+            if (state.Flow == TdFlow.Building) stats.Append("next wave in ").Append((int)math.round(math.max(state.BuildTimer, 0f))).Append('s');
+            else stats.Append("wave ").Append(state.Wave + 1).Append('/').Append(rules.Waves.Count);
+            StatsText.Commit();
             NextWaveButton.interactable = state.Flow == TdFlow.Building;
             int2 sel = m_Game.Selected;
             if (state.Version == m_Version && math.all(sel == m_Selected)) return;

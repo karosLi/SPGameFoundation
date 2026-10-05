@@ -19,7 +19,7 @@ namespace SurvivorFoundation.Game
         public RectTransform DeadPanel { get; private set; }
         public Image HealthFill { get; private set; }
         public Image XpFill { get; private set; }
-        public Text StatsText { get; private set; }
+        public BufferText StatsText { get; private set; }
         public Text DeadText { get; private set; }
         public Button StartButton { get; private set; }
         public Button RestartButton { get; private set; }
@@ -36,7 +36,7 @@ namespace SurvivorFoundation.Game
             HudPanel = UIFactory.Panel(root, "HudPanel", Color.clear, Vector2.zero, Vector2.one);
             XpFill = UIFactory.Bar(HudPanel, "XpBar", new Color(0f, 0f, 0f, 0.6f), new Color(0.35f, 0.75f, 1f, 0.95f), new Vector2(0f, 0.975f), new Vector2(1f, 1f));
             HealthFill = UIFactory.Bar(HudPanel, "HealthBar", new Color(0f, 0f, 0f, 0.55f), new Color(0.9f, 0.25f, 0.25f, 0.95f), new Vector2(0.02f, 0.93f), new Vector2(0.3f, 0.96f));
-            StatsText = UIFactory.Label(HudPanel, "StatsText", "", 30, TextAnchor.UpperLeft, new Vector2(0.01f, 0.75f), new Vector2(0.6f, 0.925f));
+            StatsText = BufferText.Create(HudPanel, "StatsText", 30, TextAnchor.UpperLeft, new Vector2(0.01f, 0.75f), new Vector2(0.6f, 0.925f));
             var joystickArea = UIFactory.Panel(HudPanel, "Joystick", new Color(1f, 1f, 1f, 0.02f), Vector2.zero, new Vector2(1f, 0.7f));
             Joystick = joystickArea.gameObject.AddComponent<VirtualJoystick>();
             TouchInput = new TouchInputSource(Joystick);
@@ -83,7 +83,10 @@ namespace SurvivorFoundation.Game
             UIFactory.SetFill(XpFill, state.Xp / (float)Mathf.Max(SvRules.XpToNext(s, state.Level), 1));
             var world = m_Game.Session.World;
             int seconds = (int)state.Time;
-            StatsText.text = $"{seconds / 60:00}:{seconds % 60:00}   Lv {state.Level}   Kills {state.Kills}\nEnemies {world.Table(SvKeys.Enemy).Count}   Bullets {world.Table(SvKeys.Bullet).Count}";
+            // Rebuilt every frame without allocating; a string is made only when a shown number changes.
+            StatsText.Begin().Append(seconds / 60, 2).Append(':').Append(seconds % 60, 2).Append("   Lv ").Append(state.Level).Append("   Kills ").Append(state.Kills)
+                .Append("\nEnemies ").Append(world.Table(SvKeys.Enemy).Count).Append("   Bullets ").Append(world.Table(SvKeys.Bullet).Count);
+            StatsText.Commit();
             if (state.Version == m_Version) return;
             m_Version = state.Version;
             for (int i = 0; i < ChoiceButtons.Length; i++)

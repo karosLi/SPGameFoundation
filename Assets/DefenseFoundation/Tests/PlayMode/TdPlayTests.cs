@@ -49,6 +49,13 @@ namespace DefenseFoundation.Tests.PlayMode
                 float end = Time.realtimeSinceStartup + 40f;
                 while (game.State.Kills < 3 && Time.realtimeSinceStartup < end) yield return null;
                 Assert.GreaterOrEqual(game.State.Kills, 3, "towers shot enemies");
+                game.Governor.ResetGcStats();
+                for (int f = 0; f < 180; f++) { yield return null; }
+                if (game.Governor.GcCounterValid)
+                {
+                    GcReport.Write($"defense wave ({tier})", game.Governor.FramesSinceReset, game.Governor.GcFramesSinceReset, game.Governor.GcBytesSinceReset);
+                    Assert.LessOrEqual(game.Governor.GcFramesSinceReset, 2, "steady-state play allocates (almost) nothing per frame");
+                }
 
                 game.CameraRig.Camera.targetTexture = target;
                 yield return null;

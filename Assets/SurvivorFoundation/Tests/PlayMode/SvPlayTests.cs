@@ -80,6 +80,13 @@ namespace SurvivorFoundation.Tests.PlayMode
                 while (game.State.Kills < 10 && Time.realtimeSinceStartup < end) yield return null;
                 game.Session.Sync();
                 Assert.Greater(game.State.Kills, 0, "the bot fought");
+                game.Governor.ResetGcStats();
+                for (int f = 0; f < 180; f++) { yield return null; }
+                if (game.Governor.GcCounterValid)
+                {
+                    GcReport.Write($"survivor auto-play ({tier})", game.Governor.FramesSinceReset, game.Governor.GcFramesSinceReset, game.Governor.GcBytesSinceReset);
+                    Assert.LessOrEqual(game.Governor.GcFramesSinceReset, 2, "steady-state play allocates (almost) nothing per frame");
+                }
                 Assert.Greater(game.Renderer.EnemiesDrawn + game.Renderer.BulletsDrawn, 0);
                 yield return Screenshot(game, $"survivor-{(tier == RenderTier.GpuDriven ? "gpu" : "datatex")}.png");
                 TestContext.WriteLine($"survivor bot ({tier}): {game.State.Time:F0} s, level {game.State.Level}, kills {game.State.Kills}");

@@ -16,7 +16,7 @@ namespace PlatformerFoundation.Game
         public RectTransform MenuPanel { get; private set; }
         public RectTransform ClearPanel { get; private set; }
         public RectTransform OverPanel { get; private set; }
-        public Text StatsText { get; private set; }
+        public BufferText StatsText { get; private set; }
         public Text OverText { get; private set; }
         public Button StartButton { get; private set; }
         public Button NextButton { get; private set; }
@@ -31,7 +31,7 @@ namespace PlatformerFoundation.Game
             var canvas = UIFactory.CreateCanvas(transform, "PlatformerUI");
             var root = canvas.transform;
             HudPanel = UIFactory.Panel(root, "HudPanel", Color.clear, Vector2.zero, Vector2.one);
-            StatsText = UIFactory.Label(HudPanel, "StatsText", "", 36, TextAnchor.UpperLeft, new Vector2(0.02f, 0.8f), new Vector2(0.7f, 0.98f));
+            StatsText = BufferText.Create(HudPanel, "StatsText", 36, TextAnchor.UpperLeft, new Vector2(0.02f, 0.8f), new Vector2(0.7f, 0.98f));
             var stick = UIFactory.Panel(HudPanel, "Joystick", new Color(1f, 1f, 1f, 0.03f), Vector2.zero, new Vector2(0.45f, 0.6f));
             Joystick = stick.gameObject.AddComponent<VirtualJoystick>();
             var jump = UIFactory.Button(HudPanel, "JumpButton", "JUMP", new Vector2(-200, 200), new Vector2(260, 260), new Color(0.3f, 0.6f, 0.95f, 0.5f), new Vector2(1f, 0f));
@@ -69,7 +69,8 @@ namespace PlatformerFoundation.Game
             }
             if (state.Version == m_Version) return;
             m_Version = state.Version;
-            StatsText.text = $"Level {state.Level + 1}   Coins {state.Coins}   Lives {state.Lives}";
+            StatsText.Begin().Append("Level ").Append(state.Level + 1).Append("   Coins ").Append(state.Coins).Append("   Lives ").Append(state.Lives);
+            StatsText.Commit();
         }
     }
 }

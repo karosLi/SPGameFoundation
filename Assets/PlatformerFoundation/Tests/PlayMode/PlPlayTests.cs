@@ -46,6 +46,13 @@ namespace PlatformerFoundation.Tests.PlayMode
                 game.Session.Sync();
                 Assert.Greater(game.State.Hero.x, x0 + 3f, "ran right");
                 Assert.AreEqual(uploads, game.Renderer.TileUploads, "the static tile layer is not re-uploaded while playing");
+                game.Governor.ResetGcStats();
+                for (int f = 0; f < 180; f++) { yield return null; }
+                if (game.Governor.GcCounterValid)
+                {
+                    GcReport.Write($"platformer run ({tier})", game.Governor.FramesSinceReset, game.Governor.GcFramesSinceReset, game.Governor.GcBytesSinceReset);
+                    Assert.LessOrEqual(game.Governor.GcFramesSinceReset, 2, "steady-state play allocates (almost) nothing per frame");
+                }
                 Assert.Greater(game.Renderer.TileSprites, 200);
 
                 game.CameraRig.Camera.targetTexture = target;

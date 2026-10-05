@@ -37,7 +37,7 @@ namespace PuzzleFoundation.Game
         public bool InputLocked => Renderer.Busy || Session.PendingTicks > 0 || Board.Moves.Count > 0;
 
         // HUD
-        public Text StatsText { get; private set; }
+        public BufferText StatsText { get; private set; }
         public Image ScoreFill { get; private set; }
         public Button StartButton { get; private set; }
         public Button UndoButton { get; private set; }
@@ -106,7 +106,7 @@ namespace PuzzleFoundation.Game
         {
             var root = UIFactory.CreateCanvas(transform, "PuzzleUI").transform;
             var hud = UIFactory.Panel(root, "Hud", Color.clear, Vector2.zero, Vector2.one, raycast: false);
-            StatsText = UIFactory.Label(hud, "Stats", "", 38, TextAnchor.UpperCenter, new Vector2(0f, 0.9f), new Vector2(1f, 0.99f));
+            StatsText = BufferText.Create(hud, "Stats", 38, TextAnchor.UpperCenter, new Vector2(0f, 0.9f), new Vector2(1f, 0.99f));
             ScoreFill = UIFactory.Bar(hud, "ScoreBar", new Color(0f, 0f, 0f, 0.5f), new Color(0.95f, 0.8f, 0.3f, 0.95f), new Vector2(0.2f, 0.87f), new Vector2(0.8f, 0.89f));
             UndoButton = UIFactory.Button(hud, "UndoButton", "UNDO", new Vector2(-200, 90), new Vector2(260, 110), new Color(0.35f, 0.4f, 0.65f, 0.95f), new Vector2(0.5f, 0f), 34);
             UndoButton.onClick.AddListener(Undo);
@@ -196,7 +196,8 @@ namespace PuzzleFoundation.Game
             if (over && !EndPanel.gameObject.activeSelf && board.Flow == M3Flow.Won) m_Sound.Play(m_Win);
             EndPanel.gameObject.SetActive(over);
             EndText.text = board.Flow == M3Flow.Won ? "CLEARED!" : "OUT OF MOVES";
-            StatsText.text = $"Score {board.Score} / {board.Target}     Moves {board.MovesLeft}";
+            StatsText.Begin().Append("Score ").Append(board.Score).Append(" / ").Append(board.Target).Append("     Moves ").Append(board.MovesLeft);
+            StatsText.Commit();
             UIFactory.SetFill(ScoreFill, board.Target > 0 ? math.saturate(board.Score / (float)board.Target) : 0f);
             UndoButton.interactable = History.CanUndo && !InputLocked;
         }

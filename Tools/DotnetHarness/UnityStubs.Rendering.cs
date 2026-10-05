@@ -69,6 +69,7 @@ namespace UnityEngine
         public int renderQueue { get; set; }
         public bool enableInstancing { get; set; }
         public Color color { get; set; }
+        public Texture mainTexture { get; set; }
         public void SetBuffer(int id, GraphicsBuffer b) { }
         public void SetBuffer(string n, GraphicsBuffer b) { }
         public void SetTexture(int id, Texture t) { }

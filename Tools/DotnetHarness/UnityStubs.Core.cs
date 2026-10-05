@@ -33,6 +33,7 @@ namespace UnityEngine
         public static void DestroyImmediate(Object o) => Destroy(o);
         public static void DontDestroyOnLoad(Object o) { }
         public static T Instantiate<T>(T original) where T : Object => original;
+        public static T Instantiate<T>(T original, Transform parent, bool worldPositionStays) where T : Object => original;
         public static T FindObjectOfType<T>() where T : Object => null;
         public int GetInstanceID() => GetHashCode();
         public static implicit operator bool(Object o) => o is object && !o.m_Destroyed;
@@ -296,6 +297,7 @@ namespace UnityEngine
         public float x, y, z, w;
         public Vector4(float x, float y, float z, float w) { this.x = x; this.y = y; this.z = z; this.w = w; }
         public static Vector4 zero => default;
+        public static implicit operator Vector4(Vector2 v) => new Vector4(v.x, v.y, 0f, 0f);
         public static implicit operator Vector4(Vector3 v) => new Vector4(v.x, v.y, v.z, 0);
     }
 
@@ -415,7 +417,28 @@ namespace UnityEngine
 
     public enum TextAnchor { UpperLeft, UpperCenter, UpperRight, MiddleLeft, MiddleCenter, MiddleRight, LowerLeft, LowerCenter, LowerRight }
     public enum FontStyle { Normal, Bold, Italic, BoldAndItalic }
-    public class Font : Object { public static Font CreateDynamicFontFromOSFont(string n, int s) => new Font(); }
+    public class Font : Object
+    {
+        public static Font CreateDynamicFontFromOSFont(string n, int s) => new Font();
+        public static event System.Action<Font> textureRebuilt;
+        internal static void RaiseRebuilt(Font f) => textureRebuilt?.Invoke(f);
+        public Material material { get; set; }
+        public int fontSize => 16;
+        // Monospace stand-in metrics so layout code can be exercised without a font engine.
+        public bool GetCharacterInfo(char ch, out CharacterInfo info, int size, FontStyle style)
+        {
+            int adv = ch >= 0x2E80 ? size : size / 2;
+            info = new CharacterInfo { index = ch, advance = adv, minX = 0, maxX = adv, minY = 0, maxY = size * 7 / 10,
+                uvBottomLeft = default, uvBottomRight = default, uvTopLeft = default, uvTopRight = default };
+            return true;
+        }
+        public void RequestCharactersInTexture(string characters, int size, FontStyle style) { }
+    }
+    public struct CharacterInfo
+    {
+        public int index, advance, minX, maxX, minY, maxY;
+        public Vector2 uvBottomLeft, uvBottomRight, uvTopLeft, uvTopRight;
+    }
     public class GUIStyleState { public Color textColor; }
     public class GUIStyle { public GUIStyle() { } public GUIStyle(GUIStyle o) { } public TextAnchor alignment; public int fontSize; public bool richText; public GUIStyleState normal = new GUIStyleState(); public Vector2 CalcSize(GUIContent c) => default; }
     public class GUISkin { public GUIStyle box => new GUIStyle(); public GUIStyle label => new GUIStyle(); }

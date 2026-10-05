@@ -10,6 +10,12 @@ namespace UnityEngine
         public RenderMode renderMode { get; set; }
         public int sortingOrder { get; set; }
         public Camera worldCamera { get; set; }
+        public float scaleFactor { get; set; } = 1f;
+    }
+    public struct UIVertex
+    {
+        public Vector3 position; public Vector3 normal; public Vector4 tangent; public Color32 color; public Vector4 uv0, uv1;
+        public static UIVertex simpleVert => new UIVertex { color = new Color32(255, 255, 255, 255) };
     }
     public enum HorizontalWrapMode { Wrap, Overflow }
     public enum VerticalWrapMode { Truncate, Overflow }
@@ -28,7 +34,11 @@ namespace UnityEngine.Events
 
 namespace UnityEngine.EventSystems
 {
-    public class UIBehaviour : MonoBehaviour { }
+    public class UIBehaviour : MonoBehaviour
+    {
+        protected virtual void OnEnable() { }
+        protected virtual void OnDisable() { }
+    }
     public struct RaycastResult { public GameObject gameObject { get; set; } }
     public class EventSystem : UIBehaviour
     {
@@ -71,8 +81,27 @@ namespace UnityEngine.EventSystems
 
 namespace UnityEngine.UI
 {
+    public class VertexHelper
+    {
+        public readonly System.Collections.Generic.List<UIVertex> Verts = new System.Collections.Generic.List<UIVertex>();
+        public int Triangles;
+        public int currentVertCount => Verts.Count;
+        public int currentIndexCount => Triangles * 3;
+        public void Clear() { Verts.Clear(); Triangles = 0; }
+        public void AddVert(UIVertex v) => Verts.Add(v);
+        public void AddTriangle(int a, int b, int c) => Triangles++;
+        public void PopulateUIVertex(ref UIVertex v, int i) => v = Verts[i];
+    }
     public class Graphic : EventSystems.UIBehaviour
     {
+        public Rect StubRect = new Rect(0, 0, 400, 200);
+        public virtual Texture mainTexture => null;
+        public Canvas canvas => null;
+        public virtual void SetVerticesDirty() { }
+        public virtual void SetAllDirty() { }
+        public Rect GetPixelAdjustedRect() => rectTransform != null ? rectTransform.rect : StubRect;
+        protected virtual void OnPopulateMesh(VertexHelper vh) { }
+        public void StubPopulate(VertexHelper vh) => OnPopulateMesh(vh);
         public Color color { get; set; } = Color.white;
         public bool raycastTarget { get; set; } = true;
         public RectTransform rectTransform => transform as RectTransform;

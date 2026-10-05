@@ -1,0 +1,25 @@
+{
+    "name": "RpgFoundation.Presentation",
+    "rootNamespace": "RpgFoundation.Presentation",
+    "references": [
+        "SPF.Contracts",
+        "SPF.L1Simulation",
+        "SPF.L2Gameplay",
+        "SPF.Runtime.Core",
+        "SPF.Runtime",
+        "SPF.Presentation",
+        "SPF.Shell",
+        "RpgFoundation.Runtime",
+        "Unity.Collections",
+        "Unity.Mathematics"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -2,10 +2,10 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-namespace SnakeFoundation.Tests.PlayMode
+namespace SPF.Testing
 {
     /// <summary>Drives UGUI like a finger would: pointer down / drag / up / click through the EventSystem.</summary>
-    static class UIDriver
+    public static class UIDriver
     {
         static PointerEventData Pointer(GameObject target, Vector2 position) => new PointerEventData(EventSystem.current)
         {

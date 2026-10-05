@@ -26,7 +26,7 @@ namespace UnityEditor
         public static void SetGraphicsAPIs(BuildTarget t, UnityEngine.Rendering.GraphicsDeviceType[] apis) { }
         public static class Android { public static AndroidArchitecture targetArchitectures { get; set; } }
     }
-    public sealed class EditorBuildSettingsScene { public EditorBuildSettingsScene(string path, bool enabled) { } }
+    public sealed class EditorBuildSettingsScene { public EditorBuildSettingsScene(string path, bool enabled) { this.path = path; } public string path; public bool enabled = true; }
     public static class EditorBuildSettings { public static EditorBuildSettingsScene[] scenes { get; set; } }
     public static class AssetDatabase
     {

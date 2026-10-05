@@ -1,0 +1,20 @@
+{
+    "name": "RpgFoundation.Editor",
+    "rootNamespace": "RpgFoundation.Editor",
+    "references": [
+        "SPF.Runtime",
+        "RpgFoundation.Runtime",
+        "RpgFoundation.Game"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

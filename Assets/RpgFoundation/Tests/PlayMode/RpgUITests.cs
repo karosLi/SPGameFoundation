@@ -141,6 +141,34 @@ namespace RpgFoundation.Tests.PlayMode
             Assert.AreEqual(0, State.MonstersAlive, "the slime died");
             Assert.AreEqual(1, State.Profile.Kills);
             Assert.Greater(maxText, 0, "hit sparks and damage numbers were shown");
+            Assert.Greater(m_Game.Audio.Player.Played, 2, "swing / hit / death sounds played");
+        }
+
+        [UnityTest]
+        public IEnumerator PauseMenuSoundSettingsAreSaved()
+        {
+            yield return StartNewGame();
+            UIDriver.Click(m_Game.Hud.PauseButton.gameObject);
+            yield return null;
+            float before = m_Game.Options.SfxVolume;
+            UIDriver.Click(m_Game.Hud.VolumeDownButton.gameObject);
+            UIDriver.Click(m_Game.Hud.VolumeDownButton.gameObject);
+            Assert.AreEqual(before - 0.2f, m_Game.Options.SfxVolume, 1e-4f);
+            Assert.AreEqual(m_Game.Options.SfxVolume, m_Game.Audio.Player.GetVolume(SPF.Presentation.Audio.SoundBus.Sfx), 1e-4f);
+            UIDriver.Click(m_Game.Hud.SoundButton.gameObject);
+            Assert.IsTrue(m_Game.Audio.Player.Muted);
+            StringAssert.Contains("OFF", m_Game.Hud.SoundButton.GetComponentInChildren<UnityEngine.UI.Text>().text);
+            UIDriver.Click(m_Game.Hud.ResumeButton.gameObject);
+            yield return null;
+            Assert.IsFalse(m_Game.Paused);
+
+            Destroy();
+            yield return null;
+            m_Game = RpgGameBootstrap.Create(m_Config, seed: 21, ui: true);
+            yield return null;
+            Assert.IsTrue(m_Game.Options.Muted, "settings loaded");
+            Assert.AreEqual(before - 0.2f, m_Game.Options.SfxVolume, 1e-4f);
+            Assert.IsTrue(m_Game.Audio.Player.Muted);
         }
 
         [UnityTest]

@@ -165,7 +165,12 @@ namespace RpgFoundation.Systems
                 {
                     if (!input.WasPressed(RpgButton.Skill1 + slot)) continue;
                     byte id = loadout.Skill(slot);
-                    if (id == 0 || c.SkillCooldown[slot] > 0f || mana < config.Skills[id - 1].ManaCost) continue;
+                    if (id == 0 || c.SkillCooldown[slot] > 0f) continue;
+                    if (mana < config.Skills[id - 1].ManaCost)
+                    {
+                        world.Resource(RpgKeys.Feedback).TryAdd(new FeedbackEvent { Kind = FeedbackKind.Mana, Position = world.Column(RpgKeys.Position)[row] });
+                        continue;
+                    }
                     c.Action = ActorAction.Skill;
                     c.RequestSlot = (byte)slot;
                     break;

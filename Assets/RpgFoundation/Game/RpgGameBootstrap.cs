@@ -39,6 +39,8 @@ namespace RpgFoundation.Game
         public RpgWorldRenderer WorldRenderer { get; private set; }
         public InputRouter InputRouter { get; private set; }
         public RpgHud Hud { get; private set; }
+        public RpgAudio Audio { get; private set; }
+        public RpgOptions Options { get; } = new RpgOptions();
         public ProfileStore Saves { get; private set; }
         public SimSession Session => Host != null ? Host.Session : null;
         public RpgGameState State => Session?.World.Resource(RpgKeys.Game);
@@ -92,6 +94,12 @@ namespace RpgFoundation.Game
             WorldRenderer = view.AddComponent<RpgWorldRenderer>();
             WorldRenderer.Host = Host;
             WorldRenderer.Camera = CameraRig;
+
+            if (cameraObject.GetComponent<AudioListener>() == null) cameraObject.AddComponent<AudioListener>();
+            Audio = RpgAudio.Create(transform, WorldRenderer, CameraRig);
+            Audio.Config = Runtime;
+            Saves.Load(RpgOptions.Slot, Options);
+            ApplyOptions();
 
             InputRouter = gameObject.AddComponent<InputRouter>();
             InputRouter.Sink = frame =>
@@ -166,6 +174,25 @@ namespace RpgFoundation.Game
             if (!m_RunSaved && !Saves.Exists(RunSlot)) return;
             Saves.Delete(RunSlot);
             m_RunSaved = false;
+        }
+
+        // ---- Options ----
+
+        public void ApplyOptions()
+        {
+            Audio.Player.SetVolume(SPF.Presentation.Audio.SoundBus.Sfx, Options.SfxVolume);
+            Audio.Player.SetVolume(SPF.Presentation.Audio.SoundBus.Ui, Options.SfxVolume);
+            Audio.Player.SetVolume(SPF.Presentation.Audio.SoundBus.Music, Options.MusicVolume);
+            Audio.Player.Muted = Options.Muted;
+        }
+
+        /// <summary>Changes the sound settings, applies and saves them.</summary>
+        public void SetSound(float sfxVolume, bool muted)
+        {
+            Options.SfxVolume = Mathf.Clamp01(sfxVolume);
+            Options.Muted = muted;
+            ApplyOptions();
+            Saves.Save(RpgOptions.Slot, Options);
         }
 
         // ---- Pause ----

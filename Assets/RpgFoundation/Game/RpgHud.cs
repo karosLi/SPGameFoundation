@@ -29,6 +29,9 @@ namespace RpgFoundation.Game
         public Button PauseButton { get; private set; }
         public Button ResumeButton { get; private set; }
         public Button SaveQuitButton { get; private set; }
+        public Button SoundButton { get; private set; }
+        public Button VolumeDownButton { get; private set; }
+        public Button VolumeUpButton { get; private set; }
         public Image HealthFill { get; private set; }
         public Image XpFill { get; private set; }
         public Text StatsText { get; private set; }
@@ -65,7 +68,7 @@ namespace RpgFoundation.Game
             FloatingText = gameObject.AddComponent<FloatingTextPool>();
             FloatingText.Camera = camera;
             FloatingText.Build(root);
-            game.WorldRenderer.Feedback = OnFeedback;
+            game.WorldRenderer.Feedback += OnFeedback;
 
             // HUD
             HudPanel = UIFactory.Panel(root, "HudPanel", Color.clear, Vector2.zero, Vector2.one);
@@ -125,6 +128,13 @@ namespace RpgFoundation.Game
             ResumeButton.onClick.AddListener(() => m_Game.Resume());
             SaveQuitButton = UIFactory.Button(PausePanel, "SaveQuitButton", "SAVE & QUIT", new Vector2(0, -120), new Vector2(460, 110), new Color(0.35f, 0.45f, 0.7f, 0.95f), new Vector2(0.5f, 0.5f));
             SaveQuitButton.onClick.AddListener(() => m_Game.SaveAndQuit());
+            SoundButton = UIFactory.Button(PausePanel, "SoundButton", "", new Vector2(0, -260), new Vector2(460, 100), new Color(0.3f, 0.3f, 0.4f, 0.95f), new Vector2(0.5f, 0.5f), 34);
+            SoundButton.onClick.AddListener(() => { m_Game.SetSound(m_Game.Options.SfxVolume, !m_Game.Options.Muted); RefreshSound(); });
+            VolumeDownButton = UIFactory.Button(PausePanel, "VolumeDownButton", "-", new Vector2(-300, -260), new Vector2(100, 100), new Color(0.3f, 0.3f, 0.4f, 0.95f), new Vector2(0.5f, 0.5f), 50);
+            VolumeDownButton.onClick.AddListener(() => { m_Game.SetSound(Mathf.Round(m_Game.Options.SfxVolume * 10f - 1f) / 10f, false); RefreshSound(); });
+            VolumeUpButton = UIFactory.Button(PausePanel, "VolumeUpButton", "+", new Vector2(300, -260), new Vector2(100, 100), new Color(0.3f, 0.3f, 0.4f, 0.95f), new Vector2(0.5f, 0.5f), 50);
+            VolumeUpButton.onClick.AddListener(() => { m_Game.SetSound(Mathf.Round(m_Game.Options.SfxVolume * 10f + 1f) / 10f, false); RefreshSound(); });
+            RefreshSound();
             PausePanel.gameObject.SetActive(false);
 
             // Menu
@@ -154,6 +164,16 @@ namespace RpgFoundation.Game
             UIFactory.Label(VictoryPanel, "VictoryText", "VICTORY", 120, TextAnchor.MiddleCenter, new Vector2(0f, 0.55f), new Vector2(1f, 0.85f));
             VictoryMenuButton = UIFactory.Button(VictoryPanel, "VictoryMenuButton", "MENU", new Vector2(0, -60), new Vector2(460, 130), new Color(0.35f, 0.6f, 0.4f, 0.95f), new Vector2(0.5f, 0.5f));
             VictoryMenuButton.onClick.AddListener(() => m_Game.BackToMenu());
+
+            // Every button clicks (UI bus: audible while paused).
+            foreach (var button in root.GetComponentsInChildren<Button>(true))
+                button.onClick.AddListener(() => m_Game.Audio?.PlayUi(m_Game.Audio.Click));
+        }
+
+        void RefreshSound()
+        {
+            var o = m_Game.Options;
+            UIFactory.SetText(SoundButton, o.Muted ? "SOUND: OFF" : "SOUND: " + Mathf.RoundToInt(o.SfxVolume * 100f) + "%");
         }
 
         void OnFeedback(FeedbackEvent e)

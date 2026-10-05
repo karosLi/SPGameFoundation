@@ -54,6 +54,7 @@ namespace UnityEngine
         public T GetComponent<T>() where T : class => gameObject?.GetComponent<T>();
         public T GetComponentInChildren<T>() where T : class => GetComponent<T>();
         public T[] GetComponentsInChildren<T>() where T : class => Array.Empty<T>();
+        public T[] GetComponentsInChildren<T>(bool includeInactive) where T : class => Array.Empty<T>();
         public string tag { get; set; }
     }
 
@@ -124,6 +125,32 @@ namespace UnityEngine
     }
 
     public class Behaviour : Component { public bool enabled { get; set; } = true; public bool isActiveAndEnabled => enabled; }
+    public sealed class AudioClip : Object
+    {
+        float[] m_Data = new float[0];
+        public int samples { get; private set; }
+        public int channels { get; private set; }
+        public int frequency { get; private set; }
+        public float length => frequency > 0 ? samples / (float)frequency : 0f;
+        public static AudioClip Create(string name, int lengthSamples, int channels, int frequency, bool stream)
+            => new AudioClip { name = name, samples = lengthSamples, channels = channels, frequency = frequency, m_Data = new float[lengthSamples * channels] };
+        public bool SetData(float[] data, int offsetSamples) { Array.Copy(data, 0, m_Data, offsetSamples, Math.Min(data.Length, m_Data.Length - offsetSamples)); return true; }
+        public bool GetData(float[] data, int offsetSamples) { Array.Copy(m_Data, offsetSamples, data, 0, Math.Min(data.Length, m_Data.Length - offsetSamples)); return true; }
+    }
+    public sealed class AudioSource : Behaviour
+    {
+        public AudioClip clip { get; set; }
+        public float volume { get; set; } = 1f;
+        public float pitch { get; set; } = 1f;
+        public float panStereo { get; set; }
+        public float spatialBlend { get; set; }
+        public bool playOnAwake { get; set; } = true;
+        public bool loop { get; set; }
+        public bool isPlaying { get; private set; }
+        public void Play() => isPlaying = true;
+        public void Stop() => isPlaying = false;
+    }
+    public sealed class AudioListener : Behaviour { }
     public class MonoBehaviour : Behaviour
     {
         public Coroutine StartCoroutine(IEnumerator routine) => null;
@@ -357,6 +384,7 @@ namespace UnityEngine
         public static float Log(float v) => MathF.Log(v);
         public static float Pow(float a, float b) => MathF.Pow(a, b);
         public static int RoundToInt(float v) => (int)MathF.Round(v);
+        public static float Round(float v) => MathF.Round(v);
         public static int CeilToInt(float v) => (int)MathF.Ceiling(v);
         public static int FloorToInt(float v) => (int)MathF.Floor(v);
         public static float SmoothDamp(float c, float t, ref float v, float st) => t;

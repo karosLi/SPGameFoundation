@@ -35,7 +35,7 @@ namespace RpgFoundation
             int events = Config.Capacity.EventQueue;
             layout.Resource(RpgKeys.Config, RpgRuntimeConfig.Bake(Config));
             layout.Resource(RpgKeys.Game, new RpgGameState());
-            layout.Resource(RpgKeys.Feedback, new EventQueue<FeedbackEvent>(events));
+            layout.Resource(RpgKeys.Feedback, new EventQueue<FeedbackEvent>(events, saved: false));
             layout.Resource(RpgKeys.Deaths, new EventQueue<DeathEvent>(Config.Capacity.Actors));
         }
 

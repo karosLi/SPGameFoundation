@@ -19,6 +19,7 @@ namespace SPF.Runtime.World
         readonly Dictionary<int, SimTable> m_TablesByKey = new Dictionary<int, SimTable>();
         readonly Dictionary<int, object> m_Resources = new Dictionary<int, object>();
         readonly List<object> m_ResourceList = new List<object>();
+        readonly List<AccessKey> m_ResourceKeys = new List<AccessKey>();
         readonly List<ISyncResource> m_SyncResources = new List<ISyncResource>();
         readonly List<IResettableResource> m_ResettableResources = new List<IResettableResource>();
         readonly DestroyQueue m_DestroyQueue;
@@ -63,6 +64,7 @@ namespace SPF.Runtime.World
         {
             m_Resources.Add(key.Id, resource);
             m_ResourceList.Add(resource);
+            m_ResourceKeys.Add(key);
             if (resource is ISyncResource sync) m_SyncResources.Add(sync);
             if (resource is IResettableResource resettable) m_ResettableResources.Add(resettable);
         }
@@ -158,11 +160,96 @@ namespace SPF.Runtime.World
                 m_ResettableResources[i].OnReset();
         }
 
+        // ---- Snapshots: between ticks only (no job running). ----
+
+        const int SnapshotMagic = 0x57465053;   // "SPFW"
+        const int SnapshotFormat = 1;
+
+        /// <summary>
+        /// Resources jobs use that cannot be snapshotted (no <see cref="ISnapshotResource"/>). A world with
+        /// any of these cannot be saved mid-level; main-thread resources are the game's responsibility.
+        /// </summary>
+        public List<string> SnapshotGaps()
+        {
+            var gaps = new List<string>();
+            for (int i = 0; i < m_ResourceList.Count; i++)
+                if (m_ResourceList[i] is IJobData && !(m_ResourceList[i] is ISnapshotResource))
+                    gaps.Add(m_ResourceKeys[i].Name);
+            return gaps;
+        }
+
+        /// <summary>
+        /// Writes the complete simulation state: every table's live rows, the handle registry and every
+        /// <see cref="ISnapshotResource"/>. Configuration resources are not saved; the reading world must be
+        /// built from the same layout and seed.
+        /// </summary>
+        public void WriteSnapshot(System.IO.BinaryWriter writer)
+        {
+            var gaps = SnapshotGaps();
+            if (gaps.Count > 0)
+                throw new NotSupportedException("These resources do not support snapshots: " + string.Join(", ", gaps));
+            writer.Write(SnapshotMagic);
+            writer.Write(SnapshotFormat);
+            writer.Write(Seed);
+            writer.Write(CreateFailures);
+            writer.Write(m_Tables.Count);
+            foreach (var table in m_Tables)
+            {
+                writer.Write(table.Key.Name);
+                table.WriteSnapshot(writer);
+            }
+            Registry.WriteSnapshot(writer);
+            NativeIO.WriteMarker(writer, "registry");
+            for (int i = 0; i < m_ResourceList.Count; i++)
+            {
+                if (!(m_ResourceList[i] is ISnapshotResource resource)) continue;
+                writer.Write(m_ResourceKeys[i].Name);
+                resource.WriteSnapshot(writer);
+                NativeIO.WriteMarker(writer, m_ResourceKeys[i].Name);
+            }
+            writer.Write("");
+        }
+
+        /// <summary>
+        /// Restores a snapshot written by a world with the same layout and seed. Throws
+        /// <see cref="System.IO.InvalidDataException"/> when it does not fit; the world is then left
+        /// partially restored and must be <see cref="Reset"/> before further use.
+        /// </summary>
+        public void ReadSnapshot(System.IO.BinaryReader reader)
+        {
+            if (reader.ReadInt32() != SnapshotMagic || reader.ReadInt32() != SnapshotFormat)
+                throw new System.IO.InvalidDataException("Not a world snapshot (or an unsupported format).");
+            if (reader.ReadUInt32() != Seed)
+                throw new System.IO.InvalidDataException("Snapshot was taken in a world with a different seed.");
+            CreateFailures = reader.ReadInt32();
+            if (reader.ReadInt32() != m_Tables.Count)
+                throw new System.IO.InvalidDataException("Snapshot has a different table set.");
+            foreach (var table in m_Tables)
+            {
+                if (reader.ReadString() != table.Key.Name)
+                    throw new System.IO.InvalidDataException($"Snapshot table order differs at {table.Key}.");
+                table.ReadSnapshot(reader);
+            }
+            Registry.ReadSnapshot(reader);
+            NativeIO.ReadMarker(reader, "registry");
+            for (int i = 0; i < m_ResourceList.Count; i++)
+            {
+                if (!(m_ResourceList[i] is ISnapshotResource resource)) continue;
+                if (reader.ReadString() != m_ResourceKeys[i].Name)
+                    throw new System.IO.InvalidDataException($"Snapshot resource order differs at {m_ResourceKeys[i]}.");
+                resource.ReadSnapshot(reader);
+                NativeIO.ReadMarker(reader, m_ResourceKeys[i].Name);
+            }
+            if (reader.ReadString() != "")
+                throw new System.IO.InvalidDataException("Snapshot has more resources than this world.");
+        }
+
         public void Dispose()
         {
             foreach (var resource in m_ResourceList)
                 (resource as IDisposable)?.Dispose();
             m_ResourceList.Clear();
+            m_ResourceKeys.Clear();
             m_Resources.Clear();
             foreach (var table in m_Tables)
                 table.Dispose();
@@ -173,7 +260,7 @@ namespace SPF.Runtime.World
     }
 
     /// <summary>Deferred entity destruction requested from jobs or main-thread systems.</summary>
-    public sealed class DestroyQueue : IDisposable, IResettableResource, IJobData
+    public sealed class DestroyQueue : IDisposable, IResettableResource, IJobData, ISnapshotResource
     {
         ParallelQueue<EntityHandle> m_Queue;
 
@@ -202,6 +289,18 @@ namespace SPF.Runtime.World
         {
             m_Queue.Clear();
             TotalOverflow = 0;
+        }
+
+        public void WriteSnapshot(System.IO.BinaryWriter writer)
+        {
+            writer.Write(TotalOverflow);
+            m_Queue.WriteSnapshot(writer);
+        }
+
+        public void ReadSnapshot(System.IO.BinaryReader reader)
+        {
+            TotalOverflow = reader.ReadInt32();
+            m_Queue.ReadSnapshot(reader);
         }
 
         public void Dispose() => m_Queue.Dispose();

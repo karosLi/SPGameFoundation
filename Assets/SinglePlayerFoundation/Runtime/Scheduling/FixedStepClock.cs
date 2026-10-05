@@ -61,6 +61,20 @@ namespace SPF.Runtime.Scheduling
             return time;
         }
 
+        /// <summary>Index of the next tick to simulate.</summary>
+        public uint NextTickIndex => m_NextTick;
+
+        /// <summary>Simulated time at the start of the next tick.</summary>
+        public double Elapsed => m_Elapsed;
+
+        /// <summary>Continues from a saved position (snapshot restore); pending frame time is dropped.</summary>
+        public void Restore(uint nextTick, double elapsed)
+        {
+            m_Accumulator = 0;
+            m_NextTick = nextTick;
+            m_Elapsed = elapsed;
+        }
+
         public void Reset()
         {
             m_Accumulator = 0;

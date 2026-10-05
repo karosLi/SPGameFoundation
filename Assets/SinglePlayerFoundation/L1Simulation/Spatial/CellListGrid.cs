@@ -19,7 +19,7 @@ namespace SPF.L1.Spatial
     /// rebuild (<see cref="Writer.Clear"/> then re-insert). Queries match <see cref="GridReader"/>.
     /// </para>
     /// </summary>
-    public sealed class CellListGrid : IDisposable, IResettableResource, IJobData
+    public sealed class CellListGrid : IDisposable, IResettableResource, IJobData, ISnapshotResource
     {
         public const int BlockSize = 4;
         const int BlockShift = 2, LaneMask = BlockSize - 1;
@@ -103,6 +103,39 @@ namespace SPF.L1.Spatial
         public CellListReader AsReader() => new CellListReader(m_CellHead, m_CellCount, m_Slots, m_BlockNext, m_Stats, BuiltOrigin, CellSize, Dimensions);
 
         public void OnReset() => AsWriter().Clear();
+
+        /// <summary>Saves the whole structure: block layout and free list decide future insertion order.</summary>
+        public void WriteSnapshot(System.IO.BinaryWriter writer)
+        {
+            writer.Write(Origin.x); writer.Write(Origin.y);
+            writer.Write(BuiltOrigin.x); writer.Write(BuiltOrigin.y);
+            NativeIO.Write(writer, m_CellHead);
+            NativeIO.Write(writer, m_CellTail);
+            NativeIO.Write(writer, m_CellCount);
+            NativeIO.Write(writer, m_Slots);
+            NativeIO.Write(writer, m_SlotKey);
+            NativeIO.Write(writer, m_BlockNext);
+            NativeIO.Write(writer, m_BlockPrev);
+            NativeIO.Write(writer, m_KeySlot);
+            NativeIO.Write(writer, m_FreeBlocks);
+            NativeIO.Write(writer, m_Stats);
+        }
+
+        public void ReadSnapshot(System.IO.BinaryReader reader)
+        {
+            Origin = new float2(reader.ReadSingle(), reader.ReadSingle());
+            BuiltOrigin = new float2(reader.ReadSingle(), reader.ReadSingle());
+            NativeIO.ReadAll(reader, m_CellHead);
+            NativeIO.ReadAll(reader, m_CellTail);
+            NativeIO.ReadAll(reader, m_CellCount);
+            NativeIO.ReadAll(reader, m_Slots);
+            NativeIO.ReadAll(reader, m_SlotKey);
+            NativeIO.ReadAll(reader, m_BlockNext);
+            NativeIO.ReadAll(reader, m_BlockPrev);
+            NativeIO.ReadAll(reader, m_KeySlot);
+            NativeIO.ReadAll(reader, m_FreeBlocks);
+            NativeIO.ReadAll(reader, m_Stats);
+        }
 
         public void Dispose()
         {

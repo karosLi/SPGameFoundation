@@ -229,6 +229,46 @@ namespace RpgFoundation.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator PauseSaveAndQuitThenContinueResumesMidFloor()
+        {
+            yield return StartNewGame();
+            yield return UIDriver.WaitSeconds(0.5f);
+            UIDriver.Click(m_Game.Hud.PauseButton.gameObject);
+            yield return null;
+            Assert.IsTrue(m_Game.Paused, "paused");
+            Assert.IsTrue(m_Game.Hud.PausePanel.gameObject.activeInHierarchy, "pause menu shown");
+            uint tick = m_Game.Session.Clock.NextTickIndex;
+            yield return UIDriver.WaitSeconds(0.3f);
+            Assert.AreEqual(tick, m_Game.Session.Clock.NextTickIndex, "no ticks while paused");
+
+            var world = World;
+            var hero = world.Column(RpgKeys.Position)[HeroRow];
+            int actors = world.Table(RpgKeys.Actor).Count;
+            int monsters = State.MonstersAlive;
+            UIDriver.Click(m_Game.Hud.SaveQuitButton.gameObject);
+            yield return UIDriver.WaitUntil(() => State.Flow == RpgFlow.Menu, 3f);
+            Assert.IsFalse(m_Game.Paused);
+            Assert.IsTrue(m_Game.Saves.Exists(RpgGameBootstrap.RunSlot), "mid-floor snapshot saved");
+
+            // A fresh game instance (same seed) resumes exactly where the player left.
+            Destroy();
+            yield return null;
+            m_Game = RpgGameBootstrap.Create(m_Config, seed: 21, ui: true);
+            yield return UIDriver.WaitSeconds(0.3f);
+            Assert.IsTrue(m_Game.Hud.ContinueButton.interactable, "continue enabled");
+            UIDriver.Click(m_Game.Hud.ContinueButton.gameObject);
+            Assert.AreEqual(RpgFlow.Playing, State.Flow, "restored immediately");
+            world = World;
+            Assert.AreEqual(tick, m_Game.Session.Clock.NextTickIndex);
+            Assert.AreEqual(actors, world.Table(RpgKeys.Actor).Count);
+            Assert.AreEqual(monsters, State.MonstersAlive);
+            Assert.AreEqual(hero, world.Column(RpgKeys.Position)[HeroRow]);
+            yield return UIDriver.WaitSeconds(0.3f);
+            Assert.Greater(m_Game.Session.Clock.NextTickIndex, tick, "running after continue");
+            Assert.IsTrue(m_Game.Saves.Exists(RpgGameBootstrap.RunSlot), "kept until the next floor or death");
+        }
+
+        [UnityTest]
         public IEnumerator DeathShowsRetryWhichRebuildsTheFloor()
         {
             yield return StartNewGame();

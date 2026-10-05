@@ -168,6 +168,35 @@ namespace SPF.Runtime.Scheduling
             m_Stats.Reset();
         }
 
+        /// <summary>State of every <see cref="ISnapshotSystem"/> (between ticks).</summary>
+        public void WriteSnapshot(System.IO.BinaryWriter writer)
+        {
+            EndTick();
+            foreach (var entry in m_Systems)
+            {
+                if (!(entry.System is ISnapshotSystem system)) continue;
+                writer.Write(entry.Name);
+                system.WriteSnapshot(writer);
+                NativeIO.WriteMarker(writer, entry.Name);
+            }
+            writer.Write("");
+        }
+
+        public void ReadSnapshot(System.IO.BinaryReader reader)
+        {
+            EndTick();
+            foreach (var entry in m_Systems)
+            {
+                if (!(entry.System is ISnapshotSystem system)) continue;
+                if (reader.ReadString() != entry.Name)
+                    throw new System.IO.InvalidDataException($"Snapshot system order differs at {entry.Name}.");
+                system.ReadSnapshot(reader, m_World);
+                NativeIO.ReadMarker(reader, entry.Name);
+            }
+            if (reader.ReadString() != "")
+                throw new System.IO.InvalidDataException("Snapshot has more system states than this pipeline.");
+        }
+
         public void Dispose()
         {
             EndTick();

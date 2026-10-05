@@ -78,7 +78,7 @@ namespace SnakeFoundation
             layout.Resource(SnakeKeys.Hits, new EventQueue<ProjectileHit>(cap.Projectiles));
             layout.Resource(SnakeKeys.FoodSpawns, new EventQueue<FoodSpawnRequest>(cap.EventQueue));
             layout.Resource(SnakeKeys.ProjectileSpawns, new EventQueue<ProjectileSpawnRequest>(cap.Projectiles));
-            layout.Resource(SnakeKeys.Feedback, new EventQueue<FeedbackEvent>(cap.EventQueue));
+            layout.Resource(SnakeKeys.Feedback, new EventQueue<FeedbackEvent>(cap.EventQueue, saved: false));
             layout.Resource(SnakeKeys.RemovedItems, new EventQueue<int2>(cap.EventQueue));
             layout.Resource(SnakeKeys.Signal, new Signals());
             layout.Resource(SnakeKeys.Replay, new ReplayBuffer(30 * 60 * 20));

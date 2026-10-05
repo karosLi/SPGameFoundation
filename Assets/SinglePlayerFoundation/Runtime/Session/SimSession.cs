@@ -106,6 +106,59 @@ namespace SPF.Runtime.Session
             Pipeline.EndTick();
         }
 
+        /// <summary>
+        /// Writes the whole simulation (clock position, world, system state) after completing the tick in
+        /// flight. Restoring it into a session built from the same mode and seed continues identically.
+        /// </summary>
+        public void WriteSnapshot(System.IO.BinaryWriter writer)
+        {
+            ThrowIfDisposed();
+            Pipeline.EndTick();
+            writer.Write(m_Clock.NextTickIndex);
+            writer.Write(m_Clock.Elapsed);
+            World.WriteSnapshot(writer);
+            Pipeline.WriteSnapshot(writer);
+        }
+
+        /// <summary>
+        /// Restores a snapshot (see <see cref="WriteSnapshot"/>). On invalid data it throws and the session
+        /// is restarted, so it is never left half-restored. The session state (running / paused) is kept.
+        /// </summary>
+        public void ReadSnapshot(System.IO.BinaryReader reader)
+        {
+            ThrowIfDisposed();
+            Pipeline.EndTick();
+            try
+            {
+                uint tick = reader.ReadUInt32();
+                double elapsed = reader.ReadDouble();
+                World.ReadSnapshot(reader);
+                Pipeline.ReadSnapshot(reader);
+                m_Clock.Restore(tick, elapsed);
+            }
+            catch
+            {
+                var state = State;
+                Restart();
+                State = state;
+                throw;
+            }
+        }
+
+        public byte[] CaptureSnapshot()
+        {
+            using var buffer = new System.IO.MemoryStream();
+            using (var writer = new System.IO.BinaryWriter(buffer))
+                WriteSnapshot(writer);
+            return buffer.ToArray();
+        }
+
+        public void RestoreSnapshot(byte[] snapshot)
+        {
+            using var reader = new System.IO.BinaryReader(new System.IO.MemoryStream(snapshot));
+            ReadSnapshot(reader);
+        }
+
         /// <summary>Returns to the initial state reusing all memory.</summary>
         public void Restart()
         {

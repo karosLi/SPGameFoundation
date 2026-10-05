@@ -69,7 +69,7 @@ namespace RpgFoundation
     }
 
     /// <summary>Game flow, commands from the UI, input and the hero profile (main-thread resource).</summary>
-    public sealed class RpgGameState
+    public sealed class RpgGameState : ISnapshotResource, IResettableResource
     {
         public RpgFlow Flow = RpgFlow.Menu;
         public HeroProfile Profile = new HeroProfile();
@@ -100,5 +100,69 @@ namespace RpgFoundation
         }
 
         public int FinalFloor;
+
+        /// <summary>Session restart (also after a rejected snapshot): back to the menu, profile kept.</summary>
+        public void OnReset()
+        {
+            Flow = RpgFlow.Menu;
+            Hero = EntityHandle.Null;
+            Input = default;
+            FlowCommands.Clear();
+            InventoryCommands.Clear();
+            MonstersAlive = FloorMonsters = 0;
+            BossAlive = false;
+            Message = "";
+            Version++;
+        }
+
+        public void WriteSnapshot(BinaryWriter w)
+        {
+            w.Write((int)Flow);
+            Profile.Write(w);
+            FloorStart.Write(w);
+            NativeIO.Write(w, Hero);
+            NativeIO.WriteValue(w, Input);
+            WriteCommands(w, FlowCommands);
+            WriteCommands(w, InventoryCommands);
+            w.Write(StairsCell.x); w.Write(StairsCell.y);
+            w.Write(StartCell.x); w.Write(StartCell.y);
+            w.Write(MonstersAlive); w.Write(FloorMonsters); w.Write(BossAlive);
+            w.Write(Message ?? "");
+            w.Write(FinalFloor);
+        }
+
+        public void ReadSnapshot(BinaryReader r)
+        {
+            Flow = (RpgFlow)r.ReadInt32();
+            if (!Profile.Read(r, Profile.Version) || !FloorStart.Read(r, FloorStart.Version))
+                throw new InvalidDataException("Invalid hero profile in snapshot.");
+            Hero = NativeIO.ReadHandle(r);
+            Input = NativeIO.ReadValue<InputFrame>(r);
+            ReadCommands(r, FlowCommands);
+            ReadCommands(r, InventoryCommands);
+            StairsCell = new int2(r.ReadInt32(), r.ReadInt32());
+            StartCell = new int2(r.ReadInt32(), r.ReadInt32());
+            MonstersAlive = r.ReadInt32(); FloorMonsters = r.ReadInt32(); BossAlive = r.ReadBoolean();
+            Message = r.ReadString();
+            FinalFloor = r.ReadInt32();
+            // Presentation keys off these counters: a restore is a new floor and new HUD state for it.
+            FloorBuilds++;
+            Version++;
+        }
+
+        static void WriteCommands(BinaryWriter w, Queue<RpgCommand> queue)
+        {
+            w.Write(queue.Count);
+            foreach (var command in queue) { w.Write((int)command.Kind); w.Write(command.Argument); }
+        }
+
+        static void ReadCommands(BinaryReader r, Queue<RpgCommand> queue)
+        {
+            queue.Clear();
+            int count = r.ReadInt32();
+            if (count < 0 || count > 1024) throw new InvalidDataException("Invalid command queue in snapshot.");
+            for (int i = 0; i < count; i++)
+                queue.Enqueue(new RpgCommand { Kind = (RpgCommandKind)r.ReadInt32(), Argument = r.ReadInt32() });
+        }
     }
 }

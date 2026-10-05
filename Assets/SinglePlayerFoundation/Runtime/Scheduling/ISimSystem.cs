@@ -29,6 +29,16 @@ namespace SPF.Runtime.Scheduling
         void OnReset(SimWorld world);
     }
 
+    /// <summary>
+    /// Optional: a system that keeps simulation-relevant state between ticks (caches keyed on versions,
+    /// timers) saves it in world snapshots so a restored session continues identically.
+    /// </summary>
+    public interface ISnapshotSystem
+    {
+        void WriteSnapshot(System.IO.BinaryWriter writer);
+        void ReadSnapshot(System.IO.BinaryReader reader, SimWorld world);
+    }
+
     /// <summary>Convenience base with empty lifecycle hooks.</summary>
     public abstract class SimSystemBase : ISimSystem
     {

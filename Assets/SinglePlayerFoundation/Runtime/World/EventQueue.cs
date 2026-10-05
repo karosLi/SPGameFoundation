@@ -9,14 +9,22 @@ namespace SPF.Runtime.World
     /// World resource wrapping a <see cref="ParallelQueue{T}"/>: jobs append through <see cref="AsWriter"/>,
     /// a later system (or the main thread after sync) reads and clears it. Overflow is counted, never fatal.
     /// </summary>
-    public sealed class EventQueue<T> : IDisposable, IResettableResource, IJobData where T : unmanaged
+    public sealed class EventQueue<T> : IDisposable, IResettableResource, IJobData, ISnapshotResource where T : unmanaged
     {
         ParallelQueue<T> m_Queue;
 
-        public EventQueue(int capacity)
+        /// <param name="saved">
+        /// False for output only presentation reads (hit sparks, sounds): such events are often appended by
+        /// parallel jobs in thread order, are not simulation state, and are dropped by snapshots.
+        /// </param>
+        public EventQueue(int capacity, bool saved = true)
         {
             m_Queue = new ParallelQueue<T>(capacity, Allocator.Persistent);
+            Saved = saved;
         }
+
+        /// <summary>Whether world snapshots include the queued items (see constructor).</summary>
+        public bool Saved { get; }
 
         public int Count => m_Queue.Count;
         public int Capacity => m_Queue.Capacity;
@@ -43,6 +51,20 @@ namespace SPF.Runtime.World
         {
             m_Queue.Clear();
             TotalOverflow = 0;
+        }
+
+        public void WriteSnapshot(System.IO.BinaryWriter writer)
+        {
+            if (!Saved) return;
+            writer.Write(TotalOverflow);
+            m_Queue.WriteSnapshot(writer);
+        }
+
+        public void ReadSnapshot(System.IO.BinaryReader reader)
+        {
+            if (!Saved) { m_Queue.Clear(); return; }
+            TotalOverflow = reader.ReadInt64();
+            m_Queue.ReadSnapshot(reader);
         }
 
         public void Dispose() => m_Queue.Dispose();

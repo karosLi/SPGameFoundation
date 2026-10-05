@@ -48,6 +48,22 @@ namespace SPF.Contracts.Collections
             return true;
         }
 
+        /// <summary>Snapshot of the stored items and the overflow count (main thread, no writer running).</summary>
+        public void WriteSnapshot(System.IO.BinaryWriter writer)
+        {
+            writer.Write(Overflow);
+            NativeIO.Write(writer, m_Items, Count);
+        }
+
+        public void ReadSnapshot(System.IO.BinaryReader reader)
+        {
+            int overflow = reader.ReadInt32();
+            int count = NativeIO.Read(reader, m_Items);
+            if (overflow < 0 || (overflow > 0 && count != m_Items.Length))
+                throw new System.IO.InvalidDataException("Queue snapshot overflow does not match its item count.");
+            m_Counter[0] = count + overflow;
+        }
+
         public Writer AsWriter() => new Writer(m_Items, m_Counter);
 
         public void Dispose()

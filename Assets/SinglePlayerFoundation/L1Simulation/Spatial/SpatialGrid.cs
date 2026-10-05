@@ -54,7 +54,7 @@ namespace SPF.L1.Spatial
     /// maximum radius. Readers see one grid; visiting order is small layer first, then large.
     /// </para>
     /// </summary>
-    public sealed class SpatialGrid : IDisposable, IResettableResource, IJobData
+    public sealed class SpatialGrid : IDisposable, IResettableResource, IJobData, ISnapshotResource
     {
         NativeArray<GridEntry> m_Staging;
         NativeArray<int> m_StagingCount;
@@ -174,6 +174,35 @@ namespace SPF.L1.Spatial
             for (int i = 0; i < StatCount; i++) m_Stats[i] = 0;
             for (int i = 0; i < m_CellStart.Length; i++) m_CellStart[i] = 0;
             for (int i = 0; i < m_LargeCellStart.Length; i++) m_LargeCellStart[i] = 0;
+        }
+
+        /// <summary>Saves the built grid (readers of the next tick query it before it is rebuilt) and staging.</summary>
+        public void WriteSnapshot(System.IO.BinaryWriter writer)
+        {
+            writer.Write(Origin.x); writer.Write(Origin.y);
+            writer.Write(BuiltOrigin.x); writer.Write(BuiltOrigin.y);
+            NativeIO.Write(writer, m_Stats);
+            NativeIO.Write(writer, m_StagingCount);
+            NativeIO.Write(writer, m_Staging, math.min(m_StagingCount[0], m_Staging.Length));
+            NativeIO.Write(writer, m_CellStart);
+            NativeIO.Write(writer, m_Entries, m_CellStart[m_CellStart.Length - 1]);
+            NativeIO.Write(writer, m_LargeCellStart);
+            NativeIO.Write(writer, m_LargeEntries, m_LargeCellStart[m_LargeCellStart.Length - 1]);
+        }
+
+        public void ReadSnapshot(System.IO.BinaryReader reader)
+        {
+            Origin = new float2(reader.ReadSingle(), reader.ReadSingle());
+            BuiltOrigin = new float2(reader.ReadSingle(), reader.ReadSingle());
+            NativeIO.ReadAll(reader, m_Stats);
+            NativeIO.ReadAll(reader, m_StagingCount);
+            NativeIO.Read(reader, m_Staging);
+            NativeIO.ReadAll(reader, m_CellStart);
+            if (NativeIO.Read(reader, m_Entries) != m_CellStart[m_CellStart.Length - 1])
+                throw new System.IO.InvalidDataException("Spatial grid snapshot entry count mismatch.");
+            NativeIO.ReadAll(reader, m_LargeCellStart);
+            if (NativeIO.Read(reader, m_LargeEntries) != m_LargeCellStart[m_LargeCellStart.Length - 1])
+                throw new System.IO.InvalidDataException("Spatial grid snapshot large entry count mismatch.");
         }
 
         public void Dispose()

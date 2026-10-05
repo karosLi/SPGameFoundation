@@ -204,7 +204,7 @@ namespace RpgFoundation.Systems
     }
 
     /// <summary>Input: rebuilds the flow field towards the hero when the hero changes tile (Burst job).</summary>
-    sealed class FlowFieldSystem : SimSystemBase
+    sealed class FlowFieldSystem : SimSystemBase, ISnapshotSystem
     {
         int2 m_Goal = new int2(-1);
         uint m_MapVersion = uint.MaxValue;
@@ -215,6 +215,18 @@ namespace RpgFoundation.Systems
         public override void Declare(AccessDeclaration access) => access.Read(RpgKeys.Position).Read(RpgKeys.Map).Write(RpgKeys.Flow);
 
         public long Builds { get; private set; }
+
+        public void WriteSnapshot(System.IO.BinaryWriter writer)
+        {
+            writer.Write(m_Goal.x); writer.Write(m_Goal.y);
+            writer.Write(m_MapVersion);
+        }
+
+        public void ReadSnapshot(System.IO.BinaryReader reader, SimWorld world)
+        {
+            m_Goal = new int2(reader.ReadInt32(), reader.ReadInt32());
+            m_MapVersion = reader.ReadUInt32();
+        }
 
         public override JobHandle OnTick(in SimContext context, JobHandle dependency)
         {

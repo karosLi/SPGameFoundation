@@ -14,7 +14,7 @@ namespace SPF.L1.Navigation
     /// direction in O(1) instead of running its own path search. Rebuilt by a Burst job when the goal tile
     /// changes; <see cref="MaxDistance"/> bounds the search for large maps.
     /// </summary>
-    public sealed class FlowField : IDisposable, IJobData
+    public sealed class FlowField : IDisposable, IJobData, ISnapshotResource
     {
         public const ushort Unreachable = ushort.MaxValue;
 
@@ -55,6 +55,20 @@ namespace SPF.L1.Navigation
                 Queue = m_Queue,
                 MaxDistance = MaxDistance,
             }.Schedule(dependency);
+        }
+
+        public void WriteSnapshot(System.IO.BinaryWriter writer)
+        {
+            writer.Write(MaxDistance);
+            NativeIO.Write(writer, m_Goals, GoalCount);
+            NativeIO.Write(writer, m_Distance);
+        }
+
+        public void ReadSnapshot(System.IO.BinaryReader reader)
+        {
+            MaxDistance = reader.ReadInt32();
+            GoalCount = NativeIO.Read(reader, m_Goals);
+            NativeIO.ReadAll(reader, m_Distance);
         }
 
         public void Dispose()

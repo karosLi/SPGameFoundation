@@ -10,7 +10,7 @@ namespace SPF.L1.Body
     /// with a free list per class, so growth never fragments beyond one class and nothing is allocated
     /// during a session. Allocation and resize are main-thread only (ApplyCommands phase).
     /// </summary>
-    public sealed class BodyStore : IDisposable, IResettableResource, IJobData
+    public sealed class BodyStore : IDisposable, IResettableResource, IJobData, ISnapshotResource
     {
         public const int MinSlab = 16;
 
@@ -144,6 +144,39 @@ namespace SPF.L1.Body
             m_Top = 0;
             UsedPoints = 0;
             Array.Clear(m_FreeCounts, 0, m_FreeCounts.Length);
+        }
+
+        public void WriteSnapshot(System.IO.BinaryWriter writer)
+        {
+            writer.Write(m_Top);
+            writer.Write(UsedPoints);
+            writer.Write(m_FreeLists.Length);
+            for (int c = 0; c < m_FreeLists.Length; c++)
+            {
+                writer.Write(m_FreeCounts[c]);
+                for (int i = 0; i < m_FreeCounts[c]; i++) writer.Write(m_FreeLists[c][i]);
+            }
+            NativeIO.Write(writer, m_Points, m_Top);
+            NativeIO.Write(writer, m_BlockBounds, m_Top / TrailBounds.BlockSize + 1);
+        }
+
+        public void ReadSnapshot(System.IO.BinaryReader reader)
+        {
+            m_Top = reader.ReadInt32();
+            UsedPoints = reader.ReadInt32();
+            if (reader.ReadInt32() != m_FreeLists.Length || m_Top < 0 || m_Top > m_Points.Length)
+                throw new System.IO.InvalidDataException("Body store snapshot has a different layout.");
+            for (int c = 0; c < m_FreeLists.Length; c++)
+            {
+                int count = reader.ReadInt32();
+                if (count < 0 || count > m_FreeLists[c].Length)
+                    throw new System.IO.InvalidDataException("Body store snapshot free list is too long.");
+                m_FreeCounts[c] = count;
+                for (int i = 0; i < count; i++) m_FreeLists[c][i] = reader.ReadInt32();
+            }
+            if (NativeIO.Read(reader, m_Points) != m_Top)
+                throw new System.IO.InvalidDataException("Body store snapshot point count mismatch.");
+            NativeIO.Read(reader, m_BlockBounds);
         }
 
         public void Dispose()

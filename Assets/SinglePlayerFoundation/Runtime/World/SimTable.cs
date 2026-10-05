@@ -146,6 +146,28 @@ namespace SPF.Runtime.World
             MarkAll();
         }
 
+        internal void WriteSnapshot(System.IO.BinaryWriter writer)
+        {
+            writer.Write(Capacity);
+            writer.Write(m_ColumnList.Count);
+            NativeIO.Write(writer, m_Handles, Count);
+            for (int i = 0; i < m_ColumnList.Count; i++)
+                m_ColumnList[i].WriteSnapshot(writer, Count);
+        }
+
+        /// <summary>Restores rows [0, Count); every change log reports "everything changed".</summary>
+        internal void ReadSnapshot(System.IO.BinaryReader reader)
+        {
+            if (reader.ReadInt32() != Capacity || reader.ReadInt32() != m_ColumnList.Count)
+                throw new System.IO.InvalidDataException($"Snapshot of table {Key} has a different capacity or column set.");
+            Count = NativeIO.Read(reader, m_Handles);
+            for (int i = 0; i < m_ColumnList.Count; i++)
+                if (m_ColumnList[i].ReadSnapshot(reader) != Count)
+                    throw new System.IO.InvalidDataException($"Snapshot of table {Key} has columns of different lengths.");
+            Version++;
+            MarkAll();
+        }
+
         public void Dispose()
         {
             for (int i = 0; i < m_ColumnList.Count; i++)
@@ -154,7 +176,6 @@ namespace SPF.Runtime.World
             m_Columns.Clear();
             if (m_Handles.IsCreated) m_Handles.Dispose();
         }
-    
     }
 
     /// <summary>Deduplicated list of changed rows. Rows ≥ the table's Count mean "removed".</summary>

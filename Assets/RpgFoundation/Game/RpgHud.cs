@@ -25,6 +25,10 @@ namespace RpgFoundation.Game
         public RectTransform DeadPanel { get; private set; }
         public RectTransform VictoryPanel { get; private set; }
         public RectTransform BagPanel { get; private set; }
+        public RectTransform PausePanel { get; private set; }
+        public Button PauseButton { get; private set; }
+        public Button ResumeButton { get; private set; }
+        public Button SaveQuitButton { get; private set; }
         public Image HealthFill { get; private set; }
         public Image XpFill { get; private set; }
         public Text StatsText { get; private set; }
@@ -94,6 +98,8 @@ namespace RpgFoundation.Game
             PotionButton = potion.gameObject.AddComponent<TapButton>();
             BagButton = UIFactory.Button(HudPanel, "BagButton", "BAG", new Vector2(-110, -70), new Vector2(180, 100), new Color(0.4f, 0.4f, 0.55f, 0.85f), new Vector2(1f, 1f), 34);
             BagButton.onClick.AddListener(() => BagPanel.gameObject.SetActive(!BagPanel.gameObject.activeSelf));
+            PauseButton = UIFactory.Button(HudPanel, "PauseButton", "II", new Vector2(-300, -70), new Vector2(120, 100), new Color(0.3f, 0.3f, 0.4f, 0.85f), new Vector2(1f, 1f), 40);
+            PauseButton.onClick.AddListener(() => m_Game.Pause());
             TouchInput = new TouchInputSource(Joystick).Hold(AttackButton, RpgButton.Attack).Tap(PotionButton, RpgButton.Potion);
             for (int i = 0; i < SkillButtons.Length; i++) TouchInput.Tap(SkillButtons[i], RpgButton.Skill1 + i);
 
@@ -111,6 +117,15 @@ namespace RpgFoundation.Game
                 BagSlots[i] = b;
             }
             BagPanel.gameObject.SetActive(false);
+
+            // Pause
+            PausePanel = UIFactory.Panel(root, "PausePanel", new Color(0f, 0f, 0f, 0.7f), Vector2.zero, Vector2.one);
+            UIFactory.Label(PausePanel, "Title", "PAUSED", 110, TextAnchor.MiddleCenter, new Vector2(0f, 0.62f), new Vector2(1f, 0.85f));
+            ResumeButton = UIFactory.Button(PausePanel, "ResumeButton", "RESUME", new Vector2(0, 40), new Vector2(460, 130), new Color(0.3f, 0.75f, 0.45f, 0.95f), new Vector2(0.5f, 0.5f));
+            ResumeButton.onClick.AddListener(() => m_Game.Resume());
+            SaveQuitButton = UIFactory.Button(PausePanel, "SaveQuitButton", "SAVE & QUIT", new Vector2(0, -120), new Vector2(460, 110), new Color(0.35f, 0.45f, 0.7f, 0.95f), new Vector2(0.5f, 0.5f));
+            SaveQuitButton.onClick.AddListener(() => m_Game.SaveAndQuit());
+            PausePanel.gameObject.SetActive(false);
 
             // Menu
             MenuPanel = UIFactory.Panel(root, "MenuPanel", new Color(0f, 0f, 0f, 0.55f), Vector2.zero, Vector2.one);
@@ -159,6 +174,9 @@ namespace RpgFoundation.Game
             if (state == null) return;
             var session = m_Game.Session;
             var world = session.World;
+
+            bool paused = m_Game.Paused;
+            if (PausePanel.gameObject.activeSelf != paused) PausePanel.gameObject.SetActive(paused);
 
             if (state.Flow != m_Flow)
             {

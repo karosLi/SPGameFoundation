@@ -18,6 +18,8 @@ namespace RpgFoundation.Game
     public sealed class RpgGameBootstrap : MonoBehaviour
     {
         public const string SaveSlot = "hero";
+        /// <summary>Mid-floor snapshot (pause / quit / app suspend); newer than the floor-start save while it exists.</summary>
+        public const string RunSlot = "run";
 
         [SerializeField] RpgConfig m_Config;
         [SerializeField] uint m_Seed = 1;
@@ -29,6 +31,7 @@ namespace RpgFoundation.Game
         ModeDefinition m_Mode;
         GameplayModuleAsset[] m_Modules;
         int m_SavedBuild;
+        bool m_RunSaved;
         RpgBot m_Bot;
 
         public SessionHost Host { get; private set; }
@@ -125,14 +128,63 @@ namespace RpgFoundation.Game
 
         void LateUpdate()
         {
-            // Autosave at every floor start (the profile snapshot a retry / continue restores).
+            // Autosave at every floor start (the profile snapshot a retry / continue restores); a mid-floor
+            // snapshot from an earlier floor is stale from then on.
             var state = State;
-            if (state != null && state.FloorBuilds != m_SavedBuild)
+            if (state == null) return;
+            if (state.FloorBuilds != m_SavedBuild)
             {
                 m_SavedBuild = state.FloorBuilds;
                 if (state.Flow == RpgFlow.Playing)
+                {
                     Saves.Save(SaveSlot, state.FloorStart);
+                    DeleteRun();
+                }
             }
+            if (state.Flow == RpgFlow.Dead) DeleteRun();
+        }
+
+        void OnApplicationPause(bool paused)
+        {
+            if (paused) SaveRun();
+        }
+
+        void OnApplicationQuit() => SaveRun();
+
+        /// <summary>Saves the whole session mid-floor (only while playing). Returns true when saved.</summary>
+        public bool SaveRun()
+        {
+            var state = State;
+            if (state == null || state.Flow != RpgFlow.Playing) return false;
+            Saves.Save(RunSlot, new SessionSnapshotSave(Session));
+            m_RunSaved = true;
+            return true;
+        }
+
+        void DeleteRun()
+        {
+            if (!m_RunSaved && !Saves.Exists(RunSlot)) return;
+            Saves.Delete(RunSlot);
+            m_RunSaved = false;
+        }
+
+        // ---- Pause ----
+
+        public bool Paused => Session != null && Session.State == SessionState.Paused;
+
+        public void Pause()
+        {
+            if (State?.Flow == RpgFlow.Playing) Session.Pause();
+        }
+
+        public void Resume() => Session?.Resume();
+
+        /// <summary>Pause menu "save &amp; quit": snapshot the floor, back to the title (Continue resumes here).</summary>
+        public void SaveAndQuit()
+        {
+            SaveRun();
+            Session.Resume();
+            BackToMenu();
         }
 
         void OnDestroy()
@@ -145,12 +197,13 @@ namespace RpgFoundation.Game
 
         // ---- Game flow (UI buttons, UI automation) ----
 
-        public bool HasSave => Saves.Exists(SaveSlot);
+        public bool HasSave => Saves.Exists(SaveSlot) || Saves.Exists(RunSlot);
 
         public void NewGame()
         {
             var state = State;
             if (state == null) return;
+            DeleteRun();
             state.Profile.Reset(m_Seed * 7919u + (uint)System.Environment.TickCount | 1u, Runtime.StartPotions);
             state.Send(RpgCommandKind.NewGame);
             CameraRig.Snap();
@@ -161,15 +214,34 @@ namespace RpgFoundation.Game
         {
             var state = State;
             if (state == null) return;
+            DeleteRun();
             state.Profile.Reset(runSeed, Runtime.StartPotions);
             state.Send(RpgCommandKind.NewGame);
             CameraRig.Snap();
         }
 
+        /// <summary>
+        /// Resumes the mid-floor snapshot when there is one (exactly where the player left), otherwise the
+        /// last floor start. A snapshot that no longer fits (game updated) falls back to the floor start.
+        /// </summary>
         public bool Continue()
         {
             var state = State;
-            if (state == null || !Saves.Load(SaveSlot, state.Profile)) return false;
+            if (state == null) return false;
+            if (Saves.Exists(RunSlot))
+            {
+                Session.Resume();
+                if (Saves.Load(RunSlot, new SessionSnapshotSave(Session)) && State.Flow == RpgFlow.Playing)
+                {
+                    m_SavedBuild = State.FloorBuilds;   // a restore is not a new floor: keep the run save
+                    m_RunSaved = true;
+                    CameraRig.Snap();
+                    return true;
+                }
+                DeleteRun();
+                state = State;
+            }
+            if (!Saves.Load(SaveSlot, state.Profile)) return false;
             state.Send(RpgCommandKind.Continue);
             CameraRig.Snap();
             return true;

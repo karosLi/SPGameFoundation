@@ -11,7 +11,7 @@ namespace SPF.L1.Spatial
     /// is a game-defined solid kind. Written on the main thread when a level is built, read by jobs
     /// through <see cref="TileMapView"/> (collision, line of sight, flow fields).
     /// </summary>
-    public sealed class TileMap : IDisposable, IResettableResource, IJobData
+    public sealed class TileMap : IDisposable, IResettableResource, IJobData, ISnapshotResource
     {
         NativeArray<byte> m_Tiles;
 
@@ -49,6 +49,20 @@ namespace SPF.L1.Spatial
         public TileMapView AsView() => new TileMapView(m_Tiles, Size, TileSize, Origin);
 
         public void OnReset() => Fill(0);
+
+        public void WriteSnapshot(System.IO.BinaryWriter writer)
+        {
+            writer.Write(Version);
+            writer.Write(Origin.x); writer.Write(Origin.y);
+            NativeIO.Write(writer, m_Tiles);
+        }
+
+        public void ReadSnapshot(System.IO.BinaryReader reader)
+        {
+            Version = reader.ReadUInt32();
+            Origin = new float2(reader.ReadSingle(), reader.ReadSingle());
+            NativeIO.ReadAll(reader, m_Tiles);
+        }
 
         public void Dispose()
         {

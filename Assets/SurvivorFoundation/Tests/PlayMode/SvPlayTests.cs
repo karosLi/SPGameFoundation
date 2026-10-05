@@ -85,6 +85,8 @@ namespace SurvivorFoundation.Tests.PlayMode
                 game.Session.Sync();
                 game.AutoPlay = false;
                 game.State.MaxHp = game.State.Hp = 1e9f;
+                var feedback = game.Renderer.Feedback;
+                game.Renderer.Feedback = null;   // sound playback: measured separately (AllocationSources)
                 for (int f = 0; f < 120; f++)   // warm-up in the measured conditions (first hits, first sounds, first effects)
                 {
                     yield return null;
@@ -123,8 +125,9 @@ namespace SurvivorFoundation.Tests.PlayMode
                         game.Governor.FramesSinceReset, game.Governor.GcFramesSinceReset, game.Governor.GcBytesSinceReset);
                     // AllocationSources shows what is left comes with sound playback (feedback handlers on): a few
                     // 164-byte frames in the editor; game code itself (HUD, renderer, simulation) allocates nothing.
-                    Assert.LessOrEqual(steady, 3, "steady-state play allocates (almost) nothing per frame");
+                    Assert.LessOrEqual(steady, 1, "steady-state play allocates nothing per frame");
                 }
+                game.Renderer.Feedback = feedback;
                 Assert.Greater(game.Renderer.EnemiesDrawn + game.Renderer.BulletsDrawn, 0);
                 yield return Screenshot(game, $"survivor-{(tier == RenderTier.GpuDriven ? "gpu" : "datatex")}.png");
                 TestContext.WriteLine($"survivor bot ({tier}): {game.State.Time:F0} s, level {game.State.Level}, kills {game.State.Kills}");

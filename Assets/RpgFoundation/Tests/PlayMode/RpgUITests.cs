@@ -297,6 +297,42 @@ namespace RpgFoundation.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator MinimapRevealsAroundTheHeroAndTheShopSells()
+        {
+            yield return StartNewGame();
+            yield return UIDriver.WaitSeconds(0.4f);
+            var minimap = m_Game.Hud.Minimap;
+            Assert.IsNotNull(minimap.Image.texture, "minimap drawn");
+            int explored = minimap.ExploredCount;
+            Assert.Greater(explored, 20, "the start room is revealed");
+            var world = World;
+            var map = world.Resource(RpgKeys.Map).AsView();
+            Assert.IsTrue(minimap.IsExplored(map.CellOf(world.Column(RpgKeys.Position)[HeroRow])));
+            var heroCell = map.CellOf(world.Column(RpgKeys.Position)[HeroRow]);
+            if (math.lengthsq(State.StairsCell - heroCell) > (RpgMinimap.RevealRadius + 1) * (RpgMinimap.RevealRadius + 1))
+                Assert.IsFalse(minimap.IsExplored(State.StairsCell), "the far-away stairs are still in the fog");
+
+            // Walk to the stairs: everything around them gets revealed, then the merchant appears.
+            ClearMonsters();
+            world.Column(RpgKeys.Position).Set(HeroRow, map.CenterOf(State.StairsCell));
+            world.Column(RpgKeys.PrevPosition).Set(HeroRow, map.CenterOf(State.StairsCell));
+            yield return UIDriver.WaitUntil(() => m_Game.Hud.ClearPanel.gameObject.activeInHierarchy, 3f);
+            Assert.IsTrue(minimap.IsExplored(State.StairsCell));
+            Assert.Greater(minimap.ExploredCount, explored);
+
+            State.Profile.Gold = 500;
+            State.Version++;
+            yield return null;
+            yield return null;
+            int potions = State.Profile.Potions;
+            Assert.IsTrue(m_Game.Hud.ShopButtons[0].interactable, "affordable");
+            UIDriver.Click(m_Game.Hud.ShopButtons[0].gameObject);
+            yield return UIDriver.WaitUntil(() => State.Profile.Potions > potions, 2f);
+            Assert.AreEqual(potions + 1, State.Profile.Potions);
+            Assert.Less(State.Profile.Gold, 500);
+        }
+
+        [UnityTest]
         public IEnumerator DeathShowsRetryWhichRebuildsTheFloor()
         {
             yield return StartNewGame();

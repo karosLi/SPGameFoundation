@@ -73,6 +73,7 @@ namespace UnityEngine.UI
     }
     public class MaskableGraphic : Graphic { }
     public class Image : MaskableGraphic { public Sprite sprite { get; set; } }
+    public class RawImage : MaskableGraphic { public Texture texture { get; set; } public Rect uvRect { get; set; } }
     public class Sprite : Object { }
     public class Text : MaskableGraphic
     {

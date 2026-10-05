@@ -341,7 +341,7 @@ namespace RpgFoundation.Systems
         }
 
         /// <summary>Equips <paramref name="gear"/> when its slot is empty or it is a higher tier; the old piece goes to the bag.</summary>
-        static bool AutoEquip(SimWorld world, RpgRuntimeConfig config, HeroProfile profile, int heroRow, int gear)
+        internal static bool AutoEquip(SimWorld world, RpgRuntimeConfig config, HeroProfile profile, int heroRow, int gear)
         {
             var def = config.Gear[gear];
             int current = def.Slot == GearSlot.Weapon ? profile.Weapon : profile.Armour;
@@ -370,10 +370,16 @@ namespace RpgFoundation.Systems
             var world = context.World;
             var game = world.Resource(RpgKeys.Game);
             var config = world.Resource(RpgKeys.Config);
-            bool hero = world.Registry.TryResolve(game.Hero, out _, out int heroRow) && game.Flow == RpgFlow.Playing;
+            bool alive = world.Registry.TryResolve(game.Hero, out _, out int heroRow);
+            bool hero = alive && game.Flow == RpgFlow.Playing;
             while (game.InventoryCommands.Count > 0)
             {
                 var command = game.InventoryCommands.Dequeue();
+                if (command.Kind == RpgCommandKind.Buy)
+                {
+                    if (alive && game.Flow == RpgFlow.FloorClear) Buy(world, config, game, heroRow, command.Argument);
+                    continue;
+                }
                 if (!hero) continue;
                 var profile = game.Profile;
                 if (command.Kind == RpgCommandKind.Equip && command.Argument >= 0 && command.Argument < profile.Inventory.Count)
@@ -395,6 +401,26 @@ namespace RpgFoundation.Systems
                 }
             }
             return dependency;
+        }
+
+        /// <summary>Buys a shop offer: enough gold, gear not sold yet and room for it (equipped when better).</summary>
+        internal static bool Buy(SimWorld world, RpgRuntimeConfig config, RpgGameState game, int heroRow, int index)
+        {
+            if (index < 0 || index >= RpgShop.OfferCount || RpgShop.Sold(game.ShopBought, index)) return false;
+            var profile = game.Profile;
+            var offer = RpgShop.Offer(config, profile, index);
+            if (profile.Gold < offer.Price) return false;
+            if (offer.Kind == ItemKind.Potion) profile.Potions += offer.Value;
+            else if (!RewardSystem.AutoEquip(world, config, profile, heroRow, offer.Value))
+            {
+                if (profile.Inventory.Count >= HeroProfile.MaxInventory) return false;
+                profile.Inventory.Add(offer.Value);
+            }
+            profile.Gold -= offer.Price;
+            if (index > 0) game.ShopBought |= 1 << index;
+            world.Resource(RpgKeys.Feedback).TryAdd(new FeedbackEvent { Kind = FeedbackKind.Item, Position = world.Column(RpgKeys.Position)[heroRow], Value = offer.Kind == ItemKind.Gear ? offer.Value : 0 });
+            game.Version++;
+            return true;
         }
 
         internal static void Equip(SimWorld world, RpgRuntimeConfig config, HeroProfile profile, int heroRow, int gear)

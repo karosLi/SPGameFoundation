@@ -112,6 +112,7 @@ namespace RpgFoundation.Systems
             game.MonstersAlive = spawned;
             game.FloorMonsters = spawned;
             game.FloorStart.CopyFrom(profile);
+            game.ShopBought = 0;
             world.Resource(RpgKeys.ActorGrid).Origin = map.Origin;
             game.Flow = RpgFlow.Playing;
             game.Message = game.BossAlive ? "A Warden guards the stairs" : $"Floor {floor}";

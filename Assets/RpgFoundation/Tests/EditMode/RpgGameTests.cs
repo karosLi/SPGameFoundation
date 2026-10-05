@@ -396,5 +396,45 @@ namespace RpgFoundation.Tests
             Assert.IsTrue(rose, "the spikes cycle");
             Assert.Less(t.World.Column(RpgKeys.Health)[t.HeroRow].Current, before - 3f, "impaled");
         }
+    
+        [Test]
+        public void TheMerchantSellsBetweenFloorsOnly()
+        {
+            using var t = new RpgTestWorld();
+            var profile = t.Game.Profile;
+            profile.Gold = 1000;
+            int potions = profile.Potions;
+            t.Game.Send(RpgCommandKind.Buy, 0);
+            t.Step();
+            Assert.AreEqual(potions, profile.Potions, "no shopping while monsters are about");
+
+            t.Game.Flow = RpgFlow.FloorClear;
+            var potion = RpgShop.Offer(t.Runtime, profile, 0);
+            t.Game.Send(RpgCommandKind.Buy, 0);
+            t.Game.Send(RpgCommandKind.Buy, 0);
+            t.Step();
+            Assert.AreEqual(potions + 2, profile.Potions, "potions are repeatable");
+            Assert.AreEqual(1000 - 2 * potion.Price, profile.Gold);
+
+            var armour = RpgShop.Offer(t.Runtime, profile, 1);
+            Assert.AreEqual(GearSlot.Armour, t.Runtime.Gear[armour.Value].Slot);
+            t.Game.Send(RpgCommandKind.Buy, 1);
+            t.Step();
+            Assert.AreEqual(armour.Value, profile.Armour, "better armour is equipped at once");
+            int gold = profile.Gold;
+            t.Game.Send(RpgCommandKind.Buy, 1);
+            t.Step();
+            Assert.AreEqual(gold, profile.Gold, "gear sells once per floor");
+            Assert.IsTrue(RpgShop.Sold(t.Game.ShopBought, 1));
+
+            profile.Gold = 1;
+            t.Game.Send(RpgCommandKind.Buy, 2);
+            t.Step();
+            Assert.AreEqual(1, profile.Gold, "not enough gold");
+            Assert.IsFalse(RpgShop.Sold(t.Game.ShopBought, 2));
+
+            var weapon = RpgShop.Offer(t.Runtime, profile, 2);
+            Assert.AreEqual(t.Runtime.HeroWeapon(profile.Weapon), t.Runtime.Gear[weapon.Value].Weapon, "the hero's weapon family");
+        }
     }
 }

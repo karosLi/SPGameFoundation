@@ -56,6 +56,8 @@ namespace RpgFoundation.Game
         public Button DeadMenuButton { get; private set; }
         public Button VictoryMenuButton { get; private set; }
         public Button[] BagSlots { get; private set; }
+        public Button[] ShopButtons { get; private set; }
+        public RpgMinimap Minimap { get; private set; }
         public TouchInputSource TouchInput { get; private set; }
         public FloatingTextPool FloatingText { get; private set; }
 
@@ -106,6 +108,9 @@ namespace RpgFoundation.Game
             TouchInput = new TouchInputSource(Joystick).Hold(AttackButton, RpgButton.Attack).Tap(PotionButton, RpgButton.Potion);
             for (int i = 0; i < SkillButtons.Length; i++) TouchInput.Tap(SkillButtons[i], RpgButton.Skill1 + i);
 
+            Minimap = gameObject.AddComponent<RpgMinimap>();
+            Minimap.Build(HudPanel, game);
+
             // Bag (inventory)
             BagPanel = UIFactory.Panel(root, "BagPanel", new Color(0.05f, 0.05f, 0.08f, 0.9f), new Vector2(0.55f, 0.15f), new Vector2(0.98f, 0.85f));
             UIFactory.Label(BagPanel, "Title", "BAG  (tap to equip)", 36, TextAnchor.UpperCenter, new Vector2(0f, 0.88f), new Vector2(1f, 1f));
@@ -150,6 +155,15 @@ namespace RpgFoundation.Game
             ClearText = UIFactory.Label(ClearPanel, "ClearText", "", 56, TextAnchor.MiddleCenter, new Vector2(0f, 0.55f), new Vector2(1f, 0.85f));
             DescendButton = UIFactory.Button(ClearPanel, "DescendButton", "DESCEND", new Vector2(0, -60), new Vector2(460, 130), new Color(0.3f, 0.65f, 0.85f, 0.95f), new Vector2(0.5f, 0.5f));
             DescendButton.onClick.AddListener(() => m_Game.Descend());
+            // Merchant: potion, armour and a weapon of the hero's family.
+            UIFactory.Label(ClearPanel, "ShopTitle", "MERCHANT", 36, TextAnchor.MiddleCenter, new Vector2(0f, 0.2f), new Vector2(1f, 0.28f));
+            ShopButtons = new Button[RpgShop.OfferCount];
+            for (int i = 0; i < ShopButtons.Length; i++)
+            {
+                int offer = i;
+                ShopButtons[i] = UIFactory.Button(ClearPanel, "ShopButton" + i, "", new Vector2(-420 + i * 420, -330), new Vector2(400, 120), new Color(0.55f, 0.45f, 0.2f, 0.95f), new Vector2(0.5f, 0.5f), 26);
+                ShopButtons[i].onClick.AddListener(() => m_Game.Buy(offer));
+            }
 
             // Dead
             DeadPanel = UIFactory.Panel(root, "DeadPanel", new Color(0.12f, 0f, 0f, 0.6f), Vector2.zero, Vector2.one);
@@ -258,6 +272,14 @@ namespace RpgFoundation.Game
             StatsText.text = $"Floor {profile.Floor}   Lv {profile.Level}   {hp}\nGold {profile.Gold}   Potions {profile.Potions}   Monsters {state.MonstersAlive}/{state.FloorMonsters}";
             MessageText.text = state.Message;
             ClearText.text = state.Message + $"\nLevel {profile.Level}, gold {profile.Gold}";
+            for (int i = 0; i < ShopButtons.Length; i++)
+            {
+                var offer = RpgShop.Offer(config, profile, i);
+                bool sold = RpgShop.Sold(state.ShopBought, i);
+                string name = offer.Kind == ItemKind.Potion ? "Potion" : config.GearName(offer.Value);
+                UIFactory.SetText(ShopButtons[i], sold ? name + "\nSOLD" : $"{name}\n{offer.Price} gold");
+                ShopButtons[i].interactable = !sold && profile.Gold >= offer.Price;
+            }
             EquippedText.text = $"Weapon: {(profile.Weapon > 0 ? config.GearName(profile.Weapon) : "Rusty Sword")}\nArmour: {config.GearName(profile.Armour)}";
             WeaponText.text = config.WeaponNames[(int)config.HeroWeapon(profile.Weapon)];
             for (int i = 0; i < SkillLabels.Length; i++)

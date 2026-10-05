@@ -278,5 +278,6 @@ namespace RpgFoundation.Game
         public void Retry() { State?.Send(RpgCommandKind.Retry); CameraRig.Snap(); }
         public void BackToMenu() => State?.Send(RpgCommandKind.Menu);
         public void Equip(int inventoryIndex) => State?.Send(RpgCommandKind.Equip, inventoryIndex);
+        public void Buy(int offer) => State?.Send(RpgCommandKind.Buy, offer);
     }
 }

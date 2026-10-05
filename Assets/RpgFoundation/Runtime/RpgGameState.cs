@@ -95,11 +95,13 @@ namespace RpgFoundation
         public void Send(RpgCommandKind kind, int argument = 0)
         {
             var command = new RpgCommand { Kind = kind, Argument = argument };
-            if (kind == RpgCommandKind.Equip || kind == RpgCommandKind.UsePotion) InventoryCommands.Enqueue(command);
+            if (kind == RpgCommandKind.Equip || kind == RpgCommandKind.UsePotion || kind == RpgCommandKind.Buy) InventoryCommands.Enqueue(command);
             else FlowCommands.Enqueue(command);
         }
 
         public int FinalFloor;
+        /// <summary>Shop offers bought on this floor (bit per offer index; reset when a floor is built).</summary>
+        public int ShopBought;
 
         /// <summary>Session restart (also after a rejected snapshot): back to the menu, profile kept.</summary>
         public void OnReset()
@@ -129,6 +131,7 @@ namespace RpgFoundation
             w.Write(MonstersAlive); w.Write(FloorMonsters); w.Write(BossAlive);
             w.Write(Message ?? "");
             w.Write(FinalFloor);
+            w.Write(ShopBought);
         }
 
         public void ReadSnapshot(BinaryReader r)
@@ -145,6 +148,7 @@ namespace RpgFoundation
             MonstersAlive = r.ReadInt32(); FloorMonsters = r.ReadInt32(); BossAlive = r.ReadBoolean();
             Message = r.ReadString();
             FinalFloor = r.ReadInt32();
+            ShopBought = r.ReadInt32();
             // Presentation keys off these counters: a restore is a new floor and new HUD state for it.
             FloorBuilds++;
             Version++;

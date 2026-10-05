@@ -288,7 +288,7 @@ namespace RpgFoundation
 
     public enum RpgFlow : byte { Menu, Playing, FloorClear, Dead, Victory }
 
-    public enum RpgCommandKind : byte { NewGame, Continue, Descend, Retry, Menu, Equip, UsePotion }
+    public enum RpgCommandKind : byte { NewGame, Continue, Descend, Retry, Menu, Equip, UsePotion, Buy }
 
     public struct RpgCommand
     {

@@ -30,15 +30,21 @@ namespace SurvivorFoundation
             }
         }
 
+        int m_ChoseAt = -1;
+
         public InputFrame Think(SimWorld world)
         {
             var game = world.Resource(SvKeys.Game);
             if (game.Flow == SvFlow.LevelUp)
             {
+                if (m_ChoseAt == game.Version) return default;   // one choice per offer, not one per frame
+                m_ChoseAt = game.Version;
                 int pick = 0, best = int.MaxValue;
                 for (int i = 0; i < game.ChoiceCountOffered; i++)
                 {
-                    int rank = System.Array.IndexOf(Preference, (Upgrade)game.Choices[i]);
+                    // A plain loop: Array.IndexOf on an enum array boxes on Mono (an allocation per call).
+                    int rank = Preference.Length;
+                    for (int k = 0; k < Preference.Length; k++) if ((int)Preference[k] == game.Choices[i]) { rank = k; break; }
                     if (rank < best) { best = rank; pick = i; }
                 }
                 game.Send(SvCommandKind.Choose, pick);

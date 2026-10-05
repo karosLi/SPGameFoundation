@@ -203,6 +203,7 @@ namespace UnityEngine
         public static bool isBatchMode => true;
         public static RuntimePlatform platform => RuntimePlatform.LinuxEditor;
         public static string persistentDataPath => System.IO.Path.GetTempPath();
+        public static string temporaryCachePath => System.IO.Path.GetTempPath();
         public static string dataPath => System.IO.Path.GetTempPath();
         public static void Quit() { }
     }

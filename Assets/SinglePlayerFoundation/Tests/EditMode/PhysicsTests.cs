@@ -246,9 +246,13 @@ namespace SPF.Tests.EditMode
             string report = $"=== Physics2D: 600 bodies poured into a box ===\nstep ms mean {mean:F3}  worst {worst:F3}\n" +
                             $"bodies {s.Bodies}  awake {s.AwakeBodies}  pairs {s.Pairs}  manifolds {s.Manifolds} (peak {peakManifolds})  islands {s.Islands}\n";
             TestContext.WriteLine(report);
-            string dir = Path.Combine(UnityEngine.Application.dataPath, "..", "Artifacts");
-            Directory.CreateDirectory(dir);
-            File.WriteAllText(Path.Combine(dir, "perf-physics.txt"), report);
+            try
+            {
+                string dir = Path.Combine(UnityEngine.Application.dataPath, "..", "Artifacts");
+                Directory.CreateDirectory(dir);
+                File.WriteAllText(Path.Combine(dir, "perf-physics.txt"), report);
+            }
+            catch (System.Exception e) when (e is IOException || e is System.UnauthorizedAccessException) { }   // report only (no project folder in the .NET harness)
 #if !SPF_DOTNET_HARNESS
             Assert.Less(mean, 4.0, "Burst step budget for 600 bodies");   // the .NET harness runs it unoptimised: report only
 #endif

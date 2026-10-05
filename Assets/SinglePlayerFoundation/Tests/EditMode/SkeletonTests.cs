@@ -148,9 +148,13 @@ namespace SPF.Tests.EditMode
                 double ms = watch.Elapsed.TotalMilliseconds / Frames;
                 string report = $"=== Skeletal crowd: {N} characters x {bones} bones / sprites ===\npose + sprite jobs ms per frame {ms:F3} ({N * bones} packed sprites, {N * bones * PackedSprite.Stride / 1024} KiB)\n";
                 TestContext.WriteLine(report);
-                string dir = Path.Combine(UnityEngine.Application.dataPath, "..", "Artifacts");
-                Directory.CreateDirectory(dir);
-                File.WriteAllText(Path.Combine(dir, "perf-skeleton.txt"), report);
+                try
+                {
+                    string dir = Path.Combine(UnityEngine.Application.dataPath, "..", "Artifacts");
+                    Directory.CreateDirectory(dir);
+                    File.WriteAllText(Path.Combine(dir, "perf-skeleton.txt"), report);
+                }
+                catch (System.Exception e) when (e is IOException || e is System.UnauthorizedAccessException) { }   // report only (no project folder in the .NET harness)
                 Assert.AreNotEqual(output[0].Center, output[bones].Center, "characters placed apart");
 #if !SPF_DOTNET_HARNESS
                 Assert.Less(ms, 4.0, "Burst budget for a thousand skeletal characters");

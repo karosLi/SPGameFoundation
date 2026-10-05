@@ -5,6 +5,7 @@
         "SPF.Contracts",
         "SPF.Runtime.Core",
         "SPF.Runtime",
+        "SPF.L2Gameplay",
         "UnityEngine.UI",
         "Unity.Collections",
         "Unity.Mathematics",

@@ -241,7 +241,8 @@ namespace SPF.L1.Navigation
         public TileMapView Map;
         [ReadOnly] public NativeArray<PathRequest> Requests;
         [NativeDisableParallelForRestriction] public NativeArray<int2> Paths;
-        public NativeArray<int> Lengths;
+        // Each chunk writes only its own requests' entries (disjoint ranges), not just its job index.
+        [NativeDisableParallelForRestriction] public NativeArray<int> Lengths;
         public int MaxLength;
         public bool Diagonal, SmoothPaths;
         public int MaxExpanded;

@@ -27,6 +27,20 @@ namespace SPF.Runtime.Session
         public SessionState State { get; private set; }
         public FixedStepClock Clock => m_Clock;
 
+        int m_RequestedTicks;
+
+        /// <summary>
+        /// Turn-based / event-driven games (puzzles, card and board games): the clock does not advance with
+        /// time; <see cref="Update"/> only runs ticks asked for with <see cref="RequestTicks"/> (e.g. one per
+        /// player move), still through the normal (overlapped) scheduling.
+        /// </summary>
+        public bool ManualClock { get; set; }
+
+        /// <summary>With <see cref="ManualClock"/>: runs this many more ticks at the next updates.</summary>
+        public void RequestTicks(int ticks = 1) => m_RequestedTicks += System.Math.Max(ticks, 0);
+
+        public int PendingTicks => m_RequestedTicks;
+
         /// <summary>Ticks simulated during the last Update call.</summary>
         public int TicksLastFrame { get; private set; }
 
@@ -85,7 +99,13 @@ namespace SPF.Runtime.Session
             if (State != SessionState.Running)
                 return;
 
-            int ticks = m_Clock.Advance(deltaSeconds);
+            int ticks;
+            if (ManualClock)
+            {
+                ticks = System.Math.Min(m_RequestedTicks, m_Clock.MaxTicksPerFrame);
+                m_RequestedTicks -= ticks;
+            }
+            else ticks = m_Clock.Advance(deltaSeconds);
             for (int i = 0; i < ticks; i++)
             {
                 Pipeline.EndTick();

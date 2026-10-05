@@ -164,6 +164,7 @@ namespace PuzzleFoundation.Game
 
         void Update()
         {
+            FitBoard();
             var board = Board;
             if (board == null) return;
             if (InputLocked) Governor.KeepAwake();   // tweens play at full rate; a board at rest drops to the idle rate
@@ -202,6 +203,13 @@ namespace PuzzleFoundation.Game
 
         /// <summary>Renders into a target (tests, thumbnails).</summary>
         public void CameraLetterbox(RenderTexture target) => Camera.targetTexture = target;
+
+        /// <summary>Keeps the whole board (plus a margin) on screen in portrait and landscape alike.</summary>
+        void FitBoard()
+        {
+            const float HalfHeight = 6.5f, HalfWidth = M3Board.Width * 0.5f + 0.35f;
+            Camera.orthographicSize = math.max(HalfHeight, HalfWidth / math.max(Camera.aspect, 0.1f));
+        }
 
         float2 ScreenToWorld(float2 screen)
         {

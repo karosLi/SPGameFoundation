@@ -8,7 +8,7 @@ Unity 2022.3 2D 单机小游戏基座（面向移动端）+ 首个接入玩法�
 - 节点 / 条带两种蛇身，不透明 / 半透明（同蛇等深度，不叠色）/ 叠加三种混合
 - 对局中 0 GC；AI（效用决策 + 上下文避让）、Buff、道具、技能飞行物、加速掉落、回放
 
-设计文档：[Docs/Architecture.md](Docs/Architecture.md)
+设计文档：[Docs/Architecture.md](Docs/Architecture.md) · 品类覆盖与验证玩法：[Docs/GenreCoverage.md](Docs/GenreCoverage.md)
 
 ## 快速开始
 

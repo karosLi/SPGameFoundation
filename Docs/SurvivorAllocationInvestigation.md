@@ -21,7 +21,7 @@
 | DataTexture 2 | 600/600 | 603 / 24,244 B | 0 |
 | DataTexture 3 | 600/600 | 603 / 24,244 B | 0 |
 
-3,600 帧全部唯一匹配，无无效 metadata、无丢失/歧义/碰撞，观察者 marker 作用域分配 0 B，没有缺失调用栈样本。每段约 10 秒，级别均 1→2，598 个 Playing stamp 和 2 个 LevelUp stamp。这里是有限正常游玩窗口，并非所有武器/升级/菜单路径或长时存活测试。
+3,600 帧全部唯一匹配，无无效 metadata、无丢失/歧义/碰撞，观察者 marker 作用域分配 0 B，没有缺失调用栈样本。每段约 10 秒，级别均 1→2，598 个 Playing stamp 和 2 个 LevelUp stamp。这里是有限正常游玩窗口，并非所有武器/升级/菜单路径或长时存活测试。独立 CSV 审计合计 60.0282 秒、173,548 B、3,631 样本，逐帧、逐栈和 summary 均一致。
 
 五段预热窗口的 603 个样本归因：
 
@@ -29,9 +29,9 @@
 - 2 个样本合计 204 B：`SvHud.Update → Text.OnEnable → FontUpdateTracker.TrackText`，正常升级 UI 的字体注册。
 - 1 个样本 40 B：`EventSystem.RaycastAll → BaseRaycaster.rootRaycaster`。
 
-首段比其余多 28,084 B：其中 27,904 B /8 样本位于 `CanvasUpdate.PreRender`，内部地址未完整解析；52 B 为 `SpriteFont.DrawNumber` 的 Mono.JIT；其余 128 B 位于 EventSystem/JIT/ArraySortHelper 初始化路径。现象符合首次使用成本，但不能把未解析地址全部判为引擎内部、业务代码或缓冲扩容。原始地址保留在 CSV。
+首段比其余多 28,084 B：其中 27,904 B /8 样本位于 `CanvasUpdate.PreRender`，内部地址未完整解析；52 B 为 `SpriteFont.DrawNumber` 的 Mono.JIT；其余 128 B 位于 EventSystem/JIT/ArraySortHelper 初始化路径。现象符合首次使用成本，但不能把未解析地址全部判为引擎内部、业务代码或缓冲扩容。首段这 27,904 B 位于 ordinal 414、Playing、tickStart 397、游戏约 13.23 秒，晚于本段升级事件；不能称其为已证明的升级成本。原始地址保留在 CSV。`unresolvedAddresses` 字段统计地址出现次数而非不同地址数：预热窗口 614 次/11 个唯一地址，首段 756 次/47 个唯一地址；也不是未归因分配的样本数。
 
-本次选定 PlayerLoop/all-recorded-thread 样本中，除了有明确栈的每帧测试框架分配，未发现持续高频业务托管分配；没有观察到完成的 gen0 回收增长。这不表示所有分配为 0，也不测量增量 GC 切片/暂停时长。Profiler callstack 记录会增加观测成本，不能用本次帧时宣称生产性能。
+本次选定 PlayerLoop/all-recorded-thread 样本中，除了有明确栈的每帧测试框架分配，未发现持续高频业务托管分配；没有观察到完成的 gen0 回收增长。这不表示所有分配为 0，也不测量增量 GC 切片/暂停时长。DataTexture 第 1 与第 2 窗口之间，绝对 gen0 计数由 173 增至 174：零增量仅适用于所捕获的六段，不能扩为整个诊断进程。区间外包含捕获导出/清理/重新创建工作，该次回收未做调用栈关联。Profiler callstack 记录会增加观测成本，不能用本次帧时宣称生产性能。
 
 新的 24,244 B 与旧 24,864 B **不是已证明的优化收益**：可见呈现与 UI/升级路径不同，尚未做逐事件同轨迹的 A/B。全局 previous-frame counter 在本次 profiler 下仍出现 122/280 B 及其他值；它的采样边界不同，旧 117/164 B 来源依旧未完整解释。
 

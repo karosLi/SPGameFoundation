@@ -42,6 +42,16 @@ namespace SurvivorFoundation.Tests.PlayMode
                     }
                     Assert.Greater(cyan, 200, "electric bands and cyan hero are rendered in portrait");
                     Assert.Greater(red, 50, "enemy health bars are rendered");
+                    int darkTelemetry = 0, whiteGlyphs = 0;
+                    // ReadPixels is bottom-up; this strip contains stats, below the top health bars.
+                    for (int y = 1110; y < 1178; y++) for (int x = 20; x < 620; x++)
+                    {
+                        var p = pixels[y * 720 + x];
+                        if (p.r < 65 && p.g < 75 && p.b < 85) darkTelemetry++;
+                        if (p.r > 210 && p.g > 210 && p.b > 210) whiteGlyphs++;
+                    }
+                    Assert.Greater(darkTelemetry, 2000, "guard stats retain a contrasting passive backdrop");
+                    Assert.Greater(whiteGlyphs, 50, "actual telemetry glyphs are visible above the crowd");
                 }
             }
             finally

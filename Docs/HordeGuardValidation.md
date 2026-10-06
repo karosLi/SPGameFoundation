@@ -56,3 +56,5 @@ Added PlayMode coverage runs both render tiers in portrait 720×1280: menu, two 
 Fractional atlas-alpha readback is asserted in real Unity; the compile-only harness Texture2D stub does not implement pixel readback.
 
 Source-level checks: `git diff --check` clean at handoff. Aggregate .NET and real Unity execution are coordinated by the parent task; do not infer their results from the presence of test source. Real Unity remains necessary for Burst safety, shaders, draw ordering, UI input and screenshot inspection. Mobile-device performance and thermal behavior are not established by an Editor capture.
+
+Full stage1 regression (2026-10-06) passed: Unity EditMode 382 cases, PlayMode 67 cases, .NET 374 cases, with explicit diagnostics excluded as listed in [MobileGameplayCheckpoint](MobileGameplayCheckpoint.md). Both guard render tiers completed their full terminal-state/restart flow.

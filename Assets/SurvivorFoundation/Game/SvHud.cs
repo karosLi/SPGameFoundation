@@ -50,6 +50,9 @@ namespace SurvivorFoundation.Game
             bool guard = game.Session.World.Resource(SvKeys.Config).Settings.Variant == SvVariant.GuardBeacon;
 
             HudPanel = UIFactory.Panel(root, "HudPanel", Color.clear, Vector2.zero, Vector2.one);
+            // Keep telemetry legible against dense smooth-art crowds; passive background never captures input.
+            if (guard) UIFactory.Panel(HudPanel, "StatsBackdrop", new Color(0.035f, 0.065f, 0.07f, 0.94f),
+                new Vector2(0f, 0.86f), Vector2.one, raycast: false);
             XpFill = UIFactory.Bar(HudPanel, "XpBar", new Color(0f, 0f, 0f, 0.6f), new Color(0.35f, 0.75f, 1f, 0.95f), new Vector2(0f, 0.975f), new Vector2(1f, 1f));
             HealthFill = UIFactory.Bar(HudPanel, "HealthBar", new Color(0f, 0f, 0f, 0.55f), new Color(0.9f, 0.25f, 0.25f, 0.95f), new Vector2(0.02f, 0.93f), new Vector2(0.3f, 0.96f));
             BeaconFill = UIFactory.Bar(HudPanel, "BeaconBar", new Color(0f, 0f, 0f, 0.65f), new Color(0.58f, 0.86f, 0.35f, 1f), new Vector2(0.52f, 0.93f), new Vector2(0.8f, 0.96f));

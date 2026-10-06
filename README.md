@@ -1,12 +1,12 @@
 # SPGameFoundation
 
-Unity 2022.3 2D 单机小游戏基座（面向移动端），内置贪吃蛇、ARPG、幸存者、平台跳跃、塔防、三消、弹弓、格斗、剧情共九个验证玩法。
+Unity 2022.3 2D 单机小游戏基座（面向移动端），保留贪吃蛇、ARPG、幸存者、平台跳跃、塔防、三消、弹弓、格斗、剧情九个验证玩法，新增非像素竖屏射击与幸存者守点变体，用于验证共享能力接入。
 
 - 数据导向模拟：自研 SoA 表 + C# Jobs + Burst，固定步长 30 Hz，确定性（同种子同输入 → 同结果）
 - 两级空间网格碰撞；7500×7500 大地图 + 3750×3750 小地图（传送门衔接，非活动地图冻结）
 - GPU 驱动渲染（Compute 展开蛇身 / 剔除食物 + Indirect Draw），GLES 3.0 自动降级到数据纹理路径
 - 节点 / 条带两种蛇身，不透明 / 半透明（同蛇等深度，不叠色）/ 叠加三种混合
-- 对局中 0 GC；AI（效用决策 + 上下文避让）、Buff、道具、技能飞行物、加速掉落、回放
+- 固定容量、预热与零分配热路径测试；分配/回收的实际范围见调查记录；AI（效用决策 + 上下文避让）、Buff、道具、技能飞行物、加速掉落、回放
 
 设计文档：[Docs/Architecture.md](Docs/Architecture.md) · 品类覆盖与验证玩法：[Docs/GenreCoverage.md](Docs/GenreCoverage.md) · 本轮移动端加固：[Docs/MobileFoundationBatch1.md](Docs/MobileFoundationBatch1.md) · 分配/回收调查：[Docs/SurvivorAllocationInvestigation.md](Docs/SurvivorAllocationInvestigation.md)
 
@@ -20,6 +20,14 @@ Unity 2022.3 2D 单机小游戏基座（面向移动端），内置贪吃蛇、A
    - F1：性能面板（各阶段耗时、实体数、GC、Draw Call）
 
 也可以只放一个挂了 `SnakeGameBootstrap` 的空物体，其余（模拟、相机、渲染、UI、输入、自适应画质）运行时自动组装。
+
+## 新增移动端示例
+
+- **SPF → Shooter → Create Or Update Scene**：拖动飞行 / WASD、自动射击、僚机、最近目标射线、波次与三选一升级。生成场景后 Play；移动端竖屏设置通过单独的 **Apply Portrait Mobile Settings** 菜单显式应用。
+- **SPF → Survivor → Create Guard Example Scene**：守护信标、双环伤害、密集血条、接触阴影与失败/胜利/重开。原 Survivor 默认模式保留。
+- [本轮验证结果](Docs/MobileGameplayCheckpoint.md) · [共用能力与新玩法接入](Docs/MobileGameplayIntegration.md) · [射击验证](Docs/ShooterValidation.md) · [守点验证](Docs/HordeGuardValidation.md)
+
+两档渲染均有真实 Unity 测试与截图；美术是原创程序占位图。桌面软件渲染证据不代表 Android/iOS 真机性能。
 
 ## 目录与程序集
 

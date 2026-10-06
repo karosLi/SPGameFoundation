@@ -114,3 +114,16 @@ height 非负；越高按 HeightSpread 变大、按 HeightFade 线性变淡。�
 - `BonePaletteMathTests`：镜像 FK 映射、逆矩阵、bind-space 到 posed-space、循环/非循环采样边界、非法数据、逐元素插值塌缩的已知限制。
 - .NET harness 可验证纯数学、元数据和编译层次，纹理 stub 不保存 pixels；导入像素所有权与真实 atlas gutter 内容测试显式放在 Unity 专属分支中，不能拿 stub 通过当纹理验证。
 - 实际运行结果由本轮合并验证报告记录。此文不声称以上所有目标平台测试已执行，也不提高既有 GC 阈值。
+
+## 8. 新玩法的最小接入清单
+
+无需更改基座的公共玩法枚举，也不应复制另一玩法的完整模拟循环。以新增 Shooter 为示例：
+
+1. 独立 `Runtime` 程序集引用 Contracts / L1 / L2 / Runtime.Core；定义自己的 Keys、POD 列、容量与配置。优先组合已有 WorldComposer / IGameplayModule，不继承另一个游戏的规则。
+2. `DeclareData` 声明持久权威状态和固定容量队列；`RegisterSystems` 声明阶段与读写。Job 只写自己的 row 或有界队列，结构变更在既有提交阶段处理。
+3. 选用共享 `SpatialGrid`、`PatternEmitter`、`WaveSchedule`、形状数学；目标队伍、伤害周期、升级与胜负属于玩法规则。跨 tick 保存身份须完整 handle；row 只作为同一同步窗口内的地址。
+4. 所有临时 native 缓冲在构造/绑定时分配，说明由谁 Dispose、是否需要保存。纯派生 scratch 必须保证恢复后读前重写；权威状态不得假装 scratch 跳过快照。
+5. `Presentation` 只读已完成的模拟，独立选择 atlas/排序/批次/质量预算；`Game` 负责 SessionHost、HUD、输入命令适配。公共渲染能力不能引用某个游戏 Runtime。
+6. 最小验收是相同种子重放、快照续算、容量耗尽、暂停/恢复、取消输入、死亡/重开/回菜单、两档实际截图与稳态分配窗口；加入一个新配置不应要求修改共享碰撞枚举。
+
+新增 primitive 先让两种规则实际使用，再据共同需求扩展。当前下一阶段稳定命中历史/动作时间线和 BAT 是独立增量；本检查点没有宣称旧 Brawler 已具有纵深地面移动或通用加权角色导入器。

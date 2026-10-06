@@ -11,7 +11,10 @@ namespace BrawlerFoundation.Tests
 {
     /// <summary>Full fixed-tick diagnostic in both .NET stubs and native Unity EditMode. Timings and
     /// allocations are reports, not device budgets; correctness/determinism remain hard assertions.</summary>
+#if SPF_DOTNET_HARNESS
+    // Unity's bundled NUnit subset runs these tests serially and omits this NUnit 3 attribute.
     [NonParallelizable]
+#endif
     public class BwBeltWorkloadTests
     {
         const int WarmupTicks = 90, TimedTicks = 120, AllocationTicks = 120;

@@ -76,11 +76,11 @@ namespace BrawlerFoundation.Presentation
             var rig = session.World.Resource(BwKeys.Rig);
             m_Assets = new RenderAssets(RenderCapabilities.Detect());
             m_Art = BwArt.Build(rig, NaturalCharacters);
-            if (NaturalCharacters) m_Characters = new GameplayCharacterPresenter(m_Assets.Tier, MaxFighters);
+            if (NaturalCharacters) m_Characters = new GameplayCharacterPresenter(m_Assets.Tier, math.clamp(session.World.Table(BwKeys.Fighter).Capacity, 1, 128));
             var atlas = m_Art.Sheet.Texture;
             m_Arena = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Opaque, 1024, queueOffset: -10);
             m_Fighters = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Opaque, MaxFighters * (m_Art.Parts.Length + 4));
-            if (NaturalCharacters) { m_NaturalShadows = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Translucent, MaxFighters + 256, queueOffset: -60); m_NaturalShadows.Warmup(m_NaturalShadows.Capacity); }
+            if (NaturalCharacters) { m_NaturalShadows = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Translucent, m_Characters.Capacity + 256, queueOffset: -60); m_NaturalShadows.Warmup(m_NaturalShadows.Capacity); }
             m_Effects = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Translucent, 512);
             // Preallocate dynamic pages and prefix textures at session bind, before counts grow in play.
             m_Fighters.Warmup(m_Fighters.Capacity);
@@ -122,7 +122,7 @@ namespace BrawlerFoundation.Presentation
             m_Effects.Clear();
             DrainFeedback(world);
             PartsDrawn = 0;
-            int count = game.Flow == BwFlow.Menu ? 0 : math.min(world.Table(BwKeys.Fighter).Count, MaxFighters);
+            int count = game.Flow == BwFlow.Menu ? 0 : math.min(world.Table(BwKeys.Fighter).Count, NaturalCharacters ? m_Characters.Capacity : MaxFighters);
             if (NaturalCharacters) DrawNatural(world, game, rig, alpha, count);
             else if (count > 0)
             {
@@ -219,7 +219,9 @@ namespace BrawlerFoundation.Presentation
                 var state=f.State==FighterState.KO?GameplayCharacterState.Death:f.State==FighterState.Hit?GameplayCharacterState.Hit:
                     f.State==FighterState.Attack?(phase>.58f?GameplayCharacterState.Recovery:GameplayCharacterState.Attack):
                     f.State==FighterState.Walk?GameplayCharacterState.Run:GameplayCharacterState.Idle;
-                m_Characters.Submit(new GameplayCharacterInput {Handle=handles[i],Root=p,Ground=ground,Velocity=velocity,Facing=f.Facing,
+                float2 actionTarget=default;
+                if(f.State==FighterState.Attack)actionTarget=BrawlerFoundation.Systems.BwProbe.Tip(rig,f,world.Column(BwKeys.Anim)[i],p,m_Scratch,m_World);
+                m_Characters.Submit(new GameplayCharacterInput {Aim=f.State==FighterState.Attack,AimTarget=actionTarget,Handle=handles[i],Root=p,Ground=ground,Velocity=velocity,Facing=f.Facing,
                     Scale=.9f,State=state,Phase=phase,Action=f.Attack==AttackKind.Kick?GameplayCharacterAction.Kick:GameplayCharacterAction.Punch,
                     Kind=f.Team==0?0:1,Flash=f.Flash,Tint=f.Team==0?new float4(1f):new float4(1f,1f-f.Variant*.035f,1f-f.Variant*.06f,1f),Depth=FighterDepth+ground.y*.01f});
                 m_NaturalShadows.Add(ground+new float2(0,.01f),new float2(.95f,.24f),m_Art.Sheet[m_Art.Shadow].Uv,ShadowDepth,new float4(0,0,0,.34f));

@@ -29,7 +29,7 @@ namespace SPF.Presentation.Animation
         public SmoothedAimState Aim;
         public float2 PreviousRoot;
         public float Phase, Run, Attack, Hit, Death, Facing, Scale;
-        public bool Initialized;
+        public bool Initialized, Airborne;
 
         public void Step(in GameplayCharacterInput input, float dt)
         {
@@ -45,6 +45,13 @@ namespace SPF.Presentation.Animation
                 NaturalMotion.InitializeFoot(ref FarFoot, ground, ground + new float2(-.13f, .075f), 0);
                 NaturalMotion.InitializeFoot(ref NearFoot, ground, ground + new float2(.13f, .075f), .5f);
             }
+            bool airborne=input.Root.y-input.Ground.y>.03f;
+            if(Airborne&&!airborne)
+            {
+                NaturalMotion.InitializeFoot(ref FarFoot,ground,ground+new float2(-.13f,.075f),0);
+                NaturalMotion.InitializeFoot(ref NearFoot,ground,ground+new float2(.13f,.075f),.5f);
+            }
+            Airborne=airborne;
             float response = 1f - math.exp(-18f * dt);
             Run = math.lerp(Run, input.State == GameplayCharacterState.Run ? 1 : 0, response);
             float attack = input.State == GameplayCharacterState.Attack || input.State == GameplayCharacterState.Recovery ? Strike(input.Phase) : 0;
@@ -74,7 +81,7 @@ namespace SPF.Presentation.Animation
                 Settle(ref FarFoot, ground, -.13f, dt); Settle(ref NearFoot,ground,.13f,dt);
                 Phase = math.frac(Phase + dt * .16f);
             }
-            float2 target = input.Aim ? input.AimTarget : input.Root + new float2(facing * math.lerp(.34f,.83f,math.max(0,Attack)), math.lerp(1.5f,1.65f,math.max(0,Attack))) * scale;
+            float2 target = input.Aim && input.Action!=GameplayCharacterAction.Kick ? input.AimTarget : input.Root + new float2(facing * math.lerp(.34f,.83f,math.max(0,Attack)), math.lerp(1.5f,1.65f,math.max(0,Attack))) * scale;
             NaturalMotion.SmoothAim(ref Aim,target,dt,24);
             PreviousRoot=input.Root;
         }
@@ -108,16 +115,35 @@ namespace SPF.Presentation.Animation
             // Feet leave the ground with the authoritative root height. Ground sorting/shadows stay below.
             float height=math.max(0,input.Root.y-input.Ground.y);
             far.y+=height;near.y+=height;
+            if(motion.Airborne){far=input.Root+new float2(-motion.Facing*.15f,.27f)*scale;near=input.Root+new float2(motion.Facing*.24f,.17f)*scale;}
             float strike=math.max(0,motion.Attack);
             if(input.Action==GameplayCharacterAction.Kick)
-                near=math.lerp(near,input.Root+new float2(motion.Facing*.86f,.98f)*scale,strike);
+                near=input.Aim?input.AimTarget:math.lerp(near,input.Root+new float2(motion.Facing*.86f,.98f)*scale,strike);
             NaturalCharacterRig.Pose(rig,local,world,input.Root,motion.Facing,scale,motion.Phase,far,near,
                 true,motion.Aim.Target,motion.Attack,at);
             var torso=local[at+NaturalCharacterRig.Torso];torso.Rotation+=motion.Hit*.24f;local[at+NaturalCharacterRig.Torso]=torso;
             var head=local[at+NaturalCharacterRig.Head];head.Rotation-=motion.Hit*.15f;local[at+NaturalCharacterRig.Head]=head;
             // A relaxed rear arm versus readable guarded front hand; stance/run changes ease through Run.
             var arm=local[at+NaturalCharacterRig.FarArm];arm.Rotation+=.18f*(1-motion.Run);local[at+NaturalCharacterRig.FarArm]=arm;
+            CorrectContacts(rig,local,input,motion,at);
             Skeletal.ToWorld(rig,local,input.Root,motion.Facing,scale,world,at,at);
+        }
+
+        /// <summary>Run every render step, including reused secondary-pose ticks. Cached local legs must
+        /// never be translated with a moving root during a world-space stance plant.</summary>
+        public static void CorrectContacts(in SkeletonView rig,NativeArray<BoneLocal> local,
+            in GameplayCharacterInput input,in GameplayCharacterMotion motion,int at)
+        {
+            float scale=motion.Scale,height=math.max(0,input.Root.y-input.Ground.y);
+            float2 far=motion.FarFoot.Position*scale+new float2(0,height),near=motion.NearFoot.Position*scale+new float2(0,height);
+            if(motion.Airborne){far=input.Root+new float2(-motion.Facing*.15f,.27f)*scale;near=input.Root+new float2(motion.Facing*.24f,.17f)*scale;}
+            if(input.Action==GameplayCharacterAction.Kick)
+                near=input.Aim?input.AimTarget:math.lerp(near,input.Root+new float2(motion.Facing*.86f,.98f)*scale,math.max(0,motion.Attack));
+            NaturalMotion.Aim(rig,local,NaturalCharacterRig.FarThigh,NaturalCharacterRig.FarShin,far,input.Root,motion.Facing,scale,1,at);
+            NaturalMotion.Aim(rig,local,NaturalCharacterRig.NearThigh,NaturalCharacterRig.NearShin,near,input.Root,motion.Facing,scale,1,at);
+            var foot=local[at+NaturalCharacterRig.FarFoot];foot.Rotation=-local[at+NaturalCharacterRig.FarThigh].Rotation-local[at+NaturalCharacterRig.FarShin].Rotation;local[at+NaturalCharacterRig.FarFoot]=foot;
+            foot=local[at+NaturalCharacterRig.NearFoot];foot.Rotation=-local[at+NaturalCharacterRig.NearThigh].Rotation-local[at+NaturalCharacterRig.NearShin].Rotation;local[at+NaturalCharacterRig.NearFoot]=foot;
+            NaturalMotion.Aim(rig,local,NaturalCharacterRig.NearArm,NaturalCharacterRig.NearForearm,motion.Aim.Target,input.Root,motion.Facing,scale,-1,at);
         }
     }
 }

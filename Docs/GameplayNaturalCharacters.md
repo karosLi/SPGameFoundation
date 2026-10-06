@@ -1,0 +1,44 @@
+# Natural characters in actual gameplay
+
+## Entry points and authority
+
+- `BwGameBootstrap.CreateNaturalCombat()` uses the mobile/shared combat example with articulated natural characters. `CreateBeltScroller()` also selects them by default. The belt adapter reads actual ground depth and height, draws ground-plane shadows and bounded coin/heal drops, and selects animation from authoritative fighter state/time.
+- `SvGameBootstrap.CreateNaturalCombatExample()` uses the mobile horde example; `CreateFlyingSwordExample()` selects natural characters by default. Its separate sword layer reads authoritative flying-sword state. Legacy orbit blade art is suppressed in this variant.
+- `BwRenderer.NaturalCharacters` / `SvRenderer.NaturalCharacters` are explicit presentation opt-ins. Original factories, runtime defaults, classic layout and snapshot bytes stay unchanged. A flag change recreates presentation resources once; quality changes reuse them.
+- `GameplayCharacterInput` carries stable `EntityHandle`, projected root, independent contact-plane position, velocity/facing/scale, visual state, normalized authoritative action phase, optional world target, flash, tint and depth. No simulation, hit queue, RNG, input or snapshot reference is retained by the shared presenter.
+
+## Motion, sorting and lifecycle
+
+`GameplayCharacterPresenter` owns the original 14-bone rig, its original nonpixel atlas, one warmed batched sprite stream, native pose/state buffers and pre-sized identity containers. It uses the existing indirect and data-texture sprite paths; it is CPU/Burst cutout articulation, not GPU skinning or a Spine importer.
+
+- Idle / running / attack / hit / death / recovery blend through bounded visual weights. The front hand is softly aimed; near/far feet hold world-space stance anchors. Fast travel increases gait cadence; teleports reset plants. All two-bone solves retain finite reach limits.
+- Secondary torso/head pose runs at 60 Hz for the hero and 30/24/15 Hz for enemies by quality. **Contact and arm IK is corrected every render step**, including when secondary locals are reused. Merely translating cached local leg poses would slide planted feet; the 120 Hz FK-readback regression specifically detects that mistake.
+- Belt height releases the feet into a tucked root-relative air pose, then replants on landing. Jump height never changes ground sorting or shadow location. This is presentation of authoritative height, not root motion.
+- Brawler aims the visible punch/kick toward the same `BwProbe.Tip` sampled from the authoritative animation. The different original natural rig still has finite limb reach and smoothing; damage remains exclusively in the existing simulation probe. It is not a replacement collision rig.
+- Survivor has no enemy attack timeline; walking, flash and death events are consumed where available. Hero Shoot/Nova feedback can start a bounded visual cast/recovery cue; flying swords do not invent a separate hero melee attack. Death feedback lacks a handle, so at most 16 short-lived negative presentation identities fall/fade at verified death positions. Culling or disappearing from selection is never treated as death.
+- All actors sort back to front by ground Y and then stable handle, independently of dense row order. A pre-sized duplicate set prevents two parallel pose jobs sharing a slot. Surviving identities are marked before any eviction; recycled generations reset visual state.
+- For cross-atlas articulated/fallback occlusion, both actor batches use ground depth writes with a small 0.02 alpha cutoff. Fully transparent quad borders cannot occlude other actors; most antialiased edge coverage is retained. Every part of one actor shares its ground depth and is explicitly ordered within that actor. Shadows, translucent effects and health bars remain separate layers.
+- Session rebind/renderer destruction releases all native arrays, batches, material/mesh/texture resources and rig/art ownership. No per-enemy GameObjects or Animators are created.
+
+## Bounded work and memory
+
+- Brawler: up to 128 articulated actors in the opt-in natural path (table capacity), 14 parts each. Classic rendering remains at its existing 64 bound. Default belt example uses 64 capacity.
+- Survivor: at most 192 articulated enemies at quality 0/1, 96 at quality 2, 48 at quality 3; plus one hero and 16 death slots. Selection uses a nearest-first fixed heap with quarter-unit squared-distance bands and stable-handle ties. **Every remaining visible enemy keeps its existing cheap sprite**, including at the lowest quality.
+- Selection is `O(visible × log 192)`. Actor ordering is an in-place `O(selected × log selected)` heapsort; duplicate/state lookup uses pre-sized hash containers, average `O(selected)`. This replaces the initial bounded insertion sort/linear duplicate scan; the whole renderer is not just the selection heap.
+- Maximum shared horde stream: 209 × 14 = 2,926 sprites, 93,632 packed bytes before texture padding/indirect args. All pages/prefix textures are warmed at bind. Existing game ground, fallback, health, shadow and effect uploads are additional and reported by `SvRenderer.BytesUploaded`.
+- Natural color atlas: 1024 × 256 RGBA32, **1 MiB GPU plus its readable CPU texture copy**. Source part canvases retain 0.5625 MiB managed pixels. Native pose/state, meshes, warmed upload texture caches, materials and engine overhead are additional. No normal or silhouette atlas is created for gameplay; dynamic IK uses contact blobs. The optional sampled silhouette system stays a separate supported-pose showcase feature.
+- The 192-enemy full-render synchronous allocation probe runs 60 calls after warming at quality 0. Calibration before/after must detect retained control allocations; screenshot/readback/PNG/string generation is outside its window. Desktop synchronous timing/GC samples do not establish complete-frame or Android/iOS device performance.
+
+## Tests and honest evidence boundary
+
+Shared `GameplayCharacterTests` cover stable bounded selection, idle plants, teleport/landing reset, mirrored finite reach at 30/60/120 Hz, stable identity/recycled generation, 120 Hz FK contacts with 15 Hz secondary pose, allocation-free warmed math/selection, and continuous attack recovery.
+
+Actual game tests (both render tiers):
+
+- `BwNaturalGameplayTests.NaturalCharactersMoveHitRecoverAndKeepSimulation`: actual mobile Brawler movement, hit damage, attack/recovery/flash, camera+HUD images, reach check, quality/snapshot byte equality and calibrated warmed full-render probe.
+- `SvNaturalGameplayTests.NaturalHordeMovesHitsAndKeepsEveryFallback`: 224 live enemies, actual movement and pulse damage/death, quality downgrade retaining every visible actor, snapshot byte equality and calibrated full 192-enemy render probe.
+- Runtime variant tests are separate: `BwBeltScrollerPlayTests` and `SvFlyingSwordPlayTests` cover the opt-in mechanics with the natural adapters.
+
+Images are unmodified camera-plus-canvas GPU readbacks under `Artifacts/Screenshots/MobileHud/`, named `natural-brawler-*` / `natural-horde-*`. Set `SPF_GAMEPLAY_CHARACTER_SEQUENCE=1` for 30 actual gameplay render samples per game/tier, with six Brawler or three Survivor simulation ticks between samples (10 simulation samples per second). Presentation continues normally during capture yields; these are sampled gameplay renders, not synthesized/interpolated image frames and not a frame-pacing measurement. Encode at 10 fps only when presenting the simulation sample cadence.
+
+Implementation checkpoint: shared .NET focused tests **10/10 passed, zero skipped** before final sort/cross-atlas refinements; all 75 harness assemblies compiled at the initial adapter checkpoint (NuGet vulnerability-cache warnings, zero code errors). Final harness rerun and central Unity graphics/probe results are required after the follow-up refinements. No physical device performance claim is made.

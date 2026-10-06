@@ -19,6 +19,7 @@ namespace SPF.Presentation.Animation
         readonly NaturalCharacterArt m_Art;
         readonly SpriteBatch m_Batch;
         readonly Dictionary<EntityHandle,int> m_Slots;
+        readonly HashSet<EntityHandle> m_Submitted;
         readonly EntityHandle[] m_Handles;
         readonly int[] m_Seen;
         NativeArray<GameplayCharacterInput> m_Inputs;
@@ -42,8 +43,12 @@ namespace SPF.Presentation.Animation
             if(capacity<1||capacity>512)throw new ArgumentOutOfRangeException(nameof(capacity));
             Capacity=capacity;m_Rig=NaturalCharacterRig.Create();m_Art=new NaturalCharacterArt();
             m_Batch=new SpriteBatch(tier,m_Art.Sheet.Texture,BlendKind.Translucent,capacity*NaturalCharacterArt.Parts,queueOffset);
+            // Mixed articulated/fallback batches share ground depth. A tiny alpha discard prevents transparent
+            // quad borders writing depth while preserving antialiased edges and cross-atlas occlusion.
+            m_Batch.Material?.SetFloat(RenderAssets.Ids.ZWrite,1);
+            m_Batch.Material?.SetFloat(Shader.PropertyToID("_Cutoff"),.02f);
             m_Batch.Warmup(m_Batch.Capacity);
-            m_Slots=new Dictionary<EntityHandle,int>(capacity);m_Handles=new EntityHandle[capacity];m_Seen=new int[capacity];
+            m_Slots=new Dictionary<EntityHandle,int>(capacity);m_Submitted=new HashSet<EntityHandle>(capacity);m_Handles=new EntityHandle[capacity];m_Seen=new int[capacity];
             m_Inputs=new NativeArray<GameplayCharacterInput>(capacity,Allocator.Persistent);
             m_Motion=new NativeArray<GameplayCharacterMotion>(capacity,Allocator.Persistent);
             m_InputSlots=new NativeArray<int>(capacity,Allocator.Persistent);m_PoseTicks=new NativeArray<int>(capacity,Allocator.Persistent);
@@ -55,28 +60,44 @@ namespace SPF.Presentation.Animation
         }
         public void Clear()
         {
-            m_Slots.Clear();Array.Clear(m_Handles,0,Capacity);Array.Clear(m_Seen,0,Capacity);
+            m_Slots.Clear();m_Submitted.Clear();Array.Clear(m_Handles,0,Capacity);Array.Clear(m_Seen,0,Capacity);
             for(int i=0;i<Capacity;i++){m_Motion[i]=default;m_PoseTicks[i]=-1;}
             Count=0;m_Batch.Clear();
         }
         public void Begin(float dt,int quality)
         {
             m_Dt=math.clamp(dt,0,.1f);m_Time+=m_Dt;m_Quality=math.clamp(quality,0,3);
-            m_Frame++;Count=0;VisibleStates=0;PosesEvaluated=0;m_Batch.Clear();
+            m_Frame++;m_Submitted.Clear();Count=0;VisibleStates=0;PosesEvaluated=0;m_Batch.Clear();
         }
         public bool Submit(in GameplayCharacterInput input)
         {
             if(Count>=Capacity||input.Handle.IsNull||!math.all(math.isfinite(input.Root))||!math.all(math.isfinite(input.Ground)))return false;
-            for(int i=0;i<Count;i++)if(m_Inputs[i].Handle==input.Handle)return false;
-            // Back-to-front actor order is explicit, stable across dense row reorder and identical on both tiers.
-            int at=Count++;
-            while(at>0&&ComesBefore(input,m_Inputs[at-1])){m_Inputs[at]=m_Inputs[at-1];at--;}
-            m_Inputs[at]=input;return true;
+            if(!m_Submitted.Add(input.Handle))return false;
+            m_Inputs[Count++]=input;return true;
         }
         static bool ComesBefore(in GameplayCharacterInput a,in GameplayCharacterInput b)=>a.Ground.y>b.Ground.y||
             (a.Ground.y==b.Ground.y&&(a.Handle.Index<b.Handle.Index||(a.Handle.Index==b.Handle.Index&&a.Handle.Generation<b.Handle.Generation)));
+        void SortInputs()
+        {
+            // In-place heapsort: deterministic O(capacity log capacity), no delegates/scratch allocations.
+            // Actor depth ties use stable handles. Duplicate suppression is the pre-sized set at Submit.
+            for(int root=Count/2-1;root>=0;root--)Sift(root,Count);
+            for(int end=Count-1;end>0;end--){Swap(0,end);Sift(0,end);}
+        }
+        void Swap(int a,int b){var value=m_Inputs[a];m_Inputs[a]=m_Inputs[b];m_Inputs[b]=value;}
+        void Sift(int root,int count)
+        {
+            while(root*2+1<count)
+            {
+                int next=root*2+1;
+                if(next+1<count&&ComesBefore(m_Inputs[next],m_Inputs[next+1]))next++;
+                if(!ComesBefore(m_Inputs[root],m_Inputs[next]))break;
+                Swap(root,next);root=next;
+            }
+        }
         public void Evaluate()
         {
+            SortInputs();
             // Mark all surviving identities before reclaiming any slot. New actors cannot evict a selected
             // actor merely because the simulation's dense rows or selection heap changed order.
             for(int i=0;i<Count;i++)
@@ -138,7 +159,7 @@ namespace SPF.Presentation.Animation
                 {
                     GameplayCharacterMotion.Pose(Rig,Local,World,input,motion,at);PoseTicks[slot]=tick;
                 }
-                else Skeletal.ToWorld(Rig,Local,input.Root,motion.Facing,motion.Scale,World,at,at);
+                else { GameplayCharacterMotion.CorrectContacts(Rig,Local,input,motion,at); Skeletal.ToWorld(Rig,Local,input.Root,motion.Facing,motion.Scale,World,at,at); }
                 float fall=NaturalMotion.Ease(motion.Death),angle=-motion.Facing*fall*1.48f;
                 float c=math.cos(angle),s=math.sin(angle);
                 float4 tint=input.Tint;tint.w*=1f-math.saturate((motion.Death-.8f)*5f);
@@ -148,7 +169,7 @@ namespace SPF.Presentation.Animation
                     float2 center=bone.Transform(attachment.Offset*motion.Scale,motion.Facing);
                     float2 p=center-input.Root;center=input.Root+new float2(c*p.x-s*p.y,s*p.x+c*p.y);
                     Sprites[i*NaturalCharacterArt.Parts+k]=PackedSprite.Pack(center,attachment.Size*new float2(motion.Scale,motion.Scale*motion.Facing),
-                        attachment.Uv,input.Depth-attachment.Layer*.001f,attachment.Tint*tint,bone.Rotation+attachment.Rotation*motion.Facing+angle,math.saturate(input.Flash)*.3f);
+                        attachment.Uv,input.Depth,attachment.Tint*tint,bone.Rotation+attachment.Rotation*motion.Facing+angle,math.saturate(input.Flash)*.3f);
                 }
             }
         }

@@ -64,6 +64,32 @@ namespace SPF.Tests.EditMode
                 presenter.TryRead(a.Handle,out var recycled);Assert.AreEqual(0,recycled.Hit);Assert.AreEqual(28,presenter.PartsDrawn);
             }
         }
+        [Test] public void LowRateSecondaryPoseKeepsWorldPlantOnEveryRenderStep()
+        {
+            using(var presenter=new GameplayCharacterPresenter(RenderTier.DataTexture,1))
+            {
+                var input=Input();input.Kind=1;input.State=GameplayCharacterState.Run;input.Velocity=new float2(.35f,0);
+                int reused=0;
+                for(int i=0;i<120;i++)
+                {
+                    input.Root=input.Ground=new float2(i*.35f/120,0);
+                    presenter.Begin(1f/120,3);presenter.Submit(input);presenter.Evaluate();
+                    if(presenter.PosesEvaluated==0)reused++;
+                    presenter.TryRead(input.Handle,out var motion);
+                    var bone=presenter.ReadBone(input.Handle,NaturalCharacterRig.FarFoot);
+                    Assert.Less(math.distance(bone.Position,motion.FarFoot.Position),.0001f,"FK must re-solve contact even on skipped body-pose frames");
+                }
+                Assert.Greater(reused,90);
+            }
+        }
+        [Test] public void AirbornePoseReleasesGroundAndReplantsOnLanding()
+        {
+            var input=Input();var motion=default(GameplayCharacterMotion);motion.Step(input,.016f);
+            input.Root=new float2(0,1);motion.Step(input,.016f);Assert.IsTrue(motion.Airborne);
+            input.Root=input.Ground=new float2(2,0);motion.Step(input,.016f);Assert.IsFalse(motion.Airborne);
+            Assert.Less(math.distance(motion.FarFoot.Position,input.Ground),.3f);
+        }
+
         [Test] public void WarmedMotionAndSelectionAllocateNothingWithCalibratedProbe()
         {
             var input=Input();input.State=GameplayCharacterState.Run;input.Velocity=new float2(2,0);

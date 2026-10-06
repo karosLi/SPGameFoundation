@@ -120,6 +120,11 @@ namespace SurvivorFoundation.Presentation
             }
             m_Ground = new SpriteBatch(tier, atlas, BlendKind.Opaque, 1024, queueOffset: -10);
             m_Opaque = new SpriteBatch(tier, atlas, StableTranslucentActors ? BlendKind.Translucent : BlendKind.Opaque, world.Table(SvKeys.Enemy).Capacity + world.Table(SvKeys.Gem).Capacity + 64, queueOffset: StableTranslucentActors ? -30 : 0);
+            if(NaturalCharacters)
+            {
+                m_Opaque.Material?.SetFloat(RenderAssets.Ids.ZWrite,1);
+                m_Opaque.Material?.SetFloat(Shader.PropertyToID("_Cutoff"),.02f);
+            }
             m_Shadows = new SpriteBatch(tier, atlas, BlendKind.Translucent, world.Table(SvKeys.Enemy).Capacity + 8, queueOffset: -60);
             m_Health = new SpriteBatch(tier, atlas, BlendKind.Translucent, world.Table(SvKeys.Enemy).Capacity * 3 + 12, queueOffset: 150);
             if (StableTranslucentActors) m_SortScratch = new NativeArray<PackedSprite>(m_Opaque.Capacity, Allocator.Persistent);

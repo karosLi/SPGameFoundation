@@ -50,7 +50,7 @@ namespace SPF.Presentation.Characters
             if(Input.GetKeyDown(KeyCode.Alpha1))ActorCount=1;if(Input.GetKeyDown(KeyCode.Alpha2))ActorCount=64;if(Input.GetKeyDown(KeyCode.Alpha3))ActorCount=256;
             if(m_Forced!=ForceCpu){m_Batch.Dispose();m_Batch=new BatCharacterBatch(m_Asset,BatLimits.MaxCapacity,ForceCpu);m_Forced=ForceCpu;}
             int count=math.clamp(ActorCount,1,256),columns=count==1?1:count<=64?8:16,rows=(count+columns-1)/columns;
-            m_Camera.orthographicSize=math.max(2,(rows*2.4f+1)*.5f);m_Camera.transform.position=new Vector3((columns-1)*1.25f,(rows-1)*1.2f+.9f,-10);
+            m_Camera.orthographicSize=math.max(2,math.max((rows*2.4f+1)*.5f,(columns*2.5f+1)*.5f/math.max(.1f,m_Camera.aspect)));m_Camera.transform.position=new Vector3((columns-1)*1.25f,(rows-1)*1.2f+.9f,-10);
             if(Input.GetMouseButton(0)){var p=m_Camera.ScreenToWorldPoint(Input.mousePosition);ModelTarget=new Vector2(p.x,p.y);}
             float2 target=math.clamp(new float2(ModelTarget.x,ModelTarget.y),-1000,1000);
             float bend=BendSign<0?-1:1;

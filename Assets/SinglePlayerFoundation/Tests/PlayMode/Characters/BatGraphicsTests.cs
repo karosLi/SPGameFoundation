@@ -35,9 +35,9 @@ namespace SPF.Characters.Tests.PlayMode
             float maximum=0;
             try
             {
-                for(int clip=0;clip<2;clip++)for(int sign=0;sign<2;sign++)for(int mode=0;mode<=targets.Length;mode++)
+                for(int clip=0;clip<2;clip++)for(int sign=0;sign<2;sign++)for(int side=0;side<2;side++)for(int mode=0;mode<=targets.Length;mode++)
                 {
-                    float facing=sign==0?1:-1,bend=sign==0?-1:1;
+                    float facing=sign==0?1:-1,bend=side==0?-1:1;
                     var instance=asset.Instance(clip,mode==0?-.003f:.367f,new float2(.2f,-.1f),.85f,facing,new float4(1),.125f,mode==0?default:targets[mode-1],mode!=0,bend);
                     batch.Clear();batch.Add(instance);
                     using(var cb=new CommandBuffer()){cb.SetRenderTarget(target);cb.ClearRenderTarget(false,true,Color.clear);batch.RecordProbe(cb,mesh,material);Graphics.ExecuteCommandBuffer(cb);}
@@ -105,6 +105,7 @@ namespace SPF.Characters.Tests.PlayMode
             for(int f=0;f<64;f++){instance.Frames.z=(f%10)*.1f;batch.Set(0,instance);batch.Prepare();}
             long allocated=GC.GetAllocatedBytesForCurrentThread()-before;
             Assert.That(allocated,Is.Zero,"Warmed BAT Prepare main-thread managed bytes (not driver/native GPU memory).");
+            Debug.Log("BAT warmed Prepare backend="+batch.Backend+", main-thread managed bytes="+allocated+" over 64 updates after 64 warmup updates.");
         }
         static BatClipSet CreateAsset(bool compact)
         {

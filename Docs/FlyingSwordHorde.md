@@ -47,3 +47,5 @@ The dense report-only workload uses **1024 live moving targets, 24 swords, 45 wa
 2. `PlayableSwordLoopKillsLevelsChoosesWinsDiesAndRestarts`: actual enemy kill → gem pickup → upgrade-button choice → victory → restart → death → restart → menu.
 
 Capture filenames: `survivor-sword-horde-portrait-{gpu,datatex}` and `survivor-sword-horde-low-vfx-{gpu,datatex}`. The worker compiled these tests against the harness but did not launch Unity; actual render/capture results must be recorded by central validation.
+
+Snapshot compatibility includes the host `SvVariant` as well as every sword rule. Identical sword parameters cannot restore across Classic/Guard/FlyingSwordHorde because spawning and terminal flow differ. The ordinary same-configuration exact continuation and actual legacy snapshot fixtures remain unchanged. This opt-in fingerprint does not claim to migrate or validate every historical Survivor authoring field.

@@ -148,6 +148,23 @@ namespace SurvivorFoundation.Tests
             Assert.Throws<InvalidDataException>(() => S(t).ReadSnapshot(new BinaryReader(stream)));
         }
 
+        [TestCase(SvVariant.Classic)]
+        [TestCase(SvVariant.GuardBeacon)]
+        public void DifferentHostVariantRejectsSnapshotBeforeTerminalFlowCanDiverge(SvVariant variant)
+        {
+            using var original = new SvTestWorld(tweak: c => { Configure(c); c.Settings.FlyingSwords.WaveTicks = 4; });
+            original.Step();
+            var snapshot = original.Session.CaptureSnapshot();
+            using var changed = new SvTestWorld(tweak: c =>
+            {
+                Configure(c); c.Settings.FlyingSwords.WaveTicks = 4; c.Settings.Variant = variant;
+            }, start: false);
+            Assert.Throws<InvalidDataException>(() => changed.Session.RestoreSnapshot(snapshot),
+                "identical sword rules do not imply identical host spawning or victory conditions");
+            original.Step(5);
+            Assert.AreEqual(SvFlow.Won, original.Game.Flow, "the source actually reaches the finite sword-horde terminal flow");
+        }
+
         [Test]
         public void AlteredSwordRulesRejectSnapshotAndClassicOptInPreservesClock()
         {

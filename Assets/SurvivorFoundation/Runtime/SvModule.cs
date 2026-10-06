@@ -43,7 +43,7 @@ namespace SurvivorFoundation
             if (s.CrossedBlades.Enabled)
                 layout.Resource(SvKeys.CrossedBlades, new SvCrossedBladeState(math.clamp(s.CrossedBlades.MaxTargets, 1, cap.Enemies)), levelScoped: true);
             if (s.FlyingSwords.Enabled)
-                layout.Resource(SvFlyingSwordState.Key, new SvFlyingSwordState(s.FlyingSwords, cap.Enemies), levelScoped: true);
+                layout.Resource(SvFlyingSwordState.Key, new SvFlyingSwordState(s.FlyingSwords, cap.Enemies, s.Variant), levelScoped: true);
             if (Config.MobileSkills) layout.Resource(SvMobileSkills.Key, SvMobileSkills.Create(), levelScoped: true);
             layout.DestroyQueueCapacity = cap.Enemies;
         }

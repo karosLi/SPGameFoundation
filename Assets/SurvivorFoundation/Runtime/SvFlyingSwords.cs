@@ -39,9 +39,11 @@ namespace SurvivorFoundation
                 !Finite(Radius) || Radius < 0 || !Finite(Damage) || Damage < 0)
                 throw new ArgumentException("Invalid flying-sword configuration.");
         }
-        public uint Fingerprint()
+        public uint Fingerprint(SvVariant variant)
         {
             uint h = 2166136261u;
+            // The host variant controls spawn cutoff and terminal flow, so it is part of this opt-in contract.
+            Hash(ref h, (uint)variant);
             Hash(ref h, Enabled ? 1u : 0u); Hash(ref h, (uint)Capacity); Hash(ref h, (uint)BaseCount);
             Hash(ref h, (uint)HistoryPerSword); Hash(ref h, (uint)OrbitTicks); Hash(ref h, (uint)OutboundTicks);
             Hash(ref h, (uint)ReturnTicks); Hash(ref h, (uint)WaveTicks);
@@ -86,10 +88,11 @@ namespace SurvivorFoundation
         public NativeArray<SvSwordContact> Contacts; // scratch, overwritten before every use, not saved
         public NativeArray<int> Counters; // launches, accepted hits, history rejects, queue rejects, query candidates, swept contacts
         public int ActiveCount, Tick;
-        public SvFlyingSwordState(in SvFlyingSwords settings, int enemyCapacity)
+        public SvFlyingSwordState(in SvFlyingSwords settings, int enemyCapacity, SvVariant variant)
         {
             settings.Validate(); int capacity = settings.Capacity, historyPerSword = settings.HistoryPerSword;
-            ConfigFingerprint = settings.Fingerprint();
+            if (variant > SvVariant.FlyingSwordHorde) throw new ArgumentOutOfRangeException(nameof(variant));
+            ConfigFingerprint = settings.Fingerprint(variant);
             if (capacity < 1 || capacity > 64 || historyPerSword < 1 || historyPerSword > 128 || enemyCapacity < 1)
                 throw new ArgumentOutOfRangeException(nameof(capacity));
             HistoryCapacity = historyPerSword;

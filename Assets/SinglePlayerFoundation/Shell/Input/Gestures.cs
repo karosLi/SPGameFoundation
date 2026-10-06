@@ -16,7 +16,7 @@ namespace SPF.Shell.Input
             public int Id;
             public float2 Start, Last, Position;
             public float StartTime;
-            public bool Dragging;
+            public bool Dragging, MultiTouch;
         }
 
         readonly List<Pointer> m_Pointers = new List<Pointer>();
@@ -64,7 +64,20 @@ namespace SPF.Shell.Input
 
         public void Down(int id, float2 position, float time)
         {
-            m_Pointers.Add(new Pointer { Id = id, Start = position, Last = position, Position = position, StartTime = time });
+            if (Find(id) >= 0) return;
+            bool multiTouch = m_Pointers.Count > 0;
+            if (multiTouch)
+            {
+                // Releasing the last finger of a pinch must not become a tap, swipe, or shot.
+                for (int i = 0; i < m_Pointers.Count; i++)
+                {
+                    var p = m_Pointers[i];
+                    p.MultiTouch = true;
+                    m_Pointers[i] = p;
+                }
+                Drag = float2.zero;
+            }
+            m_Pointers.Add(new Pointer { Id = id, Start = position, Last = position, Position = position, StartTime = time, MultiTouch = multiTouch });
             m_LastSpread = Spread();
         }
 
@@ -97,13 +110,31 @@ namespace SPF.Shell.Input
             if (i < 0) return;
             Move(id, position);
             var p = m_Pointers[i];
-            bool alone = m_Pointers.Count == 1;
+            bool alone = m_Pointers.Count == 1 && !p.MultiTouch;
             float duration = time - p.StartTime;
             if (alone && p.Dragging) m_Releases.Add((p.Start, position));
             if (alone && !p.Dragging && duration <= TapMaxSeconds) m_Taps.Add(p.Start);
             else if (alone && duration <= SwipeMaxSeconds && math.distance(p.Start, position) >= SwipeMinDistance) m_Swipes.Add((p.Start, position));
             m_Pointers.RemoveAt(i);
             m_LastSpread = Spread();
+        }
+
+        /// <summary>Forget a canceled pointer without producing a tap, swipe, or release.</summary>
+        public void Cancel(int id)
+        {
+            int i = Find(id);
+            if (i < 0) return;
+            m_Pointers.RemoveAt(i);
+            m_LastSpread = Spread();
+        }
+
+        /// <summary>Discard all input when the owning control is disabled or the app is interrupted.</summary>
+        public void Reset()
+        {
+            m_Pointers.Clear();
+            m_LastSpread = 0f;
+            PinchCentre = float2.zero;
+            BeginFrame();
         }
 
         int Find(int id)
@@ -130,32 +161,69 @@ namespace SPF.Shell.Input
         /// <summary>Set while the pointer is over UI that should not pan the map (optional filter).</summary>
         public System.Func<float2, bool> Blocked;
         bool m_MouseDown;
+        bool m_HadTouches;
+        bool m_Paused, m_FocusLost;
 
         void Update()
         {
             Tracker.BeginFrame();
+            if (!isActiveAndEnabled || m_Paused || m_FocusLost) return;
 #if ENABLE_LEGACY_INPUT_MANAGER
             float time = Time.unscaledTime;
             if (UnityEngine.Input.touchCount > 0)
             {
+                // Unity can emulate mouse input from touches. Do not retain an old mouse drag
+                // while real touches take over, or complete it later as a phantom action.
+                if (m_MouseDown) { Tracker.Cancel(-1); m_MouseDown = false; }
+                m_HadTouches = true;
                 for (int i = 0; i < UnityEngine.Input.touchCount; i++)
-                {
-                    var t = UnityEngine.Input.GetTouch(i);
-                    var p = (float2)(Vector2)t.position;
-                    switch (t.phase)
-                    {
-                        case TouchPhase.Began: if (Blocked == null || !Blocked(p)) Tracker.Down(t.fingerId, p, time); break;
-                        case TouchPhase.Moved: case TouchPhase.Stationary: Tracker.Move(t.fingerId, p); break;
-                        default: Tracker.Up(t.fingerId, p, time); break;
-                    }
-                }
+                    ProcessTouch(UnityEngine.Input.GetTouch(i), time);
                 return;
             }
+            if (m_HadTouches) { Tracker.Reset(); m_HadTouches = false; }
             var mouse = (float2)(Vector2)UnityEngine.Input.mousePosition;
             if (UnityEngine.Input.GetMouseButtonDown(0) && (Blocked == null || !Blocked(mouse))) { Tracker.Down(-1, mouse, time); m_MouseDown = true; }
             else if (m_MouseDown && UnityEngine.Input.GetMouseButton(0)) Tracker.Move(-1, mouse);
-            else if (m_MouseDown && UnityEngine.Input.GetMouseButtonUp(0)) { Tracker.Up(-1, mouse, time); m_MouseDown = false; }
+            else if (m_MouseDown)
+            {
+                if (UnityEngine.Input.GetMouseButtonUp(0)) Tracker.Up(-1, mouse, time);
+                else Tracker.Cancel(-1); // A missed up (for example focus loss) is not a release.
+                m_MouseDown = false;
+            }
 #endif
+        }
+
+        void ProcessTouch(Touch touch, float time)
+        {
+            var p = (float2)touch.position;
+            switch (touch.phase)
+            {
+                case TouchPhase.Began: if (Blocked == null || !Blocked(p)) Tracker.Down(touch.fingerId, p, time); break;
+                case TouchPhase.Moved: case TouchPhase.Stationary: Tracker.Move(touch.fingerId, p); break;
+                case TouchPhase.Ended: Tracker.Up(touch.fingerId, p, time); break;
+                case TouchPhase.Canceled: Tracker.Cancel(touch.fingerId); break;
+            }
+        }
+
+        void ResetInput()
+        {
+            Tracker.Reset();
+            m_MouseDown = false;
+            m_HadTouches = false;
+        }
+
+        void OnDisable() => ResetInput();
+
+        void OnApplicationPause(bool paused)
+        {
+            m_Paused = paused;
+            if (paused) ResetInput();
+        }
+
+        void OnApplicationFocus(bool focused)
+        {
+            m_FocusLost = !focused;
+            if (!focused) ResetInput();
         }
     }
 }

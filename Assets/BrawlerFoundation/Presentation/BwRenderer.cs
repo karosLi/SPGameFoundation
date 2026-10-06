@@ -72,6 +72,9 @@ namespace BrawlerFoundation.Presentation
             m_Arena = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Opaque, 1024, queueOffset: -10);
             m_Fighters = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Opaque, MaxFighters * (m_Art.Parts.Length + 4));
             m_Effects = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Translucent, 512);
+            // Preallocate dynamic pages and prefix textures at session bind, before counts grow in play.
+            m_Fighters.Warmup(m_Fighters.Capacity);
+            m_Effects.Warmup(m_Effects.Capacity);
             m_Fx = new SpriteEffects(128);
             int bones = rig.Asset.BoneCount;
             m_Animators = new NativeArray<Animator2D>(MaxFighters, Allocator.Persistent);

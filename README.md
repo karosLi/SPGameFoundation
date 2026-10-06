@@ -1,6 +1,6 @@
 # SPGameFoundation
 
-Unity 2022.3 2D 单机小游戏基座（面向移动端）+ 首个接入玩法：贪吃蛇。
+Unity 2022.3 2D 单机小游戏基座（面向移动端），内置贪吃蛇、ARPG、幸存者、平台跳跃、塔防、三消、弹弓、格斗、剧情共九个验证玩法。
 
 - 数据导向模拟：自研 SoA 表 + C# Jobs + Burst，固定步长 30 Hz，确定性（同种子同输入 → 同结果）
 - 两级空间网格碰撞；7500×7500 大地图 + 3750×3750 小地图（传送门衔接，非活动地图冻结）
@@ -8,7 +8,7 @@ Unity 2022.3 2D 单机小游戏基座（面向移动端）+ 首个接入玩法�
 - 节点 / 条带两种蛇身，不透明 / 半透明（同蛇等深度，不叠色）/ 叠加三种混合
 - 对局中 0 GC；AI（效用决策 + 上下文避让）、Buff、道具、技能飞行物、加速掉落、回放
 
-设计文档：[Docs/Architecture.md](Docs/Architecture.md) · 品类覆盖与验证玩法：[Docs/GenreCoverage.md](Docs/GenreCoverage.md)
+设计文档：[Docs/Architecture.md](Docs/Architecture.md) · 品类覆盖与验证玩法：[Docs/GenreCoverage.md](Docs/GenreCoverage.md) · 本轮移动端加固：[Docs/MobileFoundationBatch1.md](Docs/MobileFoundationBatch1.md)
 
 ## 快速开始
 
@@ -47,10 +47,10 @@ Shader 为无光照 CGPROGRAM，内置管线与 URP 均可用（URP 下走 SRPDe
 
 | 方式 | 需要 | 覆盖 |
 | --- | --- | --- |
-| `Tools/DotnetHarness/run.sh` | .NET 8 | 按 asmdef 生成的工程 + Unity API 桩，编译全部程序集（分层与 Unity 一致），运行 EditMode 测试（55 个） |
+| `Tools/DotnetHarness/run.sh` | .NET 8 | 按 asmdef 生成的工程 + Unity API 桩，编译全部程序集（分层与 Unity 一致），运行 EditMode 逻辑测试（当前数量见移动端加固验证记录） |
 | Unity Test Runner（EditMode + PlayMode） | Unity 2022.3 | 以上 + 真实 Job / Burst + PlayMode UI 自动化（菜单、摇杆、加速、技能、死亡、重开、回菜单、换皮肤、传送门、1 分钟浸泡、两档渲染） |
 | GitHub Actions | 仓库 Secrets `UNITY_LICENSE` 或 `UNITY_EMAIL`+`UNITY_PASSWORD` | `harness.yml` 每次推送都跑；`unity.yml`（GameCI Docker）手动触发 |
-| 自托管 Runner（`unity-self-hosted.yml`） | 本机 Unity 2022.3.62f2 + 标签 `unity` 的 Runner，仓库变量 `UNITY_SELF_HOSTED=true` | 每次推送在本机跑 EditMode + PlayMode，结果/日志作为 artifact 上传；已验证：EditMode 55/56（1 个 Explicit 跳过）、PlayMode 11/11，Burst 开启 |
+| 自托管 Runner（`unity-self-hosted.yml`） | 本机 Unity 2022.3.62f2 + 标签 `unity` 的 Runner，仓库变量 `UNITY_SELF_HOSTED=true` | 每次推送在本机跑 EditMode + PlayMode，结果/日志作为 artifact 上传；运行各玩法的真实 Unity 回归；当前基线与本轮结果见移动端加固验证记录 |
 
 .NET 测试工程只验证逻辑、确定性和我们自己代码路径的 GC；Burst 编译、Job 安全检查、Shader 编译与真实渲染需要在 Unity 中验证。
 测试桩里的 `IJobParallelFor` 每次调度都以不同的排列顺序执行下标，用来暴露依赖并行写入顺序的代码（真实 Worker 线程顺序不确定）。

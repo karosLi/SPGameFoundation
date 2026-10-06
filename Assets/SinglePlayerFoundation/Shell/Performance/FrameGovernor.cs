@@ -51,7 +51,8 @@ namespace SPF.Shell.Performance
         /// <summary>Feeds one frame's duration; returns true when <see cref="Level"/> changed.</summary>
         public bool Feed(float dtSeconds)
         {
-            if (dtSeconds <= 0f || dtSeconds > SpikeSeconds) return false;
+            if (float.IsNaN(dtSeconds) || float.IsInfinity(dtSeconds) || dtSeconds <= 0f || dtSeconds > SpikeSeconds)
+                return false;
             AverageMs += (dtSeconds * 1000f - AverageMs) * 0.05f;
 
             if (AverageMs > TargetMs * DegradeRatio) { m_Slow += dtSeconds; m_Fast = 0f; }
@@ -96,9 +97,12 @@ namespace SPF.Shell.Performance
         public bool Feed(float dtSeconds, bool activity)
         {
             bool was = Idle;
-            if (activity) m_Quiet = 0f;
-            else m_Quiet += dtSeconds;
-            Idle = m_Quiet >= IdleAfterSeconds;
+            if (activity) Wake();
+            else if (dtSeconds > 0f && !float.IsInfinity(dtSeconds))
+            {
+                m_Quiet += dtSeconds;
+                Idle = m_Quiet >= IdleAfterSeconds;
+            }
             return Idle != was;
         }
     }
@@ -150,6 +154,7 @@ namespace SPF.Shell.Performance
 
         ProfilerRecorder m_Gc;
         int m_AwakeFrame = -1;
+        bool m_SkipNextBudgetFrame;
 #if SPF_URP
         float m_OriginalRenderScale = -1f;
 #endif
@@ -175,7 +180,14 @@ namespace SPF.Shell.Performance
         void ApplyFrameRate()
         {
             int active = EffectiveFrameRate;
-            Budget.TargetMs = 1000f / Math.Max(1, active);
+            float targetMs = 1000f / Math.Max(1, active);
+            if (Budget.TargetMs != targetMs)
+            {
+                Budget.TargetMs = targetMs;
+                Budget.Reset(Budget.Level);
+                // The next duration was still paced at the previous target.
+                m_SkipNextBudgetFrame = true;
+            }
             Application.targetFrameRate = Idle.Idle && ThrottleWhenIdle ? Math.Min(IdleFrameRate, active) : active;
         }
 
@@ -227,14 +239,29 @@ namespace SPF.Shell.Performance
 
             if (Thermal.Poll(Time.unscaledTime)) ApplyDeviceState();
 
+            bool activity = ThrottleWhenIdle && (m_AwakeFrame >= Time.frameCount - 1 || AnyInput());
+            UpdateFramePolicy(dt, activity);
+        }
+
+        void UpdateFramePolicy(float dt, bool activity)
+        {
+            bool wasIdle = Idle.Idle;
             if (ThrottleWhenIdle)
             {
-                bool activity = m_AwakeFrame >= Time.frameCount - 1 || AnyInput();
                 if (Idle.Feed(dt, activity)) ApplyFrameRate();
             }
+            else
+            {
+                Idle.Wake();
+                if (wasIdle) ApplyFrameRate();
+            }
 
-            // Idle frames are slow on purpose; they say nothing about the device's headroom.
-            if (AdaptiveQuality && !Idle.Idle && Budget.Feed(dt))
+            // A new active stretch needs fresh, consecutive measurements. Its first duration
+            // still includes the intentionally slow idle frame, even though Idle is now false.
+            if (wasIdle && !Idle.Idle) Budget.Reset(Budget.Level);
+            bool skipBudget = wasIdle || m_SkipNextBudgetFrame;
+            m_SkipNextBudgetFrame = false;
+            if (AdaptiveQuality && !skipBudget && !Idle.Idle && Budget.Feed(dt))
                 Apply();
         }
 

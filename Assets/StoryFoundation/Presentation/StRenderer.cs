@@ -128,6 +128,9 @@ namespace StoryFoundation.Presentation
             m_Art = StArt.Build();
             m_Scene = new SpriteBatch(m_Assets.Tier, m_Art.Sheet.Texture, BlendKind.Opaque, 256);
             m_Glow = new SpriteBatch(m_Assets.Tier, m_Art.Sheet.Texture, BlendKind.Additive, 64);
+            // Preallocate dynamic pages and prefix textures at session bind, before counts grow in play.
+            m_Scene.Warmup(m_Scene.Capacity);
+            m_Glow.Warmup(m_Glow.Capacity);
             m_Version = -1;
         }
 

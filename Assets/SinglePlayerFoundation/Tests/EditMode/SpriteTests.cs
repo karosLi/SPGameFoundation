@@ -1,4 +1,8 @@
+using System;
+using System.Reflection;
 using NUnit.Framework;
+using Unity.Collections;
+using UnityEngine.Rendering;
 using SPF.Presentation;
 using SPF.Presentation.Sprites;
 using Unity.Mathematics;
@@ -133,5 +137,184 @@ namespace SPF.Tests.EditMode
             Assert.AreEqual(5, batch.Count);
             Assert.AreEqual(new float2(3f, 0f), batch.Instances[4].Center);
         }
+
+        [Test]
+        public void DataTextureWarmupIsLazyBoundedAndIdempotent()
+        {
+            using var batch = new SpriteBatch(RenderTier.DataTexture, null, BlendKind.Opaque, SpriteBatch.PageSize * 2 + 13);
+            batch.Add(new float2(3f, 7f), new float2(1f), new float4(0f, 0f, 1f, 1f), 0f, new float4(1f));
+            var pages = PrivateArray(batch, "m_Pages");
+            batch.Warmup(0);
+            Assert.IsNull(pages.GetValue(0), "no pages allocated for an empty warmup");
+            batch.Warmup(1);
+            Assert.IsNotNull(pages.GetValue(0));
+            Assert.IsNull(pages.GetValue(1), "unused pages stay lazy");
+            Assert.IsNull(pages.GetValue(2));
+            var textures = PrivateArray(pages.GetValue(0), "m_Textures");
+            Assert.IsNotNull(textures.GetValue(0), "only the smallest texture is needed");
+            Assert.IsNull(textures.GetValue(1));
+            Assert.AreEqual(1, batch.Count, "warmup must not change the caller's contents");
+            Assert.AreEqual(new float2(3f, 7f), batch.Instances[0].Center);
+            Assert.AreEqual(0L, batch.BytesUploaded, "allocation alone is not an upload");
+
+            batch.Warmup(int.MaxValue);
+            var firstPage = pages.GetValue(0);
+            var firstTexture = textures.GetValue(0);
+            var lastPage = pages.GetValue(2);
+            batch.Warmup(int.MaxValue);
+            Assert.AreSame(firstPage, pages.GetValue(0));
+            Assert.AreSame(firstTexture, textures.GetValue(0));
+            Assert.AreSame(lastPage, pages.GetValue(2));
+            Assert.AreEqual(1, batch.Count);
+        }
+
+        [TestCase(1)]
+        [TestCase(63)]
+        [TestCase(129)]
+        [TestCase(256)]
+        [TestCase(257)]
+        [TestCase(513)]
+        [TestCase(1025)]
+        [TestCase(1300)]
+        [TestCase(2049)]
+        [TestCase(3073)]
+        [TestCase(4096)]
+        public void DataTextureCacheStaysBelowTwiceFullPageStorage(int capacity)
+        {
+            using var batch = new SpriteBatch(RenderTier.DataTexture, null, BlendKind.Opaque, capacity);
+            batch.Warmup(capacity);
+            var page = PrivateArray(batch, "m_Pages").GetValue(0);
+            int total = 0;
+            foreach (var cached in PrivateArray(page, "m_Textures"))
+                if (cached != null) total += CachedTexture(cached).width * CachedTexture(cached).height * 4;
+            int width = math.min(2048, math.ceilpow2(capacity * 8));
+            int height = (capacity * 8 + width - 1) / width;
+            Assert.Less(total, 2 * width * height * 4, "includes the awkward non-power-of-two final page");
+        }
+
+        static Array PrivateArray(object owner, string field) => (Array)PrivateField(owner, field);
+        static object PrivateField(object owner, string field) =>
+            owner.GetType().GetField(field, BindingFlags.Instance | BindingFlags.NonPublic).GetValue(owner);
+        static Texture2D CachedTexture(object cached) => (Texture2D)cached.GetType().GetProperty("Texture").GetValue(cached);
+
+#if !SPF_DOTNET_HARNESS
+        // The harness has no shaders and its textures do not retain pixel data. These assertions require
+        // real Unity resources; do not let the no-op rendering stubs stand in for an upload/GC test.
+        [Test]
+        public void DataTextureUploadsSelectedPrefixesAndReusesThemAfterShrink()
+        {
+            using var batch = new SpriteBatch(RenderTier.DataTexture, null, BlendKind.Opaque, SpriteBatch.PageSize * 2);
+            Assert.IsNotNull(batch.Material, "SpriteTex shader must be included");
+            FillPackedSprites(batch);
+            var bounds = new Bounds(Vector3.zero, new Vector3(100f, 100f, 100f));
+            int[] counts = { 1, 256, 257, 512, 513, 1024, 1025, 2048, 2049, 4096, 4097, 8192, 7000, 513, 1, 0, 1 };
+            for (int repeat = 0; repeat < 2; repeat++)
+            {
+                foreach (int count in counts)
+                {
+                    batch.Count = count;
+                    batch.Draw(bounds);
+                    long expected = 0;
+                    for (int start = 0; start < count; start += SpriteBatch.PageSize)
+                    {
+                        int used = math.min(SpriteBatch.PageSize, count - start);
+                        expected += math.max(DiscMesh.MinPrefix, math.ceilpow2(used)) * PackedSprite.Stride;
+                        AssertTextureMatches(batch, start / SpriteBatch.PageSize, used);
+                    }
+                    Assert.AreEqual(expected, batch.BytesUploaded, $"full texture payload for {count} sprites");
+                    batch.Draw(bounds, dirty: false);
+                    Assert.AreEqual(0L, batch.BytesUploaded, "unchanged content must not upload");
+                }
+            }
+            batch.Clear();
+            batch.Draw(bounds, dirty: false);
+            Assert.AreEqual(0L, batch.BytesUploaded);
+            batch.Count = 1;
+            batch.Draw(bounds, dirty: false);
+            Assert.AreEqual(8192L, batch.BytesUploaded, "restoring a cleared batch must upload even without dirty");
+        }
+
+        [Test]
+        public void DataTextureCountChangesUploadEvenWithoutDirtyAndIncludeFinalPagePadding()
+        {
+            using var batch = new SpriteBatch(RenderTier.DataTexture, null, BlendKind.Opaque, SpriteBatch.PageSize + 1300);
+            FillPackedSprites(batch);
+            var bounds = new Bounds(Vector3.zero, new Vector3(100f, 100f, 100f));
+            int[] counts = { 4097, 4608, 4609, 5396, 4353, 4097 };
+            long[] payloads = { 139264, 147456, 180224, 180224, 147456, 139264 };
+            for (int i = 0; i < counts.Length; i++)
+            {
+                batch.Count = counts[i];
+                batch.Draw(bounds, dirty: false);
+                Assert.AreEqual(payloads[i], batch.BytesUploaded, "changed count forces upload, including padding");
+                AssertTextureMatches(batch, 0, SpriteBatch.PageSize);
+                AssertTextureMatches(batch, 1, counts[i] - SpriteBatch.PageSize);
+            }
+        }
+
+        [Test]
+        public void DataTextureWarmedCountChangesDoNotAllocate()
+        {
+            using var batch = new SpriteBatch(RenderTier.DataTexture, null, BlendKind.Opaque, SpriteBatch.PageSize + 1300);
+            FillPackedSprites(batch);
+            batch.Warmup(batch.Capacity);
+            var bounds = new Bounds(Vector3.zero, new Vector3(100f, 100f, 100f));
+            int[] counts = { 1, 256, 257, 513, 1025, 2049, 4096, 4097, 4609, 5396, 257, 0 };
+            for (int i = 0; i < counts.Length * 2; i++)
+            {
+                batch.Count = counts[i % counts.Length];
+                batch.Draw(bounds);
+            }
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            for (int i = 0; i < counts.Length * 4; i++)
+            {
+                batch.Count = counts[i % counts.Length];
+                batch.Draw(bounds);
+            }
+            long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+            Assert.AreEqual(0L, allocated, "cached textures, copies, and count changes must allocate no managed memory");
+        }
+
+        [Test]
+        public void GpuSpriteUploadAccountingIncludesArgumentsAndResetsOnReuse()
+        {
+            if (RenderCapabilities.Detect() != RenderTier.GpuDriven)
+                Assert.Ignore("GPU-driven rendering is not supported on this test device.");
+            using var batch = new SpriteBatch(RenderTier.GpuDriven, null, BlendKind.Opaque, 16);
+            FillPackedSprites(batch);
+            var bounds = new Bounds(Vector3.zero, new Vector3(100f, 100f, 100f));
+            batch.Count = 3;
+            batch.Draw(bounds, dirty: false);
+            Assert.AreEqual(3L * PackedSprite.Stride + GraphicsBuffer.IndirectDrawIndexedArgs.size, batch.BytesUploaded);
+            batch.Draw(bounds, dirty: false);
+            Assert.AreEqual(0L, batch.BytesUploaded);
+            batch.Count = 2;
+            batch.Draw(bounds, dirty: false);
+            Assert.AreEqual(2L * PackedSprite.Stride + GraphicsBuffer.IndirectDrawIndexedArgs.size, batch.BytesUploaded);
+            batch.Clear();
+            batch.Draw(bounds);
+            Assert.AreEqual(0L, batch.BytesUploaded);
+        }
+
+        static void FillPackedSprites(SpriteBatch batch)
+        {
+            var instances = batch.Instances;
+            for (int i = 0; i < batch.Capacity; i++)
+                instances[i] = PackedSprite.Pack(new float2(i + 0.25f, -i - 0.5f), new float2(-1.3f, 0.75f),
+                    new float4(0.125f, 0.5f, 0.0078125f, 0.015625f), -12.3456f, new float4(1.25f, 0.5f, 0.1f, 0.8f), 7f, 0.4f);
+        }
+
+        static void AssertTextureMatches(SpriteBatch batch, int pageIndex, int used)
+        {
+            var page = PrivateArray(batch, "m_Pages").GetValue(pageIndex);
+            var texture = CachedTexture(PrivateField(page, "m_ActiveTexture"));
+            var actual = texture.GetPixelData<uint>(0);
+            var expected = batch.Instances.Reinterpret<uint>(PackedSprite.Stride);
+            for (int word = 0; word < used * 8; word++)
+                Assert.AreEqual(expected[pageIndex * SpriteBatch.PageSize * 8 + word], actual[word], "packed bits must be exact");
+            for (int slot = used; slot < actual.Length / 8; slot++)
+                Assert.AreEqual(0u, actual[slot * 8 + 2], "unused slots collapse, including after switching cached sizes");
+        }
+#endif
     }
 }

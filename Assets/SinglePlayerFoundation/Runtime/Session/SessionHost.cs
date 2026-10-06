@@ -16,6 +16,9 @@ namespace SPF.Runtime.Session
     /// Main-thread code that touches native world data between those points must call
     /// <see cref="SimSession.Sync"/> first (the PlayMode test helpers do).
     /// </para>
+    /// Disabling the host, losing focus or backgrounding the application completes pending work and
+    /// suspends ticking. All interruption reasons must clear before ticking resumes; an explicit
+    /// gameplay pause remains paused. The first resumed frame discards background wall time.
     /// </summary>
     [DefaultExecutionOrder(-1000)]
     [DisallowMultipleComponent]
@@ -26,6 +29,8 @@ namespace SPF.Runtime.Session
         [SerializeField] bool m_StartOnAwake = true;
         [SerializeField] bool m_OverlapRendering = true;
         SessionTickLauncher m_Launcher;
+        bool m_ApplicationPaused;
+        bool m_FocusLost;
 
         public SimSession Session { get; private set; }
 
@@ -65,11 +70,26 @@ namespace SPF.Runtime.Session
             if (start)
                 Session.Start();
             enabled = true;
+            EnsureLauncher();
             SessionCreated?.Invoke(Session);
             return Session;
         }
 
         void OnEnable() => EnsureLauncher();
+
+        void OnDisable() => ApplySuspension();
+
+        void OnApplicationPause(bool paused)
+        {
+            m_ApplicationPaused = paused;
+            ApplySuspension();
+        }
+
+        void OnApplicationFocus(bool focused)
+        {
+            m_FocusLost = !focused;
+            ApplySuspension();
+        }
 
         void EnsureLauncher()
         {
@@ -80,12 +100,20 @@ namespace SPF.Runtime.Session
                 m_Launcher.hideFlags = HideFlags.HideInInspector;
                 m_Launcher.Host = this;
             }
-            m_Launcher.enabled = m_OverlapRendering;
+            ApplySuspension();
+        }
+
+        void ApplySuspension()
+        {
+            bool suspended = !isActiveAndEnabled || m_ApplicationPaused || m_FocusLost;
+            Session?.SetHostSuspended(suspended);
+            if (m_Launcher != null)
+                m_Launcher.enabled = m_OverlapRendering && !suspended;
         }
 
         void Update()
         {
-            if (!m_OverlapRendering)
+            if (isActiveAndEnabled && !m_OverlapRendering)
                 Session?.Update(Time.deltaTime);
         }
 
@@ -94,12 +122,17 @@ namespace SPF.Runtime.Session
         /// <summary>Called by <see cref="SessionTickLauncher"/> after all other LateUpdates.</summary>
         internal void LaunchTicks()
         {
-            if (m_OverlapRendering)
+            if (isActiveAndEnabled && m_OverlapRendering)
                 Session?.Update(Time.deltaTime);
         }
 
         void OnDestroy()
         {
+            if (m_Launcher != null)
+            {
+                m_Launcher.enabled = false;
+                m_Launcher.Host = null;
+            }
             Session?.Dispose();
             Session = null;
         }

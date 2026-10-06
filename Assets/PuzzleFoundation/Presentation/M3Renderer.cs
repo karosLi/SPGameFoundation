@@ -63,6 +63,10 @@ namespace PuzzleFoundation.Presentation
             m_Board = new SpriteBatch(m_Assets.Tier, m_Art.Sheet.Texture, BlendKind.Opaque, 128, queueOffset: -10);
             m_Gems = new SpriteBatch(m_Assets.Tier, m_Art.Sheet.Texture, BlendKind.Translucent, 512);
             m_Overlay = new SpriteBatch(m_Assets.Tier, m_Art.Sheet.Texture, BlendKind.Translucent, 64);
+            // Preallocate dynamic pages and prefix textures at session bind, before counts grow in play.
+            m_Board.Warmup(m_Board.Capacity);
+            m_Gems.Warmup(m_Gems.Capacity);
+            m_Overlay.Warmup(m_Overlay.Capacity);
             m_LogSerial = m_BoardSerial = -1;
         }
 

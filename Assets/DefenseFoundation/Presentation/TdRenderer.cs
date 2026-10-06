@@ -65,6 +65,9 @@ namespace DefenseFoundation.Presentation
             m_Tiles = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Opaque, size.x * size.y * 2, queueOffset: -10);
             m_Dynamic = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Opaque, 4096);
             m_Glow = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Translucent, 4096);
+            // Preallocate dynamic pages and prefix textures at session bind, before counts grow in play.
+            m_Dynamic.Warmup(m_Dynamic.Capacity);
+            m_Glow.Warmup(m_Glow.Capacity);
             m_Fx = new SpriteEffects(256);
             m_Path = new NativeArray<int2>(size.x * size.y, Allocator.Persistent);
             m_Scratch = new AStarScratch(size.x * size.y, Allocator.Persistent);

@@ -96,6 +96,10 @@ namespace RpgFoundation.Presentation
             m_Opaque = new SpriteBatch(tier, atlas, BlendKind.Opaque, actors * 3 + world.Table(RpgKeys.Item).Capacity * 2 + world.Table(RpgKeys.Projectile).Capacity + world.Table(RpgKeys.Prop).Capacity);
             m_Effects = new SpriteBatch(tier, atlas, BlendKind.Translucent, 4096);
             m_Additive = new SpriteBatch(tier, atlas, BlendKind.Additive, 1024);
+            // Preallocate dynamic pages and prefix textures at session bind, before counts grow in play.
+            m_Opaque.Warmup(m_Opaque.Capacity);
+            m_Effects.Warmup(m_Effects.Capacity);
+            m_Additive.Warmup(m_Additive.Capacity);
             m_Bars = new QuadBatch(actors * 2 + 8, overlay: true);
             m_Fx = new SpriteEffects(512);
             m_Views = new ActorView[world.Registry.Capacity];

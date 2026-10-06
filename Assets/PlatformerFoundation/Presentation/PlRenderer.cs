@@ -68,6 +68,9 @@ namespace PlatformerFoundation.Presentation
             m_Tiles = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Opaque, size.x * size.y, queueOffset: -10);
             m_Dynamic = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Opaque, 1024);
             m_Effects = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Translucent, 512);
+            // Preallocate dynamic pages and prefix textures at session bind, before counts grow in play.
+            m_Dynamic.Warmup(m_Dynamic.Capacity);
+            m_Effects.Warmup(m_Effects.Capacity);
             m_Fx = new SpriteEffects(128);
             m_Built = -1;
         }

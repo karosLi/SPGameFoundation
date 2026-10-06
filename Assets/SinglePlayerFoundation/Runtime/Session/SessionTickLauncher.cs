@@ -11,7 +11,7 @@ namespace SPF.Runtime.Session
 
         void LateUpdate()
         {
-            if (Host != null) Host.LaunchTicks();
+            if (Host != null && Host.isActiveAndEnabled) Host.LaunchTicks();
         }
     }
 }

@@ -4,6 +4,7 @@
     "references": [
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
+        "UnityEngine.UI",
         "SPF.Contracts",
         "SPF.Runtime.Core",
         "SPF.L1Simulation",

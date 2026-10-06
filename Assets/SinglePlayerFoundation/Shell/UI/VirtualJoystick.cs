@@ -14,12 +14,16 @@ namespace SPF.Shell.UI
         public float Radius = 120f;
 
         Vector2 m_Origin;
+        int m_PointerId;
+        bool m_Paused, m_FocusLost;
         public bool Pressed { get; private set; }
         public float2 Direction { get; private set; }
         public float Magnitude { get; private set; }
 
         public void OnPointerDown(PointerEventData eventData)
         {
+            if (!isActiveAndEnabled || m_Paused || m_FocusLost || Pressed) return;
+            m_PointerId = eventData.pointerId;
             Pressed = true;
             m_Origin = eventData.position;
             Direction = float2.zero;
@@ -28,14 +32,44 @@ namespace SPF.Shell.UI
 
         public void OnDrag(PointerEventData eventData)
         {
+            if (!Pressed || eventData.pointerId != m_PointerId) return;
             Vector2 delta = eventData.position - m_Origin;
             if (delta.sqrMagnitude > DeadZone * DeadZone)
             {
                 Direction = math.normalize(new float2(delta.x, delta.y));
                 Magnitude = math.saturate(delta.magnitude / math.max(Radius, 1f));
             }
+            else
+            {
+                Direction = float2.zero;
+                Magnitude = 0f;
+            }
         }
 
-        public void OnPointerUp(PointerEventData eventData) => Pressed = false;
+        public void OnPointerUp(PointerEventData eventData)
+        {
+            if (Pressed && eventData.pointerId == m_PointerId) ResetInput();
+        }
+
+        void ResetInput()
+        {
+            Pressed = false;
+            Direction = float2.zero;
+            Magnitude = 0f;
+        }
+
+        void OnDisable() => ResetInput();
+
+        void OnApplicationPause(bool paused)
+        {
+            m_Paused = paused;
+            if (paused) ResetInput();
+        }
+
+        void OnApplicationFocus(bool focused)
+        {
+            m_FocusLost = !focused;
+            if (!focused) ResetInput();
+        }
     }
 }

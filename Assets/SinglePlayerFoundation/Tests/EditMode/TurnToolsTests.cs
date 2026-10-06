@@ -9,6 +9,14 @@ namespace SPF.Tests.EditMode
 {
     public class TurnToolsTests
     {
+        EmptyModule m_Module;
+
+        [TearDown]
+        public void TearDown()
+        {
+            if (m_Module != null) UnityEngine.Object.DestroyImmediate(m_Module);
+        }
+
         [Test]
         public void EasingsStartAndEndRight()
         {
@@ -45,7 +53,6 @@ namespace SPF.Tests.EditMode
         [Test]
         public void ManualClockRunsOnlyRequestedTicks()
         {
-            using var world = TestKeys.CreateWorld(4);
             using var session = TestSession();
             session.ManualClock = true;
             session.Start();
@@ -58,11 +65,121 @@ namespace SPF.Tests.EditMode
             Assert.AreEqual(0, session.TicksLastFrame);
         }
 
-        static SimSession TestSession()
+        [Test]
+        public void RequestedTicksSaturateAndDrainWithinTheFrameBudget()
         {
-            var module = UnityEngine.ScriptableObject.CreateInstance<EmptyModule>();
-            var mode = SPF.Runtime.Composition.ModeDefinition.Create(new[] { (SPF.Runtime.Composition.GameplayModuleAsset)module }, SPF.Runtime.Composition.SessionSettings.Default);
-            return SimSession.Create(mode, 1);
+            using var session = TestSession();
+            session.ManualClock = true;
+            session.Start();
+            session.RequestTicks(int.MaxValue - 1);
+            session.RequestTicks(10);
+            session.RequestTicks(int.MaxValue);
+            session.RequestTicks(0);
+            session.RequestTicks(int.MinValue);
+            Assert.AreEqual(int.MaxValue, session.PendingTicks);
+
+            session.Update(0f);
+            Assert.AreEqual(session.Clock.MaxTicksPerFrame, session.TicksLastFrame);
+            Assert.AreEqual(int.MaxValue - session.Clock.MaxTicksPerFrame, session.PendingTicks);
+        }
+
+        [Test]
+        public void ManualPauseRetainsRequestedTicksUntilResume()
+        {
+            using var session = TestSession();
+            session.ManualClock = true;
+            session.Start();
+            session.Pause();
+            session.RequestTicks(2);
+            session.Update(10f);
+            Assert.AreEqual(0, session.TicksLastFrame);
+            Assert.AreEqual(2, session.PendingTicks);
+            session.Resume();
+            session.Update(0f);
+            Assert.AreEqual(2, session.TicksLastFrame);
+            Assert.AreEqual(0, session.PendingTicks);
+        }
+
+        [Test]
+        public void RestartDiscardsRequestedTicksAndPreviousFrameStats()
+        {
+            using var session = TestSession();
+            session.ManualClock = true;
+            session.Start();
+            session.RequestTicks(10);
+            session.Update(0f);
+            Assert.Greater(session.PendingTicks, 0);
+            Assert.Greater(session.TicksLastFrame, 0);
+
+            session.Restart();
+            Assert.AreEqual(0, session.PendingTicks);
+            Assert.AreEqual(0, session.TicksLastFrame);
+            Assert.AreEqual(0u, session.Clock.NextTickIndex);
+            session.Update(10f);
+            Assert.AreEqual(0, session.TicksLastFrame);
+        }
+
+        [Test]
+        public void RestoreDiscardsRequestsFromThePreviousTimelineAndKeepsManualPause()
+        {
+            using var session = TestSession();
+            session.ManualClock = true;
+            session.Start();
+            session.Step();
+            var snapshot = session.CaptureSnapshot();
+            session.RequestTicks(10);
+            session.Update(0f);
+
+            session.RestoreSnapshot(snapshot);
+            Assert.AreEqual(0, session.PendingTicks);
+            Assert.AreEqual(0, session.TicksLastFrame);
+            Assert.AreEqual(1u, session.Clock.NextTickIndex);
+            session.Update(10f);
+            Assert.AreEqual(0, session.TicksLastFrame);
+
+            session.Pause();
+            session.RequestTicks(2);
+            session.RestoreSnapshot(snapshot);
+            Assert.AreEqual(SessionState.Paused, session.State);
+            Assert.AreEqual(0, session.PendingTicks);
+            session.Resume();
+            session.Update(0f);
+            Assert.AreEqual(0, session.TicksLastFrame);
+        }
+
+        [Test]
+        public void InvalidRestoreDiscardsRequestedTicksAndKeepsManualPause()
+        {
+            using var session = TestSession();
+            session.ManualClock = true;
+            session.Start();
+            session.RequestTicks(10);
+            session.Update(0f);
+            session.Pause();
+            Assert.Throws<System.IO.EndOfStreamException>(() => session.RestoreSnapshot(new byte[0]));
+            Assert.AreEqual(SessionState.Paused, session.State);
+            Assert.AreEqual(0, session.PendingTicks);
+            Assert.AreEqual(0, session.TicksLastFrame);
+            session.Resume();
+            session.Update(10f);
+            Assert.AreEqual(0, session.TicksLastFrame);
+        }
+
+        [Test]
+        public void DisposedSessionRejectsTickRequests()
+        {
+            using var session = TestSession();
+            session.RequestTicks(1);
+            session.Dispose();
+            Assert.AreEqual(0, session.PendingTicks);
+            Assert.Throws<System.ObjectDisposedException>(() => session.RequestTicks());
+        }
+
+        SimSession TestSession()
+        {
+            m_Module = UnityEngine.ScriptableObject.CreateInstance<EmptyModule>();
+            return new SimSession(new SPF.Runtime.Composition.IGameplayModule[] { m_Module },
+                SPF.Runtime.Composition.SessionSettings.Default, 1);
         }
 
         sealed class EmptyModule : SPF.Runtime.Composition.GameplayModuleAsset

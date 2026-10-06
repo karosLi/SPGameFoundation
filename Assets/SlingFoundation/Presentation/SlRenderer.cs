@@ -57,6 +57,9 @@ namespace SlingFoundation.Presentation
             m_Ground = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Opaque, 512, queueOffset: -10);
             m_Bodies = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Opaque, SlRules.Capacity + 64);
             m_Effects = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Translucent, 512);
+            // Preallocate dynamic pages and prefix textures at session bind, before counts grow in play.
+            m_Bodies.Warmup(m_Bodies.Capacity);
+            m_Effects.Warmup(m_Effects.Capacity);
             m_Fx = new SpriteEffects(192);
             m_Built = -1;
         }

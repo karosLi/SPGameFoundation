@@ -39,7 +39,7 @@ namespace SurvivorFoundation.Presentation
         public int SpritesDrawn { get; private set; }
         public int BulletsDrawn { get; private set; }
         public int EnemiesDrawn { get; private set; }
-        /// <summary>Instance bytes uploaded last frame (all batches).</summary>
+        /// <summary>Instance-data API payload last frame (all batches), including texture padding and indirect arguments.</summary>
         public long BytesUploaded { get; private set; }
         public SvArt Art => m_Art;
 
@@ -71,6 +71,11 @@ namespace SurvivorFoundation.Presentation
             m_Opaque = new SpriteBatch(tier, atlas, BlendKind.Opaque, world.Table(SvKeys.Enemy).Capacity + world.Table(SvKeys.Gem).Capacity + 64);
             m_Additive = new SpriteBatch(tier, atlas, BlendKind.Additive, world.Table(SvKeys.Bullet).Capacity + 256);
             m_Effects = new SpriteBatch(tier, atlas, BlendKind.Translucent, 2048);
+            // Preallocate dynamic pages and prefix textures at session bind, before counts grow in play.
+            m_Ground.Warmup(m_Ground.Capacity);
+            m_Opaque.Warmup(m_Opaque.Capacity);
+            m_Additive.Warmup(m_Additive.Capacity);
+            m_Effects.Warmup(m_Effects.Capacity);
             m_Fx = new SpriteEffects(512);
             m_EnemyColors = new NativeArray<float4>(math.max(config.EnemyKinds, 1), Allocator.Persistent);
             for (int k = 0; k < config.EnemyKinds; k++) m_EnemyColors[k] = new float4(1f);
@@ -128,8 +133,8 @@ namespace SurvivorFoundation.Presentation
             m_Additive.Draw(bounds);
             m_Effects.Draw(bounds);
             SpritesDrawn = m_Ground.Count + m_Opaque.Count + m_Additive.Count + m_Effects.Count;
-            BytesUploaded = (long)m_Ground.Count * m_Ground.BytesPerInstance + (long)m_Opaque.Count * m_Opaque.BytesPerInstance
-                + (long)m_Additive.Count * m_Additive.BytesPerInstance + (long)m_Effects.Count * m_Effects.BytesPerInstance;
+            // API payload includes full data textures / indirect arguments, not just live packed sprites.
+            BytesUploaded = m_Ground.BytesUploaded + m_Opaque.BytesUploaded + m_Additive.BytesUploaded + m_Effects.BytesUploaded;
         }
 
         /// <summary>Camera callback (runs before this renderer): follow the interpolated hero.</summary>

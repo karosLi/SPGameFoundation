@@ -73,3 +73,7 @@ ffmpeg -y -framerate 10 -i Artifacts/NaturalMotion/motion-datatex-sequence-%03d.
 ```
 
 The existing weighted BAT evidence remains separate and unchanged.
+
+## Refreshed integration verification
+
+The later layout/neck/sole refinements were executed in the real Unity run under `Artifacts/Resume/First/`: both scene cases passed, and the 30-frame/10-fps three-second recording was generated from actual rendered frames and inspected. The complete subsequent PlayMode regression passed 94 cases with one explicit allocation-capture skip. Calibrated natural math and shadow-selection allocation probes passed with 32/0 retained/empty controls and zero current-thread allocation samples in their warmed windows. See `MobilePresentationAndHudCheckpoint.md`; these are desktop correctness results, not mobile device profiling.

@@ -153,3 +153,7 @@ If a reusable helper becomes necessary, extract only the existing profiler setti
 and raw allocation/stack extraction into an Editor-only SPF.Testing utility. Keep game-specific
 setup, stamp fields, scenario boundaries and assertions in each test. Coordinate that shared
 change separately; this patch does not duplicate the large Survivor capture implementation.
+
+## Later calibrated and remote verification
+
+The shared probe and migrated assertions subsequently passed the central real-Unity suite. A fresh original-TdPlayTests-only run passed both tiers at 0/180 allocating frames, zero bytes and zero independent gen-0 collections. The complete local PlayMode run later repeated those same two zero windows. Exact remote WIP 93937656 on Mac/Metal also passed both unchanged windows, and reproduced the label ABBA event counts (former tower/build 1,024/1,536 per 256 refreshes; fixed zero; retained/empty controls 32/0 before and after). These passed reruns do not retrospectively attribute the earlier 328-byte Mac or 287-byte Linux residuals. The older failed windows remain part of the evidence.

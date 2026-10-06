@@ -1,3 +1,5 @@
+Historical freeze record: this describes ee3d75a at publication time. Later verification and fixes are recorded in [MobilePresentationAndHudCheckpoint.md](MobilePresentationAndHudCheckpoint.md).
+
 # Current work in progress — 2026-10-06 freeze
 
 The user requested that existing changes be committed and pushed before more development. This branch is a coherent source snapshot, **not a fully validated release**. The separate `dot/mobile-foundation-validated` branch retains the completed second checkpoint and its measurement correction.

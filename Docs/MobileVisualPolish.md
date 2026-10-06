@@ -78,3 +78,7 @@ Unity 2022.3 生成 Shooter / Guard 示例场景，选对应平滑美术；竖�
 本地 .NET Harness 已编译全部 71 个程序集（0 warning / 0 error），初次新增 EditMode 10/10 通过：CombatVfxTests 9 项 + ShooterVfxIsolationTests 1 项。最后回归还通过了共享 Sprite/Art/FX 33 项与 Shooter EditMode 全部 16 项（合计 49）。随后独立 review 增加了两个优先级 2 洪峰回归（重复/拒绝），修复最高优先级尝试名额被提前消耗的问题；修复后的 CombatVfxTests 11/11 再次通过，零分配断言仍为 0 bytes。独立 review 还要求修复怪物使用 dense row 作为动画相位的问题，新增 SvVisualMotionTests 检查 swap-removal 后姿势不变和静止 / 新 generation 的行为，2/2 通过。零分配断言测量的是预热后的 emit / 去重 / 过期 / 打包路径，包含 1,000 次循环，结果为 0 bytes。
 
 真实 Unity shader / 图片 / 完整引擎 GC 验证待中央导入项目串行运行；不得把 .NET 桩通过写成实机或真实渲染通过。桌面 llvmpipe 软件渲染只能证明真实 Unity shader / 图片正确性，不能证明 Android / iOS 真机帧率、发热、功耗或帧时。
+
+## 后续中央验证
+
+真实 Unity 局部验证已通过 14 项 EditMode 和 7 项图形/玩法用例，完整 PlayMode 随后通过 94 项、跳过 1 项显式分配调用栈诊断。GPU/DataTexture 的分层特效与更新后的 Shooter/Guard 实际截图已检查。修复后的优先级洪峰与稳定实体相位回归保留。Unity 同步分配断言现改用经过 32/0 正负对照的 GC.Alloc 事件计数；1,000 次实际合并/发射/打包循环为 0 样本，不再把失效字节计数器的 0 当证据。范围和全帧剩余分配见 MobilePresentationAndHudCheckpoint.md。

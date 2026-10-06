@@ -106,3 +106,5 @@ The new swept-circle solver has no arbitrary world-unit motion epsilon. It uses 
 Shooter's public compatibility wrapper deliberately calls `PointCircleLegacy`, retaining its original `a <= 1e-12` cutoff and float arithmetic. New consumers use `PointCircle` or `Circles`; the two contracts are regression-tested separately.
 
 Crossed-blade snapshot reads additionally validate the history/timeline relationship: before any completed pulse the scope is inactive and timeline pulse is 1; afterward, the stored scope must be exactly the preceding nonzero timeline pulse (including wrap). An empty completed pulse is valid. A scope claiming the upcoming pulse is rejected, since accepting it would silently reuse old hit history.
+
+Final central Unity verification: full EditMode 540 passed /3 explicit skipped; full PlayMode 80 passed /1 explicit skipped. The four shared bootstrap GPU/data-texture smoke cases passed as part of that run. Full harness532 passed /2 explicit unexecuted, zero warnings/errors across71 projects. See [MobileSharedCombatAndBatCheckpoint](MobileSharedCombatAndBatCheckpoint.md).

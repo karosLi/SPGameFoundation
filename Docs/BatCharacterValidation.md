@@ -78,3 +78,5 @@ At the clean integrated Unity checkpoint (2026-10-06):
 - Physical iOS Metal / Android Vulkan / GLES fallback correctness, performance, thermal and battery validation: **not run**
 
 Do not run the graphics suite with `-nographics`. Mesa llvmpipe can establish correctness only; it cannot establish mobile GPU throughput, power or thermals. Do not claim zero managed allocations from code inspection or a .NET stub run. Preserve backend, maximum numeric error, pixel differences and exact passed/skipped counts in the final integrated evidence.
+
+Integrated full PlayMode regression completed at 2026-10-06 17:42:06 UTC: 80 passed, 1 explicit diagnostic skipped, 0 failed. Full harness: 532 passed, 2 explicit unexecuted; 71 projects build without warnings/errors. See [the stage2 checkpoint](MobileSharedCombatAndBatCheckpoint.md) for retained startup-failure and retry evidence.

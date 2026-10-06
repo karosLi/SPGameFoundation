@@ -21,6 +21,12 @@ Unity 2022.3 2D 单机小游戏基座（面向移动端），保留贪吃蛇、A
 
 也可以只放一个挂了 `SnakeGameBootstrap` 的空物体，其余（模拟、相机、渲染、UI、输入、自适应画质）运行时自动组装。
 
+## 共享战斗与角色后端
+
+- [共享稳定命中、动作时间线与实测结果](Docs/MobileSharedCombatAndBatCheckpoint.md)
+- `BwGameBootstrap.CreateSharedCombat()` 与 `SvGameBootstrap.CreateCrossedBladeExample()` 是两个选配接入，不修改经典保存结构。
+- **SPF → Characters → Create Or Update Weighted BAT Scene**：真实 weighted mesh、GPU 矩阵纹理动画/限定两骨 IK 与 CPU 回退；这是独立后端验证场景，非完整角色导入器。
+
 ## 新增移动端示例
 
 - **SPF → Shooter → Create Or Update Scene**：拖动飞行 / WASD、自动射击、僚机、最近目标射线、波次与三选一升级。生成场景后 Play；移动端竖屏设置通过单独的 **Apply Portrait Mobile Settings** 菜单显式应用。

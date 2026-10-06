@@ -14,14 +14,15 @@ namespace SurvivorFoundation.Game
         int m_Version = -1;
         Text[] m_ChoiceLabels;
         /// <summary>Every choice label (upgrade × current level), built once: the level-up screen then allocates nothing.</summary>
-        static readonly string[,] s_ChoiceText = BuildChoiceText();
+        static readonly string[,] s_ChoiceText = BuildChoiceText(SvRules.Names);
+        static readonly string[,] s_SwordChoiceText = BuildChoiceText(SvSwordRules.Names);
 
-        static string[,] BuildChoiceText()
+        static string[,] BuildChoiceText(string[] names)
         {
             var text = new string[SvGameState.UpgradeCount, SvGameState.MaxLevel + 1];
             for (int u = 0; u < SvGameState.UpgradeCount; u++)
                 for (int level = 0; level <= SvGameState.MaxLevel; level++)
-                    text[u, level] = level == 0 ? "NEW: " + SvRules.Names[u] : SvRules.Names[u] + "  " + level + " > " + (level + 1);
+                    text[u, level] = level == 0 ? "NEW: " + names[u] : names[u] + "  " + level + " > " + (level + 1);
             return text;
         }
         SvFlow m_Flow = (SvFlow)255;
@@ -60,11 +61,19 @@ namespace SurvivorFoundation.Game
                 root = MobileHud.SafeRoot;
             }
             bool guard = game.Session.World.Resource(SvKeys.Config).Settings.Variant == SvVariant.GuardBeacon;
+            bool swords = game.Session.World.Resource(SvKeys.Config).Settings.FlyingSwords.Enabled;
 
             HudPanel = UIFactory.Panel(root, "HudPanel", Color.clear, Vector2.zero, Vector2.one);
             // Keep telemetry legible against dense smooth-art crowds; passive background never captures input.
             if (guard && !mobile) UIFactory.Panel(HudPanel, "StatsBackdrop", new Color(0.035f, 0.065f, 0.07f, 0.94f),
                 new Vector2(0f, 0.86f), Vector2.one, raycast: false);
+            if (mobile)
+            {
+                var telemetry = UIFactory.Panel(HudPanel, "MobileStatsBackdrop", new Color(.025f, .065f, .065f, .88f),
+                    new Vector2(.01f, .925f), new Vector2(.72f, .925f), raycast: false);
+                telemetry.offsetMin = new Vector2(-4f, -132f);
+                telemetry.offsetMax = new Vector2(6f, 4f);
+            }
             XpFill = UIFactory.Bar(HudPanel, "XpBar", new Color(0f, 0f, 0f, 0.6f), new Color(0.35f, 0.75f, 1f, 0.95f), new Vector2(0f, 0.975f), new Vector2(1f, 1f));
             HealthFill = UIFactory.Bar(HudPanel, "HealthBar", new Color(0f, 0f, 0f, 0.55f), new Color(0.9f, 0.25f, 0.25f, 0.95f), new Vector2(0.02f, 0.93f), new Vector2(0.3f, 0.96f));
             BeaconFill = UIFactory.Bar(HudPanel, "BeaconBar", new Color(0f, 0f, 0f, 0.65f), new Color(0.58f, 0.86f, 0.35f, 1f), new Vector2(0.52f, 0.93f), new Vector2(0.8f, 0.96f));
@@ -102,8 +111,9 @@ namespace SurvivorFoundation.Game
             MenuButton.onClick.AddListener(() => m_Game.BackToMenu());
 
             MenuPanel = UIFactory.Panel(root, "MenuPanel", new Color(0f, 0f, 0f, 0.55f), Vector2.zero, Vector2.one);
-            UIFactory.Label(MenuPanel, "Title", guard ? "BEACON GUARD" : "SURVIVE", mobile ? 64 : guard ? 85 : 140, TextAnchor.MiddleCenter, new Vector2(0f, 0.6f), new Vector2(1f, 0.85f));
+            UIFactory.Label(MenuPanel, "Title", swords ? "FLYING SWORDS" : guard ? "BEACON GUARD" : "SURVIVE", mobile ? 64 : guard ? 85 : 140, TextAnchor.MiddleCenter, new Vector2(0f, 0.6f), new Vector2(1f, 0.85f));
             if (guard) UIFactory.Label(MenuPanel, "Instructions", mobile ? "Move with the left stick. Tap PULSE to clear space.\nDrag BLINK to aim, release to jump.\nDrag far away to cancel. Protect the beacon." : "ORIGINAL EXAMPLE\nHold the beacon until waves end, then clear the horde.\nMove to intercept. Two electric bands damage on fixed ticks.", mobile ? 23 : 26, TextAnchor.MiddleCenter, new Vector2(0.07f, 0.2f), new Vector2(0.93f, 0.42f));
+            if (swords) UIFactory.Label(MenuPanel, "Instructions", "Move to guide your orbiting sword swarm.\nSwords seek, pierce and return. Collect gems to grow.\nPULSE clears space. Drag BLINK to escape.\nSurvive the waves, then clear the horde.", 24, TextAnchor.MiddleCenter, new Vector2(.05f, .18f), new Vector2(.95f, .40f));
             StartButton = UIFactory.Button(MenuPanel, "StartButton", "START", new Vector2(0, -20), new Vector2(460, 140), new Color(0.3f, 0.75f, 0.45f, 0.95f), new Vector2(0.5f, 0.5f));
             StartButton.onClick.AddListener(() => m_Game.StartRun());
 
@@ -137,6 +147,10 @@ namespace SurvivorFoundation.Game
                 stats.Append("\nBEACON ").Append((int)state.BeaconHp).Append(" / ").Append((int)state.BeaconMaxHp)
                     .Append(state.RunTicks < s.GuardDurationTicks ? "   HOLD " : "   CLEAR THE HORDE ")
                     .Append(Mathf.Max(0, (s.GuardDurationTicks - state.RunTicks + 29) / 30));
+            if (s.FlyingSwords.Enabled)
+                stats.Append("\nSWORDS ").Append(world.Resource(SvFlyingSwordState.Key).ActiveCount)
+                    .Append(state.RunTicks < s.FlyingSwords.WaveTicks ? "   WAVES " : "   CLEAR THE HORDE ")
+                    .Append(Mathf.Max(0, (s.FlyingSwords.WaveTicks - state.RunTicks + 29) / 30));
             StatsText.Commit();
             // Choice and death texts are only visible on those screens: don't rebuild them for every gem picked up.
             if (state.Version == m_Version || state.Flow != SvFlow.LevelUp && state.Flow != SvFlow.Dead && state.Flow != SvFlow.Won) return;
@@ -148,10 +162,10 @@ namespace SurvivorFoundation.Game
                 if (!shown) continue;
                 int u = state.Choices[i];
                 int level = Mathf.Clamp(state.Upgrades[u], 0, SvGameState.MaxLevel);
-                m_ChoiceLabels[i].text = s_ChoiceText[u, level];   // prebuilt: offers can change every tick after a big pickup
+                m_ChoiceLabels[i].text = s.FlyingSwords.Enabled ? s_SwordChoiceText[u, level] : s_ChoiceText[u, level];   // prebuilt: offers can change every tick after a big pickup
             }
             if (state.Flow == SvFlow.Dead) DeadText.text = (state.LossReason == SvLossReason.BeaconLost ? "BEACON LOST" : "YOU FELL") + $"\nsurvived {seconds / 60:00}:{seconds % 60:00}, {state.Kills} kills";
-            if (state.Flow == SvFlow.Won) DeadText.text = $"BEACON SAVED\n{state.Kills} enemies cleared";
+            if (state.Flow == SvFlow.Won) DeadText.text = (s.FlyingSwords.Enabled ? "HORDE CLEARED" : "BEACON SAVED") + $"\n{state.Kills} enemies cleared";
         }
         sealed class MobileSource : IMobileCombatHudSource
         {

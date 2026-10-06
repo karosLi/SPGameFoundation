@@ -128,7 +128,7 @@ namespace SurvivorFoundation.Tests
         {
             using var t = new SvTestWorld(tweak: c => { Configure(c); c.Settings.FlyingSwords.WaveTicks = 10; c.Settings.FlyingSwords.Capacity = 12; c.Settings.XpBase = 2; });
             t.World.Resource(SvKeys.Collected).TryAdd(2); t.Step(); Assert.AreEqual(SvFlow.LevelUp, t.Game.Flow);
-            t.Game.Choices[0] = (int)Upgrade.Bolt; t.Game.Send(SvCommandKind.Choose); t.Step(); Assert.AreEqual(3, S(t).ActiveCount);
+            t.Game.Choices[0] = (int)Upgrade.Bolt; t.Game.Send(SvCommandKind.Choose); t.Step(); Assert.AreEqual(5, S(t).ActiveCount);
             t.Step(10); Assert.AreEqual(SvFlow.Won, t.Game.Flow);
             t.Game.Send(SvCommandKind.Start); t.Step(); Assert.AreEqual(SvFlow.Playing, t.Game.Flow); Assert.AreEqual(1, S(t).ActiveCount);
             Assert.AreEqual(0, S(t).Counters[1]);
@@ -149,6 +149,20 @@ namespace SurvivorFoundation.Tests
         }
 
         [Test]
+        public void AlteredSwordRulesRejectSnapshotAndClassicOptInPreservesClock()
+        {
+            using var original = new SvTestWorld(tweak: Configure); original.Spawn(1, new float2(4, 0)); original.Step(8);
+            var snapshot = original.Session.CaptureSnapshot();
+            using var changed = new SvTestWorld(tweak: c => { Configure(c); c.Settings.FlyingSwords.Speed += 1; }, start: false);
+            Assert.Throws<InvalidDataException>(() => changed.Session.RestoreSnapshot(snapshot));
+            using var optIn = new SvTestWorld(tweak: c => { Configure(c); c.Settings.Variant = SvVariant.Classic; });
+            optIn.Spawn(1, new float2(4, 0)); optIn.Step(20); var saved = optIn.Session.CaptureSnapshot();
+            using var resumed = new SvTestWorld(tweak: c => { Configure(c); c.Settings.Variant = SvVariant.Classic; }, start: false);
+            resumed.Session.RestoreSnapshot(saved); Assert.AreEqual(optIn.Game.RunTicks, resumed.Game.RunTicks);
+            optIn.Step(30); resumed.Step(30); CollectionAssert.AreEqual(optIn.Session.CaptureSnapshot(), resumed.Session.CaptureSnapshot());
+        }
+
+        [Test]
         public void Dense1024Target24SwordWorkloadIsBoundedAndMeasuredWithoutTimingGate()
         {
             using var t = new SvTestWorld(tweak: c =>
@@ -161,11 +175,13 @@ namespace SurvivorFoundation.Tests
             t.Step(45);
             // Exercise generation reuse during dense targeting, before the allocation sample.
             for (int i = 0; i < 32; i++) { var h = t.World.Table(SvKeys.Enemy).Handles[i]; t.World.DestroyEntity(h); t.Spawn(1, new float2(5, i * .02f)); }
+            var state = S(t);
+            int candidatesBefore = state.Counters[4], contactsBefore = state.Counters[5], hitsBefore = state.Counters[1],
+                historyBefore = state.Counters[2], queuesBefore = state.Counters[3], launchesBefore = state.Counters[0];
             Action work = () => t.Step(120);
             using var probe = new ManagedAllocationProbe(); var pre = probe.Calibrate();
             var watch = Stopwatch.StartNew(); var sample = probe.Measure(work); watch.Stop(); var post = probe.Calibrate();
-            var state = S(t);
-            TestContext.WriteLine($"Report-only .NET/stub logic: 1024 enemies, 24 swords, 120 ticks after 45 warmup ticks; {watch.Elapsed.TotalMilliseconds:F2} ms; candidates={state.Counters[4]}, sweptContacts={state.Counters[5]}, queuedHits={state.Counters[1]}, historyRejects={state.Counters[2]}, queueRejects={state.Counters[3]}, launches={state.Counters[0]}. Allocation={sample.Value} {sample.Metric}; calibration before={pre.RetainedArrays.Value}/{pre.Empty.Value}, after={post.RetainedArrays.Value}/{post.Empty.Value}; no device-performance claim.");
+            TestContext.WriteLine($"Report-only .NET/stub logic: 1024 enemies, 24 swords, 120 ticks after 45 warmup ticks; {watch.Elapsed.TotalMilliseconds:F2} ms; candidates={state.Counters[4] - candidatesBefore}, sweptContacts={state.Counters[5] - contactsBefore}, queuedHits={state.Counters[1] - hitsBefore}, historyRejects={state.Counters[2] - historyBefore}, queueRejects={state.Counters[3] - queuesBefore}, launches={state.Counters[0] - launchesBefore}. Allocation={sample.Value} {sample.Metric}; calibration before={pre.RetainedArrays.Value}/{pre.Empty.Value}, after={post.RetainedArrays.Value}/{post.Empty.Value}; no device-performance claim.");
             Assert.Greater(state.Counters[4], 1000); Assert.Greater(state.Counters[1], 100); Assert.Greater(state.Counters[0], 24);
             Assert.AreEqual(0, state.Counters[3]); Assert.AreEqual(0, sample.Value);
             Assert.AreEqual(24, state.ActiveCount); Assert.LessOrEqual(t.Enemies, 1024);

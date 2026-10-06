@@ -39,6 +39,18 @@ namespace SurvivorFoundation
                 !Finite(Radius) || Radius < 0 || !Finite(Damage) || Damage < 0)
                 throw new ArgumentException("Invalid flying-sword configuration.");
         }
+        public uint Fingerprint()
+        {
+            uint h = 2166136261u;
+            Hash(ref h, Enabled ? 1u : 0u); Hash(ref h, (uint)Capacity); Hash(ref h, (uint)BaseCount);
+            Hash(ref h, (uint)HistoryPerSword); Hash(ref h, (uint)OrbitTicks); Hash(ref h, (uint)OutboundTicks);
+            Hash(ref h, (uint)ReturnTicks); Hash(ref h, (uint)WaveTicks);
+            Hash(ref h, math.asuint(OrbitRadius)); Hash(ref h, math.asuint(OrbitRadiansPerSecond));
+            Hash(ref h, math.asuint(Speed)); Hash(ref h, math.asuint(ReturnSpeed)); Hash(ref h, math.asuint(TurnRate));
+            Hash(ref h, math.asuint(TargetRange)); Hash(ref h, math.asuint(Radius)); Hash(ref h, math.asuint(Damage));
+            return h;
+        }
+        static void Hash(ref uint h, uint value) { unchecked { h = (h ^ value) * 16777619u; } }
         static bool Finite(float f) => !float.IsNaN(f) && !float.IsInfinity(f);
     }
 
@@ -67,14 +79,17 @@ namespace SurvivorFoundation
         public static readonly ResourceKey<SvFlyingSwordState> Key = new ResourceKey<SvFlyingSwordState>("Sv.FlyingSwords.V1");
         const int Magic = 0x53575331;
         public readonly int HistoryCapacity;
+        public readonly uint ConfigFingerprint;
         public NativeArray<SvSword> Blades;
         public NativeArray<EntityHandle> History;
         public NativeArray<HitHistoryState> Scopes;
         public NativeArray<SvSwordContact> Contacts; // scratch, overwritten before every use, not saved
         public NativeArray<int> Counters; // launches, accepted hits, history rejects, queue rejects, query candidates, swept contacts
         public int ActiveCount, Tick;
-        public SvFlyingSwordState(int capacity, int historyPerSword, int enemyCapacity)
+        public SvFlyingSwordState(in SvFlyingSwords settings, int enemyCapacity)
         {
+            settings.Validate(); int capacity = settings.Capacity, historyPerSword = settings.HistoryPerSword;
+            ConfigFingerprint = settings.Fingerprint();
             if (capacity < 1 || capacity > 64 || historyPerSword < 1 || historyPerSword > 128 || enemyCapacity < 1)
                 throw new ArgumentOutOfRangeException(nameof(capacity));
             HistoryCapacity = historyPerSword;
@@ -93,12 +108,12 @@ namespace SurvivorFoundation
         }
         public void WriteSnapshot(BinaryWriter w)
         {
-            w.Write(Magic); w.Write(1); w.Write(Blades.Length); w.Write(HistoryCapacity); w.Write(ActiveCount); w.Write(Tick);
+            w.Write(Magic); w.Write(1); w.Write(Blades.Length); w.Write(HistoryCapacity); w.Write(ConfigFingerprint); w.Write(ActiveCount); w.Write(Tick);
             NativeIO.Write(w, Blades); NativeIO.Write(w, History); NativeIO.Write(w, Scopes); NativeIO.Write(w, Counters);
         }
         public void ReadSnapshot(BinaryReader r)
         {
-            if (r.ReadInt32() != Magic || r.ReadInt32() != 1 || r.ReadInt32() != Blades.Length || r.ReadInt32() != HistoryCapacity)
+            if (r.ReadInt32() != Magic || r.ReadInt32() != 1 || r.ReadInt32() != Blades.Length || r.ReadInt32() != HistoryCapacity || r.ReadUInt32() != ConfigFingerprint)
                 throw new InvalidDataException("Unsupported flying-sword snapshot layout.");
             ActiveCount = r.ReadInt32(); Tick = r.ReadInt32();
             NativeIO.ReadAll(r, Blades); NativeIO.ReadAll(r, History); NativeIO.ReadAll(r, Scopes); NativeIO.ReadAll(r, Counters);
@@ -128,7 +143,7 @@ namespace SurvivorFoundation
 
     public static class SvSwordRules
     {
-        public static int Count(in SvFlyingSwords s, SvGameState g) => math.min(s.Capacity, s.BaseCount + 2 * math.max(0, g.Level0(Upgrade.Bolt) - 1));
+        public static int Count(in SvFlyingSwords s, SvGameState g) => math.min(s.Capacity, s.BaseCount + 4 * math.max(0, g.Level0(Upgrade.Bolt) - 1));
         public static int Interval(in SvFlyingSwords s, SvGameState g) => math.max(3, s.OrbitTicks - 3 * g.Level0(Upgrade.Spiral));
         public static int Pierce(in SvFlyingSwords s, SvGameState g) => math.min(s.HistoryPerSword, 3 + 2 * g.Level0(Upgrade.Orbit));
         public static float Radius(in SvFlyingSwords s, SvGameState g) => s.Radius + .035f * g.Level0(Upgrade.Nova);
@@ -157,7 +172,7 @@ namespace SurvivorFoundation.Systems
             {
                 Blades = state.Blades, History = state.History, Scopes = state.Scopes, Contacts = state.Contacts, Counters = state.Counters,
                 Handles = c.Handles(SvKeys.Enemy), Positions = c.Column(SvKeys.Position), Previous = c.Column(SvKeys.PrevPosition), Infos = c.Column(SvKeys.Info),
-                Grid = c.Resource(SvKeys.EnemyGrid).AsReader(), Hits = c.Resource(SvKeys.Hits).AsWriter(), EnemyCount = c.Count(SvKeys.Enemy),
+                Grid = c.Resource(SvKeys.EnemyGrid).AsReader(), Hits = c.Resource(SvKeys.Hits).AsWriter(), EnemyCount = c.Count(SvKeys.Enemy), Lookup = c.World.Registry.AsLookup(), EnemyTable = c.World.Table(SvKeys.Enemy).TableIndex,
                 Settings = settings, Count = state.ActiveCount, HistoryCapacity = state.HistoryCapacity, Tick = state.Tick,
                 Hero = game.Hero, Delta = c.Time.DeltaTime, Interval = SvSwordRules.Interval(settings, game), Pierce = SvSwordRules.Pierce(settings, game),
                 Damage = SvSwordRules.Damage(settings, game), Radius = SvSwordRules.Radius(settings, game),
@@ -188,6 +203,24 @@ namespace SurvivorFoundation.Systems
                 return true;
             }
         }
+        struct NearestVisitor : IGridVisitor
+        {
+            [ReadOnly] public NativeArray<EntityHandle> Handles;
+            [ReadOnly] public NativeArray<EnemyInfo> Infos;
+            public float2 From;
+            public float Distance;
+            public int Row;
+            public bool Visit(in GridEntry e)
+            {
+                if (Infos[e.Owner].Has(EnemyFlags.Dead)) return true;
+                float d = math.distancesq(e.Position, From);
+                var h = Handles[e.Owner];
+                if (d < Distance || (d == Distance && (Row < 0 || h.Index < Handles[Row].Index ||
+                    (h.Index == Handles[Row].Index && h.Generation < Handles[Row].Generation))))
+                { Row = e.Owner; Distance = d; }
+                return true;
+            }
+        }
         [BurstCompile(CompileSynchronously = true)]
         struct SwordJob : IJob
         {
@@ -202,7 +235,8 @@ namespace SurvivorFoundation.Systems
             public GridReader Grid;
             public ParallelQueue<SvHit>.Writer Hits;
             public SvFlyingSwords Settings;
-            public int Count, EnemyCount, HistoryCapacity, Tick, Interval, Pierce;
+            public int Count, EnemyCount, HistoryCapacity, Tick, Interval, Pierce, EnemyTable;
+            public EntityLookup Lookup;
             public float2 Hero;
             public float Delta, Damage, Radius;
             public void Execute()
@@ -263,31 +297,20 @@ namespace SurvivorFoundation.Systems
                     Blades[i] = b; Scopes[i] = scope;
                 }
             }
-            int Find(EntityHandle h)
-            {
-                for (int row = 0; row < EnemyCount; row++) if (Handles[row] == h && !Infos[row].Has(EnemyFlags.Dead)) return row;
-                return -1;
-            }
+            int Find(EntityHandle h) => Lookup.TryResolve(h, out int table, out int row) && table == EnemyTable &&
+                (uint)row < (uint)EnemyCount && !Infos[row].Has(EnemyFlags.Dead) ? row : -1;
             int Nearest(float2 from)
             {
-                int best = -1; float distance = Settings.TargetRange * Settings.TargetRange;
-                for (int row = 0; row < EnemyCount; row++)
-                {
-                    if (Infos[row].Has(EnemyFlags.Dead)) continue;
-                    float d = math.distancesq(Positions[row], from);
-                    if (d < distance || (d == distance && (best < 0 || Handles[row].Index < Handles[best].Index ||
-                        (Handles[row].Index == Handles[best].Index && Handles[row].Generation < Handles[best].Generation))))
-                    { best = row; distance = d; }
-                }
-                return best;
+                var visitor = new NearestVisitor { Handles = Handles, Infos = Infos, From = from, Row = -1, Distance = Settings.TargetRange * Settings.TargetRange };
+                Grid.QueryCells(from - Settings.TargetRange, from + Settings.TargetRange, ref visitor);
+                return visitor.Row;
             }
             void Sweep(ref HitHistoryState scope, int sword, float2 from, float2 to, float maxMovement)
             {
                 var v = new ContactVisitor { Positions = Positions, Previous = Previous, Infos = Infos, Handles = Handles, Contacts = Contacts, From = from, To = to, Radius = Radius };
                 float pad = Radius + Grid.MaxEntryRadius + maxMovement;
                 Grid.QueryCells(math.min(from, to) - pad, math.max(from, to) + pad, ref v);
-                for (int q = 0; q < v.Candidates; q++) Increment(4);
-                for (int q = 0; q < v.Count; q++) Increment(5);
+                Add(4, v.Candidates); Add(5, v.Count);
                 var ordered = Contacts.GetSubArray(0, v.Count); ordered.Sort(new ContactOrder());
                 for (int j = 0; j < ordered.Length; j++)
                 {
@@ -300,7 +323,8 @@ namespace SurvivorFoundation.Systems
                     HitHistory.TryRecord(History, sword * HistoryCapacity, HistoryCapacity, ref scope, hit.Handle); Increment(1);
                 }
             }
-            void Increment(int i) { if (Counters[i] < int.MaxValue) Counters[i]++; }
+            void Increment(int i) => Add(i, 1);
+            void Add(int i, int count) => Counters[i] = count >= int.MaxValue - Counters[i] ? int.MaxValue : Counters[i] + count;
         }
     }
 }

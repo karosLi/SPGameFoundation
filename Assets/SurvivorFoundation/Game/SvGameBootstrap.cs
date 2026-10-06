@@ -17,6 +17,8 @@ namespace SurvivorFoundation.Game
         [SerializeField] SvConfig m_Config;
         [SerializeField] bool m_GuardExample;
         [SerializeField] bool m_MobileCombatExample;
+        [SerializeField] bool m_FlyingSwordExample;
+        [SerializeField] bool m_NaturalCharacters;
         [SerializeField] SvArtStyle m_ArtStyle = SvArtStyle.Pixel;
         [SerializeField] uint m_Seed = 1;
         [SerializeField] bool m_CreateUI = true;
@@ -33,6 +35,7 @@ namespace SurvivorFoundation.Game
         public FollowCamera2D CameraRig { get; private set; }
         public SvRenderer Renderer { get; private set; }
         public SvHud Hud { get; private set; }
+        public SvSwordPresentation Swords { get; private set; }
         public SvAudio Audio { get; private set; }
         public InputRouter InputRouter { get; private set; }
         public SimSession Session => Host != null ? Host.Session : null;
@@ -41,13 +44,14 @@ namespace SurvivorFoundation.Game
         /// <summary>Lets the built-in bot play (attract mode, benchmarks, smoke tests).</summary>
         public bool AutoPlay { get; set; }
 
-        public static SvGameBootstrap Create(SvConfig config = null, uint seed = 1, bool ui = true, bool perfHud = false, SvArtStyle artStyle = SvArtStyle.Pixel)
+        public static SvGameBootstrap Create(SvConfig config = null, uint seed = 1, bool ui = true, bool perfHud = false, SvArtStyle artStyle = SvArtStyle.Pixel, bool naturalCharacters = false)
         {
             var go = new GameObject("SurvivorGame");
             go.SetActive(false);
             var game = go.AddComponent<SvGameBootstrap>();
             game.m_Config = config;
             game.m_ArtStyle = artStyle;
+            game.m_NaturalCharacters = naturalCharacters;
             game.m_Seed = seed;
             game.m_CreateUI = ui;
             game.m_PerfHud = perfHud;
@@ -86,13 +90,33 @@ namespace SurvivorFoundation.Game
             return game;
         }
 
+        public static SvGameBootstrap CreateFlyingSwordExample(SvConfig config = null, uint seed = 1, bool ui = true)
+        {
+            bool owns = config == null;
+            if (owns) config = SvConfig.CreateFlyingSwordExample();
+            if (!config.Settings.FlyingSwords.Enabled || !config.MobileSkills)
+                throw new System.ArgumentException("Flying-sword example requires swords and mobile skills enabled.");
+            var game = Create(config, seed, ui, artStyle: SvArtStyle.SmoothOutline, naturalCharacters: true);
+            game.m_OwnsConfig = owns;
+            return game;
+        }
+
+        public static SvGameBootstrap CreateNaturalCombatExample(SvConfig config = null, uint seed = 1, bool ui = true)
+        {
+            bool owns = config == null;
+            if (owns) config = SvConfig.CreateMobileCombatExample();
+            var game = Create(config, seed, ui, artStyle: SvArtStyle.SmoothOutline, naturalCharacters: true);
+            game.m_OwnsConfig = owns;
+            return game;
+        }
+
         void Awake()
         {
             Governor = gameObject.AddComponent<FrameGovernor>();
             Governor.ThrottleWhenIdle = false;
             Governor.SetFrameRates(m_TargetFrameRate, 30);
-            if (m_Config == null) { m_Config = m_MobileCombatExample ? SvConfig.CreateMobileCombatExample() : m_GuardExample ? SvConfig.CreateGuardExample() : SvConfig.CreateDefault(); m_OwnsConfig = true; }
-            if (m_GuardExample || m_MobileCombatExample) m_ArtStyle = SvArtStyle.SmoothOutline;
+            if (m_Config == null) { m_Config = m_FlyingSwordExample ? SvConfig.CreateFlyingSwordExample() : m_MobileCombatExample ? SvConfig.CreateMobileCombatExample() : m_GuardExample ? SvConfig.CreateGuardExample() : SvConfig.CreateDefault(); m_OwnsConfig = true; }
+            if (m_GuardExample || m_MobileCombatExample || m_FlyingSwordExample) m_ArtStyle = SvArtStyle.SmoothOutline;
             m_Mode = SvMode.Create(m_Config, out m_Module);
 
             var sim = new GameObject("Simulation");
@@ -116,9 +140,16 @@ namespace SurvivorFoundation.Game
             Renderer.Host = Host;
             Renderer.Camera = CameraRig;
             Renderer.ArtStyle = m_ArtStyle;
+            // Natural-character integration sets its read-only adapter via this opt-in flag.
+            Renderer.NaturalCharacters = m_NaturalCharacters || m_FlyingSwordExample;
             Renderer.SetQualityLevel(Governor.Level);
             Governor.LevelChanged += Renderer.SetQualityLevel;
             Audio = SvAudio.Create(transform, Renderer);
+            if (m_Config.Settings.FlyingSwords.Enabled)
+            {
+                Swords = view.AddComponent<SvSwordPresentation>();
+                Swords.Initialize(Host, Renderer);
+            }
 
             InputRouter = gameObject.AddComponent<InputRouter>();
             InputRouter.Sink = frame =>

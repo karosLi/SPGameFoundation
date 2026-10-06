@@ -62,17 +62,18 @@ Bounds include sampled poses, matrix-lerp endpoints and full IK rotation envelop
 Focused test names:
 
 - EditMode / .NET: `SPF.Tests.EditMode.BatCharacterTests` (**126 cases**)
-- Graphics-enabled PlayMode: `SPF.Characters.Tests.PlayMode.BatGraphicsTests` (**7 cases**)
+- Graphics-enabled PlayMode: `SPF.Characters.Tests.PlayMode.BatGraphicsTests` (**9 cases**, including two actual demo draw cases)
 
 EditMode covers ABI, exact source-pose sampled palette parity, independent bind inverse, actual mixed weights, endpoints/negative time/seams, one-frame/one-shot clips, matrix interpolation, both IK bend/facing signs, zero/unreachable targets, precision acceptance/rejection, malformed input, capability gates, ownership/disposal and source/snapshot-independent state.
 
 PlayMode performs actual vertex-stage world-position readback into a linear RGBAFloat target (full-size float and compact half fixtures; tolerance 1e-4), production weighted-mesh CPU/GPU pixel comparison with a one-pixel edge band, nonempty per-actor regions, no magenta output, empty-count/stale-instance checks, 256→0→1 reuse, logical upload accounting and warmed main-thread managed-allocation checks. Test readback is synchronous and test-only. Numeric readback uses the production HLSL include; visible parity independently exercises the production material. PNGs go to `Artifacts/Bat/bat-gpu.png` and `bat-cpu.png`.
 
-At the review-ready source checkpoint:
+At the first integrated Unity checkpoint (2026-10-06):
 
 - Installed Unity 2022.3.62f2 DLL compilation of runtime, demo, editor and graphics tests: **0 warnings / 0 errors**
 - Final focused .NET run: **126/126 passed, 0 skipped**; 234 ms test execution (restore emitted NU1900 vulnerability-cache warnings because the home cache is read-only)
-- Actual Unity shader compilation, GPU readback, visible parity and allocation gates: **pending coordinated graphics-enabled integration run**
+- Unity 2022.3.62f2 initial graphics-enabled run: **126 EditMode / 7 PlayMode passed, 0 skipped** on OpenGLCore/Mesa llvmpipe. Actual vertex-readback error: float **1.274202e-5**, half **1.095919e-6**. Production-material image: **24,807 occupied pixels**, **0 mismatches** beyond the one-pixel edge band. Warmed CPU/GPU Prepare allocation gates passed.
+- Added two further actual-demo tests: GPU uses `Graphics.RenderMeshPrimitives`; forced CPU independently uses `Graphics.DrawMesh` without requiring GPU support. Each captures 64 actors, per-actor torso regions, both facings, independent phases, visible IK change, disabled clearing, and enable/recreate. **These two tests remain pending** until the next coordinated run; the first seven tests use a deterministic CommandBuffer draw and do not alone prove the separate production draw API.
 - Physical iOS Metal / Android Vulkan / GLES fallback correctness, performance, thermal and battery validation: **not run**
 
 Do not run the graphics suite with `-nographics`. Mesa llvmpipe can establish correctness only; it cannot establish mobile GPU throughput, power or thermals. Do not claim zero managed allocations from code inspection or a .NET stub run. Update this evidence section after the final integrated Unity run, recording backend, maximum numeric error, pixel differences and exact passed/skipped counts.

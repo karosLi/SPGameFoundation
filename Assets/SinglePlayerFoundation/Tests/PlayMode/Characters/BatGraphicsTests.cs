@@ -10,7 +10,7 @@ using UnityEngine.Rendering;
 
 namespace SPF.Characters.Tests.PlayMode
 {
-    public class BatGraphicsTests
+    public partial class BatGraphicsTests
     {
         static void RequireGraphics()
         {

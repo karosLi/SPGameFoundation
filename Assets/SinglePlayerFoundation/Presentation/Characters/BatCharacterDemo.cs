@@ -16,6 +16,8 @@ namespace SPF.Presentation.Characters
         public bool ContactShadows=true;
         public float BendSign=1;
         public Vector2 ModelTarget=new Vector2(1,1.8f);
+        public Camera OutputCamera;
+        public BatInstance ReadInstance(int index)=>m_Batch.Get(index);
         public BatBackend ActiveBackend=>m_Batch!=null?m_Batch.Backend:BatBackend.CpuWeighted;
         BatClipSet m_Asset;
         BatCharacterBatch m_Batch;
@@ -39,7 +41,7 @@ namespace SPF.Presentation.Characters
             m_Shadows=new SpriteBatch(RenderTier.DataTexture,m_Sheet.Texture,BlendKind.Translucent,256);
             m_Markers=new SpriteBatch(RenderTier.DataTexture,m_Sheet.Texture,BlendKind.Opaque,2);
             m_Shadows.Warmup(256);m_Markers.Warmup(2);
-            m_Camera=Camera.main;
+            m_Camera=OutputCamera!=null?OutputCamera:Camera.main;
             if(m_Camera==null){m_CameraObject=new GameObject("BAT Validation Camera");m_Camera=m_CameraObject.AddComponent<Camera>();m_CameraObject.tag="MainCamera";}
             m_Camera.orthographic=true;m_Camera.clearFlags=CameraClearFlags.SolidColor;m_Camera.backgroundColor=new Color(.055f,.08f,.12f);
             Debug.Log("BAT character validation: "+m_Batch.Backend+" / "+m_Batch.Precision+". Half max error "+m_Asset.HalfMaxPixelError+" px at 256 px/unit x4 scale. C toggles CPU; I toggles IK; 1/2/3 select 1/64/256 actors. Pointer controls first actor target; gold=target, green=authoritative CPU tip.");

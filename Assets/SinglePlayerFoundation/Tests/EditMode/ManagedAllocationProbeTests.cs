@@ -13,6 +13,62 @@ namespace SPF.Tests.EditMode
         static void Allocate() { s_Retained = new byte[1024]; }
         static void Throw() { throw new InvalidOperationException("Intentional probe test exception."); }
 
+#if SPF_DOTNET_HARNESS
+        // A cooperative managed busy loop, with no object creation or framework/gameplay calls.
+        // SpinWait is unsuitable here: its native transition did not reproduce the counter issue.
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        static void BusyWithoutAllocating()
+        {
+            for (int i = 0; i < 1000000; i++) s_Value = unchecked(s_Value * 1664525 + 1013904223);
+        }
+
+        [Test]
+        public void HarnessThreadByteAccountingRemainsExactDuringCollections()
+        {
+            // This is a testhost setting, never a Unity/player or machine-wide GC change.
+            Assert.AreEqual(System.Runtime.GCLatencyMode.Batch, System.Runtime.GCSettings.LatencyMode,
+                "The .NET allocation harness requires blocking GC; regenerate its test projects.");
+            var samples = new ManagedAllocationSample[64];
+            int stop = 0, requests = 0;
+            using var ready = new ManualResetEventSlim();
+            var worker = new Thread(() =>
+            {
+                while (Volatile.Read(ref stop) == 0)
+                {
+                    GC.Collect(2, GCCollectionMode.Forced, blocking: false, compacting: false);
+                    Interlocked.Increment(ref requests);
+                    ready.Set();
+                    Thread.Sleep(1);
+                }
+            }) { IsBackground = true };
+            Action operation = BusyWithoutAllocating;
+            operation();
+            using var probe = new ManagedAllocationProbe();
+            var before = probe.Calibrate();
+            worker.Start();
+            try
+            {
+                Assert.IsTrue(ready.Wait(5000), "The GC diagnostic worker must start.");
+                for (int i = 0; i < samples.Length; i++) samples[i] = probe.Measure(operation);
+            }
+            finally
+            {
+                Volatile.Write(ref stop, 1);
+                Assert.IsTrue(worker.Join(5000), "The bounded GC diagnostic worker must terminate.");
+            }
+            var after = probe.Calibrate();
+            AssertCalibration(before, probe.Metric);
+            AssertCalibration(after, probe.Metric);
+            Assert.Greater(requests, 0, "The diagnostic must exercise collections.");
+            foreach (var sample in samples) Assert.AreEqual(0, sample.Value);
+            Allocate();
+            Assert.GreaterOrEqual(probe.Measure(Allocate).Value, 1024,
+                "Blocking GC must not hide actual managed allocations.");
+            s_Retained = null;
+            TestContext.WriteLine($".NET thread-byte accounting: {samples.Length} nonallocating busy windows, {requests} collection requests, runtime={System.Runtime.InteropServices.RuntimeInformation.FrameworkDescription}, latency={System.Runtime.GCSettings.LatencyMode}; actual retained allocation still detected.");
+        }
+#endif
+
         static void AssertCalibration(ManagedAllocationCalibration calibration, ManagedAllocationMetric metric)
         {
             long minimum = metric == ManagedAllocationMetric.ManagedBytes

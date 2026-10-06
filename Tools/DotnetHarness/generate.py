@@ -101,6 +101,10 @@ def main():
     <PackageReference Include="NUnit" Version="3.13.3" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.5.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />""" if is_test else ""
+        allocation_runtime = """
+    <!-- Test-only: background GC can charge retired allocation-context slack to the thread-byte
+         counter. Keep exact assertions under blocking GC; see Docs/HarnessAllocationAccounting.md. -->
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>""" if is_test else ""
         write(name, f"""<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
@@ -109,6 +113,7 @@ def main():
     <AllowUnsafeBlocks>{str(bool(data.get("allowUnsafeCode"))).lower()}</AllowUnsafeBlocks>
     <Nullable>disable</Nullable>
     <IsTestProject>{str(is_test).lower()}</IsTestProject>
+{allocation_runtime}
     <!-- Unity asmdef references are not transitive: every assembly must name what it uses. -->
     <DisableTransitiveProjectReferences>true</DisableTransitiveProjectReferences>
     <DefineConstants>{defines}</DefineConstants>

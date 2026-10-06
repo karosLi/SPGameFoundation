@@ -85,6 +85,7 @@ Shader 为无光照 CGPROGRAM，内置管线与 URP 均可用（URP 下走 SRPDe
 | 自托管 Runner（`unity-self-hosted.yml`） | 本机 Unity 2022.3.62f2 + 标签 `unity` 的 Runner，仓库变量 `UNITY_SELF_HOSTED=true` | 每次推送在本机跑 EditMode + PlayMode，结果/日志作为 artifact 上传；运行各玩法的真实 Unity 回归；当前基线与本轮结果见移动端加固验证记录 |
 
 .NET 测试工程只验证逻辑、确定性和我们自己代码路径的 GC；Burst 编译、Job 安全检查、Shader 编译与真实渲染需要在 Unity 中验证。
+测试宿主使用非并发 GC，避免后台回收导致线程分配字节计数误报；零分配阈值与校准保持不变，不能据此推断生产环境的回收频率或停顿。见 [计数调查与复现](Docs/HarnessAllocationAccounting.md)。
 测试桩里的 `IJobParallelFor` 每次调度都以不同的排列顺序执行下标，用来暴露依赖并行写入顺序的代码（真实 Worker 线程顺序不确定）。
 
 自托管 Runner 注意事项（`Tools/ci/local-unity-tests.sh` 已自动处理）：

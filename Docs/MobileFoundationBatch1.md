@@ -82,3 +82,7 @@
 2. 用真机 Profiler GC.Alloc 调用栈追踪 Survivor 的零星 164 B 分配；保留既有 ≤1 KB/稳态窗口预算，不扩大阈值来掩盖来源。
 3. 在当前动态 batch 全容量预热保障下，量化每个玩法的加载峰值/常驻内存；据目标机预算收紧 batch 容量或选择分阶段预热，同时保留已验证的零 GC 范围。
 4. 完善移动端暂停/恢复与存档持久化策略、内置精简 CJK 字体。根据真实产品需求再扩展新玩法能力。
+
+## 后续测量校准更正
+
+本机Unity的原线程字节API未通过保留数组正对照。旧warmup同步0B断言不再作为Unity零分配证明，详见[AllocationMeasurementCalibration](AllocationMeasurementCalibration.md)。上传字节/像素/生命周期测试、.NET校准后的逻辑分配测量、独立全帧与Profiler证据分开保留。既有预算不变。

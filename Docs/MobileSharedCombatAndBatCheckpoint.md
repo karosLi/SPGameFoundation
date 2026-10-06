@@ -1,5 +1,7 @@
 # 共享战斗与加权角色后端检查点（2026-10-06）
 
+> 证据更正：本机Unity线程字节API未通过故意分配正对照，先前同步0B断言不能作为零分配证明。详见[校准记录](AllocationMeasurementCalibration.md)。逻辑、快照、图形与独立Profiler/全帧记录结果分别保留。
+
 ## 已实现的可复用能力
 
 - `HitHistory`：有界 caller-owned NativeArray，使用完整实体 index/generation 保存跨 tick 命中身份；明确满容量、去重、重置、owner/pulse 和快照约定。
@@ -26,7 +28,7 @@
 - 实际 GPU 顶点回读最大世界坐标误差：Float `1.274202e-5`，Half `1.095919e-6`。CPU数学另与既有 Skeletal 源姿态及 inverse-bind 独立对照。
 - 生产 CPU/GPU 材质图像：24,807 个有效像素，在允许的一像素边缘带外差异0。
 - 真实场景 `Graphics.RenderMeshPrimitives` 与独立强制CPU `DrawMesh` 各验证64个角色、独立相位、双朝向、IK改变433个手臂像素，以及禁用清空和重建。CPU用例不依赖GPU可用。
-- 两后端分别预热64次后测64次 `Prepare`：当前线程托管分配0 B。不是整帧/其他线程/native内存零分配。
+- 两后端分别预热64次后测64次 `Prepare` 时，原线程字节API报告0；后续正对照证明该API在本机Unity无效。此项不能证明零分配，待经校准的记录器重新验证；也不是整帧/其他线程/native内存结论。
 - 原始角色在4倍比例与256像素/单位的严格包络下，half误差约1.26像素，超过0.25像素预算，实际选择float。未降低阈值；小尺寸fixture单独覆盖half路径。
 - 256个角色dirty上传：GPU instance payload 16,384 B；同一95顶点角色CPU动态位置/颜色payload 680,960 B。单次共享BAT float上传11,520 B；不是硬件总线流量，也不是已证明的手机帧率倍数。
 

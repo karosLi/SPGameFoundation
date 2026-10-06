@@ -10,6 +10,8 @@ Unity 2022.3 2D 单机小游戏基座（面向移动端），保留贪吃蛇、A
 
 设计文档：[Docs/Architecture.md](Docs/Architecture.md) · 品类覆盖与验证玩法：[Docs/GenreCoverage.md](Docs/GenreCoverage.md) · 本轮移动端加固：[Docs/MobileFoundationBatch1.md](Docs/MobileFoundationBatch1.md) · 分配/回收调查：[Docs/SurvivorAllocationInvestigation.md](Docs/SurvivorAllocationInvestigation.md)
 
+**测量说明：** [Unity线程分配API的校准更正](Docs/AllocationMeasurementCalibration.md)。旧同步0B读数尚不能证明Unity零分配；独立Profiler/全帧与逻辑、图形结果分别保留。
+
 ## 快速开始
 
 1. 用 Unity **2022.3 LTS** 打开仓库根目录（`Packages/manifest.json` 已列出依赖）。

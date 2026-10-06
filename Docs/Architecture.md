@@ -692,7 +692,7 @@ Tier B 的 CPU 成本预估：节点展开 + 剔除约 0.6 ms（工作线程）�
 - 开启 **Incremental GC** 作为兜底；Session 开始前 `GC.Collect()` 一次，清理加载期垃圾。
 
 **保障**
-- 自动化测试：跑 600 tick，断言 `GC.GetAllocatedBytesForCurrentThread()` 增量为 0（EditMode 与 PlayMode 各一份）。
+- 自动化测试：先用保留分配正对照与空窗口校准当前运行环境，再跑600 tick。仅在字节API有效的.NET环境断言其增量为0；Unity使用经校准的当前线程GC.Alloc样本计数，另保留全帧预算。未通过正对照的0读数不得算通过，见[测量校准更正](AllocationMeasurementCalibration.md)。
 - Profiler Marker 覆盖每个 Phase；CI 中出现 GC Alloc 视为失败。
 
 ### 8.5 合批

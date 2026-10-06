@@ -198,7 +198,12 @@ namespace SurvivorFoundation.Tests
             Action work = () => t.Step(120);
             using var probe = new ManagedAllocationProbe(); var pre = probe.Calibrate();
             var watch = Stopwatch.StartNew(); var sample = probe.Measure(work); watch.Stop(); var post = probe.Calibrate();
-            TestContext.WriteLine($"Report-only .NET/stub logic: 1024 enemies, 24 swords, 120 ticks after 45 warmup ticks; {watch.Elapsed.TotalMilliseconds:F2} ms; candidates={state.Counters[4] - candidatesBefore}, sweptContacts={state.Counters[5] - contactsBefore}, queuedHits={state.Counters[1] - hitsBefore}, historyRejects={state.Counters[2] - historyBefore}, queueRejects={state.Counters[3] - queuesBefore}, launches={state.Counters[0] - launchesBefore}. Allocation={sample.Value} {sample.Metric}; calibration before={pre.RetainedArrays.Value}/{pre.Empty.Value}, after={post.RetainedArrays.Value}/{post.Empty.Value}; no device-performance claim.");
+#if SPF_DOTNET_HARNESS
+            const string runtime = ".NET managed stubs";
+#else
+            const string runtime = "Unity Editor runtime";
+#endif
+            TestContext.WriteLine($"Report-only {runtime}: 1024 enemies, 24 swords, 120 ticks after 45 warmup ticks; {watch.Elapsed.TotalMilliseconds:F2} ms; candidates={state.Counters[4] - candidatesBefore}, sweptContacts={state.Counters[5] - contactsBefore}, queuedHits={state.Counters[1] - hitsBefore}, historyRejects={state.Counters[2] - historyBefore}, queueRejects={state.Counters[3] - queuesBefore}, launches={state.Counters[0] - launchesBefore}. Allocation={sample.Value} current-thread {sample.Metric}; independent process gen0 collections={sample.Collections}; calibration before={pre.RetainedArrays.Value}/{pre.Empty.Value}, after={post.RetainedArrays.Value}/{post.Empty.Value}; no device-performance claim.");
             Assert.Greater(state.Counters[4], 1000); Assert.Greater(state.Counters[1], 100); Assert.Greater(state.Counters[0], 24);
             Assert.AreEqual(0, state.Counters[3]); Assert.AreEqual(0, sample.Value);
             Assert.AreEqual(24, state.ActiveCount); Assert.LessOrEqual(t.Enemies, 1024);

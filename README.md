@@ -1,10 +1,10 @@
 # SPGameFoundation
 
-> **WIP snapshot:** existing third-stage changes were frozen for requested publication. Final compile/full validation is pending; see [CurrentWipStatus](Docs/CurrentWipStatus.md). Use the separate `dot/mobile-foundation-validated` branch for the completed checkpoint.
+> 当前工作分支正在验证新增玩法与自然角色；完成项、实测范围及外部设备阻塞见 [能力验收清单](Docs/RequestedCapabilityChecklist.md)。`dot/mobile-foundation-validated` 只在对应提交的远程 CI 通过后前进，历史冻结记录见 [CurrentWipStatus](Docs/CurrentWipStatus.md)。
 
-Unity 2022.3 2D 单机小游戏基座（面向移动端），保留贪吃蛇、ARPG、幸存者、平台跳跃、塔防、三消、弹弓、格斗、剧情九个验证玩法，新增非像素竖屏射击与幸存者守点变体，用于验证共享能力接入。
+Unity 2022.3 2D 单机小游戏基座（面向移动端），保留贪吃蛇、ARPG、幸存者、平台跳跃、塔防、三消、弹弓、格斗、剧情九个验证玩法，新增非像素竖屏射击、守点怪潮、飞剑怪潮与横屏纵深动作变体，用于验证共享能力接入。
 
-- 数据导向模拟：自研 SoA 表 + C# Jobs + Burst，固定步长 30 Hz，确定性（同种子同输入 → 同结果）
+- 数据导向模拟：自研 SoA 表 + C# Jobs + Burst，固定步长（默认 30 Hz，动作示例 60 Hz，按模式配置），确定性（同种子同输入 → 同结果）
 - 两级空间网格碰撞；7500×7500 大地图 + 3750×3750 小地图（传送门衔接，非活动地图冻结）
 - GPU 驱动渲染（Compute 展开蛇身 / 剔除食物 + Indirect Draw），GLES 3.0 自动降级到数据纹理路径
 - 节点 / 条带两种蛇身，不透明 / 半透明（同蛇等深度，不叠色）/ 叠加三种混合
@@ -25,16 +25,23 @@ Unity 2022.3 2D 单机小游戏基座（面向移动端），保留贪吃蛇、A
 
 也可以只放一个挂了 `SnakeGameBootstrap` 的空物体，其余（模拟、相机、渲染、UI、输入、自适应画质）运行时自动组装。
 
+## 新玩法接入从这里开始
+
+[中文接入配方](Docs/NewGameplayIntegrationRecipe.md) 从现有 DriftSmoke 最小模块开始，说明数据/系统/表现三层、配置新武器、技能 HUD、稳定命中、容量与保存合约；包含按实际源码编译核对的片段。无需修改公共玩法枚举或复制另一套游戏循环。
+
 ## 共享战斗与角色后端
 
 - [共享稳定命中、动作时间线与实测结果](Docs/MobileSharedCombatAndBatCheckpoint.md)
 - `BwGameBootstrap.CreateSharedCombat()` 与 `SvGameBootstrap.CreateCrossedBladeExample()` 是两个选配接入，不修改经典保存结构。
-- **SPF → Characters → Create Or Update Weighted BAT Scene**：真实 weighted mesh、GPU 矩阵纹理动画/限定两骨 IK 与 CPU 回退；这是独立后端验证场景，非完整角色导入器。
+- **SPF → Characters → Create Or Update Weighted BAT Scene**：真实 weighted mesh、GPU 矩阵纹理动画/限定两骨 IK 与 CPU 回退；这是独立的三骨加权后端验证场景，支持选配 compute palette（G）与强制 CPU（C），不是任意骨架导入器。
 
 ## 新增移动端示例
 
 - **SPF → Shooter → Create Or Update Scene**：拖动飞行 / WASD、自动射击、僚机、最近目标射线、波次与三选一升级。生成场景后 Play；移动端竖屏设置通过单独的 **Apply Portrait Mobile Settings** 菜单显式应用。
 - **SPF → Survivor → Create Guard Example Scene**：守护信标、双环伤害、密集血条、接触阴影与失败/胜利/重开。原 Survivor 默认模式保留。
+- **SPF → Survivor → Create Flying Sword Horde Scene**：竖屏优先，环绕/发射/追踪/返回的飞剑、升级与有限波次、共享脉冲/闪现 HUD、受预算约束的轨迹和伤害数字。
+- **SPF → Mobile Gameplay → Create Landscape Belt Scroller Scene**：横屏优先，独立地面纵深/跳跃高度、连击/踢击/击飞/受击、拾取与治疗、四技能 HUD。人物与怪物使用同一个自然 cutout 表现适配器。
+- [飞剑接入](Docs/FlyingSwordHorde.md) · [纵深动作接入](Docs/LandscapeBeltScroller.md) · [实际玩法自然角色](Docs/GameplayNaturalCharacters.md) · [可选 compute 骨骼后端](Docs/BatComputePaletteValidation.md)
 - [本轮验证结果](Docs/MobileGameplayCheckpoint.md) · [共用能力与新玩法接入](Docs/MobileGameplayIntegration.md) · [射击验证](Docs/ShooterValidation.md) · [守点验证](Docs/HordeGuardValidation.md)
 
 两档渲染均有真实 Unity 测试与截图；美术是原创程序占位图。桌面软件渲染证据不代表 Android/iOS 真机性能。

@@ -9,6 +9,9 @@ namespace BrawlerFoundation
     /// <summary>The brawler as one module: a fighter table (skeletal animators in a column), the shared rig, flow, fighters, combat.</summary>
     public sealed class BwModule : GameplayModuleAsset
     {
+        bool m_SharedCombat;
+        BwSharedCombatConfig m_CombatConfig;
+
         public static BwModule Create()
         {
             var module = CreateInstance<BwModule>();
@@ -16,13 +19,23 @@ namespace BrawlerFoundation
             return module;
         }
 
+        public static BwModule CreateSharedCombat(BwSharedCombatConfig config)
+        {
+            config.Validate();
+            var module = Create();
+            module.m_SharedCombat = true;
+            module.m_CombatConfig = config;
+            return module;
+        }
+
         public override void DeclareData(WorldLayout layout)
         {
-            layout.Table(BwKeys.Fighter, 64).LevelScoped()
+            layout.Table(BwKeys.Fighter, m_SharedCombat ? m_CombatConfig.Fighters : 64).LevelScoped()
                 .Column(BwKeys.Position).Column(BwKeys.Prev).Column(BwKeys.Info).Column(BwKeys.Anim);
             layout.Resource(BwKeys.Rig, new BwRig());
             layout.Resource(BwKeys.Game, new BwGameState());
             layout.Resource(BwKeys.Feedback, new EventQueue<BwFeedback>(128, saved: false));
+            if (m_SharedCombat) layout.Resource(BwKeys.SharedCombat, new BwSharedCombatState(m_CombatConfig), levelScoped: true);
         }
 
         public override void RegisterSystems(SystemRegistry registry) => registry
@@ -33,6 +46,15 @@ namespace BrawlerFoundation
 
     public static class BwMode
     {
+        public static ModeDefinition CreateSharedCombat(BwSharedCombatConfig config, out GameplayModuleAsset module)
+        {
+            module = BwModule.CreateSharedCombat(config);
+            var settings = SessionSettings.Default;
+            settings.TickRate = 60;
+            settings.MaxTicksPerFrame = 4;
+            return ModeDefinition.Create(new[] { module }, settings);
+        }
+
         public static ModeDefinition Create(out GameplayModuleAsset module)
         {
             module = BwModule.Create();

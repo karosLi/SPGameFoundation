@@ -1,5 +1,6 @@
 using SPF.Contracts;
 using SPF.L1.Skeleton;
+using SPF.L2.Combat;
 using SPF.Runtime.Scheduling;
 using SPF.Runtime.World;
 using Unity.Burst;
@@ -289,23 +290,36 @@ namespace BrawlerFoundation.Systems
             var anim = world.Column(BwKeys.Anim);
             var position = world.Column(BwKeys.Position);
 
-            for (int i = 0; i < count && i < 64; i++)
+            var shared = world.HasResource(BwKeys.SharedCombat) ? world.Resource(BwKeys.SharedCombat) : null;
+            var handles = world.Table(BwKeys.Fighter).Handles;
+            shared?.Prune(world);
+            int combatCount = shared != null ? count : math.min(count, 64);
+            for (int i = 0; i < combatCount; i++)
             {
                 var attacker = info[i];
                 if (attacker.State != FighterState.Attack) continue;
                 var def = rig.Attack(attacker.Attack);
-                if (attacker.StateTime < def.ActiveFrom || attacker.StateTime > def.ActiveTo) continue;
+                int scope = shared != null ? shared.Track(handles[i], attacker, context.Time.DeltaTime) : -1;
+                if (shared != null)
+                {
+                    if (scope < 0 || !shared.CrossedActive(scope, def.ActiveFrom, def.ActiveTo, context.Time.DeltaTime)) continue;
+                }
+                else if (attacker.StateTime < def.ActiveFrom || attacker.StateTime > def.ActiveTo) continue;
                 float2 tip = BwProbe.Tip(rig, attacker, anim[i], position[i], m_Pose, m_World);
-                for (int j = 0; j < count && j < 64; j++)
+                for (int j = 0; j < combatCount; j++)
                 {
                     var target = info[j];
-                    if (target.Team == attacker.Team || target.State == FighterState.KO || (attacker.HitMask & (1UL << j)) != 0) continue;
+                    if (target.Team == attacker.Team || target.State == FighterState.KO || (shared == null && (attacker.HitMask & (1UL << j)) != 0)) continue;
                     float2 c = position[j];
                     float r = BwRules.ProbeRadius;
                     if (tip.x < c.x - BwRules.BodyHalfWidth - r || tip.x > c.x + BwRules.BodyHalfWidth + r) continue;
                     if (tip.y < c.y + BwRules.HurtBottom - r || tip.y > c.y + BwRules.HurtTop + r) continue;
 
-                    attacker.HitMask |= 1UL << j;
+                    if (shared != null)
+                    {
+                        if (shared.Record(scope, handles[j]) != HitRecordResult.Added) continue;
+                    }
+                    else attacker.HitMask |= 1UL << j;
                     target.Hp -= def.Damage;
                     target.Flash = 1f;
                     target.VelocityX = attacker.Facing * def.Knockback;

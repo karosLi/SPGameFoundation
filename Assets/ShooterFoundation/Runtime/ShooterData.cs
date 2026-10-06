@@ -129,13 +129,8 @@ namespace ShooterFoundation
 
         /// <summary>Earliest closed-circle contact in [0,1], including initial overlap and tangent hits.</summary>
         public static bool Sweep(float2 from, float2 to, float2 center, float radius, out float t)
-        {
-            float2 d = to - from, m = from - center; float c = math.dot(m, m) - radius * radius;
-            if (c <= 0f) { t = 0f; return true; }
-            float a = math.dot(d, d), b = math.dot(m, d), discriminant = b * b - a * c;
-            if (a <= 1e-12f || b > 0f || discriminant < 0f) { t = 0f; return false; }
-            t = (-b - math.sqrt(discriminant)) / a; return t >= 0f && t <= 1f;
-        }
+            => SPF.L2.Combat.CombatSweep.PointCircle(from, to, center, radius, out t);
+
         public static float2 WingPosition(in ShooterRun run) => run.Hero + new float2(-0.95f, -0.25f);
     }
 }

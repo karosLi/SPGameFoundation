@@ -37,18 +37,8 @@ namespace SurvivorFoundation
     {
         /// <summary>First swept circle contact in [0,1], or +infinity. Starting overlaps contact at zero.</summary>
         public static float EntryFraction(float2 from, float2 to, float radius, float2 center, float targetRadius)
-        {
-            float2 offset = from - center, delta = to - from;
-            float r = math.max(0f, radius) + math.max(0f, targetRadius);
-            float c = math.lengthsq(offset) - r * r;
-            if (c <= 0f) return 0f;
-            float a = math.lengthsq(delta);
-            if (a <= 1e-12f) return float.PositiveInfinity;
-            float b = math.dot(offset, delta), discriminant = b * b - a * c;
-            if (discriminant < 0f) return float.PositiveInfinity;
-            float t = (-b - math.sqrt(discriminant)) / a;
-            return t >= 0f && t <= 1f ? t : float.PositiveInfinity;
-        }
+            => CombatSweep.PointCircle(from, to, center, math.max(0f, radius) + math.max(0f, targetRadius), out float fraction)
+                ? fraction : float.PositiveInfinity;
 
         public static float2 Target(float2 enemy, float2 hero, float2 beacon, bool guard, float aggroRadius) =>
             !guard || math.distancesq(enemy, hero) <= math.max(0f, aggroRadius) * math.max(0f, aggroRadius) ? hero : beacon;

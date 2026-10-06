@@ -14,9 +14,9 @@ namespace BrawlerFoundation.Tests
         readonly GameplayModuleAsset m_Module;
         readonly ModeDefinition m_Mode;
 
-        public BwTestWorld(bool start = true)
+        public BwTestWorld(bool start = true, BwSharedCombatConfig? sharedCombat = null)
         {
-            m_Mode = BwMode.Create(out m_Module);
+            m_Mode = sharedCombat.HasValue ? BwMode.CreateSharedCombat(sharedCombat.Value, out m_Module) : BwMode.Create(out m_Module);
             Session = SimSession.Create(m_Mode, 7);
             Session.Start();
             if (start) { Game.Send(BwCommandKind.Start); Step(); }

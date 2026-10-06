@@ -89,6 +89,19 @@ namespace SurvivorFoundation
             return config;
         }
 
+        /// <summary>Original simulation example: two periodic crossing blade paths, one damage per target per pulse.
+        /// No presentation is installed by this factory. Classic projectile policy remains unchanged.</summary>
+        public static SvConfig CreateCrossedBladeExample()
+        {
+            var config = CreateDefault();
+            config.Settings.CrossedBlades = new SvCrossedBlades
+            {
+                Enabled = true, TickInterval = 12, MaxTargets = 256,
+                Reach = 5f, HalfWidth = 0.35f, DamagePerPulse = 16f,
+            };
+            return config;
+        }
+
         public static SvConfig CreateDefault()
         {
             var config = CreateInstance<SvConfig>();

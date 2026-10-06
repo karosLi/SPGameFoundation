@@ -122,6 +122,7 @@ namespace SurvivorFoundation
         public float BeaconHp, BeaconRadius, GuardAggroRadius;
         public int GuardDurationTicks, BeaconHurtCooldownTicks;
         public SvAnnularSkill AnnularSkill;
+        public SvCrossedBlades CrossedBlades;
         public int ReorderInterval;      // ticks between spatial sorts of the enemy table (0 = off)
         public float GridCell;
     }

@@ -55,6 +55,7 @@ namespace BrawlerFoundation
         public static readonly ColumnKey<FighterInfo> Info = new ColumnKey<FighterInfo>(Fighter, "Info");
         public static readonly ColumnKey<Animator2D> Anim = new ColumnKey<Animator2D>(Fighter, "Anim");
 
+        public static readonly ResourceKey<BwSharedCombatState> SharedCombat = new ResourceKey<BwSharedCombatState>("Bw.SharedCombat.V1");
         public static readonly ResourceKey<BwGameState> Game = new ResourceKey<BwGameState>("Bw.Game");
         public static readonly ResourceKey<BwRig> Rig = new ResourceKey<BwRig>("Bw.Rig");
         public static readonly ResourceKey<EventQueue<BwFeedback>> Feedback = new ResourceKey<EventQueue<BwFeedback>>("Bw.Feedback");

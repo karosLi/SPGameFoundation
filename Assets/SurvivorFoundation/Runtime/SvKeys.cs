@@ -22,6 +22,7 @@ namespace SurvivorFoundation
         public static readonly ColumnKey<float2> GemPosition = new ColumnKey<float2>(Gem, "Position");
         public static readonly ColumnKey<GemInfo> GemInfo = new ColumnKey<GemInfo>(Gem, "Info");
 
+        public static readonly ResourceKey<SvCrossedBladeState> CrossedBlades = new ResourceKey<SvCrossedBladeState>("Sv.CrossedBlades.V1");
         public static readonly ResourceKey<SvRuntime> Config = new ResourceKey<SvRuntime>("Sv.Config");
         public static readonly ResourceKey<SvGameState> Game = new ResourceKey<SvGameState>("Sv.Game");
         public static readonly ResourceKey<SpatialGrid> EnemyGrid = new ResourceKey<SpatialGrid>("Sv.EnemyGrid");

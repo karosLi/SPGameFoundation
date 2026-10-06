@@ -40,10 +40,14 @@ namespace SurvivorFoundation
             layout.Resource(SvKeys.HeroDamage, new EventQueue<float>(cap.Events), levelScoped: true);
             layout.Resource(SvKeys.Collected, new EventQueue<int>(cap.Gems), levelScoped: true);
             layout.Resource(SvKeys.Feedback, new EventQueue<SvFeedback>(cap.Events, saved: false));
+            if (s.CrossedBlades.Enabled)
+                layout.Resource(SvKeys.CrossedBlades, new SvCrossedBladeState(math.clamp(s.CrossedBlades.MaxTargets, 1, cap.Enemies)), levelScoped: true);
             layout.DestroyQueueCapacity = cap.Enemies;
         }
 
-        public override void RegisterSystems(SystemRegistry registry) => registry
+        public override void RegisterSystems(SystemRegistry registry)
+        {
+            registry
             .Add(new FlowSystem())
             .Add(new RewardSystem())
             .Add(new SpawnSystem())
@@ -54,6 +58,8 @@ namespace SurvivorFoundation
             .Add(new CollideSystem())
             .Add(new AnnularSkillSystem())
             .Add(new ResolveSystem());
+            if (Config.Settings.CrossedBlades.Enabled) registry.Add(new CrossedBladeSystem());
+        }
     }
 
     public static class SvMode

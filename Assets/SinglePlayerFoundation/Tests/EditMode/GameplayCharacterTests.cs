@@ -111,6 +111,59 @@ namespace SPF.Tests.EditMode
             }
         }
 
+        [Test] public void AbruptGroundReversalReleasesBeforeReachWithoutSlidingAPlant()
+        {
+            using(var presenter=new GameplayCharacterPresenter(RenderTier.DataTexture,1))
+            {
+                for(int facing=-1;facing<=1;facing+=2)
+                {
+                    presenter.Clear();var input=Input();input.Kind=1;input.Scale=.66f;input.Facing=facing;
+                    GameplayCharacterMotion before=default;
+                    for(int frame=0;frame<1200;frame++)
+                    {
+                        input.Velocity=new float2(0,(frame/29&1)==0?5:-5);input.State=GameplayCharacterState.Run;
+                        input.Ground+=input.Velocity/120;input.Root=input.Ground;
+                        presenter.Begin(1f/120,3);presenter.Submit(input);presenter.Evaluate();presenter.TryRead(input.Handle,out var motion);
+                        if(motion.FarFoot.InStance){Assert.Less(math.distance(presenter.ReadBone(input.Handle,NaturalCharacterRig.FarFoot).Position,motion.FarFoot.Position*input.Scale),.0002f);if(before.Initialized&&before.FarFoot.InStance)Assert.AreEqual(before.FarFoot.Plant,motion.FarFoot.Plant);}
+                        if(motion.NearFoot.InStance){Assert.Less(math.distance(presenter.ReadBone(input.Handle,NaturalCharacterRig.NearFoot).Position,motion.NearFoot.Position*input.Scale),.0002f);if(before.Initialized&&before.NearFoot.InStance)Assert.AreEqual(before.NearFoot.Plant,motion.NearFoot.Plant);}
+                        if(before.Initialized&&before.FarFoot.InStance&&!motion.FarFoot.InStance)
+                            Assert.Less(math.distance(presenter.ReadBone(input.Handle,NaturalCharacterRig.FarFoot).Position,before.FarFoot.Position*input.Scale),.035f,"early liftoff stays continuous in actual FK");
+                        if(before.Initialized&&before.NearFoot.InStance&&!motion.NearFoot.InStance)
+                            Assert.Less(math.distance(presenter.ReadBone(input.Handle,NaturalCharacterRig.NearFoot).Position,before.NearFoot.Position*input.Scale),.035f,"near liftoff stays continuous in actual FK");
+                        before=motion;
+                    }
+                }
+            }
+        }
+        [TestCase(30)] [TestCase(60)] [TestCase(120)]
+        public void TurningAndReversingAtMobileFrameRatesKeepReachableGroundContacts(int hz)
+        {
+            using(var presenter=new GameplayCharacterPresenter(RenderTier.DataTexture,1))
+            {
+                for(int path=0;path<3;path++)
+                {
+                    presenter.Clear();var input=Input();input.Kind=1;input.Scale=.66f;input.Facing=path==1?-1:1;int contacts=0;
+                    for(int frame=0;frame<hz*4;frame++)
+                    {
+                        float t=frame/(float)hz;
+                        float angle=path==0?((int)(t/.24f)&1)*math.PI+math.PI*.5f:path==1?((int)(t/.26f)%8)*math.PI/4:t*5.4f;
+                        input.Velocity=new float2(math.cos(angle),math.sin(angle))*5;input.State=GameplayCharacterState.Run;input.Ground+=input.Velocity/hz;input.Root=input.Ground;
+                        presenter.Begin(1f/hz,3);presenter.Submit(input);presenter.Evaluate();presenter.TryRead(input.Handle,out var motion);
+                        if(motion.FarFoot.InStance){contacts++;Assert.Less(math.distance(presenter.ReadBone(input.Handle,NaturalCharacterRig.FarFoot).Position,motion.FarFoot.Position*input.Scale),.0002f);}
+                        if(motion.NearFoot.InStance){contacts++;Assert.Less(math.distance(presenter.ReadBone(input.Handle,NaturalCharacterRig.NearFoot).Position,motion.NearFoot.Position*input.Scale),.0002f);}
+                    }
+                    Assert.Greater(contacts,hz/4,"replanning must land, not hover forever to avoid grounded checks");
+                }
+            }
+        }
+
+        [Test] public void BlinkDiscontinuityDoesNotSeedAnImpossibleVelocitySwing()
+        {
+            var input=Input();var motion=default(GameplayCharacterMotion);motion.Step(input,.016f);
+            input.Root=input.Ground=new float2(3,0);input.Velocity=new float2(90,0);input.State=GameplayCharacterState.Run;
+            motion.Step(input,.016f);Assert.IsFalse(motion.Moving);Assert.Less(math.distance(motion.NearFoot.Position,input.Ground),.3f);
+        }
+
         [Test] public void AirbornePoseReleasesGroundAndReplantsOnLanding()
         {
             var input=Input();var motion=default(GameplayCharacterMotion);motion.Step(input,.016f);

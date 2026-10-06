@@ -79,7 +79,7 @@ namespace SurvivorFoundation.Tests.PlayMode
                 for(int frame=0;frame<30;frame++)
                 {
                     while(Time.realtimeSinceStartupAsDouble<start+frame*.1)yield return null;
-                    game.State.Input=new InputFrame {Move=new float2(frame<15?-.5f:.5f,.2f),Pressed=frame==8?1u<<SvMobileSkills.Pulse:0};
+                    game.State.Input=new InputFrame {Move=frame<10?new float2(1,0):frame<20?new float2(0,1):new float2(0,-1),Pressed=frame==8?1u<<SvMobileSkills.Pulse:0};
                     names[frame]="natural-horde-sequence-"+suffix+"-"+frame.ToString("D3");
                     yield return capture.Save(names[frame],safe);
                     times[frame]=capture.CaptureRealtime-start;

@@ -94,9 +94,10 @@ namespace SurvivorFoundation.Presentation
                 bool gold = (i & 1) == 0;
                 float4 color = gold ? new float4(1f, .72f, .17f, .7f) : new float4(.18f, .66f, 1f, .78f);
                 float2 last = p;
-                for (int j = 0; j < math.min(segments, m_TrailCount[i]); j++)
+                for (int j = 0; j < math.min(segments, m_TrailCount[i] - 1); j++)
                 {
-                    float2 tail = m_Trail[offset + j]; float2 delta = last - tail; float length = math.length(delta);
+                    // Sample zero is the current authoritative point ahead of the interpolated head.
+                    float2 tail = m_Trail[offset + j + 1]; float2 delta = last - tail; float length = math.length(delta);
                     if (length > .015f && length < 3f)
                     {
                         float fade = 1f - (j + 1f) / (segments + 1f); float4 tint = color; tint.w *= fade;

@@ -99,13 +99,18 @@ namespace SPF.Characters.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator ProductionDraw_ComputePaletteMatchesCpuWithClipBlendMirrorScaleAndBothIkBends()
+        public IEnumerator ProductionDraw_ComputePaletteMatchesCpuWithClipBlendMirrorScaleAndBothIkBends([Values(false,true)] bool compactHalfAsset)
         {
-            RequireGraphics();using var asset=BatCharacterAsset.Bake();
+            RequireGraphics();using var asset=CreateAsset(compactHalfAsset);
             using var gpu=new BatCharacterBatch(asset,4,preferCompute:true);RequireCompute(gpu);
+            if(compactHalfAsset&&gpu.Precision!=BatPrecision.Half)Assert.Ignore("Accepted half format unavailable; half production draw remains unverified.");
+            // The compact asset is one tenth the bind geometry. A 3.4x instance and .34x scene keep
+            // equivalent pixel coverage while staying under both the x4 scale and 256 px/unit limits.
+            float sceneScale=compactHalfAsset?.34f:1f,actorScale=compactHalfAsset?3.4f:1f,modelScale=compactHalfAsset?.1f:1f;
+            string suffix=compactHalfAsset?"-half":"";
             using var cpu=new BatCharacterBatch(asset,4,true);
             var cameraObject=new GameObject("BAT computed production draw parity camera");var camera=cameraObject.AddComponent<Camera>();camera.enabled=false;
-            camera.orthographic=true;camera.orthographicSize=3.3f;camera.transform.position=new Vector3(1.5f,2.8f,-10);
+            camera.orthographic=true;camera.orthographicSize=3.3f*sceneScale;camera.transform.position=new Vector3(1.5f*sceneScale,2.8f*sceneScale,-10);
             camera.clearFlags=CameraClearFlags.SolidColor;camera.backgroundColor=Color.clear;
             var target=new RenderTexture(512,512,24,RenderTextureFormat.ARGB32,RenderTextureReadWrite.Linear){antiAliasing=1};target.Create();camera.targetTexture=target;
             var read=new Texture2D(512,512,TextureFormat.RGBA32,false,true);
@@ -113,17 +118,17 @@ namespace SPF.Characters.Tests.PlayMode
             {
                 for(int i=0;i<4;i++)
                 {
-                    var instance=ComputeInstance(asset,i+4);instance.Placement.xy=new float2(i%2*3,i/2*2.7f);
-                    instance.Placement.z=i%2==0?.85f:1.15f;
+                    var instance=ComputeInstance(asset,i+4);instance.Placement.xy=new float2(i%2*3,i/2*2.7f)*sceneScale;
+                    instance.Placement.z=(i%2==0?.85f:1.15f)*actorScale;
                     // Two clip blends without IK, then reachable/unreachable IK with opposite bends.
                     instance.Ik.z=i<2?0:1;instance.Ik.w=i==2?-1:1;
-                    instance.Ik.xy=i==2?new float2(.6f,2):new float2(3,-2);
+                    instance.Ik.xy=(i==2?new float2(.6f,2):new float2(3,-2))*modelScale;
                     gpu.Add(instance);cpu.Add(instance);
                 }
-                yield return null;gpu.Draw(camera);camera.Render();Read(target,read);var computed=read.GetPixels32();Save(read,"bat-compute-production.png");
+                yield return null;gpu.Draw(camera);camera.Render();Read(target,read);var computed=read.GetPixels32();Save(read,"bat-compute-production"+suffix+".png");
                 Assert.That(gpu.DrawCalls,Is.EqualTo(1));Assert.That(gpu.DispatchCalls,Is.EqualTo(1));
                 Assert.That(gpu.BytesUploaded,Is.EqualTo(4*64));Assert.That(gpu.PaletteBytesWritten,Is.EqualTo(4*96));
-                yield return null;cpu.Draw(camera);camera.Render();Read(target,read);var fallback=read.GetPixels32();Save(read,"bat-compute-production-cpu.png");
+                yield return null;cpu.Draw(camera);camera.Render();Read(target,read);var fallback=read.GetPixels32();Save(read,"bat-compute-production"+suffix+"-cpu.png");
                 int occupied=0,mismatches=0,magenta=0;var regions=new int[4];
                 for(int y=0;y<512;y++)for(int x=0;x<512;x++)
                 {
@@ -137,7 +142,7 @@ namespace SPF.Characters.Tests.PlayMode
                 yield return null;gpu.Clear();gpu.Draw(camera);camera.Render();Read(target,read);
                 foreach(var p in read.GetPixels32())Assert.That(p.a,Is.Zero,"Empty production draw must not retain stale actors.");
                 Assert.That(gpu.DispatchCalls,Is.Zero);Assert.That(gpu.DrawCalls,Is.Zero);
-                Debug.Log("BAT actual Graphics.RenderMeshPrimitives compute/CPU pixel parity: "+occupied+" occupied pixels; "+mismatches+" interior mismatches (one-pixel edge tolerance).");
+                Debug.Log("BAT actual Graphics.RenderMeshPrimitives compute/CPU pixel parity ("+gpu.Precision+"): "+occupied+" occupied pixels; "+mismatches+" interior mismatches (one-pixel edge tolerance).");
             }
             finally{camera.targetTexture=null;UnityEngine.Object.DestroyImmediate(cameraObject);UnityEngine.Object.DestroyImmediate(read);target.Release();UnityEngine.Object.DestroyImmediate(target);}
         }

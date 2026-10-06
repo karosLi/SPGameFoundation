@@ -33,6 +33,7 @@ namespace SPF.Runtime.Diagnostics
         float m_NextRefresh;
         float m_FrameMsAverage;
         long m_GcPeakBytes;
+        int m_CollectionsAtEnable;
 
         ProfilerRecorder m_GcAllocRecorder;
         ProfilerRecorder m_DrawCallsRecorder;
@@ -41,6 +42,7 @@ namespace SPF.Runtime.Diagnostics
 
         void OnEnable()
         {
+            m_CollectionsAtEnable = System.GC.CollectionCount(0);
             m_GcAllocRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC Allocated In Frame");
             m_DrawCallsRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Draw Calls Count");
             m_SetPassRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Render, "SetPass Calls Count");
@@ -78,7 +80,8 @@ namespace SPF.Runtime.Diagnostics
             var sb = m_Text.Clear();
             sb.Append("Frame ").Append(m_FrameMsAverage.ToString("F1")).Append(" ms");
             if (m_GcAllocRecorder.Valid)
-                sb.Append("   GC peak/frame ").Append(m_GcPeakBytes).Append(" B");
+                sb.Append("   Alloc peak/frame ").Append(m_GcPeakBytes).Append(" B");
+            sb.Append("   Collections ").Append(System.Math.Max(0, System.GC.CollectionCount(0) - m_CollectionsAtEnable));
             if (m_DrawCallsRecorder.Valid)
                 sb.Append("\nDraw ").Append(m_DrawCallsRecorder.LastValue).Append("   SetPass ").Append(m_SetPassRecorder.LastValue);
 

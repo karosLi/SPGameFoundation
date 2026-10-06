@@ -136,11 +136,17 @@ namespace SPF.Shell.Performance
         public int Level => Budget.Level;
         public float RenderScale => RenderScales.Length == 0 ? 1f : RenderScales[Math.Min(Level, RenderScales.Length - 1)];
         public bool IsIdle => Idle.Idle;
+        /// <summary>Allocation counter samples, not collection events; Editor-wide work can contribute.</summary>
         public long GcBytesLastFrame { get; private set; }
         public long GcBytesSinceReset { get; private set; }
         public int GcFramesSinceReset { get; private set; }
         public int FramesSinceReset { get; private set; }
         public bool GcCounterValid => m_Gc.Valid;
+
+        /// <summary>Process-wide generation-0 collection delta since ResetGcStats (or construction).
+        /// Unity's non-generational collector reports generation 0. Never sum generation counters,
+        /// infer collection pauses from allocated bytes, or attribute this global count to one game.</summary>
+        public int GcCollectionsSinceReset => Math.Max(0, GC.CollectionCount(0) - m_CollectionsAtReset);
 
         /// <summary>The frame rate actually requested while active (the device state may cap it).</summary>
         public int EffectiveFrameRate
@@ -153,6 +159,7 @@ namespace SPF.Shell.Performance
         }
 
         ProfilerRecorder m_Gc;
+        int m_CollectionsAtReset = GC.CollectionCount(0);
         int m_AwakeFrame = -1;
         bool m_SkipNextBudgetFrame;
 #if SPF_URP
@@ -167,6 +174,7 @@ namespace SPF.Shell.Performance
             GcBytesSinceReset = 0;
             GcFramesSinceReset = 0;
             FramesSinceReset = 0;
+            m_CollectionsAtReset = GC.CollectionCount(0);
         }
 
         /// <summary>Sets the active and idle frame rates (the quality budget follows the active one).</summary>

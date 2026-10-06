@@ -257,6 +257,25 @@ namespace SPF.Tests.EditMode
             });
         }
 
+        [Test]
+        public void CollectionCountsAreSeparateFromAllocationFramesAndResetIndependently()
+        {
+            WithGovernor((g, step) =>
+            {
+                g.ResetGcStats();
+                int before = GC.CollectionCount(0);
+                GC.Collect(0); // Intentional test-only event; production never forces a collection.
+                int observed = GC.CollectionCount(0) - before;
+                Assert.Greater(observed, 0);
+                Assert.GreaterOrEqual(g.GcCollectionsSinceReset, observed);
+                Assert.AreEqual(0, g.GcFramesSinceReset, "collection events are not allocation-frame samples");
+                Assert.AreEqual(0L, g.GcBytesSinceReset);
+                g.ResetGcStats();
+                int reset = g.GcCollectionsSinceReset;
+                Assert.AreEqual(0, reset);
+            });
+        }
+
         static void WithGovernor(Action<FrameGovernor, Action<float, bool>> test)
         {
             int originalRate = Application.targetFrameRate;

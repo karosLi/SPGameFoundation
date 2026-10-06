@@ -80,20 +80,22 @@ namespace SurvivorFoundation.Tests.PlayMode
                 while (game.State.Kills < 10 && Time.realtimeSinceStartup < end) yield return null;
                 game.Session.Sync();
                 Assert.Greater(game.State.Kills, 0, "the bot fought");
-                // The GC window measures the game, not the test bot (AllocationSources showed the bot's own path allocates):
-                // the hero stands, invulnerable, and level-ups are taken through the game's API.
+                // Retain the historical stationary/feedback-detached regression conditions and budget.
+                // This is not normal full-game allocation attribution: use SvAllocationCaptureTests
+                // for repeated intact AutoPlay/HUD/audio windows, callstacks and collection counts.
                 game.Session.Sync();
                 game.AutoPlay = false;
                 game.State.MaxHp = game.State.Hp = 1e9f;
                 var feedback = game.Renderer.Feedback;
-                game.Renderer.Feedback = null;   // sound playback: measured separately (AllocationSources)
+                game.Renderer.Feedback = null;   // legacy isolated window; no causal claim about audio
                 for (int f = 0; f < 120; f++)   // warm-up in the measured conditions (first hits, first sounds, first effects)
                 {
                     yield return null;
                     if (game.State.Flow == SvFlow.LevelUp) game.Choose(0);
                 }
                 // Per frame: bytes allocated (the governor reads the previous frame's counter) and whether a screen
-                // changed (level-up choices, flow). Allocation next to a screen change is UI work; anything else is a leak.
+                // changed (level-up choices, flow). The proximity mask is a legacy budget heuristic,
+                // not evidence of UI ownership; callstack capture supplies actual attribution.
                 const int Window = 180;
                 var bytes = new long[Window];
                 var changed = new bool[Window];
@@ -123,10 +125,10 @@ namespace SurvivorFoundation.Tests.PlayMode
                         if (ui) near++; else { steady++; steadyBytes += bytes[f]; detail.Append(" f").Append(f).Append(':').Append(bytes[f]).Append('B'); }
                     }
                     GcReport.Write($"survivor auto-play ({tier}): {near} frames next to level-up / flow screens, {steady} steady frames{detail}",
-                        game.Governor.FramesSinceReset, game.Governor.GcFramesSinceReset, game.Governor.GcBytesSinceReset);
-                    // What remains sits right after the level-up panel hides (UGUI canvas rebuilds); see AllocationSources.
-                    // A budget rather than zero: a rare 164-byte burst (2-3 frames per few seconds) remains whose source
-                    // was not found in game code (simulation, renderer, HUD and audio code paths are allocation-free).
+                        game.Governor.FramesSinceReset, game.Governor.GcFramesSinceReset, game.Governor.GcBytesSinceReset, game.Governor.GcCollectionsSinceReset);
+                    // Keep the existing allocation budget. Whole-frame Editor counters can also include work
+                    // outside the selected PlayerLoop capture; do not infer an allocation source or
+                    // a collection event from 117/164-byte signatures or nearby UI transitions.
                     Assert.LessOrEqual(steadyBytes, 1024, "steady-state allocation stays under 1 KB per 3 s");
                 }
                 game.Renderer.Feedback = feedback;
@@ -210,7 +212,8 @@ namespace SurvivorFoundation.Tests.PlayMode
             finally { Cleanup(game, config); }
         }
     
-        /// <summary>Diagnostics: GC per frame with parts of the game switched off one by one (report only).</summary>
+        /// <summary>Legacy sequential switch-off observations (unmatched simulation ages; no causal attribution).
+        /// Prefer the opt-in normal-gameplay callstack capture for source/frequency investigations.</summary>
         [UnityTest]
         public IEnumerator AllocationSources()
         {
@@ -245,7 +248,7 @@ namespace SurvivorFoundation.Tests.PlayMode
                     report.Append("survivor sources [").Append(name).Append("]: ").Append(game.Governor.GcFramesSinceReset).Append(" of ")
                         .Append(game.Governor.FramesSinceReset).Append(" frames, ").Append(game.Governor.GcBytesSinceReset).Append(" bytes, ")
                         .Append(levels).Append(" level-ups");
-                    GcReport.Write(report.ToString(), game.Governor.FramesSinceReset, game.Governor.GcFramesSinceReset, game.Governor.GcBytesSinceReset);
+                    GcReport.Write(report.ToString(), game.Governor.FramesSinceReset, game.Governor.GcFramesSinceReset, game.Governor.GcBytesSinceReset, game.Governor.GcCollectionsSinceReset);
                     report.Clear();
                 }
             }

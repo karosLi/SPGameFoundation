@@ -72,6 +72,11 @@ namespace SPF.L1.Physics
         public NativeArray<Joint> Joints => m_Joints;
         public int JointHighWater => m_JointCount;
         public PhysicsStats Stats => m_Stats[0];
+        /// <summary>
+        /// Whether the last completed step actually ran Burst-compiled code. Read after Complete.
+        /// False before a step, after Clear/ReadSnapshot, and for managed execution; not snapshot state.
+        /// </summary>
+        public bool LastStepExecutedWithBurst => m_Counts[3] != 0;
         public int EventCount => m_Stats[0].Events;
         public NativeArray<ContactEvent> Events => m_Events;
         public int ManifoldCount => m_Counts[0];

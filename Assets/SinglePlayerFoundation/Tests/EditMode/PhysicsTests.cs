@@ -217,6 +217,31 @@ namespace SPF.Tests.EditMode
         }
 
         [Test]
+        public void FirstStepReportsExecutionModeAndResetClearsTheWitness()
+        {
+            using var w = World();
+            w.AddCircle(new float2(0f, 3f), 0.5f);
+            Assert.IsFalse(w.LastStepExecutedWithBurst, "no step has executed yet");
+            w.Step(Dt);
+#if SPF_DOTNET_HARNESS
+            Assert.IsFalse(w.LastStepExecutedWithBurst, "the managed harness must never report Burst execution");
+#else
+            Assert.IsTrue(w.LastStepExecutedWithBurst, "the first physics step must synchronously compile with Burst enabled");
+#endif
+            var snapshot = Snapshot(w);
+            using (var reader = new BinaryReader(new MemoryStream(snapshot))) w.ReadSnapshot(reader);
+            Assert.IsFalse(w.LastStepExecutedWithBurst, "a restored snapshot is not execution evidence");
+            w.Step(Dt);
+#if SPF_DOTNET_HARNESS
+            Assert.IsFalse(w.LastStepExecutedWithBurst);
+#else
+            Assert.IsTrue(w.LastStepExecutedWithBurst);
+#endif
+            w.Clear();
+            Assert.IsFalse(w.LastStepExecutedWithBurst, "clear removes stale execution evidence");
+        }
+
+        [Test]
         public void Benchmark()
         {
             using var w = new PhysicsWorld2D(2048);
@@ -230,21 +255,30 @@ namespace SPF.Tests.EditMode
                 if (i % 3 == 0) w.AddCircle(p, rnd.NextFloat(0.25f, 0.45f));
                 else w.AddBox(p, rnd.NextFloat2(0.2f, 0.45f), rnd.NextFloat(math.PI));
             }
-            for (int i = 0; i < 60; i++) w.Step(Dt);   // warm-up (Burst compile in the editor)
+            // CompileSynchronously makes the first untimed call a compilation barrier. A fixed number
+            // of steps alone cannot guarantee asynchronous compilation has finished in a cold editor.
+            int warmupBurstSteps = 0;
+            for (int i = 0; i < 60; i++)
+            {
+                w.Step(Dt);
+                if (w.LastStepExecutedWithBurst) warmupBurstSteps++;
+            }
             var watch = Stopwatch.StartNew();
             double worst = 0;
-            int steps = 300, peakManifolds = 0;
+            int steps = 300, peakManifolds = 0, measuredBurstSteps = 0;
             for (int i = 0; i < steps; i++)
             {
                 long t0 = watch.ElapsedTicks;
                 w.Step(Dt);
                 worst = math.max(worst, (watch.ElapsedTicks - t0) * 1000.0 / Stopwatch.Frequency);
                 peakManifolds = math.max(peakManifolds, w.Stats.Manifolds);
+                if (w.LastStepExecutedWithBurst) measuredBurstSteps++;
             }
             double mean = watch.Elapsed.TotalMilliseconds / steps;
             var s = w.Stats;
             string report = $"=== Physics2D: 600 bodies poured into a box ===\nstep ms mean {mean:F3}  worst {worst:F3}\n" +
-                            $"bodies {s.Bodies}  awake {s.AwakeBodies}  pairs {s.Pairs}  manifolds {s.Manifolds} (peak {peakManifolds})  islands {s.Islands}\n";
+                            $"bodies {s.Bodies}  awake {s.AwakeBodies}  pairs {s.Pairs}  manifolds {s.Manifolds} (peak {peakManifolds})  islands {s.Islands}\n" +
+                            $"actual Burst execution: warmup {warmupBurstSteps}/60 steps; measured {measuredBurstSteps}/{steps} steps\n";
             TestContext.WriteLine(report);
             try
             {
@@ -254,7 +288,12 @@ namespace SPF.Tests.EditMode
             }
             catch (System.Exception e) when (e is IOException || e is System.UnauthorizedAccessException) { }   // report only (no project folder in the .NET harness)
 #if !SPF_DOTNET_HARNESS
+            Assert.AreEqual(60, warmupBurstSteps, "physics must not switch from managed to Burst during warmup");
+            Assert.AreEqual(steps, measuredBurstSteps, "Burst budget requires actual Burst execution; check compilation/settings");
             Assert.Less(mean, 4.0, "Burst step budget for 600 bodies");   // the .NET harness runs it unoptimised: report only
+#else
+            Assert.AreEqual(0, warmupBurstSteps, "harness execution must be labelled managed");
+            Assert.AreEqual(0, measuredBurstSteps, "harness timings are not Burst performance evidence");
 #endif
         }
     

@@ -12,7 +12,9 @@ namespace SPF.L1.Physics
     /// kept sorted across steps so it is near linear) → narrow phase with warm-start matching → islands and
     /// sleeping → sequential-impulse solve on compact velocity arrays → integrate positions → events.
     /// </summary>
-    [BurstCompile]
+    // The first scheduled step must finish compilation before simulation starts. Otherwise an editor
+    // can run an arbitrary number of managed steps (and switch arithmetic backends mid-replay).
+    [BurstCompile(CompileSynchronously = true)]
     struct PhysicsStepJob : IJob
     {
         public float Dt;
@@ -33,11 +35,15 @@ namespace SPF.L1.Physics
         public NativeArray<float3> Vel;           // compact solver state: (vx, vy, w)
         public NativeArray<float2> InvMass;       // (1/m, 1/I)
         public NativeArray<ContactEvent> Events;
-        public NativeArray<int> Counts;           // [0] manifolds, [1] previous manifolds, [2] order length
+        public NativeArray<int> Counts;           // [0] manifolds, [1] previous manifolds, [2] order length, [3] Burst witness
         public NativeArray<PhysicsStats> Stats;
 
         public void Execute()
         {
+            // Measure this job's actual execution path, rather than trusting the global Burst setting.
+            bool usedBurst = true;
+            MarkManagedExecution(ref usedBurst);
+            Counts[3] = usedBurst ? 1 : 0;
             float dt = Dt;
             float invDt = dt > 0f ? 1f / dt : 0f;
             var stats = new PhysicsStats();
@@ -242,6 +248,11 @@ namespace SPF.L1.Physics
             stats.Events = events;
             Stats[0] = stats;
         }
+
+#if !SPF_DOTNET_HARNESS
+        [BurstDiscard]
+#endif
+        static void MarkManagedExecution(ref bool usedBurst) => usedBurst = false;
 
         static uint Hash(ulong key)
         {

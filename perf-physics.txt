@@ -1,0 +1,3 @@
+=== Physics2D: 600 bodies poured into a box ===
+step ms mean 0.449  worst 0.736
+bodies 603  awake 598  pairs 1414  manifolds 1141 (peak 1142)  islands 3

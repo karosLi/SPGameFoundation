@@ -93,3 +93,9 @@ Output directory: `Artifacts/Screenshots/MobileHud/`.
 - `survivor-portrait-safearea-cancel-{gpu,datatex}.png`
 
 The matching `.txt` sidecars identify the actual viewport, synthetic safe rectangle, every captured canvas, and camera-projected control bounds/first raycast results. Four Unity test cases produce fourteen PNGs. Asserted pixel counts guard against missing icons/status/telemetry canvases; actual camera-space GraphicRaycaster hits and bounds are checked in both orientations. Final visual inspection and a successful central Unity run are still required before these captures count as evidence.
+
+### Inclusive annulus precision correction
+
+A remote arm64 Unity run rejected the stored-float `4f + .3f` pulse tangent although Linux passed. The expanded `QueryCells` path does not contain a strict circle filter. A concrete mixed-precision hazard is reproducible: the stored coordinate is `4.300000190734863`, its squared value rounded to binary32 is `18.490001678466797`, and the promoted exact square is `18.49000164031986`. Comparing a rounded float dot against an extended scalar square can therefore reject the closed boundary. The precise original backend lowering is not proven by this arithmetic reproduction alone.
+
+The shared annulus predicate now explicitly rounds its combined inner/outer bounds to binary32 and evaluates **both** squared sides in double. There is no epsilon or widened collision band. New tests verify immediately adjacent representable floats on both sides of inner/outer boundaries, positive/negative axes, managed and Strict/Fast Burst entry points, and the actual Survivor grid-to-damage path. Diagnostic output records operand bits and Burst outcomes; one float outside must still miss. Existing beam/sweep code is unchanged. Harness results are 10/10 focused shape/boundary tests and 50/50 Survivor non-performance tests; the new arm64 Unity rerun remains the final platform confirmation.

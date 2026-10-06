@@ -27,9 +27,15 @@ namespace SPF.L2.Combat
             float inner = math.max(0f, math.min(innerRadius, outerRadius));
             float outer = math.max(0f, math.max(innerRadius, outerRadius));
             float radius = math.max(0f, targetRadius);
-            float distanceSq = math.distancesq(origin, target);
-            float far = outer + radius;
-            float near = math.max(0f, inner - radius);
+            // Keep the authored combined boundaries as binary32 values, then evaluate BOTH sides of
+            // the squared comparisons in double. A rounded float dot product compared with a promoted
+            // scalar square can otherwise reject exact stored-float tangency (e.g. the stored float value of 4f + .3f).
+            // The bit round-trip makes the binary32 rounding explicit even under managed excess precision.
+            // This is an exact closed comparison, not an epsilon expansion: the next float outside misses.
+            double far = math.asfloat(math.asuint(outer + radius));
+            double near = math.asfloat(math.asuint(math.max(0f, inner - radius)));
+            double dx = (double)target.x - origin.x, dy = (double)target.y - origin.y;
+            double distanceSq = dx * dx + dy * dy;
             return distanceSq <= far * far && distanceSq >= near * near;
         }
 

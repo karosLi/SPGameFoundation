@@ -109,8 +109,8 @@ namespace BrawlerFoundation
         {
             int n = 0; var info = world.Column(BwKeys.Info); var ground = world.Column(BwBeltKeys.Ground);
             for (int i = 0; i < world.Table(BwKeys.Fighter).Count; i++)
-                if (info[i].State != FighterState.KO) Grid.Staging[n++] = new GridEntry { Owner = i, Position = ground[i], Radius = BwRules.BodyHalfWidth };
-            Grid.StagingCount[0] = n; Grid.ScheduleBuild(default).Complete(); LastGridDropped = Grid.DroppedLastBuild;
+                if (info[i].State != FighterState.KO) Grid.Staging.Set(n++, new GridEntry { Owner = i, Position = ground[i], Radius = BwRules.BodyHalfWidth });
+            Grid.StagingCount.Set(0, n); Grid.ScheduleBuild(default).Complete(); LastGridDropped = Grid.DroppedLastBuild;
         }
         public void OnReset()
         {

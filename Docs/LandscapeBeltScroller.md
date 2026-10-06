@@ -48,3 +48,7 @@ A warmed 90-tick belt-logic allocation probe reported **0 current-thread managed
 `BwBeltScrollerPlayTests.CollectionIntervalKeepsJoystickAndReachesDistantLootAfterPause` separately exercises the actual input sink/HUD across wave clear, focus interruption/resume and victory. Its pickup starts over four ground units from the player, outside attraction range; the joystick must move to collect it. The tests stage enemy HP/KO and final-wave state to isolate mechanics and collection-to-terminal UI; they are not evidence of a naturally played complete multiwave victory.
 
 Real Unity execution and visual review are centralized separately; the presence or harness compilation of these PlayMode assertions does not mean they have run. Android/iOS touch, safe area, thermal behavior and frame times still need target-device validation. The included art is original outlined placeholder character/environment art, not copied artwork from the supplied references.
+
+## Dense logic evidence
+
+See [BeltLogicWorkload](BeltLogicWorkload.md) for the six 32/64/128-fighter spread/clustered complete-tick reports, deterministic replay, calibrated allocation and native-run instructions. The final Brawler harness suite including those cases passes 55/55. The report explicitly preserves the main-thread and dense worst-case quadratic limits.

@@ -22,3 +22,6 @@ jobs:
         with:
           name: harness-results
           path: Tools/DotnetHarness/.gen/**/TestResults/*.trx
+          # The explicit TRX-only glob is inside the generated hidden .gen directory.
+          include-hidden-files: true
+          if-no-files-found: error

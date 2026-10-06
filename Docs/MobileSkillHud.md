@@ -75,3 +75,21 @@ Graphics PlayMode suites `BwMobileHudPlayTests` and `SvMobileHudPlayTests` cover
 The first actual Unity HUD smoke run found that `CombatControlGraphic` lacked its own `CanvasRenderer`; the base UGUI Graphic only requires RectTransform. The custom class now explicitly requires CanvasRenderer, and the HUD factory constructs it before adding the Graphic. This fixes real rendering/raycast component ownership, not just log handling.
 
 Engine-only `CombatControlGraphicTests` cover direct AddComponent for ring, disc and all four glyphs, actual submitted CanvasRenderer mesh vertices, and every graphic produced by a four-slot HUD factory. Both gameplay smokes now verify required components for all HUD graphics and submitted geometry for every active custom Graphic, alongside the real GraphicRaycaster hit-target/bounds assertions. These engine checks require a new Unity run and are not harness pass claims.
+
+## Orientation/safe-area capture gate
+
+`MobileCombatHud.SetPreviewViewport(width, height, safePixels)` supplies an explicit presentation viewport for camera/render-target previews. The caller must render the matching viewport. It uses a constant pixel scale for the preview instead of inheriting the editor desktop resolution; `ClearPreviewViewport()` restores normal screen-driven layout. It never changes PlayerSettings, Screen orientation or skill clocks. Like every layout change, it cancels pending gestures.
+
+`BwMobileHudCaptureTests` renders the actual Brawler at 1280×720. `SvMobileHudCaptureTests` renders the actual horde at 720×1280, including a synthetic safe rectangle `(0,48,720,1168)` representing a 64-pixel top inset and 48-pixel home-indicator inset. Each fixture runs both sprite tiers, routes **all canvases belonging to its game** into the game camera, and saves unmodified RenderTexture PNG readbacks with projected bounds/raycast metadata. It does not rescale a desktop screenshot or paint a simulated result.
+
+Output directory: `Artifacts/Screenshots/MobileHud/`.
+
+- `brawler-landscape-ready-{gpu,datatex}.png`
+- `brawler-landscape-cooldown-{gpu,datatex}.png`
+- `survivor-portrait-ready-{gpu,datatex}.png`
+- `survivor-portrait-cooldown-{gpu,datatex}.png`
+- `survivor-portrait-safearea-{gpu,datatex}.png`
+- `survivor-portrait-safearea-aim-{gpu,datatex}.png`
+- `survivor-portrait-safearea-cancel-{gpu,datatex}.png`
+
+The matching `.txt` sidecars identify the actual viewport, synthetic safe rectangle, every captured canvas, and camera-projected control bounds/first raycast results. Four Unity test cases produce fourteen PNGs. Asserted pixel counts guard against missing icons/status/telemetry canvases; actual camera-space GraphicRaycaster hits and bounds are checked in both orientations. Final visual inspection and a successful central Unity run are still required before these captures count as evidence.

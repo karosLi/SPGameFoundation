@@ -23,6 +23,10 @@ namespace SPF.Shell.UI
     {
         IMobileCombatHudSource m_Source;
         CanvasScaler m_Scaler;
+        Canvas m_Canvas;
+        bool m_PreviewViewport;
+        int m_PreviewWidth, m_PreviewHeight;
+        Rect m_PreviewSafe;
         RectTransform m_Controls, m_StickRing, m_StickKnob;
         CombatControlGraphic[] m_Rings, m_Icons;
         BufferText[] m_Status;
@@ -35,6 +39,9 @@ namespace SPF.Shell.UI
         int m_Width, m_Height;
         Rect m_LastSafe;
         public bool PreferredLandscape { get; private set; }
+        public int ViewportWidth => m_Width;
+        public int ViewportHeight => m_Height;
+        public Rect ViewportSafeArea => m_LastSafe;
         public RectTransform SafeRoot { get; private set; }
         public VirtualJoystick Joystick { get; private set; }
         public SkillControl[] Buttons { get; private set; }
@@ -50,6 +57,7 @@ namespace SPF.Shell.UI
             if (source == null || source.SlotCount < 1 || source.SlotCount > 4 || source.TickRate < 1) throw new ArgumentException("HUD requires 1–4 slots.");
             m_Source = source; PreferredLandscape = preferLandscape;
             m_Scaler = canvasRoot.GetComponent<CanvasScaler>();
+            m_Canvas = canvasRoot.GetComponent<Canvas>();
             SafeRoot = UIFactory.Panel(canvasRoot, "MobileSafeArea", Color.clear, Vector2.zero, Vector2.one, false);
             m_Controls = UIFactory.Panel(SafeRoot, "CombatControls", Color.clear, Vector2.zero, Vector2.one, false);
             var stickArea = UIFactory.Panel(m_Controls, "MoveTouchArea", new Color(0, 0, 0, .001f), Vector2.zero, new Vector2(.48f, .5f));
@@ -141,17 +149,39 @@ namespace SPF.Shell.UI
             m_StickKnob.anchoredPosition = new Vector2(Joystick.Direction.x, Joystick.Direction.y) * (Joystick.Magnitude * 52);
         }
 
+        /// <summary>Presentation-only preview for a matching camera/render-target viewport. The caller
+        /// owns that viewport; no Screen/PlayerSettings or skill state is changed. Safe area is in its pixels.
+        /// Changing layout cancels input, so set it before starting a gesture.</summary>
+        public void SetPreviewViewport(int width, int height, Rect safeArea)
+        {
+            if (width < 1 || height < 1) throw new ArgumentOutOfRangeException(nameof(width));
+            m_PreviewViewport = true; m_PreviewWidth = width; m_PreviewHeight = height; m_PreviewSafe = safeArea;
+            if (m_Source != null) RefreshLayout(true);
+        }
+
+        public void ClearPreviewViewport()
+        {
+            m_PreviewViewport = false;
+            if (m_Source != null) RefreshLayout(true);
+        }
+
         void RefreshLayout(bool force)
         {
-            var safe = Screen.safeArea;
-            if (!force && m_Width == Screen.width && m_Height == Screen.height && m_LastSafe.x == safe.x && m_LastSafe.y == safe.y && m_LastSafe.width == safe.width && m_LastSafe.height == safe.height) return;
-            CancelInput(); m_Width = Screen.width; m_Height = Screen.height; m_LastSafe = safe;
+            int width = m_PreviewViewport ? m_PreviewWidth : Screen.width;
+            int height = m_PreviewViewport ? m_PreviewHeight : Screen.height;
+            var safe = m_PreviewViewport ? m_PreviewSafe : Screen.safeArea;
+            if (!force && m_Width == width && m_Height == height && m_LastSafe.x == safe.x && m_LastSafe.y == safe.y && m_LastSafe.width == safe.width && m_LastSafe.height == safe.height) return;
+            CancelInput(); m_Width = width; m_Height = height; m_LastSafe = safe;
             MobileSafeArea.Anchors(safe, m_Width, m_Height, out var min, out var max);
             SafeRoot.anchorMin = min; SafeRoot.anchorMax = max;
             SafeRoot.offsetMin = SafeRoot.offsetMax = Vector2.zero;
             bool wide = m_Width >= m_Height;
+            float scale = wide ? m_Height / 720f : m_Width / 720f;
             if (m_Scaler != null)
             {
+                // Camera-to-texture previews must not inherit the editor desktop's display resolution.
+                m_Scaler.uiScaleMode = m_PreviewViewport ? CanvasScaler.ScaleMode.ConstantPixelSize : CanvasScaler.ScaleMode.ScaleWithScreenSize;
+                if (m_PreviewViewport) { m_Scaler.scaleFactor = scale; if (m_Canvas != null) m_Canvas.scaleFactor = scale; }
                 m_Scaler.referenceResolution = wide ? new Vector2(1280, 720) : new Vector2(720, 1280);
                 m_Scaler.matchWidthOrHeight = wide ? 1f : 0f;
             }
@@ -162,7 +192,6 @@ namespace SPF.Shell.UI
                 var rect = (RectTransform)Buttons[i].transform;
                 rect.anchoredPosition = new Vector2(-100 - (i % 2) * 163, (wide ? 140 : 170) + (i / 2) * 168 + (i % 2) * 50);
             }
-            float scale = wide ? m_Height / 720f : m_Width / 720f;
             Joystick.Radius = 100 * Mathf.Max(scale, .1f); Joystick.DeadZone = 10 * Mathf.Max(scale, .1f);
             foreach (var button in Buttons) { button.AimRadius = 80 * Mathf.Max(scale, .1f); button.CancelRadius = 240 * Mathf.Max(scale, .1f); }
         }

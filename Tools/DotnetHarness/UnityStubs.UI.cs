@@ -137,6 +137,7 @@ namespace UnityEngine.UI
     {
         public enum ScaleMode { ConstantPixelSize, ScaleWithScreenSize, ConstantPhysicalSize }
         public ScaleMode uiScaleMode { get; set; }
+        public float scaleFactor { get; set; } = 1f;
         public Vector2 referenceResolution { get; set; }
         public float matchWidthOrHeight { get; set; }
     }

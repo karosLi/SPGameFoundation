@@ -143,6 +143,15 @@ namespace BrawlerFoundation.Tests.PlayMode
                 yield return capture.Save("belt-landscape-hit-stagger-" + suffix, safe, game.MobileHud.Buttons[0].gameObject);
                 for (int i = 0; i < 25; i++) game.Session.Step();
 
+                Duel(game, 0); Tap(game, capture, 1);
+                for (int i = 0; i < 12; i++) game.Session.Step();
+                Assert.AreEqual(84, world.Column(BwKeys.Info)[1].Hp, .001f, "charged kick applies its actual 16-point hit");
+                Assert.AreEqual(1, world.Resource(BwMobileSkills.Key).GetSnapshot(1).Charges);
+                Assert.Greater(world.Column(BwKeys.Info)[1].VelocityX, 0, "kick knocks back on the ground axis");
+                Assert.Greater(world.Column(BwBeltKeys.Motion)[1].Height, .05f, "kick launches height independently of depth");
+                yield return capture.Save("belt-landscape-kick-launch-" + suffix, safe, game.MobileHud.Buttons[1].gameObject);
+                for (int i = 0; i < 25; i++) game.Session.Step();
+
                 // Drag the real joystick and tap jump with an independently owned pointer.
                 var stick = capture.Pointer(game.Joystick.gameObject, 71); game.Joystick.OnPointerDown(stick);
                 stick.position += new Vector2(90, 90); game.Joystick.OnDrag(stick);

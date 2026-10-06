@@ -88,6 +88,15 @@ namespace BrawlerFoundation.Tests
             Assert.IsFalse(GroundCombatQueries.ProbeOverlaps(3, 4, 2.501f, .5f, .5f, hurt));
         }
         [Test]
+        public void ChargedKickHitsLaunchesAndConsumesExactlyOneCharge()
+        {
+            using var t = World(); Duel(t, new float2(.9f, 0)); Frame(t, 2); t.Game.Input = default; t.Step(12);
+            Assert.AreEqual(84, t.Info(1).Hp, .001f);
+            Assert.AreEqual(1, t.World.Resource(BwMobileSkills.Key).GetSnapshot(1).Charges);
+            Assert.Greater(t.Info(1).VelocityX, 0); Assert.Greater(Motion(t, 1).Height, .05f);
+            Assert.AreEqual(0, Ground(t, 1).y, .0001f, "launch height never becomes ground depth");
+        }
+        [Test]
         public void HoldChainsThreeAttacksUsingNewStablePulses()
         {
             using var t = World(); Duel(t, new float2(8, 0));

@@ -10,6 +10,71 @@ namespace SPF.Tests.EditMode
     {
         const float Dt = 1f / 60f;
 
+#if !SPF_DOTNET_HARNESS
+        [Unity.Burst.BurstCompile(CompileSynchronously = true)]
+        struct BurstBackendProbe : Unity.Jobs.IJob
+        {
+            public Unity.Collections.NativeArray<int> Result;
+
+            public void Execute()
+            {
+                bool usedBurst = true;
+                MarkManaged(ref usedBurst);
+                Result[0] = usedBurst ? 1 : 0;
+            }
+
+            [Unity.Burst.BurstDiscard]
+            static void MarkManaged(ref bool usedBurst) => usedBurst = false;
+        }
+
+        [OneTimeSetUp]
+        public void ReportBurstBackend()
+        {
+            // Read-only diagnosis: Options setters also persist EditorPrefs in Burst 1.8, so a test
+            // must not silently change them to turn a managed timing result into a passing one.
+            var options = Unity.Burst.BurstCompiler.Options;
+            var report = new System.Text.StringBuilder("=== Physics Burst backend diagnostics ===\n");
+            report.AppendLine($"Unity {UnityEngine.Application.unityVersion}; processor {UnityEngine.SystemInfo.processorType}");
+            report.AppendLine($"BurstCompiler.IsEnabled={Unity.Burst.BurstCompiler.IsEnabled}; Options.IsEnabled={options.IsEnabled}; EnableBurstCompilation={options.EnableBurstCompilation}");
+            report.AppendLine($"JobsUtility.JobCompilerEnabled={Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobCompilerEnabled}; compiler service initialized={Unity.Burst.LowLevel.BurstCompilerService.IsInitialized}");
+            report.AppendLine($"compile synchronously={options.EnableBurstCompileSynchronously}; safety checks={options.EnableBurstSafetyChecks}; force safety checks={options.ForceEnableBurstSafetyChecks}; debug={options.EnableBurstDebug}");
+            report.AppendLine($"EditorPrefs BurstCompilation: exists={UnityEditor.EditorPrefs.HasKey("BurstCompilation")}, value={UnityEditor.EditorPrefs.GetBool("BurstCompilation", true)}");
+            report.AppendLine($"UNITY_BURST_DISABLE_COMPILATION={System.Environment.GetEnvironmentVariable("UNITY_BURST_DISABLE_COMPILATION") ?? "<unset>"}");
+            report.AppendLine($"command-line disable={System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "--burst-disable-compilation") >= 0}; command-line force-sync={System.Array.IndexOf(System.Environment.GetCommandLineArgs(), "--burst-force-sync-compilation") >= 0}");
+            var physicsAssembly = typeof(PhysicsWorld2D).Assembly;
+            var stepType = physicsAssembly.GetType("SPF.L1.Physics.PhysicsStepJob", true);
+            var attribute = (Unity.Burst.BurstCompileAttribute)System.Attribute.GetCustomAttribute(stepType, typeof(Unity.Burst.BurstCompileAttribute));
+            report.AppendLine($"physics assembly={physicsAssembly.GetName().Name}; MVID={physicsAssembly.ManifestModule.ModuleVersionId}; job synchronous attribute={attribute?.CompileSynchronously}");
+            string disabledAssemblies = Path.Combine(UnityEngine.Application.dataPath, "..", "ProjectSettings", "Burst_DisableAssembliesForEditorCompilation.json");
+            report.AppendLine($"editor-disabled assemblies file: {(File.Exists(disabledAssemblies) ? File.ReadAllText(disabledAssemblies) : "<absent>")}");
+            using (var result = new Unity.Collections.NativeArray<int>(1, Unity.Collections.Allocator.TempJob))
+            {
+                var probe = new BurstBackendProbe { Result = result };
+                probe.Execute();
+                int direct = result[0];
+                Unity.Jobs.IJobExtensions.Run(probe);
+                int run = result[0];
+                Unity.Jobs.IJobExtensions.Schedule(probe).Complete();
+                int scheduled = result[0];
+                report.AppendLine($"trivial synchronous control: direct managed Execute={direct}; Run Burst={run}; Schedule Burst={scheduled} (expected 0/1/1)");
+            }
+            using (var world = World())
+            {
+                world.AddCircle(new float2(0f, 3f), 0.5f);
+                world.Step(Dt);
+                report.AppendLine($"actual physics first step Burst={world.LastStepExecutedWithBurst}");
+            }
+            TestContext.WriteLine(report.ToString());
+            try
+            {
+                string dir = Path.Combine(UnityEngine.Application.dataPath, "..", "Artifacts");
+                Directory.CreateDirectory(dir);
+                File.WriteAllText(Path.Combine(dir, "perf-physics-backend.txt"), report.ToString());
+            }
+            catch (System.Exception e) when (e is IOException || e is System.UnauthorizedAccessException) { }
+        }
+#endif
+
         static PhysicsWorld2D World(int capacity = 512)
         {
             var w = new PhysicsWorld2D(capacity);

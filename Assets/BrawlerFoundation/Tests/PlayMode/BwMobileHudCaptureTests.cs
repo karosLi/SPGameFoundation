@@ -15,6 +15,27 @@ namespace BrawlerFoundation.Tests.PlayMode
 {
     public class BwMobileHudCaptureTests
     {
+#if !SPF_DOTNET_HARNESS
+        [Test]
+        public void CaptureScopeRestoresCanvasScaleWithoutAScaler()
+        {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null) Assert.Ignore("No graphics device");
+            var root = new GameObject("CanvasScaleRestore");
+            try
+            {
+                var canvasObject = new GameObject("NoScalerCanvas", typeof(RectTransform), typeof(Canvas));
+                canvasObject.transform.SetParent(root.transform, false);
+                var canvas = canvasObject.GetComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.scaleFactor = 1.25f;
+                var cameraObject = new GameObject("CaptureCamera", typeof(Camera)); cameraObject.transform.SetParent(root.transform, false);
+                var camera = cameraObject.GetComponent<Camera>();
+                using (var capture = new CanvasCapture(root, camera, 128, 72)) canvas.scaleFactor = .75f;
+                Assert.AreEqual(1.25f, canvas.scaleFactor, .0001f, "scope restores the Canvas itself, even without a CanvasScaler");
+                Assert.AreEqual(RenderMode.ScreenSpaceOverlay, canvas.renderMode); Assert.IsNull(canvas.worldCamera); Assert.IsNull(camera.targetTexture);
+            }
+            finally { Object.DestroyImmediate(root); }
+        }
+#endif
+
         static void CheckViewport(BwGameBootstrap game, CanvasCapture capture, Rect safe)
         {
             var hud = game.MobileHud;

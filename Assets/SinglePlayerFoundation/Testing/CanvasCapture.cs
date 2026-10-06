@@ -20,7 +20,7 @@ namespace SPF.Testing
         readonly Canvas[] m_Canvases;
         readonly RenderMode[] m_Modes;
         readonly Camera[] m_Cameras;
-        readonly float[] m_Distances;
+        readonly float[] m_Distances, m_CanvasScales;
         readonly CanvasScaler[] m_Scalers;
         readonly CanvasScaler.ScaleMode[] m_ScaleModes;
         readonly float[] m_Scales;
@@ -40,11 +40,11 @@ namespace SPF.Testing
             m_Target.Create(); m_Read = new Texture2D(width, height, TextureFormat.RGBA32, false);
             camera.targetTexture = m_Target; camera.aspect = width / (float)height;
             m_Canvases = gameRoot.transform.GetComponentsInChildren<Canvas>(true);
-            m_Modes = new RenderMode[m_Canvases.Length]; m_Cameras = new Camera[m_Canvases.Length]; m_Distances = new float[m_Canvases.Length];
+            m_Modes = new RenderMode[m_Canvases.Length]; m_Cameras = new Camera[m_Canvases.Length]; m_Distances = new float[m_Canvases.Length]; m_CanvasScales = new float[m_Canvases.Length];
             m_Scalers = new CanvasScaler[m_Canvases.Length]; m_ScaleModes = new CanvasScaler.ScaleMode[m_Canvases.Length]; m_Scales = new float[m_Canvases.Length];
             for (int i = 0; i < m_Canvases.Length; i++)
             {
-                var canvas = m_Canvases[i]; m_Modes[i] = canvas.renderMode; m_Cameras[i] = canvas.worldCamera; m_Distances[i] = canvas.planeDistance;
+                var canvas = m_Canvases[i]; m_Modes[i] = canvas.renderMode; m_Cameras[i] = canvas.worldCamera; m_Distances[i] = canvas.planeDistance; m_CanvasScales[i] = canvas.scaleFactor;
                 canvas.renderMode = RenderMode.ScreenSpaceCamera; canvas.worldCamera = camera; canvas.planeDistance = camera.nearClipPlane + 1f;
                 var scaler = m_Scalers[i] = canvas.GetComponent<CanvasScaler>();
                 if (scaler == null) continue;
@@ -113,6 +113,7 @@ namespace SPF.Testing
                 var canvas = m_Canvases[i]; if (canvas == null) continue;
                 canvas.renderMode = m_Modes[i]; canvas.worldCamera = m_Cameras[i]; canvas.planeDistance = m_Distances[i];
                 if (m_Scalers[i] != null) { m_Scalers[i].uiScaleMode = m_ScaleModes[i]; m_Scalers[i].scaleFactor = m_Scales[i]; }
+                canvas.scaleFactor = m_CanvasScales[i];
             }
             if (m_Camera != null) { m_Camera.targetTexture = m_PreviousTarget; m_Camera.aspect = m_PreviousAspect; }
             m_Target.Release(); Object.Destroy(m_Target); Object.Destroy(m_Read);

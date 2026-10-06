@@ -72,17 +72,41 @@ namespace SurvivorFoundation.Tests.PlayMode
         static IEnumerator CaptureRunningSequence(SvGameBootstrap game,CanvasCapture capture,Rect safe,string suffix)
         {
             bool manual=game.Session.ManualClock;var previous=game.State.Input;
-            var times=new double[30];var names=new string[30];double start=Time.realtimeSinceStartupAsDouble;
+            var times=new double[30];var names=new string[30];double start=0,next=0;
+            // Dense visibility/budget/allocation assertions already ran above. This separate labeled
+            // recording isolates readable motion in the actual game, at authored movement speeds.
+            game.Session.Sync();var world=game.Session.World;var runtime=world.Resource(SvKeys.Config);
+            var authored=SvConfig.CreateMobileCombatExample();
+            try
+            {
+                var definitions=runtime.Enemies;
+                for(int k=0;k<runtime.EnemyKinds;k++)
+                {
+                    var enemy=definitions[k];enemy.Speed=authored.Enemies[k].Speed;enemy.Shooter=false;
+                    enemy.Damage=0;enemy.Hp=10000;definitions[k]=enemy;
+                }
+            }
+            finally{Object.Destroy(authored);}
+            game.StartRun();game.Session.Step();world.ClearLevel();
+            game.State.Hero=game.State.HeroPrev=float2.zero;game.State.Hp=game.State.MaxHp=100;
+            for(int k=0;k<game.State.Upgrades.Length;k++)game.State.Upgrades[k]=0;
+            for(int i=0;i<6;i++)
+            {
+                float angle=i*math.PI/3+.3f;float2 position=new float2(math.cos(angle),math.sin(angle))*(i%2==0?4.5f:6f);
+                SvSpawner.SpawnEnemy(world,runtime,1+i%runtime.EnemyKinds,position);
+            }
+            game.State.Input=default;game.Session.Step();game.CameraRig.Snap();
             game.Session.ManualClock=false;
             try
             {
                 for(int frame=0;frame<30;frame++)
                 {
-                    while(Time.realtimeSinceStartupAsDouble<start+frame*.1)yield return null;
+                    if(frame>0)while(Time.realtimeSinceStartupAsDouble<next)yield return null;
                     game.State.Input=new InputFrame {Move=frame<10?new float2(1,0):frame<20?new float2(0,1):new float2(0,-1),Pressed=frame==8?1u<<SvMobileSkills.Pulse:0};
-                    names[frame]="natural-horde-sequence-"+suffix+"-"+frame.ToString("D3");
+                    names[frame]="natural-horde-controlled-sequence-"+suffix+"-"+frame.ToString("D3");
                     yield return capture.Save(names[frame],safe);
-                    times[frame]=capture.CaptureRealtime-start;
+                    if(frame==0)start=capture.CaptureRealtime;
+                    times[frame]=capture.CaptureRealtime-start;next=capture.CaptureRealtime+.1;
                 }
             }
             finally{game.Session.Sync();game.Session.ManualClock=manual;game.State.Input=previous;}
@@ -97,8 +121,9 @@ namespace SurvivorFoundation.Tests.PlayMode
                 concat.Append("file '").Append(names[i]).Append(".png'\n").Append("duration ").Append(duration.ToString("F6",CultureInfo.InvariantCulture)).Append('\n');
             }
             concat.Append("file '").Append(names[names.Length-1]).Append(".png'\n");
-            string name="natural-horde-sequence-"+suffix;
+            string name="natural-horde-controlled-sequence-"+suffix;
             File.WriteAllText(Path.Combine(dir,name+".csv"),csv.ToString());File.WriteAllText(Path.Combine(dir,name+".ffconcat"),concat.ToString());
+            File.WriteAllText(Path.Combine(dir,name+"-readme.txt"),"Controlled readable motion recording from the actual Survivor game. Six representative enemies use authored factory movement speeds; enemy projectiles are disabled for readability. Hero movement remains production speed with full-strength +X, +Y and -Y input. Dense224-enemy visibility, quality and allocation assertions ran separately before this recording. Automatic simulation/presentation clocks run together; CSV/ffconcat preserve actual readback timing. Sampling starts at the first successful image and never catches up in bursts.");
         }
         static int Difference(Color32[] a,Color32[] b){int n=0;for(int i=0;i<a.Length;i++)if(math.abs(a[i].r-b[i].r)+math.abs(a[i].g-b[i].g)+math.abs(a[i].b-b[i].b)>40)n++;return n;}
     }

@@ -76,17 +76,18 @@ namespace BrawlerFoundation.Tests.PlayMode
         static IEnumerator CaptureRunningSequence(BwGameBootstrap game,CanvasCapture capture,Rect safe,string suffix)
         {
             bool manual=game.Session.ManualClock;var previous=game.State.Input;
-            var times=new double[30];var names=new string[30];double start=Time.realtimeSinceStartupAsDouble;
+            var times=new double[30];var names=new string[30];double start=0,next=0;
             game.Session.ManualClock=false;
             try
             {
                 for(int frame=0;frame<30;frame++)
                 {
-                    while(Time.realtimeSinceStartupAsDouble<start+frame*.1)yield return null;
-                    game.State.Input=new InputFrame {Move=new float2(frame<15?-1:1,0),Held=1};
+                    if(frame>0)while(Time.realtimeSinceStartupAsDouble<next)yield return null;
+                    game.State.Input=new InputFrame {Move=frame<10?new float2(-1,0):frame<20?new float2(1,0):float2.zero,Held=frame>=20?1u:0u};
                     names[frame]="natural-brawler-sequence-"+suffix+"-"+frame.ToString("D3");
                     yield return capture.Save(names[frame],safe);
-                    times[frame]=capture.CaptureRealtime-start;
+                    if(frame==0)start=capture.CaptureRealtime;
+                    times[frame]=capture.CaptureRealtime-start;next=capture.CaptureRealtime+.1;
                 }
             }
             finally{game.Session.Sync();game.Session.ManualClock=manual;game.State.Input=previous;}

@@ -44,7 +44,7 @@ namespace SPF.Presentation.Characters
             m_Camera=OutputCamera!=null?OutputCamera:Camera.main;
             if(m_Camera==null){m_CameraObject=new GameObject("BAT Validation Camera");m_Camera=m_CameraObject.AddComponent<Camera>();m_CameraObject.tag="MainCamera";}
             m_Camera.orthographic=true;m_Camera.clearFlags=CameraClearFlags.SolidColor;m_Camera.backgroundColor=new Color(.055f,.08f,.12f);
-            Debug.Log("BAT character validation: "+m_Batch.Backend+" / "+m_Batch.Precision+". Half max error "+m_Asset.HalfMaxPixelError+" px at 256 px/unit x4 scale. C toggles CPU; I toggles IK; 1/2/3 select 1/64/256 actors. Pointer controls first actor target; gold=target, green=authoritative CPU tip.");
+            Debug.Log("BAT character validation: "+m_Batch.Backend+" / "+m_Batch.Precision+". Half max error "+m_Asset.HalfMaxPixelError+" px at 256 px/unit x4 scale. C toggles CPU; I toggles IK; 1/2/3 select 1/64/256 actors. Pointer controls first actor target; gold=target, green=CPU reference tip.");
         }
         void Update()
         {
@@ -65,7 +65,7 @@ namespace SPF.Presentation.Characters
                 m_Batch.Add(instance);
                 if(ContactShadows){var profile=BlobShadowProfile.Default;profile.Size=new float2(.95f,.28f);BlobShadow.Add(m_Shadows,m_Sheet[m_Shadow].Uv,position,.2f,profile);}
             }
-            // Independent source-pose CPU probe: useful for gameplay; no GPU result is ever read back here.
+            // Independent source-pose CPU reference probe; this presentation demo does not govern gameplay. No runtime GPU readback.
             Skeletal.Sample(m_Rig.View,0,Time.time,m_Pose);
             if(EnableIk)Skeletal.TwoBoneIK(m_Rig.View,m_Pose,1,2,target,bend);
             Skeletal.ToWorld(m_Rig.View,m_Pose,0,1,1,m_World);

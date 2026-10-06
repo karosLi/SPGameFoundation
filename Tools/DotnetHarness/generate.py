@@ -25,6 +25,12 @@ def load_json(path):
     return json.loads(path.read_text(encoding="utf-8-sig"))
 
 
+def write_if_changed(path, contents):
+    # Keep MSBuild incremental inputs stable when the assembly graph did not change.
+    if not path.exists() or path.read_text() != contents:
+        path.write_text(contents)
+
+
 def main():
     owners = {}      # folder -> assembly name
     asmdefs = {}     # name -> (folder, data)
@@ -52,7 +58,7 @@ def main():
     def write(name, body):
         d = GEN / name
         d.mkdir(exist_ok=True)
-        (d / f"{name}.csproj").write_text(body)
+        write_if_changed(d / f"{name}.csproj", body)
         projects.append(d / f"{name}.csproj")
 
     write("Unity.Mathematics", f"""<Project Sdk="Microsoft.NET.Sdk">
@@ -117,7 +123,7 @@ def main():
 """)
 
     sln = GEN / "Harness.proj"
-    sln.write_text("""<Project Sdk="Microsoft.Build.Traversal/4.1.0">
+    write_if_changed(sln, """<Project Sdk="Microsoft.Build.Traversal/4.1.0">
   <ItemGroup>
 """ + "\n".join(f'    <ProjectReference Include="{p.relative_to(GEN)}" />' for p in projects) + """
   </ItemGroup>

@@ -34,6 +34,7 @@ namespace SurvivorFoundation.Systems
                 {
                     case SvCommandKind.Start:
                         world.ClearLevel();
+                        world.Resource(SvKeys.Feedback).Clear();
                         StartRun(game, s);
                         break;
                     case SvCommandKind.Choose:
@@ -66,6 +67,9 @@ namespace SurvivorFoundation.Systems
             g.SpawnAccumulator = 0f; g.NextElite = s.EliteEvery;
             g.BoltTimer = g.NovaTimer = g.SpiralTimer = g.SpiralAngle = g.OrbitAngle = 0f;
             g.PendingLevels = 0;
+            g.RunTicks = g.AnnularTicks = g.AnnularPulses = 0;
+            g.BeaconHp = g.BeaconMaxHp = s.BeaconHp;
+            g.BeaconInvulnerableTicks = 0; g.LossReason = SvLossReason.None;
             g.Flow = SvFlow.Playing;
             g.Version++;
         }
@@ -159,8 +163,28 @@ namespace SurvivorFoundation.Systems
                     game.Hp -= worst;
                     game.Invulnerable = s.HurtInvulnerable;
                     feedback.TryAdd(new SvFeedback { Kind = SvFeedbackKind.HeroHurt, Position = game.Hero, Value = worst });
-                    if (game.Hp <= 0f) { game.Hp = 0f; game.Flow = SvFlow.Dead; }
+                    if (game.Hp <= 0f) { game.Hp = 0f; game.Flow = SvFlow.Dead; game.LossReason = SvLossReason.HeroFell; }
                     game.Version++;
+                }
+                if (s.Variant == SvVariant.GuardBeacon)
+                {
+                    float hit = 0f;
+                    for (int i = 0; i < damage.Count; i++) hit = math.max(hit, SvDamage.BeaconAmount(damage[i]));
+                    if (hit > 0f && game.BeaconInvulnerableTicks <= 0)
+                    {
+                        game.BeaconHp = math.max(0f, game.BeaconHp - hit);
+                        game.BeaconInvulnerableTicks = math.max(1, s.BeaconHurtCooldownTicks);
+                        game.Version++;
+                    }
+                    if (game.BeaconHp <= 0f)
+                    {
+                        game.Flow = SvFlow.Dead; game.LossReason = SvLossReason.BeaconLost; game.Version++;
+                    }
+                    else if (game.Flow == SvFlow.Playing && game.RunTicks >= math.max(1, s.GuardDurationTicks) && world.Table(SvKeys.Enemy).Count == 0)
+                    {
+                        game.Flow = SvFlow.Won; game.Version++;
+                    }
+                    game.BeaconInvulnerableTicks = math.max(0, game.BeaconInvulnerableTicks - 1);
                 }
                 if (game.Flow == SvFlow.Playing && game.PendingLevels > 0)
                 {
@@ -230,7 +254,9 @@ namespace SurvivorFoundation.Systems
             }
             float dt = context.Time.DeltaTime;
             game.Time += dt;
-            SpawnEnemies(world, config, game, context.Seed, context.Time.Tick, dt);
+            game.RunTicks++;
+            if (s.Variant != SvVariant.GuardBeacon || game.RunTicks <= math.max(1, s.GuardDurationTicks))
+                SpawnEnemies(world, config, game, context.Seed, context.Time.Tick, dt);
             FireWeapons(world, s, game, spawns.Raw, dt);
             SpawnBullets(world, spawns);
             if (s.ReorderInterval > 0 && context.Time.Tick % (uint)s.ReorderInterval == 0)
@@ -249,14 +275,14 @@ namespace SurvivorFoundation.Systems
                 game.SpawnAccumulator -= 1f;
                 if (alive >= s.MaxEnemies) continue;
                 int kind = PickKind(config, game.Time, ref random);
-                if (kind > 0 && !SpawnEnemy(world, config, kind, SpawnPoint(s, game.Hero, ref random), false).IsNull) alive++;
+                if (kind > 0 && !SpawnEnemy(world, config, kind, SpawnPoint(s, s.Variant == SvVariant.GuardBeacon ? s.BeaconPosition : game.Hero, ref random), false).IsNull) alive++;
             }
             if (s.EliteEvery > 0f && game.Time >= game.NextElite)
             {
                 game.NextElite += s.EliteEvery;
                 int brute = 0;
                 for (int k = 0; k < config.Enemies.Length; k++) if (config.Enemies[k].Radius > config.Enemies[math.max(brute - 1, 0)].Radius) brute = k + 1;
-                if (brute > 0) SpawnEnemy(world, config, brute, SpawnPoint(s, game.Hero, ref random), true);
+                if (brute > 0) SpawnEnemy(world, config, brute, SpawnPoint(s, s.Variant == SvVariant.GuardBeacon ? s.BeaconPosition : game.Hero, ref random), true);
             }
         }
 
@@ -467,6 +493,9 @@ namespace SurvivorFoundation.Systems
                 HeroDamage = context.Resource(SvKeys.HeroDamage).AsWriter(),
                 Hero = game.Hero,
                 HeroRadius = config.Settings.HeroRadius,
+                Guard = config.Settings.Variant == SvVariant.GuardBeacon,
+                Beacon = config.Settings.BeaconPosition, BeaconRadius = config.Settings.BeaconRadius,
+                AggroRadius = config.Settings.GuardAggroRadius,
                 BulletDamage = config.Settings.EnemyBulletDamage,
                 ArenaHalf = config.Settings.ArenaHalf,
                 DeltaTime = context.Time.DeltaTime,
@@ -517,6 +546,9 @@ namespace SurvivorFoundation.Systems
             public ParallelQueue<float>.Writer HeroDamage;
             public float2 Hero;
             public float HeroRadius, BulletDamage, ArenaHalf, DeltaTime;
+            public bool Guard;
+            public float2 Beacon;
+            public float BeaconRadius, AggroRadius;
 
             public void Execute(int i)
             {
@@ -525,7 +557,8 @@ namespace SurvivorFoundation.Systems
                 Prev[i] = p;
                 if (info.Has(EnemyFlags.Dead)) return;
                 info.Flash = math.max(info.Flash - DeltaTime, 0f);
-                float2 to = Hero - p;
+                float2 target = SvGuardRules.Target(p, Hero, Beacon, Guard, AggroRadius);
+                float2 to = target - p;
                 float dist = math.length(to);
                 float2 dir = dist > 1e-4f ? to / dist : float2.zero;
                 float2 velocity = dir * info.Speed;
@@ -536,14 +569,27 @@ namespace SurvivorFoundation.Systems
                     if (dist < 15f)
                     {
                         var sink = new OrbSink { Spawns = Spawns, Damage = BulletDamage };
-                        def.Pattern.Update(ref info.Timer, ref info.Angle, DeltaTime, p, Hero, ref sink);
+                        def.Pattern.Update(ref info.Timer, ref info.Angle, DeltaTime, p, target, ref sink);
                     }
                 }
                 var sep = new Separation { Position = p, Radius = info.Radius, Self = i };
                 Grid.Query(p, info.Radius * 2f + 0.5f, ref sep);
                 p += (velocity + sep.Push * 6f) * DeltaTime;
                 Position[i] = math.clamp(p, -ArenaHalf, ArenaHalf);
-                if (dist < info.Radius + HeroRadius) HeroDamage.TryAdd(info.Damage);
+                if ((Guard ? math.distance(p, Hero) : dist) < info.Radius + HeroRadius) HeroDamage.TryAdd(info.Damage);
+                if (Guard)
+                {
+                    float2 fromBeacon = p - Beacon;
+                    float beaconDistance = math.length(fromBeacon);
+                    float contact = info.Radius + BeaconRadius;
+                    if (beaconDistance <= contact)
+                    {
+                        HeroDamage.TryAdd(SvDamage.ToBeacon(info.Damage));
+                        // The structure is solid; do not let crowds walk through it.
+                        p = Beacon + math.normalizesafe(fromBeacon, new float2(1f, 0f)) * contact;
+                        Position[i] = math.clamp(p, -ArenaHalf, ArenaHalf);
+                    }
+                }
                 Info[i] = info;
             }
         }
@@ -674,6 +720,7 @@ namespace SurvivorFoundation.Systems
                 HeroDamage = context.Resource(SvKeys.HeroDamage).AsWriter(),
                 Hero = game.Hero,
                 HeroRadius = s.HeroRadius,
+                Guard = s.Variant == SvVariant.GuardBeacon, Beacon = s.BeaconPosition, BeaconRadius = s.BeaconRadius,
                 DeltaTime = dt,
             }.Schedule(context.Count(SvKeys.Bullet), 256, dependency);
             var orbit = new OrbitJob
@@ -730,6 +777,9 @@ namespace SurvivorFoundation.Systems
             public ParallelQueue<float>.Writer HeroDamage;
             public float2 Hero;
             public float HeroRadius, DeltaTime;
+            public bool Guard;
+            public float2 Beacon;
+            public float BeaconRadius;
 
             public void Execute(int i)
             {
@@ -739,7 +789,18 @@ namespace SurvivorFoundation.Systems
                 if (b.Team == BulletTeam.Enemy)
                 {
                     float r = b.Radius + HeroRadius;
-                    if (math.distancesq(to, Hero) <= r * r) { HeroDamage.TryAdd(b.Damage); Dead[i] = 1; }
+                    if (!Guard)
+                    {
+                        // Preserve classic's original discrete endpoint rule.
+                        if (math.distancesq(to, Hero) <= r * r) { HeroDamage.TryAdd(b.Damage); Dead[i] = 1; }
+                        return;
+                    }
+                    float2 fromEnemy = to - b.Velocity * DeltaTime;
+                    float heroT = SvGuardRules.EntryFraction(fromEnemy, to, b.Radius, Hero, HeroRadius);
+                    float beaconT = SvGuardRules.EntryFraction(fromEnemy, to, b.Radius, Beacon, BeaconRadius);
+                    // The first blocker wins. Equal-time overlaps prefer the solid structure.
+                    if (beaconT <= 1f && beaconT <= heroT) { HeroDamage.TryAdd(SvDamage.ToBeacon(b.Damage)); Dead[i] = 1; }
+                    else if (heroT <= 1f) { HeroDamage.TryAdd(b.Damage); Dead[i] = 1; }
                     return;
                 }
                 float2 from = to - b.Velocity * DeltaTime;

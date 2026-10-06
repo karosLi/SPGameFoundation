@@ -183,6 +183,12 @@ namespace SurvivorFoundation.Tests.PlayMode
                         }
                         Assert.IsTrue(survived, "Normal seed-3 AutoPlay died during warmup; conditions were not altered.");
                         Assert.IsTrue(game.Hud.enabled && game.Renderer.Feedback != null && game.AutoPlay);
+                        // Enabled script state alone is not proof that a Graphic can draw.
+                        var hudRenderer = game.Hud.StatsText.GetComponent<CanvasRenderer>();
+                        Assert.IsNotNull(hudRenderer, "The normal HUD must have its rendering component.");
+                        var hudMesh = hudRenderer.GetMesh();
+                        int hudVertices = hudMesh != null ? hudMesh.vertexCount : 0;
+                        Assert.Greater(hudVertices, 0, "Warm HUD must have generated glyph geometry before capture.");
                         ProfilerDriver.ClearAllFrames();
                         Profiler.enableAllocationCallstacks = true;
                         ProfilerDriver.enabled = true;
@@ -212,6 +218,7 @@ namespace SurvivorFoundation.Tests.PlayMode
                         int matched = Extract(prefix, window, snapshots, requestedFrames, observed, survived);
                         File.AppendAllText(Path.Combine(root, "capture-settings.txt"), "\n" + tiers[t] + " repeat=" + (repeat + 1)
                             + " requested=" + requestedFrames + " observed=" + observed + " matched=" + matched + " survived=" + survived
+                            + " bufferTextRenderer=True hudGlyphVertices=" + hudVertices
                             + " rawBytes=" + (File.Exists(prefix + ".raw") ? new FileInfo(prefix + ".raw").Length : -1));
                         TestContext.WriteLine("GC capture: " + prefix + " (" + matched + "/" + observed + " mapped frames)");
                         Assert.IsTrue(survived, "Normal gameplay died; captured evidence retained and no HP/feedback/bot changes applied.");

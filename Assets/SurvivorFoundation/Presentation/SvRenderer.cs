@@ -15,7 +15,8 @@ namespace SurvivorFoundation.Presentation
     /// Draws the survivor world. The bulk (enemies, bullets, gems: tens of thousands) is culled and written
     /// straight into reserved 32-byte packed sprite slots by Burst jobs (<see cref="SpriteBatch.Reserve"/>),
     /// so the main thread does no per-sprite work; the hero, blades, ground and effects are added directly.
-    /// Bullets go to an additive batch (glow, no depth write), everything else to cut-out opaque batches.
+    /// Bullets use an additive batch. Classic art keeps opaque cutouts; smooth art uses stable-sorted
+    /// translucent actors, with explicit batched shadow, health-bar and effect layers.
     /// </summary>
     [DefaultExecutionOrder(500)]
     public sealed class SvRenderer : MonoBehaviour
@@ -26,14 +27,26 @@ namespace SurvivorFoundation.Presentation
         public SessionHost Host;
         public FollowCamera2D Camera;
         public System.Action<SvFeedback> Feedback;
+        public SvArtStyle ArtStyle = SvArtStyle.Pixel;
+        public int QualityLevel { get; private set; }
+        public int ShadowBudget => QualityLevel >= 3 ? 32 : QualityLevel >= 2 ? 128 : QualityLevel >= 1 ? 256 : 768;
+        public int EffectBudget => QualityLevel >= 3 ? 48 : QualityLevel >= 2 ? 96 : QualityLevel >= 1 ? 192 : 400;
+        public int HealthBarsDrawn { get; private set; }
+        public int ShadowsDrawn { get; private set; }
+        public int RingsDrawn { get; private set; }
+        public bool StableTranslucentActors => ArtStyle == SvArtStyle.SmoothOutline;
+        public void SetQualityLevel(int level) => QualityLevel = math.clamp(level, 0, 3);
 
         RenderAssets m_Assets;
         SvArt m_Art;
-        SpriteBatch m_Ground, m_Opaque, m_Additive, m_Effects;
+        SpriteBatch m_Ground, m_Opaque, m_Additive, m_Effects, m_Shadows, m_Health;
+        NativeArray<PackedSprite> m_SortScratch;
         SpriteEffects m_Fx;
         SimSession m_Session;
+        SvArtStyle m_BoundStyle;
         NativeArray<float4> m_EnemyColors;
         NativeArray<int> m_Counts;
+        int m_PreviousRunTicks;
 
         public RenderTier Tier => m_Assets?.Tier ?? RenderTier.DataTexture;
         public int SpritesDrawn { get; private set; }
@@ -48,6 +61,9 @@ namespace SurvivorFoundation.Presentation
         void Release()
         {
             m_Ground?.Dispose(); m_Opaque?.Dispose(); m_Additive?.Dispose(); m_Effects?.Dispose();
+            m_Shadows?.Dispose(); m_Health?.Dispose();
+            m_Shadows = m_Health = null;
+            if (m_SortScratch.IsCreated) m_SortScratch.Dispose();
             m_Ground = m_Opaque = m_Additive = m_Effects = null;
             m_Art?.Dispose();
             m_Art = null;
@@ -60,33 +76,37 @@ namespace SurvivorFoundation.Presentation
         void Bind(SimSession session)
         {
             Release();
-            m_Session = session;
+            m_Session = session; m_BoundStyle = ArtStyle;
             var world = session.World;
             var config = world.Resource(SvKeys.Config);
             m_Assets = new RenderAssets(RenderCapabilities.Detect());
-            m_Art = SvArt.Build(config.EnemyKinds, k => { var c = config.Enemies[k].Color; return new Color(c.x, c.y, c.z, 1f); });
+            m_Art = SvArt.Build(config.EnemyKinds, k => { var c = config.Enemies[k].Color; return new Color(c.x, c.y, c.z, 1f); }, ArtStyle);
             var tier = m_Assets.Tier;
             var atlas = m_Art.Sheet.Texture;
             m_Ground = new SpriteBatch(tier, atlas, BlendKind.Opaque, 1024, queueOffset: -10);
-            m_Opaque = new SpriteBatch(tier, atlas, BlendKind.Opaque, world.Table(SvKeys.Enemy).Capacity + world.Table(SvKeys.Gem).Capacity + 64);
-            m_Additive = new SpriteBatch(tier, atlas, BlendKind.Additive, world.Table(SvKeys.Bullet).Capacity + 256);
+            m_Opaque = new SpriteBatch(tier, atlas, StableTranslucentActors ? BlendKind.Translucent : BlendKind.Opaque, world.Table(SvKeys.Enemy).Capacity + world.Table(SvKeys.Gem).Capacity + 64, queueOffset: StableTranslucentActors ? -30 : 0);
+            m_Shadows = new SpriteBatch(tier, atlas, BlendKind.Translucent, world.Table(SvKeys.Enemy).Capacity + 8, queueOffset: -60);
+            m_Health = new SpriteBatch(tier, atlas, BlendKind.Translucent, world.Table(SvKeys.Enemy).Capacity * 3 + 12, queueOffset: 150);
+            if (StableTranslucentActors) m_SortScratch = new NativeArray<PackedSprite>(m_Opaque.Capacity, Allocator.Persistent);
+            m_Additive = new SpriteBatch(tier, atlas, BlendKind.Additive, world.Table(SvKeys.Bullet).Capacity + 1024);
             m_Effects = new SpriteBatch(tier, atlas, BlendKind.Translucent, 2048);
             // Preallocate dynamic pages and prefix textures at session bind, before counts grow in play.
             m_Ground.Warmup(m_Ground.Capacity);
             m_Opaque.Warmup(m_Opaque.Capacity);
             m_Additive.Warmup(m_Additive.Capacity);
             m_Effects.Warmup(m_Effects.Capacity);
+            m_Shadows.Warmup(m_Shadows.Capacity); m_Health.Warmup(m_Health.Capacity);
             m_Fx = new SpriteEffects(512);
             m_EnemyColors = new NativeArray<float4>(math.max(config.EnemyKinds, 1), Allocator.Persistent);
             for (int k = 0; k < config.EnemyKinds; k++) m_EnemyColors[k] = new float4(1f);
-            m_Counts = new NativeArray<int>(1, Allocator.Persistent);
+            m_Counts = new NativeArray<int>(3, Allocator.Persistent);
         }
 
         void LateUpdate()
         {
             var session = Host != null ? Host.Session : null;
             if (session == null) return;
-            if (session != m_Session) Bind(session);
+            if (session != m_Session || ArtStyle != m_BoundStyle) Bind(session);
             var world = session.World;
             var game = world.Resource(SvKeys.Game);
             float alpha = session.InterpolationAlpha;
@@ -99,7 +119,10 @@ namespace SurvivorFoundation.Presentation
             view += new float4(-2f, -2f, 2f, 2f);
             var bounds = new Bounds(Vector3.zero, new Vector3(1e5f, 1e5f, 100f));
 
-            m_Ground.Clear(); m_Opaque.Clear(); m_Additive.Clear(); m_Effects.Clear();
+            m_Ground.Clear(); m_Opaque.Clear(); m_Additive.Clear(); m_Effects.Clear(); m_Shadows.Clear(); m_Health.Clear();
+            RingsDrawn = 0;
+            if (game.Flow == SvFlow.Menu || game.RunTicks < m_PreviousRunTicks) m_Fx.Clear();
+            m_PreviousRunTicks = game.RunTicks;
             DrainFeedback(world);
             DrawGround(view);
 
@@ -114,7 +137,7 @@ namespace SurvivorFoundation.Presentation
                 var frame = m_Art.Hero.FrameAt(time);
                 float side = game.Facing.x < 0f ? -1f : 1f;
                 float flash = game.Invulnerable > 0f && ((int)(time * 20f) & 1) == 0 ? 0.7f : 0f;
-                m_Opaque.Add(hero + new float2(0f, 0.45f), new float2(14f * side, 16f) / SvArt.PixelsPerUnit, m_Art.Sheet[frame].Uv, ActorDepth + hero.y * DepthPerY, new float4(1f), 0f, flash);
+                m_Opaque.Add(hero + new float2(0f, 0.45f), StableTranslucentActors ? new float2(1.3f * side, 1.5f) : new float2(14f * side, 16f) / SvArt.PixelsPerUnit, m_Art.Sheet[frame].Uv, ActorDepth + hero.y * DepthPerY, new float4(1f), 0f, flash);
                 int blades = SvRules.OrbitBlades(game);
                 var s = world.Resource(SvKeys.Config).Settings;
                 for (int k = 0; k < blades; k++)
@@ -123,18 +146,41 @@ namespace SurvivorFoundation.Presentation
                     float2 p = hero + new float2(math.cos(a), math.sin(a)) * s.OrbitRadius;
                     m_Opaque.Add(p, new float2(1f), m_Art.Sheet[m_Art.Blade].Uv, BulletDepth, new float4(1f), time * 12f);
                 }
-                float magnet = SvRules.Magnet(s, game);
-                m_Effects.Add(hero, new float2(magnet * 2f), m_Art.Sheet[m_Art.Ring].Uv, GroundDepth - 0.5f, new float4(0.5f, 0.8f, 1f, 0.12f));
+                if (s.Variant == SvVariant.GuardBeacon || StableTranslucentActors)
+                {
+                    var profile = BlobShadowProfile.Default;
+                    BlobShadow.Add(m_Shadows, m_Art.Sheet[m_Art.Shadow].Uv, hero, GroundDepth - 1f, profile);
+                    DrawHealth(hero + new float2(0f, 1.55f), 1.1f, game.Hp / math.max(1f, game.MaxHp), new float4(0.43f, 0.86f, 0.45f, 1f));
+                }
+                if (s.Variant == SvVariant.GuardBeacon)
+                {
+                    float2 beacon = s.BeaconPosition;
+                    var profile = BlobShadowProfile.Default; profile.Size = new float2(2.4f, 0.75f);
+                    BlobShadow.Add(m_Shadows, m_Art.Sheet[m_Art.Shadow].Uv, beacon, GroundDepth - 1f, profile);
+                    m_Opaque.Add(beacon + new float2(0f, 1.1f), new float2(2.5f, 3f), m_Art.Sheet[m_Art.Beacon].Uv,
+                        ActorDepth + beacon.y * DepthPerY, new float4(1f), flash: game.BeaconInvulnerableTicks > s.BeaconHurtCooldownTicks * 0.66f ? 0.6f : 0f);
+                    DrawHealth(beacon + new float2(0f, 2.8f), 2f, game.BeaconHp / math.max(1f, game.BeaconMaxHp), new float4(0.62f, 0.92f, 0.36f, 1f));
+                }
+                if (s.AnnularSkill.Enabled) DrawElectricRings(hero, s.AnnularSkill, time, game.AnnularTicks);
+                else
+                {
+                    float magnet = SvRules.Magnet(s, game);
+                    m_Effects.Add(hero, new float2(magnet * 2f), m_Art.Sheet[m_Art.Ring].Uv, GroundDepth - 0.5f, new float4(0.5f, 0.8f, 1f, 0.12f));
+                }
             }
             m_Fx.UpdateAndDraw(dt, m_Effects, m_Art.Sheet, m_Art.Font);
 
+            if (StableTranslucentActors)
+                new SvSpriteOrder { Sprites = m_Opaque.Instances, Scratch = m_SortScratch, Count = m_Opaque.Count }.Run();
+            HealthBarsDrawn = m_Health.Count / 3; ShadowsDrawn = m_Shadows.Count;
             m_Ground.Draw(bounds);
+            m_Shadows.Draw(bounds);
             m_Opaque.Draw(bounds);
             m_Additive.Draw(bounds);
-            m_Effects.Draw(bounds);
-            SpritesDrawn = m_Ground.Count + m_Opaque.Count + m_Additive.Count + m_Effects.Count;
+            m_Effects.Draw(bounds); m_Health.Draw(bounds);
+            SpritesDrawn = m_Ground.Count + m_Opaque.Count + m_Additive.Count + m_Effects.Count + m_Shadows.Count + m_Health.Count;
             // API payload includes full data textures / indirect arguments, not just live packed sprites.
-            BytesUploaded = m_Ground.BytesUploaded + m_Opaque.BytesUploaded + m_Additive.BytesUploaded + m_Effects.BytesUploaded;
+            BytesUploaded = m_Ground.BytesUploaded + m_Opaque.BytesUploaded + m_Additive.BytesUploaded + m_Effects.BytesUploaded + m_Shadows.BytesUploaded + m_Health.BytesUploaded;
         }
 
         /// <summary>Camera callback (runs before this renderer): follow the interpolated hero.</summary>
@@ -143,7 +189,9 @@ namespace SurvivorFoundation.Presentation
             var session = Host != null ? Host.Session : null;
             if (session == null) return;
             var game = session.World.Resource(SvKeys.Game);
-            camera.Target = math.lerp(game.HeroPrev, game.Hero, session.InterpolationAlpha);
+            float2 hero = math.lerp(game.HeroPrev, game.Hero, session.InterpolationAlpha);
+            var s = session.World.Resource(SvKeys.Config).Settings;
+            camera.Target = s.Variant == SvVariant.GuardBeacon ? math.lerp(hero, s.BeaconPosition, 0.2f) : hero;
         }
 
         void DrawGround(float4 view)
@@ -161,13 +209,17 @@ namespace SurvivorFoundation.Presentation
             if (count == 0) return 0;
             int start = m_Opaque.Count;
             var slots = m_Opaque.Reserve(count);
+            bool decorate = StableTranslucentActors || world.Resource(SvKeys.Config).Settings.Variant == SvVariant.GuardBeacon;
+            var shadows = m_Shadows.Reserve(decorate ? math.min(count, ShadowBudget) : 0);
+            var bars = m_Health.Reserve(decorate ? count * 3 : 0);
             new EnemyDrawJob
             {
                 Position = world.Column(SvKeys.Position), Prev = world.Column(SvKeys.PrevPosition), Info = world.Column(SvKeys.Info),
                 Uv = m_Art.EnemyUv, Out = slots, Written = m_Counts, Alpha = alpha, View = view, Time = time,
-                Count = math.min(count, slots.Length),
+                Count = math.min(count, slots.Length), Shadows = shadows, Bars = bars,
+                ShadowUv = m_Art.Sheet[m_Art.Shadow].Uv, WhiteUv = m_Art.Sheet[m_Art.White].Uv, Smooth = StableTranslucentActors,
             }.Run();
-            m_Opaque.Trim(start + m_Counts[0]);
+            m_Opaque.Trim(start + m_Counts[0]); m_Shadows.Trim(m_Counts[1]); m_Health.Trim(m_Counts[2]);
             return m_Counts[0];
         }
 
@@ -194,7 +246,7 @@ namespace SurvivorFoundation.Presentation
             new BulletDrawJob
             {
                 Position = world.Column(SvKeys.BulletPosition), Info = world.Column(SvKeys.BulletInfo), Dead = world.Table(SvKeys.Bullet).DeadFlags,
-                Uv = m_Art.BulletUv, Out = slots, Written = m_Counts, Back = (1f - alpha) * tickDt, View = view, Count = math.min(count, slots.Length),
+                Uv = m_Art.BulletUv, Out = slots, Written = m_Counts, Back = (1f - alpha) * tickDt, View = view, Count = math.min(count, slots.Length), Smooth = StableTranslucentActors,
             }.Run();
             m_Additive.Trim(start + m_Counts[0]);
             return m_Counts[0];
@@ -208,13 +260,16 @@ namespace SurvivorFoundation.Presentation
             [ReadOnly] public NativeArray<float4> Uv;
             public NativeArray<PackedSprite> Out;
             public NativeArray<int> Written;
+            public NativeArray<PackedSprite> Shadows, Bars;
+            public float4 ShadowUv, WhiteUv;
+            public bool Smooth;
             public float Alpha, Time;
             public float4 View;
             public int Count;
 
             public void Execute()
             {
-                int n = 0;
+                int n = 0, shadows = 0, bars = 0;
                 for (int i = 0; i < Count; i++)
                 {
                     float2 p = math.lerp(Prev[i], Position[i], Alpha);
@@ -225,10 +280,21 @@ namespace SurvivorFoundation.Presentation
                     float size = info.Radius * 2.6f;
                     float side = Position[i].x < Prev[i].x ? -1f : 1f;
                     float4 tint = info.Has(EnemyFlags.Elite) ? new float4(1.3f, 0.9f, 0.6f, 1f) : new float4(1f);
+                    if (Smooth && info.Flash > 0f) tint = new float4(0.75f, 1.3f, 1.4f, 1f);
+                    if (shadows < Shadows.Length)
+                        Shadows[shadows++] = PackedSprite.Pack(p, new float2(size, size * 0.35f), ShadowUv, GroundDepth - 1f, new float4(0f, 0f, 0f, 0.28f));
+                    if (bars + 3 <= Bars.Length)
+                    {
+                        float2 bar = p + new float2(0f, size * 0.96f);
+                        float width = math.max(0.55f, size * 0.8f), fill = math.saturate(info.Hp / math.max(1f, info.MaxHp));
+                        Bars[bars++] = PackedSprite.Pack(bar, new float2(width + 0.07f, 0.14f), WhiteUv, 0.1f, new float4(0.16f, 0.17f, 0.16f, 1f));
+                        Bars[bars++] = PackedSprite.Pack(bar, new float2(width, 0.075f), WhiteUv, 0.09f, new float4(0.32f, 0.3f, 0.25f, 1f));
+                        Bars[bars++] = PackedSprite.Pack(bar + new float2(-width * (1f - fill) * 0.5f, 0f), new float2(width * fill, 0.075f), WhiteUv, 0.08f, new float4(0.91f, 0.42f, 0.4f, 1f));
+                    }
                     Out[n++] = PackedSprite.Pack(p + new float2(0f, size * 0.4f), new float2(size * side, size), Uv[(info.Kind - 1) * 2 + frame],
                         ActorDepth + p.y * DepthPerY, tint, 0f, math.saturate(info.Flash * 8f));
                 }
-                Written[0] = n;
+                Written[0] = n; Written[1] = shadows; Written[2] = bars;
             }
         }
 
@@ -269,6 +335,7 @@ namespace SurvivorFoundation.Presentation
             public NativeArray<PackedSprite> Out;
             public NativeArray<int> Written;
             public float Back;
+            public bool Smooth;
             public float4 View;
             public int Count;
 
@@ -283,15 +350,49 @@ namespace SurvivorFoundation.Presentation
                     if (p.x < View.x || p.y < View.y || p.x > View.z || p.y > View.w) continue;
                     float size = b.Radius * (b.Team == BulletTeam.Enemy ? 2.8f : 3.2f);
                     float rotation = math.atan2(b.Velocity.y, b.Velocity.x);
-                    Out[n++] = PackedSprite.Pack(p, new float2(size), Uv[(int)b.Visual], BulletDepth, new float4(1f), rotation);
+                    Out[n++] = PackedSprite.Pack(p, new float2(Smooth && b.Visual == BulletVisual.Bolt ? size * 2.2f : size, size), Uv[(int)b.Visual], BulletDepth, new float4(1f), rotation);
                 }
                 Written[0] = n;
+            }
+        }
+
+        void DrawHealth(float2 position, float width, float fraction, float4 color)
+        {
+            fraction = math.saturate(fraction); var uv = m_Art.Sheet[m_Art.White].Uv;
+            m_Health.Add(position, new float2(width + 0.1f, 0.2f), uv, 0.1f, new float4(0.12f, 0.15f, 0.15f, 1f));
+            m_Health.Add(position, new float2(width, 0.12f), uv, 0.09f, new float4(0.35f, 0.3f, 0.24f, 1f));
+            m_Health.Add(position + new float2(-width * (1f - fraction) * 0.5f, 0f), new float2(width * fraction, 0.12f), uv, 0.08f, color);
+        }
+
+        void DrawElectricRings(float2 hero, SvAnnularSkill skill, float time, int pulseTick)
+        {
+            int segments = QualityLevel >= 2 ? 32 : 64;
+            var uv = m_Art.Sheet[m_Art.White].Uv;
+            for (int band = 0; band < 2; band++)
+            {
+                float radius = band == 0 ? skill.RadiusA : skill.RadiusB;
+                if (radius <= 0f) continue;
+                RingsDrawn++;
+                for (int k = 0; k < segments; k++)
+                {
+                    float a = k * math.PI * 2f / segments, b = (k + 1) * math.PI * 2f / segments;
+                    // Tiny visual jitter stays inside the configured damage band.
+                    float ja = math.sin(a * 9f + time * 8f) * math.min(0.07f, skill.HalfWidth * 0.3f);
+                    float jb = math.sin(b * 9f + time * 8f) * math.min(0.07f, skill.HalfWidth * 0.3f);
+                    float2 from = hero + new float2(math.cos(a), math.sin(a)) * (radius + ja);
+                    float2 to = hero + new float2(math.cos(b), math.sin(b)) * (radius + jb);
+                    float2 d = to - from; float length = math.length(d), angle = math.atan2(d.y, d.x);
+                    float pulse = pulseTick == 0 ? 1.2f : 1f;
+                    m_Effects.Add((from + to) * 0.5f, new float2(length + 0.03f, 0.2f * pulse), uv, 0.4f, new float4(0.08f, 0.68f, 0.98f, 0.72f), angle);
+                    m_Additive.Add((from + to) * 0.5f, new float2(length + 0.02f, 0.055f * pulse), uv, 0.3f, new float4(0.58f, 0.95f, 1f, 1f), angle);
+                }
             }
         }
 
         void DrainFeedback(SimWorld world)
         {
             var feedback = world.Resource(SvKeys.Feedback);
+            int deathEffectSlots = math.max(0, EffectBudget - m_Fx.Active);
             for (int i = 0; i < feedback.Count; i++)
             {
                 var e = feedback[i];
@@ -299,7 +400,7 @@ namespace SurvivorFoundation.Presentation
                 switch (e.Kind)
                 {
                     case SvFeedbackKind.Death:
-                        if (m_Fx.Active < 400)
+                        if (deathEffectSlots-- > 0)
                             m_Fx.Spawn(new SpriteEffects.Effect { Clip = m_Art.Puff, Position = e.Position, Size = new float2(math.max(e.Value * 3f, 0.8f)), Color = new float4(1f, 1f, 1f, 0.8f), Depth = ActorDepth - 0.1f });
                         break;
                     case SvFeedbackKind.LevelUp:

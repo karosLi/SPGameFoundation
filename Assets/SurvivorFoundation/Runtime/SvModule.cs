@@ -30,7 +30,7 @@ namespace SurvivorFoundation
             layout.Table(SvKeys.Bullet, cap.Bullets).LevelScoped().Pooled().Column(SvKeys.BulletPosition).Column(SvKeys.BulletInfo);
             layout.Table(SvKeys.Gem, cap.Gems).LevelScoped().Pooled().Column(SvKeys.GemPosition).Column(SvKeys.GemInfo);
             layout.Resource(SvKeys.Config, SvRuntime.Bake(Config));
-            layout.Resource(SvKeys.Game, new SvGameState());
+            layout.Resource(SvKeys.Game, new SvGameState(s.Variant == SvVariant.GuardBeacon || s.AnnularSkill.Enabled));
             // A window around the hero (the arena is much bigger): 96 x 96 world units in 2-unit cells.
             int cells = (int)math.ceil(96f / s.GridCell);
             layout.Resource(SvKeys.EnemyGrid, new SpatialGrid(new int2(cells), s.GridCell, cap.Enemies), levelScoped: true);
@@ -52,6 +52,7 @@ namespace SurvivorFoundation
             .Add(new BulletSystem())
             .Add(new EnemyGridSystem())
             .Add(new CollideSystem())
+            .Add(new AnnularSkillSystem())
             .Add(new ResolveSystem());
     }
 

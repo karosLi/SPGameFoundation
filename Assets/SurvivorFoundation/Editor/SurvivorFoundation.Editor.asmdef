@@ -1,0 +1,6 @@
+{
+  "name": "SurvivorFoundation.Editor",
+  "references": ["SurvivorFoundation.Game"],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": true
+}

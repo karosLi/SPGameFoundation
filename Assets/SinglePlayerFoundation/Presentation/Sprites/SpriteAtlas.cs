@@ -16,9 +16,9 @@ namespace SPF.Presentation.Sprites
     }
 
     /// <summary>
-    /// Packs runtime-drawn frames (<see cref="PixelCanvas"/>) into one point-filtered atlas texture with a
-    /// shelf packer (frames sorted by height), 1 px padding against bleeding. Frames are addressed by the
-    /// index returned from <see cref="Add"/>; names are optional.
+    /// Packs runtime-drawn or imported RGBA frames into one atlas with a deterministic shelf packer.
+    /// The default remains point-filtered with 1 px spacing. Smooth art can select bilinear filtering,
+    /// padding and edge extrusion. Building and importing allocate and belong in loading, not gameplay.
     /// </summary>
     public sealed class SpriteAtlasBuilder
     {
@@ -29,9 +29,32 @@ namespace SPF.Presentation.Sprites
 
         public int Add(PixelCanvas frame, string name = null)
         {
+            if (frame == null) throw new ArgumentNullException(nameof(frame));
+            if (frame.Width <= 0 || frame.Height <= 0) throw new ArgumentException("Frames must have positive dimensions.", nameof(frame));
             m_Frames.Add(frame);
             if (name != null) m_Names[name] = m_Frames.Count - 1;
             return m_Frames.Count - 1;
+        }
+
+        /// <summary>Copies bottom-left-origin straight-alpha RGBA pixels; later caller edits are independent.</summary>
+        public int Add(Color32[] pixels, int width, int height, string name = null)
+        {
+            if (pixels == null) throw new ArgumentNullException(nameof(pixels));
+            if (width <= 0 || height <= 0 || (long)width * height != pixels.Length)
+                throw new ArgumentException("Pixel count must match positive frame dimensions.", nameof(pixels));
+            var canvas = new PixelCanvas(width, height);
+            Array.Copy(pixels, canvas.Pixels, pixels.Length);
+            return Add(canvas, name);
+        }
+
+        /// <summary>
+        /// Copies a readable imported texture at load time. Enable Read/Write in its import settings;
+        /// this method does not take ownership of the source texture or change its import settings.
+        /// </summary>
+        public int Add(Texture2D source, string name = null)
+        {
+            if (source == null) throw new ArgumentNullException(nameof(source));
+            return Add(source.GetPixels32(), source.width, source.height, name);
         }
 
         /// <summary>Adds frames produced by <paramref name="draw"/>(canvas, frameIndex); returns the first index.</summary>
@@ -47,25 +70,34 @@ namespace SPF.Presentation.Sprites
             return first;
         }
 
-        public SpriteSheet Build(int maxWidth = 1024)
+        public SpriteSheet Build(int maxWidth = 1024, FilterMode filterMode = FilterMode.Point, int padding = 1, bool extrudeEdges = false)
         {
-            const int Pad = 1;
+            if (maxWidth < 1) throw new ArgumentOutOfRangeException(nameof(maxWidth));
+            if (padding < 0 || (long)padding * 2 >= maxWidth) throw new ArgumentOutOfRangeException(nameof(padding));
+            if (extrudeEdges && padding == 0) throw new ArgumentException("Edge extrusion needs at least one padding pixel.", nameof(padding));
+            int pad = padding;
+            // Extrusion needs a private gutter on BOTH sides of every frame. Preserve the legacy
+            // one-sided spacing exactly when extrusion is off, including default pixel-art layouts.
+            int gap = extrudeEdges ? padding * 2 : padding;
+            for (int i = 0; i < m_Frames.Count; i++)
+                if ((long)m_Frames[i].Width + 2 * pad > maxWidth)
+                    throw new ArgumentException("A frame and its padding exceed the atlas shelf width.", nameof(maxWidth));
             var order = new int[m_Frames.Count];
             for (int i = 0; i < order.Length; i++) order[i] = i;
             Array.Sort(order, (a, b) => m_Frames[b].Height != m_Frames[a].Height ? m_Frames[b].Height.CompareTo(m_Frames[a].Height) : a.CompareTo(b));
 
             var origins = new int2[m_Frames.Count];
-            int x = Pad, y = Pad, shelf = 0, width = 0;
+            int x = pad, y = pad, shelf = 0, width = 0;
             foreach (int i in order)
             {
                 var f = m_Frames[i];
-                if (x + f.Width + Pad > maxWidth) { x = Pad; y += shelf + Pad; shelf = 0; }
+                if (x + f.Width + pad > maxWidth) { x = pad; y += shelf + gap; shelf = 0; }
                 origins[i] = new int2(x, y);
-                x += f.Width + Pad;
-                width = math.max(width, x);
+                width = math.max(width, x + f.Width + pad);
+                x += f.Width + gap;
                 shelf = math.max(shelf, f.Height);
             }
-            int texW = math.ceilpow2(math.max(width, 4)), texH = math.ceilpow2(math.max(y + shelf + Pad, 4));
+            int texW = math.ceilpow2(math.max(width, 4)), texH = math.ceilpow2(math.max(y + shelf + pad, 4));
             var pixels = new Color32[texW * texH];
             var frames = new SpriteFrame[m_Frames.Count];
             for (int i = 0; i < m_Frames.Count; i++)
@@ -74,6 +106,17 @@ namespace SPF.Presentation.Sprites
                 int2 o = origins[i];
                 for (int row = 0; row < f.Height; row++)
                     Array.Copy(f.Pixels, row * f.Width, pixels, (o.y + row) * texW + o.x, f.Width);
+                if (extrudeEdges)
+                {
+                    // Copy the nearest edge/corner pixel into this frame's own gutter. UVs still
+                    // reference only the original content; adjacent frames never share gutter pixels.
+                    for (int row = -pad; row < f.Height + pad; row++)
+                    for (int col = -pad; col < f.Width + pad; col++)
+                    {
+                        if (row >= 0 && row < f.Height && col >= 0 && col < f.Width) continue;
+                        pixels[(o.y + row) * texW + o.x + col] = f.Pixels[math.clamp(row, 0, f.Height - 1) * f.Width + math.clamp(col, 0, f.Width - 1)];
+                    }
+                }
                 frames[i] = new SpriteFrame
                 {
                     Uv = new float4((float)o.x / texW, (float)o.y / texH, (float)f.Width / texW, (float)f.Height / texH),
@@ -82,7 +125,7 @@ namespace SPF.Presentation.Sprites
             }
             var texture = new Texture2D(texW, texH, TextureFormat.RGBA32, false)
             {
-                filterMode = FilterMode.Point,
+                filterMode = filterMode,
                 wrapMode = TextureWrapMode.Clamp,
                 hideFlags = HideFlags.HideAndDontSave,
                 name = "SPF Sprite Atlas",

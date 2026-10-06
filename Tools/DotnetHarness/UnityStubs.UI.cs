@@ -4,12 +4,14 @@ using System.Collections.Generic;
 
 namespace UnityEngine
 {
+    public sealed class CanvasRenderer : Component { }
     public enum RenderMode { ScreenSpaceOverlay, ScreenSpaceCamera, WorldSpace }
     public sealed class Canvas : Behaviour
     {
         public RenderMode renderMode { get; set; }
         public int sortingOrder { get; set; }
         public Camera worldCamera { get; set; }
+        public float planeDistance { get; set; }
         public float scaleFactor { get; set; } = 1f;
     }
     public struct UIVertex
@@ -55,12 +57,15 @@ namespace UnityEngine.EventSystems
         public Vector2 position { get; set; }
         public Vector2 pressPosition { get; set; }
         public Vector2 delta { get; set; }
+        public bool useDragThreshold { get; set; }
         public int pointerId { get; set; }
         public GameObject pointerPress { get; set; }
         public enum InputButton { Left, Right, Middle }
         public InputButton button { get; set; }
     }
     public interface IEventSystemHandler { }
+    public interface ICancelHandler : IEventSystemHandler { void OnCancel(BaseEventData e); }
+    public interface IInitializePotentialDragHandler : IEventSystemHandler { void OnInitializePotentialDrag(PointerEventData e); }
     public interface IPointerDownHandler : IEventSystemHandler { void OnPointerDown(PointerEventData e); }
     public interface IPointerUpHandler : IEventSystemHandler { void OnPointerUp(PointerEventData e); }
     public interface IPointerExitHandler : IEventSystemHandler { void OnPointerExit(PointerEventData e); }

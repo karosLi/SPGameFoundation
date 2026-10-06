@@ -28,6 +28,7 @@ namespace UnityEditor
     }
     public sealed class EditorBuildSettingsScene { public EditorBuildSettingsScene(string path, bool enabled) { this.path = path; } public string path; public bool enabled = true; }
     public static class EditorBuildSettings { public static EditorBuildSettingsScene[] scenes { get; set; } }
+    public static class Selection { public static UnityEngine.GameObject activeGameObject { get; set; } }
     public static class AssetDatabase
     {
         public static T LoadAssetAtPath<T>(string p) where T : UnityEngine.Object => null;
@@ -47,6 +48,7 @@ namespace UnityEditor.SceneManagement
     public enum NewSceneMode { Single, Additive }
     public static class EditorSceneManager
     {
+        public static bool SaveCurrentModifiedScenesIfUserWantsTo() => true;
         public static UnityEngine.SceneManagement.Scene NewScene(NewSceneSetup s, NewSceneMode m) => default;
         public static bool SaveScene(UnityEngine.SceneManagement.Scene s, string path) => true;
     }

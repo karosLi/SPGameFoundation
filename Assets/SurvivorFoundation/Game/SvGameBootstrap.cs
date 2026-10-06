@@ -14,6 +14,8 @@ namespace SurvivorFoundation.Game
     public sealed class SvGameBootstrap : MonoBehaviour
     {
         [SerializeField] SvConfig m_Config;
+        [SerializeField] bool m_GuardExample;
+        [SerializeField] SvArtStyle m_ArtStyle = SvArtStyle.Pixel;
         [SerializeField] uint m_Seed = 1;
         [SerializeField] bool m_CreateUI = true;
         [SerializeField] bool m_PerfHud = true;
@@ -37,16 +39,27 @@ namespace SurvivorFoundation.Game
         /// <summary>Lets the built-in bot play (attract mode, benchmarks, smoke tests).</summary>
         public bool AutoPlay { get; set; }
 
-        public static SvGameBootstrap Create(SvConfig config = null, uint seed = 1, bool ui = true, bool perfHud = false)
+        public static SvGameBootstrap Create(SvConfig config = null, uint seed = 1, bool ui = true, bool perfHud = false, SvArtStyle artStyle = SvArtStyle.Pixel)
         {
             var go = new GameObject("SurvivorGame");
             go.SetActive(false);
             var game = go.AddComponent<SvGameBootstrap>();
             game.m_Config = config;
+            game.m_ArtStyle = artStyle;
             game.m_Seed = seed;
             game.m_CreateUI = ui;
             game.m_PerfHud = perfHud;
             go.SetActive(true);
+            return game;
+        }
+
+        /// <summary>Runnable original guard example, with the smooth style selected separately from simulation.</summary>
+        public static SvGameBootstrap CreateGuardExample(SvConfig config = null, uint seed = 1, bool ui = true)
+        {
+            bool owns = config == null;
+            if (owns) config = SvConfig.CreateGuardExample();
+            var game = Create(config, seed, ui, artStyle: SvArtStyle.SmoothOutline);
+            game.m_OwnsConfig = owns;
             return game;
         }
 
@@ -55,7 +68,8 @@ namespace SurvivorFoundation.Game
             Governor = gameObject.AddComponent<FrameGovernor>();
             Governor.ThrottleWhenIdle = false;
             Governor.SetFrameRates(m_TargetFrameRate, 30);
-            if (m_Config == null) { m_Config = SvConfig.CreateDefault(); m_OwnsConfig = true; }
+            if (m_Config == null) { m_Config = m_GuardExample ? SvConfig.CreateGuardExample() : SvConfig.CreateDefault(); m_OwnsConfig = true; }
+            if (m_GuardExample) m_ArtStyle = SvArtStyle.SmoothOutline;
             m_Mode = SvMode.Create(m_Config, out m_Module);
 
             var sim = new GameObject("Simulation");
@@ -70,7 +84,7 @@ namespace SurvivorFoundation.Game
             camera.backgroundColor = new Color(0.05f, 0.07f, 0.06f);
             CameraRig = cameraObject.GetComponent<FollowCamera2D>();
             if (CameraRig == null) CameraRig = cameraObject.AddComponent<FollowCamera2D>();
-            CameraRig.Size = 9f;
+            CameraRig.Size = m_Config.Settings.Variant == SvVariant.GuardBeacon ? 10f : 9f;
             if (cameraObject.GetComponent<AudioListener>() == null) cameraObject.AddComponent<AudioListener>();
 
             var view = new GameObject("SvRenderer");
@@ -78,6 +92,9 @@ namespace SurvivorFoundation.Game
             Renderer = view.AddComponent<SvRenderer>();
             Renderer.Host = Host;
             Renderer.Camera = CameraRig;
+            Renderer.ArtStyle = m_ArtStyle;
+            Renderer.SetQualityLevel(Governor.Level);
+            Governor.LevelChanged += Renderer.SetQualityLevel;
             Audio = SvAudio.Create(transform, Renderer);
 
             InputRouter = gameObject.AddComponent<InputRouter>();
@@ -107,6 +124,7 @@ namespace SurvivorFoundation.Game
 
         void OnDestroy()
         {
+            if (Governor != null && Renderer != null) Governor.LevelChanged -= Renderer.SetQualityLevel;
             if (m_Module != null) Destroy(m_Module);
             if (m_Mode != null) Destroy(m_Mode);
             if (m_OwnsConfig && m_Config != null) Destroy(m_Config);

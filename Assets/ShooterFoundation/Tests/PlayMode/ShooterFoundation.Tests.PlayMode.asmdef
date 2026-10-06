@@ -1,6 +1,6 @@
 {
-    "name": "SurvivorFoundation.Tests.EditMode",
-    "rootNamespace": "SurvivorFoundation.Tests",
+    "name": "ShooterFoundation.Tests.PlayMode",
+    "rootNamespace": "ShooterFoundation.Tests.PlayMode",
     "references": [
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
@@ -12,13 +12,15 @@
         "Unity.Collections",
         "Unity.Mathematics",
         "Unity.Burst",
-        "SurvivorFoundation.Runtime",
         "SPF.Presentation",
-        "SurvivorFoundation.Presentation"
+        "SPF.Shell",
+        "SPF.Testing",
+        "ShooterFoundation.Runtime",
+        "ShooterFoundation.Presentation",
+        "ShooterFoundation.Game",
+        "UnityEngine.UI"
     ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,

@@ -3,7 +3,10 @@ using Unity.Mathematics;
 
 namespace SurvivorFoundation
 {
-    public enum SvFlow : byte { Menu, Playing, LevelUp, Dead }
+    public enum SvFlow : byte { Menu, Playing, LevelUp, Dead, Won }
+
+    public enum SvVariant : byte { Classic, GuardBeacon }
+    public enum SvLossReason : byte { None, HeroFell, BeaconLost }
 
     public enum SvCommandKind : byte { Start, Choose, Menu }
 
@@ -99,6 +102,7 @@ namespace SurvivorFoundation
         public SPF.L2.Combat.PatternEmitter Pattern;
     }
 
+    [Serializable]
     public struct SvSettings
     {
         public float ArenaHalf;
@@ -112,6 +116,12 @@ namespace SurvivorFoundation
         public float SpiralInterval, SpiralDamage;
         public float OrbitRadius, OrbitDps;
         public float EnemyBulletDamage;
+        // Opt-in original guard example; zero/default preserves classic Survivor.
+        public SvVariant Variant;
+        public float2 BeaconPosition;
+        public float BeaconHp, BeaconRadius, GuardAggroRadius;
+        public int GuardDurationTicks, BeaconHurtCooldownTicks;
+        public SvAnnularSkill AnnularSkill;
         public int ReorderInterval;      // ticks between spatial sorts of the enemy table (0 = off)
         public float GridCell;
     }

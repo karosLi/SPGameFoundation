@@ -11,12 +11,12 @@ namespace SurvivorFoundation.Presentation
     {
         public const float PixelsPerUnit = 16f;
 
-        public SpriteSheet Sheet { get; private set; }
-        public SpriteFont Font { get; private set; }
+        public SpriteSheet Sheet { get; internal set; }
+        public SpriteFont Font { get; internal set; }
         public SpriteClip Hero;
         public SpriteClip[] Enemies;              // index = kind - 1, 2-frame bob
         public int[] Bullets;                     // index = BulletVisual
-        public int Gem, Blade, Ground, Glow, Ring;
+        public int Gem, Blade, Ground, Glow, Ring, White, Shadow, Beacon;
         public SpriteClip Puff;
 
         /// <summary>Atlas rects of every enemy frame (kind - 1) * 2 + frame, for Burst draw jobs.</summary>
@@ -26,8 +26,9 @@ namespace SurvivorFoundation.Presentation
         static Color32 C(byte r, byte g, byte b, byte a = 255) => new Color32(r, g, b, a);
         static readonly Color32 Outline = C(20, 16, 28);
 
-        public static SvArt Build(int enemyKinds, Func<int, Color> enemyColor)
+        public static SvArt Build(int enemyKinds, Func<int, Color> enemyColor, SvArtStyle style = SvArtStyle.Pixel)
         {
+            if (style == SvArtStyle.SmoothOutline) return SvSmoothArt.Build(enemyKinds, enemyColor);
             var art = new SvArt();
             var atlas = new SpriteAtlasBuilder();
             art.Font = new SpriteFont(atlas, 2);
@@ -96,6 +97,13 @@ namespace SurvivorFoundation.Presentation
                 c.Ring(8, 8, r - 1.5f, r, C(230, 230, 240, a));
             }), 4, 14f, false);
 
+            art.White = Single(atlas, 1, 1, c => c.Set(0, 0, C(255, 255, 255)));
+            art.Shadow = atlas.Add(BlobShadow.CreateCanvas(32, 16));
+            art.Beacon = Single(atlas, 24, 32, c =>
+            {
+                c.Rect(2, 2, 20, 5, C(140, 148, 129)); c.Rect(3, 7, 4, 18, C(158, 168, 143));
+                c.Rect(17, 7, 4, 18, C(158, 168, 143)); c.Ellipse(12, 18, 4, 10, C(169, 238, 118)); c.Outline(Outline);
+            });
             art.Sheet = atlas.Build();
             art.EnemyUv = new NativeArray<float4>(math.max(enemyKinds, 1) * 2, Allocator.Persistent);
             for (int k = 0; k < enemyKinds; k++)

@@ -1,6 +1,6 @@
 {
-    "name": "SurvivorFoundation.Tests.EditMode",
-    "rootNamespace": "SurvivorFoundation.Tests",
+    "name": "ShooterFoundation.Tests.EditMode",
+    "rootNamespace": "ShooterFoundation.Tests",
     "references": [
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
@@ -12,9 +12,8 @@
         "Unity.Collections",
         "Unity.Mathematics",
         "Unity.Burst",
-        "SurvivorFoundation.Runtime",
-        "SPF.Presentation",
-        "SurvivorFoundation.Presentation"
+        "ShooterFoundation.Runtime",
+        "SPF.Presentation"
     ],
     "includePlatforms": [
         "Editor"

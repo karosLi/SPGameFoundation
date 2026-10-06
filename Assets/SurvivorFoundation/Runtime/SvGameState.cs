@@ -14,6 +14,12 @@ namespace SurvivorFoundation
         public const int UpgradeCount = 8;
         public const int MaxLevel = 5;
         public const int ChoiceCount = 3;
+        const int ExtensionMagic = 0x53564758;
+        const byte ExtensionVersion = 1;
+        readonly bool m_ExtendedSnapshots;
+
+        /// <summary>Classic keeps the exact 97a2b34 payload. Opt-in new rules append a versioned extension.</summary>
+        public SvGameState(bool extendedSnapshots = false) => m_ExtendedSnapshots = extendedSnapshots;
 
         public SvFlow Flow = SvFlow.Menu;
         public float2 Hero, HeroPrev;
@@ -21,6 +27,10 @@ namespace SurvivorFoundation
         public float Hp, MaxHp, Invulnerable;
         public int Level = 1, Xp, Kills;
         public float Time;
+        public int RunTicks, AnnularTicks, AnnularPulses;
+        public float BeaconHp, BeaconMaxHp;
+        public int BeaconInvulnerableTicks;
+        public SvLossReason LossReason;
         public InputFrame Input;
         public readonly int[] Upgrades = new int[UpgradeCount];
         public readonly int[] Choices = new int[ChoiceCount];
@@ -59,6 +69,12 @@ namespace SurvivorFoundation
             w.Write(PendingLevels);
             w.Write(Commands.Count);
             foreach (var c in Commands) { w.Write((byte)c.Kind); w.Write(c.Argument); }
+            if (m_ExtendedSnapshots)
+            {
+                w.Write(ExtensionMagic); w.Write(ExtensionVersion);
+                w.Write(RunTicks); w.Write(AnnularTicks); w.Write(AnnularPulses);
+                w.Write(BeaconHp); w.Write(BeaconMaxHp); w.Write(BeaconInvulnerableTicks); w.Write((byte)LossReason);
+            }
         }
 
         public void ReadSnapshot(BinaryReader r)
@@ -78,6 +94,20 @@ namespace SurvivorFoundation
             int n = r.ReadInt32();
             if (n < 0 || n > 256) throw new InvalidDataException("Invalid command queue in snapshot.");
             for (int i = 0; i < n; i++) Commands.Enqueue(new SvCommand { Kind = (SvCommandKind)r.ReadByte(), Argument = r.ReadInt32() });
+            if (m_ExtendedSnapshots)
+            {
+                if (r.ReadInt32() != ExtensionMagic || r.ReadByte() != ExtensionVersion)
+                    throw new InvalidDataException("Unsupported Survivor guard/annular snapshot extension.");
+                RunTicks = r.ReadInt32(); AnnularTicks = r.ReadInt32(); AnnularPulses = r.ReadInt32();
+                BeaconHp = r.ReadSingle(); BeaconMaxHp = r.ReadSingle(); BeaconInvulnerableTicks = r.ReadInt32(); LossReason = (SvLossReason)r.ReadByte();
+            }
+            else
+            {
+                // New fields do not affect classic simulation and are absent from its legacy schema.
+                RunTicks = AnnularTicks = AnnularPulses = BeaconInvulnerableTicks = 0;
+                BeaconHp = BeaconMaxHp = 0f;
+                LossReason = Flow == SvFlow.Dead ? SvLossReason.HeroFell : SvLossReason.None;
+            }
             Version++;
         }
     }

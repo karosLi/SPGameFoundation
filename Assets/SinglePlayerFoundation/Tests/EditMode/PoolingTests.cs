@@ -95,6 +95,27 @@ namespace SPF.Tests.EditMode
 {
     public class BufferTextTests
     {
+#if !SPF_DOTNET_HARNESS
+        [Test]
+        public void BufferLabelsRequireACanvasRendererForActualDisplay()
+        {
+            var direct = new GameObject("direct buffer", typeof(RectTransform));
+            BufferText factory = null;
+            try
+            {
+                direct.AddComponent<BufferText>();
+                Assert.IsNotNull(direct.GetComponent<CanvasRenderer>(), "RequireComponent covers inspector and direct AddComponent use");
+                factory = BufferText.Create(null, "factory buffer", 22, TextAnchor.UpperLeft, Vector2.zero, Vector2.one);
+                Assert.IsNotNull(factory.GetComponent<CanvasRenderer>(), "the runtime label factory must produce a renderable Graphic");
+            }
+            finally
+            {
+                Object.DestroyImmediate(direct);
+                if (factory != null) Object.DestroyImmediate(factory.gameObject);
+            }
+        }
+#endif
+
         [Test]
         public void BuildsGlyphQuadsWithoutStringsAndRevealsProgressively()
         {

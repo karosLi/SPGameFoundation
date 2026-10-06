@@ -13,6 +13,7 @@ namespace SPF.Shell.UI
     /// Supports '\n', word wrap to the rect width (CJK text breaks anywhere), the nine <see cref="TextAnchor"/>
     /// alignments and <see cref="MaxVisible"/> for typewriter reveals. No rich text.
     /// </summary>
+    [RequireComponent(typeof(CanvasRenderer))]
     public sealed class BufferText : MaskableGraphic
     {
         static readonly string[] s_CharStrings = new string[0x10000];

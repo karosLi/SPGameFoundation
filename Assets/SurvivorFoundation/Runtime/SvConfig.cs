@@ -69,6 +69,26 @@ namespace SurvivorFoundation
             GridCell = 2f,
         };
 
+        /// <summary>Original example inspired by a horde/rings reference, not a reconstruction of its rules.</summary>
+        public static SvConfig CreateGuardExample()
+        {
+            var config = CreateDefault();
+            var s = config.Settings;
+            s.Variant = SvVariant.GuardBeacon;
+            s.ArenaHalf = 18f;
+            s.BeaconPosition = new float2(0f, -3.5f);
+            s.BeaconHp = 250f; s.BeaconRadius = 0.9f; s.GuardAggroRadius = 3.5f;
+            s.GuardDurationTicks = 90 * 30; s.BeaconHurtCooldownTicks = 15;
+            s.SpawnRadius = 12f; s.SpawnPerSecond = 4f; s.SpawnGrowth = 0.07f;
+            s.MaxEnemies = 768; s.EliteEvery = 30f;
+            s.AnnularSkill = new SvAnnularSkill { Enabled = true, RadiusA = 2.4f, RadiusB = 5.4f, HalfWidth = 0.24f, DamagePerSecond = 38f, TickInterval = 6 };
+            config.Settings = s;
+            // A modest pool for the runnable mobile example; capacities remain authorable.
+            config.Capacity.Enemies = 1024; config.Capacity.Bullets = 4096;
+            config.Capacity.Gems = 2048; config.Capacity.Events = 4096;
+            return config;
+        }
+
         public static SvConfig CreateDefault()
         {
             var config = CreateInstance<SvConfig>();

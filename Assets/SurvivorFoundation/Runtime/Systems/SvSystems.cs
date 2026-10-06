@@ -186,6 +186,9 @@ namespace SurvivorFoundation.Systems
                     }
                     game.BeaconInvulnerableTicks = math.max(0, game.BeaconInvulnerableTicks - 1);
                 }
+                if (s.Variant == SvVariant.FlyingSwordHorde && game.Flow == SvFlow.Playing &&
+                    game.RunTicks >= s.FlyingSwords.WaveTicks && world.Table(SvKeys.Enemy).Count == 0)
+                { game.Flow = SvFlow.Won; game.Version++; }
                 if (game.Flow == SvFlow.Playing && game.PendingLevels > 0)
                 {
                     FlowSystem.OfferChoices(game, context.Seed, context.Time.Tick);
@@ -255,9 +258,10 @@ namespace SurvivorFoundation.Systems
             float dt = context.Time.DeltaTime;
             game.Time += dt;
             game.RunTicks++;
-            if (s.Variant != SvVariant.GuardBeacon || game.RunTicks <= math.max(1, s.GuardDurationTicks))
+            if ((s.Variant != SvVariant.GuardBeacon || game.RunTicks <= math.max(1, s.GuardDurationTicks)) &&
+                (s.Variant != SvVariant.FlyingSwordHorde || game.RunTicks <= s.FlyingSwords.WaveTicks))
                 SpawnEnemies(world, config, game, context.Seed, context.Time.Tick, dt);
-            FireWeapons(world, s, game, spawns.Raw, dt);
+            if (!s.FlyingSwords.Enabled) FireWeapons(world, s, game, spawns.Raw, dt);
             SpawnBullets(world, spawns);
             if (s.ReorderInterval > 0 && context.Time.Tick % (uint)s.ReorderInterval == 0)
                 SortEnemies(world, s);
@@ -728,7 +732,7 @@ namespace SurvivorFoundation.Systems
                 Grid = grid,
                 Hits = hits,
                 Hero = game.Hero,
-                Blades = SvRules.OrbitBlades(game),
+                Blades = s.FlyingSwords.Enabled ? 0 : SvRules.OrbitBlades(game),
                 Angle = game.OrbitAngle,
                 Radius = s.OrbitRadius,
                 Damage = s.OrbitDps * SvRules.Might(game) * dt,
@@ -913,6 +917,7 @@ namespace SurvivorFoundation.Systems
                 Info = context.Column(SvKeys.Info),
                 Defs = world.Resource(SvKeys.Config).Enemies,
                 Count = context.Count(SvKeys.Enemy),
+                HitNumbers = world.Resource(SvKeys.Config).Settings.FlyingSwords.Enabled,
             }.Schedule(dependency);
         }
 
@@ -928,17 +933,28 @@ namespace SurvivorFoundation.Systems
             public NativeArray<EnemyInfo> Info;
             [ReadOnly] public NativeArray<EnemyDef> Defs;
             public int Count;
+            public bool HitNumbers;
 
             public void Execute()
             {
                 var hits = Hits.AsArray();
                 hits.Sort(new HitOrder());
+                int numberRow = -1; float amount = 0f;
                 for (int h = 0; h < hits.Length; h++)
                 {
                     var hit = hits[h];
                     if ((uint)hit.Target >= (uint)Count) continue;
                     var info = Info[hit.Target];
                     if (info.Has(EnemyFlags.Dead)) continue;
+                    if (HitNumbers)
+                    {
+                        if (numberRow != hit.Target)
+                        {
+                            if (numberRow >= 0 && amount > 0f) Feedback.TryAdd(new SvFeedback { Kind = SvFeedbackKind.Hit, Position = Position[numberRow], Value = amount });
+                            numberRow = hit.Target; amount = 0f;
+                        }
+                        amount += math.min(math.max(0f, info.Hp), math.max(0f, hit.Damage));
+                    }
                     info.Hp -= hit.Damage;
                     info.Flash = 0.1f;
                     Position[hit.Target] += hit.Knock / math.max(info.Radius * 2f, 0.5f);
@@ -953,6 +969,7 @@ namespace SurvivorFoundation.Systems
                     }
                     Info[hit.Target] = info;
                 }
+                if (HitNumbers && numberRow >= 0 && amount > 0f) Feedback.TryAdd(new SvFeedback { Kind = SvFeedbackKind.Hit, Position = Position[numberRow], Value = amount });
                 Hits.Clear();
             }
         }

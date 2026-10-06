@@ -30,7 +30,7 @@ namespace SurvivorFoundation
             layout.Table(SvKeys.Bullet, cap.Bullets).LevelScoped().Pooled().Column(SvKeys.BulletPosition).Column(SvKeys.BulletInfo);
             layout.Table(SvKeys.Gem, cap.Gems).LevelScoped().Pooled().Column(SvKeys.GemPosition).Column(SvKeys.GemInfo);
             layout.Resource(SvKeys.Config, SvRuntime.Bake(Config));
-            layout.Resource(SvKeys.Game, new SvGameState(s.Variant == SvVariant.GuardBeacon || s.AnnularSkill.Enabled));
+            layout.Resource(SvKeys.Game, new SvGameState(s.Variant != SvVariant.Classic || s.AnnularSkill.Enabled));
             // A window around the hero (the arena is much bigger): 96 x 96 world units in 2-unit cells.
             int cells = (int)math.ceil(96f / s.GridCell);
             layout.Resource(SvKeys.EnemyGrid, new SpatialGrid(new int2(cells), s.GridCell, cap.Enemies), levelScoped: true);
@@ -42,6 +42,8 @@ namespace SurvivorFoundation
             layout.Resource(SvKeys.Feedback, new EventQueue<SvFeedback>(cap.Events, saved: false));
             if (s.CrossedBlades.Enabled)
                 layout.Resource(SvKeys.CrossedBlades, new SvCrossedBladeState(math.clamp(s.CrossedBlades.MaxTargets, 1, cap.Enemies)), levelScoped: true);
+            if (s.FlyingSwords.Enabled)
+                layout.Resource(SvFlyingSwordState.Key, new SvFlyingSwordState(s.FlyingSwords.Capacity, s.FlyingSwords.HistoryPerSword, cap.Enemies), levelScoped: true);
             if (Config.MobileSkills) layout.Resource(SvMobileSkills.Key, SvMobileSkills.Create(), levelScoped: true);
             layout.DestroyQueueCapacity = cap.Enemies;
         }
@@ -59,6 +61,7 @@ namespace SurvivorFoundation
             .Add(new CollideSystem())
             .Add(new AnnularSkillSystem())
             .Add(new ResolveSystem());
+            if (Config.Settings.FlyingSwords.Enabled) registry.Add(new FlyingSwordSystem());
             if (Config.Settings.CrossedBlades.Enabled) registry.Add(new CrossedBladeSystem());
             if (Config.MobileSkills) registry.Add(new MobileSkillInputSystem()).Add(new MobileSkillPulseSystem());
         }

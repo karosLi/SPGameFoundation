@@ -5,7 +5,7 @@ namespace SurvivorFoundation
 {
     public enum SvFlow : byte { Menu, Playing, LevelUp, Dead, Won }
 
-    public enum SvVariant : byte { Classic, GuardBeacon }
+    public enum SvVariant : byte { Classic, GuardBeacon, FlyingSwordHorde }
     public enum SvLossReason : byte { None, HeroFell, BeaconLost }
 
     public enum SvCommandKind : byte { Start, Choose, Menu }
@@ -123,6 +123,7 @@ namespace SurvivorFoundation
         public int GuardDurationTicks, BeaconHurtCooldownTicks;
         public SvAnnularSkill AnnularSkill;
         public SvCrossedBlades CrossedBlades;
+        public SvFlyingSwords FlyingSwords;
         public int ReorderInterval;      // ticks between spatial sorts of the enemy table (0 = off)
         public float GridCell;
     }

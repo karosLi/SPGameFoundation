@@ -111,6 +111,26 @@ namespace SurvivorFoundation
             return config;
         }
 
+        /// <summary>Dense mobile sword-horde configuration on the same Survivor module, pools and jobs.</summary>
+        public static SvConfig CreateFlyingSwordExample()
+        {
+            var config = CreateDefault();
+            config.MobileSkills = true;
+            var s = config.Settings;
+            s.Variant = SvVariant.FlyingSwordHorde; s.FlyingSwords = SvFlyingSwords.Default;
+            s.ArenaHalf = 18f; s.SpawnRadius = 10.5f; s.SpawnPerSecond = 11f; s.SpawnGrowth = .10f;
+            s.MaxEnemies = 768; s.EliteEvery = 25f; s.HeroHp = 140f;
+            s.MagnetRadius = 4f; s.XpBase = 8f; s.XpPerLevel = 6f;
+            config.Settings = s;
+            config.Capacity.Enemies = 1024; config.Capacity.Bullets = 1024;
+            config.Capacity.Gems = 2048; config.Capacity.Events = 4096;
+            config.Enemies[0].Hp = 18; config.Enemies[0].Speed = 2.1f;
+            config.Enemies[1].SpawnFrom = 6f; config.Enemies[1].Hp = 40;
+            config.Enemies[2].SpawnFrom = 25f; config.Enemies[2].Hp = 160;
+            config.Enemies[3].SpawnFrom = 18f;
+            return config;
+        }
+
         public static SvConfig CreateDefault()
         {
             var config = CreateInstance<SvConfig>();
@@ -129,6 +149,7 @@ namespace SurvivorFoundation
 
         public static SvRuntime Bake(SvConfig source)
         {
+            source.Settings.FlyingSwords.Validate();
             var r = new SvRuntime { Settings = source.Settings, MobileSkills = source.MobileSkills };
             int n = source.Enemies.Count;
             r.Enemies = new NativeArray<EnemyDef>(math.max(n, 1), Allocator.Persistent);

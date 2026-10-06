@@ -62,7 +62,7 @@ namespace SurvivorFoundation.Tests.PlayMode
                 game.Renderer.SetQualityLevel(0);game.Renderer.RenderFrame();
                 Assert.AreEqual(192,game.Renderer.ArticulatedEnemies,"allocation window exercises the full articulated horde budget");
                 Action warmed=()=>{for(int i=0;i<60;i++)game.Renderer.RenderFrame();};warmed();
-                using(var probe=new ManagedAllocationProbe()){probe.Calibrate();var watch=System.Diagnostics.Stopwatch.StartNew();var sample=probe.Measure(warmed);watch.Stop();probe.Calibrate();Debug.Log("Natural horde 192-actor full renderer: "+(watch.Elapsed.TotalMilliseconds/60).ToString("F3")+" ms/call, "+sample.Value+" "+sample.Metric+"; desktop test, not device performance.");Assert.AreEqual(0,sample.Value,"calibrated synchronous full-render allocation samples");}
+                using(var probe=new ManagedAllocationProbe()){probe.Calibrate();var watch=System.Diagnostics.Stopwatch.StartNew();var sample=probe.Measure(warmed);watch.Stop();probe.Calibrate();TestContext.WriteLine("Natural horde 192-actor full renderer: "+(watch.Elapsed.TotalMilliseconds/60).ToString("F3")+" ms/call, "+sample.Value+" "+sample.Metric+"; desktop test, not device performance.");Assert.AreEqual(0,sample.Value,"calibrated synchronous full-render allocation samples");}
                 if(Environment.GetEnvironmentVariable("SPF_GAMEPLAY_CHARACTER_SEQUENCE")=="1")
                     yield return CaptureRunningSequence(game,capture,safe,suffix);
                 LogAssert.NoUnexpectedReceived();

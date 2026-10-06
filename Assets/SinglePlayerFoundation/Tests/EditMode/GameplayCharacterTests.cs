@@ -82,6 +82,35 @@ namespace SPF.Tests.EditMode
                 Assert.Greater(reused,90);
             }
         }
+        [Test] public void ProductionGroundDirectionsKeepBothFkContactsAtLowBodyRate()
+        {
+            float[] speeds={.35f,3.2f,5f,2.1f},scales={1f,.9f,.66f,.366f};
+            using(var presenter=new GameplayCharacterPresenter(RenderTier.DataTexture,1))
+            {
+                for(int profile=0;profile<speeds.Length;profile++)for(int facing=-1;facing<=1;facing+=2)for(int direction=0;direction<8;direction++)
+                {
+                    presenter.Clear();var input=Input();input.Kind=1;input.Scale=scales[profile];input.Facing=facing;
+                    float a=direction*math.PI/4;float2 velocity=new float2(math.cos(a),math.sin(a))*speeds[profile];
+                    // Initial idle, steady travel, stopped stance, airborne travel and landing.
+                    for(int frame=0;frame<300;frame++)
+                    {
+                        bool move=frame>=10&&frame<220||frame>=250;
+                        input.Velocity=move?velocity:float2.zero;input.State=move?GameplayCharacterState.Run:GameplayCharacterState.Idle;
+                        input.Ground+=input.Velocity/120f;input.Root=input.Ground;
+                        if(frame>=250&&frame<280)input.Root.y+=.7f;
+                        presenter.Begin(1f/120,3);presenter.Submit(input);presenter.Evaluate();presenter.TryRead(input.Handle,out var motion);
+                        if(motion.Airborne)continue;
+                        if(motion.FarFoot.InStance)
+                            Assert.Less(math.distance(presenter.ReadBone(input.Handle,NaturalCharacterRig.FarFoot).Position,motion.FarFoot.Position*input.Scale),.0002f,
+                                "far grounded FK contact profile="+profile+" facing="+facing+" direction="+direction+" frame="+frame);
+                        if(motion.NearFoot.InStance)
+                            Assert.Less(math.distance(presenter.ReadBone(input.Handle,NaturalCharacterRig.NearFoot).Position,motion.NearFoot.Position*input.Scale),.0002f,
+                                "near grounded FK contact profile="+profile+" facing="+facing+" direction="+direction+" frame="+frame);
+                    }
+                }
+            }
+        }
+
         [Test] public void AirbornePoseReleasesGroundAndReplantsOnLanding()
         {
             var input=Input();var motion=default(GameplayCharacterMotion);motion.Step(input,.016f);

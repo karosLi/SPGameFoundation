@@ -83,7 +83,7 @@ namespace SPF.Testing
             // Batchmode-safe: read the target after normal camera rendering, not WaitForEndOfFrame.
             yield return null; yield return null;
             var previous = RenderTexture.active;
-            try { CaptureRealtime = Time.realtimeSinceStartupAsDouble; RenderTexture.active = m_Target; m_Read.ReadPixels(new Rect(0, 0, Width, Height), 0, 0); m_Read.Apply(false); }
+            try { CaptureRealtime = Time.realtimeSinceStartup; RenderTexture.active = m_Target; m_Read.ReadPixels(new Rect(0, 0, Width, Height), 0, 0); m_Read.Apply(false); }
             finally { RenderTexture.active = previous; }
             Pixels = m_Read.GetPixels32();
             string dir = Path.Combine(Application.dataPath, "..", "Artifacts", "Screenshots", "MobileHud");

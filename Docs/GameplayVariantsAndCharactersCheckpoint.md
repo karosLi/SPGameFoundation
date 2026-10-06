@@ -1,6 +1,6 @@
 # Fourth checkpoint: playable variants and reusable character presentation
 
-This checkpoint completes the implementable reference-capability list in `RequestedCapabilityChecklist.md`. It is a locally verified source checkpoint, not a claim of Android/iOS certification. Remote promotion is separately blocked by the Mac runner's saved Burst preference; no threshold is weakened to bypass that setting.
+This checkpoint completes the implementable reference-capability list in `RequestedCapabilityChecklist.md`. It is a locally verified source checkpoint, not a claim of Android/iOS certification. Remote promotion is separately blocked by the Mac runner's saved Burst preference. The first published stage-four head also exposed a .NET allocation-accounting failure investigated below; no threshold is weakened to bypass either gate.
 
 ## What can be run
 
@@ -39,6 +39,16 @@ The cloud graphics backend is OpenGLCore/Mesa llvmpipe on a desktop AMD EPYC env
 - At256 weighted actors, computed palette capacity is24,576 bytes, instance capacity16,384 bytes, and one dirty update submits four64-thread groups. GPU-written logical bytes are not CPU upload traffic or measured memory-bus bandwidth.
 
 Whole-frame GC budgets remain unchanged. Final TowerDefense and Shooter windows recorded0/180 allocating frames in both tiers. Survivor auto-play still had small allocation bursts: GPU12/180 frames totaling1,968 bytes (9 near flow screens,3 steady); DataTexture17/180 totaling2,542 bytes (13 near flow,4 steady). Both recorded0 process-wide gen-0 collections. These are allocating frames, not collections. Passing the existing budgets does not establish zero whole-game allocation or identify all residual callers; the earlier stamped callstack investigation and unresolved attribution are retained.
+
+## Exact published-head observations
+
+Equivalent remote commit `0b72f08c9f758c648d5e441e49d0e6bd90d90d86` has the same tree as local `b8e6fbf0edcf833e72c33ad1db21b76e4dc85b00`. Its first Mac run passed **122 PlayMode tests**, with 1 explicit skip; EditMode passed **712**, skipped 4, and failed only the two actual-Burst-execution/physics-budget checks. The saved disabled Burst preference was again reported. This is not a fully green remote head.
+
+The exact remote .NET run passed **698**, failed the natural-motion current-thread-byte assertion, and did not execute 2 Explicit helpers. A single unchanged-head .NET-only retry reproduced that failure: 3,312 bytes initially, then 2,408 bytes, with 33,536/0 positive/empty controls. A standalone integer-loop control independently reproduced nonzero byte accounting under background-GC pressure. The bounded test-host repair, reproducible controls and limitations are documented in [HarnessAllocationAccounting.md](HarnessAllocationAccounting.md); production motion code, strict zero assertions and the original measurement windows are unchanged. The prior local 699-test result above remains a correctly scoped historical result, not evidence that this remote failure did not occur.
+
+The follow-on harness-only repair passed all **700 executed tests** in both Debug and Release locally; the added test verifies nonallocating windows under collection pressure and still detects a retained allocation. All 24 generated test runtime configurations select non-concurrent GC, while all 51 non-test projects remain unchanged. Independent review repeated 7 focused cases and the deliberately failing concurrent-enabled configuration control. Exact-head remote verification of this repair remains pending at this documentation commit.
+
+The remote Survivor whole-frame windows also differ from the local run above. GPU measured 17/180 allocating frames totaling 2,501 bytes, 4 steady-state allocation frames, and **1 process-wide generation-0 collection**. DataTexture measured 8/180 frames totaling 1,312 bytes, no steady-state allocation frames, and 0 collections. The separate no-feedback diagnostic also observed 1 process-wide collection. TowerDefense and Shooter remained 0/180 allocating frames in both tiers. These test-runner/Editor-inclusive observations neither identify a specific allocation caller nor establish player/device collection frequency; they must not be summarized as globally zero GC.
 
 ## Review findings fixed before this checkpoint
 

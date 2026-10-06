@@ -1,5 +1,7 @@
 # SPGameFoundation
 
+> **WIP snapshot:** existing third-stage changes were frozen for requested publication. Final compile/full validation is pending; see [CurrentWipStatus](Docs/CurrentWipStatus.md). Use the separate `dot/mobile-foundation-validated` branch for the completed checkpoint.
+
 Unity 2022.3 2D 单机小游戏基座（面向移动端），保留贪吃蛇、ARPG、幸存者、平台跳跃、塔防、三消、弹弓、格斗、剧情九个验证玩法，新增非像素竖屏射击与幸存者守点变体，用于验证共享能力接入。
 
 - 数据导向模拟：自研 SoA 表 + C# Jobs + Burst，固定步长 30 Hz，确定性（同种子同输入 → 同结果）
@@ -36,6 +38,13 @@ Unity 2022.3 2D 单机小游戏基座（面向移动端），保留贪吃蛇、A
 - [本轮验证结果](Docs/MobileGameplayCheckpoint.md) · [共用能力与新玩法接入](Docs/MobileGameplayIntegration.md) · [射击验证](Docs/ShooterValidation.md) · [守点验证](Docs/HordeGuardValidation.md)
 
 两档渲染均有真实 Unity 测试与截图；美术是原创程序占位图。桌面软件渲染证据不代表 Android/iOS 真机性能。
+
+## 共享移动技能 HUD（可选示例）
+
+- **SPF → Mobile Skill HUD → Create Landscape Brawler Scene**：可见摇杆、按住连拳、双充能踢击，沿用真实骨骼攻击与命中。
+- **SPF → Mobile Skill HUD → Create Portrait Horde Scene**：可见摇杆、范围脉冲、拖动瞄准/松手闪现与取消，冷却和充能由固定 Tick 技能状态驱动。
+- 两例共用安全区域布局和输入控件，适配实际横竖屏，不自动修改全局移动端方向设置。旧玩法入口与快照保持隔离。
+- [接入合约与验证边界](Docs/MobileSkillHud.md)
 
 ## 目录与程序集
 

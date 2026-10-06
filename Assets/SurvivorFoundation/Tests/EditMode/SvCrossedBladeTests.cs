@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using NUnit.Framework;
+using SPF.Testing;
 using SPF.Contracts;
 using Unity.Collections;
 using Unity.Mathematics;
@@ -149,10 +150,13 @@ namespace SurvivorFoundation.Tests
             using var t = new SvTestWorld(tweak: c => { Configure(c); c.Enemies[0].Hp = 100000; }); Quiet(t);
             for (int i = 0; i < 8; i++) t.Spawn(1, new float2(3, i * .02f));
             t.Step(30);
-            long before = GC.GetAllocatedBytesForCurrentThread();
-            t.Step(60);
-            long bytes = GC.GetAllocatedBytesForCurrentThread() - before;
-            Assert.AreEqual(0, bytes, "warmed simulation path, excludes rendering/native allocations");
+            Action measured = () => t.Step(60);
+            using var probe = new ManagedAllocationProbe();
+            var calibrationBefore = probe.Calibrate();
+            var sample = probe.Measure(measured);
+            var calibrationAfter = probe.Calibrate();
+            TestContext.WriteLine($"Survivor crossed blades, 60 ticks after 30 warm-up ticks: {sample.Value} current-thread {sample.Metric}; independent process-wide gen0 collections={sample.Collections}; retained-array/empty calibration before={calibrationBefore.RetainedArrays.Value}/{calibrationBefore.Empty.Value}, after={calibrationAfter.RetainedArrays.Value}/{calibrationAfter.Empty.Value}.");
+            Assert.AreEqual(0, sample.Value, $"Warmed simulation must allocate zero current-thread {sample.Metric}; excludes rendering/native allocations.");
             Assert.AreEqual(30, t.World.Resource(SvKeys.CrossedBlades).Pulses);
         }
 

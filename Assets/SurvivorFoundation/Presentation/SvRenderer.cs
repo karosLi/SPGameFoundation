@@ -1,5 +1,7 @@
 using SPF.Presentation;
 using SPF.Presentation.Sprites;
+using SPF.Presentation.Combat;
+using SPF.Contracts;
 using SPF.Runtime.Session;
 using SPF.Runtime.World;
 using SPF.Shell.CameraRig;
@@ -30,7 +32,10 @@ namespace SurvivorFoundation.Presentation
         public SvArtStyle ArtStyle = SvArtStyle.Pixel;
         public int QualityLevel { get; private set; }
         public int ShadowBudget => QualityLevel >= 3 ? 32 : QualityLevel >= 2 ? 128 : QualityLevel >= 1 ? 256 : 768;
-        public int EffectBudget => QualityLevel >= 3 ? 48 : QualityLevel >= 2 ? 96 : QualityLevel >= 1 ? 192 : 400;
+        public int EffectBudget => VfxBudget.ForQuality(QualityLevel).Active;
+        public VfxDiagnostics VfxStats => m_CombatFx?.Stats ?? default;
+        public int ActiveCombatEffects => m_CombatFx?.Active ?? 0;
+        public VfxProfile ImpactProfile = VfxProfile.Electric, DeathProfile = VfxProfile.Destruction, PulseProfile = VfxProfile.Pulse;
         public int HealthBarsDrawn { get; private set; }
         public int ShadowsDrawn { get; private set; }
         public int RingsDrawn { get; private set; }
@@ -42,6 +47,11 @@ namespace SurvivorFoundation.Presentation
         SpriteBatch m_Ground, m_Opaque, m_Additive, m_Effects, m_Shadows, m_Health;
         NativeArray<PackedSprite> m_SortScratch;
         SpriteEffects m_Fx;
+        CombatVfxPool m_CombatFx;
+        struct HitVisual { public float2 Position; public uint Identity; }
+        NativeArray<HitVisual> m_HitVisuals;
+        int m_LastHitTick = -1;
+        uint m_EventSequence;
         SimSession m_Session;
         SvArtStyle m_BoundStyle;
         NativeArray<float4> m_EnemyColors;
@@ -69,6 +79,7 @@ namespace SurvivorFoundation.Presentation
             m_Art = null;
             if (m_EnemyColors.IsCreated) m_EnemyColors.Dispose();
             if (m_Counts.IsCreated) m_Counts.Dispose();
+            if (m_HitVisuals.IsCreated) m_HitVisuals.Dispose();
             m_Assets?.Dispose();
             m_Assets = null;
         }
@@ -88,18 +99,20 @@ namespace SurvivorFoundation.Presentation
             m_Shadows = new SpriteBatch(tier, atlas, BlendKind.Translucent, world.Table(SvKeys.Enemy).Capacity + 8, queueOffset: -60);
             m_Health = new SpriteBatch(tier, atlas, BlendKind.Translucent, world.Table(SvKeys.Enemy).Capacity * 3 + 12, queueOffset: 150);
             if (StableTranslucentActors) m_SortScratch = new NativeArray<PackedSprite>(m_Opaque.Capacity, Allocator.Persistent);
-            m_Additive = new SpriteBatch(tier, atlas, BlendKind.Additive, world.Table(SvKeys.Bullet).Capacity + 1024);
-            m_Effects = new SpriteBatch(tier, atlas, BlendKind.Translucent, 2048);
+            m_Additive = new SpriteBatch(tier, atlas, StableTranslucentActors ? BlendKind.Translucent : BlendKind.Additive, world.Table(SvKeys.Bullet).Capacity + 1024, queueOffset: 30);
+            m_Effects = new SpriteBatch(tier, atlas, BlendKind.Translucent, 768, queueOffset: 60);
             // Preallocate dynamic pages and prefix textures at session bind, before counts grow in play.
             m_Ground.Warmup(m_Ground.Capacity);
             m_Opaque.Warmup(m_Opaque.Capacity);
             m_Additive.Warmup(m_Additive.Capacity);
             m_Effects.Warmup(m_Effects.Capacity);
             m_Shadows.Warmup(m_Shadows.Capacity); m_Health.Warmup(m_Health.Capacity);
-            m_Fx = new SpriteEffects(512);
+            m_Fx = new SpriteEffects(32); m_CombatFx = new CombatVfxPool(96);
+            m_LastHitTick = -1; m_EventSequence = 0;
+            m_HitVisuals = new NativeArray<HitVisual>(48, Allocator.Persistent);
             m_EnemyColors = new NativeArray<float4>(math.max(config.EnemyKinds, 1), Allocator.Persistent);
             for (int k = 0; k < config.EnemyKinds; k++) m_EnemyColors[k] = new float4(1f);
-            m_Counts = new NativeArray<int>(3, Allocator.Persistent);
+            m_Counts = new NativeArray<int>(4, Allocator.Persistent);
         }
 
         void LateUpdate()
@@ -116,12 +129,15 @@ namespace SurvivorFoundation.Presentation
             if (Camera != null && Camera.UpdateTarget == null)
                 Camera.UpdateTarget = AimCamera;
             float4 view = Camera != null ? Camera.ViewRect : new float4(hero - 20f, hero + 20f);
+            float4 effectView = view; // fill budget uses the actual viewport, not the padded culling rectangle
             view += new float4(-2f, -2f, 2f, 2f);
             var bounds = new Bounds(Vector3.zero, new Vector3(1e5f, 1e5f, 100f));
 
             m_Ground.Clear(); m_Opaque.Clear(); m_Additive.Clear(); m_Effects.Clear(); m_Shadows.Clear(); m_Health.Clear();
             RingsDrawn = 0;
-            if (game.Flow == SvFlow.Menu || game.RunTicks < m_PreviousRunTicks) m_Fx.Clear();
+            if (game.Flow == SvFlow.Menu || game.RunTicks < m_PreviousRunTicks)
+            { m_Fx.Clear(); m_CombatFx.Clear(); m_LastHitTick = -1; m_EventSequence = 0; }
+            m_CombatFx.BeginFrame(game.Flow == SvFlow.Playing ? dt : 0f, QualityLevel);
             m_PreviousRunTicks = game.RunTicks;
             DrainFeedback(world);
             DrawGround(view);
@@ -136,7 +152,7 @@ namespace SurvivorFoundation.Presentation
             {
                 var frame = m_Art.Hero.FrameAt(time);
                 float side = game.Facing.x < 0f ? -1f : 1f;
-                float flash = game.Invulnerable > 0f && ((int)(time * 20f) & 1) == 0 ? 0.7f : 0f;
+                float flash = game.Invulnerable > 0f && ((int)(time * 20f) & 1) == 0 ? 0.22f : 0f;
                 m_Opaque.Add(hero + new float2(0f, 0.45f), StableTranslucentActors ? new float2(1.3f * side, 1.5f) : new float2(14f * side, 16f) / SvArt.PixelsPerUnit, m_Art.Sheet[frame].Uv, ActorDepth + hero.y * DepthPerY, new float4(1f), 0f, flash);
                 int blades = SvRules.OrbitBlades(game);
                 var s = world.Resource(SvKeys.Config).Settings;
@@ -158,7 +174,7 @@ namespace SurvivorFoundation.Presentation
                     var profile = BlobShadowProfile.Default; profile.Size = new float2(2.4f, 0.75f);
                     BlobShadow.Add(m_Shadows, m_Art.Sheet[m_Art.Shadow].Uv, beacon, GroundDepth - 1f, profile);
                     m_Opaque.Add(beacon + new float2(0f, 1.1f), new float2(2.5f, 3f), m_Art.Sheet[m_Art.Beacon].Uv,
-                        ActorDepth + beacon.y * DepthPerY, new float4(1f), flash: game.BeaconInvulnerableTicks > s.BeaconHurtCooldownTicks * 0.66f ? 0.6f : 0f);
+                        ActorDepth + beacon.y * DepthPerY, new float4(1f), flash: game.BeaconInvulnerableTicks > s.BeaconHurtCooldownTicks * 0.66f ? 0.22f : 0f);
                     DrawHealth(beacon + new float2(0f, 2.8f), 2f, game.BeaconHp / math.max(1f, game.BeaconMaxHp), new float4(0.62f, 0.92f, 0.36f, 1f));
                 }
                 if (s.AnnularSkill.Enabled) DrawElectricRings(hero, s.AnnularSkill, time, game.AnnularTicks);
@@ -169,6 +185,7 @@ namespace SurvivorFoundation.Presentation
                 }
             }
             m_Fx.UpdateAndDraw(dt, m_Effects, m_Art.Sheet, m_Art.Font);
+            m_CombatFx.Draw(m_Effects, m_Art.CombatFx.Resolve(m_Art.Sheet), effectView, BulletDepth - 0.2f);
 
             if (StableTranslucentActors)
                 new SvSpriteOrder { Sprites = m_Opaque.Instances, Scratch = m_SortScratch, Count = m_Opaque.Count }.Run();
@@ -212,14 +229,22 @@ namespace SurvivorFoundation.Presentation
             bool decorate = StableTranslucentActors || world.Resource(SvKeys.Config).Settings.Variant == SvVariant.GuardBeacon;
             var shadows = m_Shadows.Reserve(decorate ? math.min(count, ShadowBudget) : 0);
             var bars = m_Health.Reserve(decorate ? count * 3 : 0);
+            int hitTick = world.Resource(SvKeys.Game).RunTicks / 3;
+            bool emitHits = hitTick != m_LastHitTick; m_LastHitTick = hitTick;
             new EnemyDrawJob
             {
                 Position = world.Column(SvKeys.Position), Prev = world.Column(SvKeys.PrevPosition), Info = world.Column(SvKeys.Info),
                 Uv = m_Art.EnemyUv, Out = slots, Written = m_Counts, Alpha = alpha, View = view, Time = time,
                 Count = math.min(count, slots.Length), Shadows = shadows, Bars = bars,
+                Hits = m_HitVisuals, Handles = world.Table(SvKeys.Enemy).Handles, EmitHits = emitHits,
                 ShadowUv = m_Art.Sheet[m_Art.Shadow].Uv, WhiteUv = m_Art.Sheet[m_Art.White].Uv, Smooth = StableTranslucentActors,
             }.Run();
             m_Opaque.Trim(start + m_Counts[0]); m_Shadows.Trim(m_Counts[1]); m_Health.Trim(m_Counts[2]);
+            for (int i = 0; i < m_Counts[3]; i++)
+            {
+                var hit = m_HitVisuals[i];
+                m_CombatFx.Emit(ImpactProfile, hit.Position, ((ulong)(uint)(hitTick + 1) << 32) | hit.Identity);
+            }
             return m_Counts[0];
         }
 
@@ -261,6 +286,9 @@ namespace SurvivorFoundation.Presentation
             public NativeArray<PackedSprite> Out;
             public NativeArray<int> Written;
             public NativeArray<PackedSprite> Shadows, Bars;
+            [ReadOnly] public NativeArray<EntityHandle> Handles;
+            public NativeArray<HitVisual> Hits;
+            public bool EmitHits;
             public float4 ShadowUv, WhiteUv;
             public bool Smooth;
             public float Alpha, Time;
@@ -269,18 +297,25 @@ namespace SurvivorFoundation.Presentation
 
             public void Execute()
             {
-                int n = 0, shadows = 0, bars = 0;
+                int n = 0, shadows = 0, bars = 0, hits = 0;
                 for (int i = 0; i < Count; i++)
                 {
                     float2 p = math.lerp(Prev[i], Position[i], Alpha);
                     if (p.x < View.x || p.y < View.y || p.x > View.z || p.y > View.w) continue;
                     var info = Info[i];
                     if (info.Has(EnemyFlags.Dead)) continue;
-                    int frame = ((int)(Time * 5f + i * 0.37f)) & 1;
+                    bool moving = math.distancesq(Position[i], Prev[i]) > 0.00001f;
+                    var handle = Handles[i];
+                    int frame = SvVisualMotion.Frame(Time, handle, moving, Smooth);
                     float size = info.Radius * 2.6f;
                     float side = Position[i].x < Prev[i].x ? -1f : 1f;
                     float4 tint = info.Has(EnemyFlags.Elite) ? new float4(1.3f, 0.9f, 0.6f, 1f) : new float4(1f);
-                    if (Smooth && info.Flash > 0f) tint = new float4(0.75f, 1.3f, 1.4f, 1f);
+                    float hit = math.saturate(info.Flash * 8f);
+                    float squash = Smooth ? hit * 0.04f : 0f;
+                    if (EmitHits && hit > 0f && hits < Hits.Length)
+                    {
+                        Hits[hits++] = new HitVisual { Position = p + new float2(0f,size * 0.45f), Identity = (uint)handle.Index * 397u ^ (uint)handle.Generation };
+                    }
                     if (shadows < Shadows.Length)
                         Shadows[shadows++] = PackedSprite.Pack(p, new float2(size, size * 0.35f), ShadowUv, GroundDepth - 1f, new float4(0f, 0f, 0f, 0.28f));
                     if (bars + 3 <= Bars.Length)
@@ -291,10 +326,10 @@ namespace SurvivorFoundation.Presentation
                         Bars[bars++] = PackedSprite.Pack(bar, new float2(width, 0.075f), WhiteUv, 0.09f, new float4(0.32f, 0.3f, 0.25f, 1f));
                         Bars[bars++] = PackedSprite.Pack(bar + new float2(-width * (1f - fill) * 0.5f, 0f), new float2(width * fill, 0.075f), WhiteUv, 0.08f, new float4(0.91f, 0.42f, 0.4f, 1f));
                     }
-                    Out[n++] = PackedSprite.Pack(p + new float2(0f, size * 0.4f), new float2(size * side, size), Uv[(info.Kind - 1) * 2 + frame],
-                        ActorDepth + p.y * DepthPerY, tint, 0f, math.saturate(info.Flash * 8f));
+                    Out[n++] = PackedSprite.Pack(p + new float2(0f, size * 0.4f), new float2(size * side * (1f + squash), size * (1f - squash)), Uv[(info.Kind - 1) * 2 + frame],
+                        ActorDepth + p.y * DepthPerY, tint, Smooth ? SvVisualMotion.Wobble(Time, handle, moving) : 0f, hit * (Smooth ? 0.22f : 1f));
                 }
-                Written[0] = n; Written[1] = shadows; Written[2] = bars;
+                Written[0] = n; Written[1] = shadows; Written[2] = bars; Written[3] = hits;
             }
         }
 
@@ -348,7 +383,7 @@ namespace SurvivorFoundation.Presentation
                     var b = Info[i];
                     float2 p = Position[i] - b.Velocity * Back;   // interpolated between ticks
                     if (p.x < View.x || p.y < View.y || p.x > View.z || p.y > View.w) continue;
-                    float size = b.Radius * (b.Team == BulletTeam.Enemy ? 2.8f : 3.2f);
+                    float size = b.Radius * (b.Team == BulletTeam.Enemy ? (Smooth ? 2.4f : 2.8f) : (Smooth ? 2.2f : 3.2f));
                     float rotation = math.atan2(b.Velocity.y, b.Velocity.x);
                     Out[n++] = PackedSprite.Pack(p, new float2(Smooth && b.Visual == BulletVisual.Bolt ? size * 2.2f : size, size), Uv[(int)b.Visual], BulletDepth, new float4(1f), rotation);
                 }
@@ -383,8 +418,8 @@ namespace SurvivorFoundation.Presentation
                     float2 to = hero + new float2(math.cos(b), math.sin(b)) * (radius + jb);
                     float2 d = to - from; float length = math.length(d), angle = math.atan2(d.y, d.x);
                     float pulse = pulseTick == 0 ? 1.2f : 1f;
-                    m_Effects.Add((from + to) * 0.5f, new float2(length + 0.03f, 0.2f * pulse), uv, 0.4f, new float4(0.08f, 0.68f, 0.98f, 0.72f), angle);
-                    m_Additive.Add((from + to) * 0.5f, new float2(length + 0.02f, 0.055f * pulse), uv, 0.3f, new float4(0.58f, 0.95f, 1f, 1f), angle);
+                    m_Effects.Add((from + to) * 0.5f, new float2(length + 0.03f, 0.09f * pulse), uv, 0.4f, new float4(0.08f, 0.68f, 0.98f, 0.52f), angle);
+                    m_Additive.Add((from + to) * 0.5f, new float2(length + 0.02f, 0.022f * pulse), uv, 0.3f, new float4(0.58f, 0.95f, 1f, 1f), angle);
                 }
             }
         }
@@ -392,22 +427,29 @@ namespace SurvivorFoundation.Presentation
         void DrainFeedback(SimWorld world)
         {
             var feedback = world.Resource(SvKeys.Feedback);
-            int deathEffectSlots = math.max(0, EffectBudget - m_Fx.Active);
+
             for (int i = 0; i < feedback.Count; i++)
             {
                 var e = feedback[i];
                 Feedback?.Invoke(e);
+                ulong key = 0xf000000000000000ul | ++m_EventSequence;
                 switch (e.Kind)
                 {
                     case SvFeedbackKind.Death:
-                        if (deathEffectSlots-- > 0)
-                            m_Fx.Spawn(new SpriteEffects.Effect { Clip = m_Art.Puff, Position = e.Position, Size = new float2(math.max(e.Value * 3f, 0.8f)), Color = new float4(1f, 1f, 1f, 0.8f), Depth = ActorDepth - 0.1f });
+                        m_CombatFx.Emit(DeathProfile, e.Position, key, math.clamp(e.Value, 0.5f, 1.5f));
+                        break;
+                    case SvFeedbackKind.Hit:
+                        m_CombatFx.Emit(ImpactProfile, e.Position, key);
+                        break;
+                    case SvFeedbackKind.Nova:
+                        m_CombatFx.Emit(PulseProfile, e.Position, key);
                         break;
                     case SvFeedbackKind.LevelUp:
                         m_Fx.Spawn(new SpriteEffects.Effect { Clip = new SpriteClip(m_Art.Ring, 1, 1f, false), Position = e.Position, Size = new float2(6f), Life = 0.6f, ScaleFrom = 0.2f, ScaleTo = 1.2f, Fade = true, Color = new float4(1f, 0.9f, 0.4f, 0.9f), Depth = ActorDepth - 0.2f });
                         break;
                     case SvFeedbackKind.HeroHurt:
-                        Camera?.Shake(0.08f, 0.12f);
+                        Camera?.Shake(0.06f, 0.10f);
+                        m_CombatFx.Emit(VfxProfile.HeroHurt, e.Position, key);
                         m_Fx.Spawn(new SpriteEffects.Effect { NumberMode = true, Number = (int)math.round(e.Value), Prefix = '-', Position = e.Position + new float2(0f, 1f), Velocity = new float2(0f, 1.2f), Size = new float2(0.28f), Life = 0.7f, Fade = true, Color = new float4(1f, 0.35f, 0.3f, 1f), Depth = ActorDepth - 0.3f });
                         break;
                 }

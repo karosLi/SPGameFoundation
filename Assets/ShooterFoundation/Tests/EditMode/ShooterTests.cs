@@ -1,5 +1,6 @@
 using System;
 using NUnit.Framework;
+using SPF.Testing;
 using SPF.Runtime.Composition;
 using SPF.Runtime.Session;
 using SPF.Runtime.World;
@@ -140,8 +141,13 @@ namespace ShooterFoundation.Tests
             for(int i=0;i<80;i++)ShooterSpawner.Enemy(t.World,new float2((i%10)*0.8f-3.6f,2+(i/10)*0.7f),hp:100000,speed:0);
             t.State.Run.ShotTimer=0;t.State.Run.WingTimer=0;
             t.Step(150);
-            long before=GC.GetAllocatedBytesForCurrentThread();t.Step(180);long bytes=GC.GetAllocatedBytesForCurrentThread()-before;
-            Assert.AreEqual(0,bytes,"simulation path managed bytes after warmup; excludes engine rendering and native allocator bytes");
+            Action measured = () => t.Step(180);
+            using var probe = new ManagedAllocationProbe();
+            var calibrationBefore = probe.Calibrate();
+            var sample = probe.Measure(measured);
+            var calibrationAfter = probe.Calibrate();
+            TestContext.WriteLine($"Shooter simulation, 180 ticks after 150 warm-up ticks: {sample.Value} current-thread {sample.Metric}; independent process-wide gen0 collections={sample.Collections}; retained-array/empty calibration before={calibrationBefore.RetainedArrays.Value}/{calibrationBefore.Empty.Value}, after={calibrationAfter.RetainedArrays.Value}/{calibrationAfter.Empty.Value}.");
+            Assert.AreEqual(0, sample.Value, $"Warmed simulation must allocate zero current-thread {sample.Metric}; excludes engine rendering and native allocations.");
         }
     }
 }

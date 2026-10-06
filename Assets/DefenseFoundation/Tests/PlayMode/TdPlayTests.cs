@@ -1,5 +1,6 @@
 using System.Collections;
 using System.IO;
+using System.Text;
 using NUnit.Framework;
 using DefenseFoundation.Game;
 using SPF.Presentation;
@@ -13,6 +14,28 @@ namespace DefenseFoundation.Tests.PlayMode
 {
     public class TdPlayTests
     {
+        struct FrameSample
+        {
+            public int ReadFrame, GovernorFrames, Flow, Version, Kills, Gold;
+            public long Tick, PreviousFrameBytes;
+        }
+
+        static void WriteFrameSamples(RenderTier tier, FrameSample[] samples)
+        {
+            var output = new StringBuilder("ordinal,readUnityFrame,governorFramesSinceReset,previousFrameBytes,currentTick,currentFlow,currentVersion,currentKills,currentGold\n");
+            for (int i = 0; i < samples.Length; i++)
+            {
+                var sample = samples[i];
+                output.Append(i).Append(',').Append(sample.ReadFrame).Append(',').Append(sample.GovernorFrames)
+                    .Append(',').Append(sample.PreviousFrameBytes).Append(',').Append(sample.Tick)
+                    .Append(',').Append(sample.Flow).Append(',').Append(sample.Version)
+                    .Append(',').Append(sample.Kills).Append(',').Append(sample.Gold).Append('\n');
+            }
+            string dir = Path.Combine(Application.dataPath, "..", "Artifacts");
+            Directory.CreateDirectory(dir);
+            File.WriteAllText(Path.Combine(dir, $"defense-frame-samples-{tier}.csv"), output.ToString());
+        }
+
         [UnityTest]
         public IEnumerator BuildThroughTheUiAndDefend([Values(RenderTier.GpuDriven, RenderTier.DataTexture)] RenderTier tier)
         {
@@ -22,6 +45,7 @@ namespace DefenseFoundation.Tests.PlayMode
             var game = TdGameBootstrap.Create();
             var target = new RenderTexture(960, 540, 24, RenderTextureFormat.ARGB32);
             var read = new Texture2D(960, 540, TextureFormat.RGBA32, false);
+            var samples = new FrameSample[180]; // Preallocated before gameplay and the measured window.
             try
             {
                 yield return null;
@@ -49,11 +73,27 @@ namespace DefenseFoundation.Tests.PlayMode
                 float end = Time.realtimeSinceStartup + 40f;
                 while (game.State.Kills < 3 && Time.realtimeSinceStartup < end) yield return null;
                 Assert.GreaterOrEqual(game.State.Kills, 3, "towers shot enemies");
+                // Allocation frames and process-wide collection counts are different measurements.
+                int collectionsBefore = System.GC.CollectionCount(0);
                 game.Governor.ResetGcStats();
-                for (int f = 0; f < 180; f++) { yield return null; }
+                for (int f = 0; f < 180; f++)
+                {
+                    yield return null;
+                    // Governor bytes describe its previous-frame sample. Tick/flow are current
+                    // observation context, not an attribution of those bytes to this simulation tick.
+                    samples[f] = new FrameSample {
+                        ReadFrame = Time.frameCount, GovernorFrames = game.Governor.FramesSinceReset,
+                        PreviousFrameBytes = game.Governor.GcBytesLastFrame,
+                        Tick = game.Session.Pipeline.Stats.TickCount,
+                        Flow = (int)game.State.Flow, Version = game.State.Version,
+                        Kills = game.State.Kills, Gold = game.State.Gold
+                    };
+                }
+                int collections = System.GC.CollectionCount(0) - collectionsBefore;
+                WriteFrameSamples(tier, samples); // All formatting and file IO are outside the window.
                 if (game.Governor.GcCounterValid)
                 {
-                    GcReport.Write($"defense wave ({tier})", game.Governor.FramesSinceReset, game.Governor.GcFramesSinceReset, game.Governor.GcBytesSinceReset);
+                    GcReport.Write($"defense wave ({tier})", game.Governor.FramesSinceReset, game.Governor.GcFramesSinceReset, game.Governor.GcBytesSinceReset, collections);
                     Assert.LessOrEqual(game.Governor.GcFramesSinceReset, 2, "steady-state play allocates (almost) nothing per frame");
                 }
 

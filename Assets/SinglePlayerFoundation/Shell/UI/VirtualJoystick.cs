@@ -14,6 +14,7 @@ namespace SPF.Shell.UI
         public float Radius = 120f;
 
         Vector2 m_Origin;
+        public Vector2 Origin => m_Origin;
         int m_PointerId;
         bool m_Paused, m_FocusLost;
         public bool Pressed { get; private set; }
@@ -48,28 +49,28 @@ namespace SPF.Shell.UI
 
         public void OnPointerUp(PointerEventData eventData)
         {
-            if (Pressed && eventData.pointerId == m_PointerId) ResetInput();
+            if (Pressed && eventData.pointerId == m_PointerId) CancelInput();
         }
 
-        void ResetInput()
+        public void CancelInput()
         {
             Pressed = false;
             Direction = float2.zero;
             Magnitude = 0f;
         }
 
-        void OnDisable() => ResetInput();
+        void OnDisable() => CancelInput();
 
         void OnApplicationPause(bool paused)
         {
             m_Paused = paused;
-            if (paused) ResetInput();
+            if (paused) CancelInput();
         }
 
         void OnApplicationFocus(bool focused)
         {
             m_FocusLost = !focused;
-            if (!focused) ResetInput();
+            if (!focused) CancelInput();
         }
     }
 }

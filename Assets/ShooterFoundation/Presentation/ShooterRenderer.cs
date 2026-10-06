@@ -1,6 +1,7 @@
 using System;
 using SPF.Presentation;
 using SPF.Presentation.Sprites;
+using SPF.Presentation.Combat;
 using SPF.Runtime.Session;
 using SPF.Runtime.World;
 using SPF.Shell.CameraRig;
@@ -24,14 +25,17 @@ namespace ShooterFoundation.Presentation
         public long BytesUploaded { get; private set; }
         public int QualityLevel { get; private set; }
         public int ShadowBudget => QualityLevel >= 3 ? 0 : QualityLevel == 2 ? 24 : QualityLevel == 1 ? 64 : 128;
-        public int EffectBudget => QualityLevel >= 3 ? 12 : QualityLevel == 2 ? 24 : QualityLevel == 1 ? 48 : 96;
+        public int EffectBudget => VfxBudget.ForQuality(QualityLevel).Active;
+        public VfxDiagnostics VfxStats => m_Fx.Stats;
+        public int ActiveEffects => m_Fx.Active;
+        public VfxProfile ImpactProfile = VfxProfile.Impact, ShotProfile = VfxProfile.Muzzle, DeathProfile = VfxProfile.Destruction;
         public RenderTier Tier { get; private set; }
         ShooterArt m_Art;
         SpriteBatch m_Back, m_Clouds, m_Shadows, m_Pickups, m_Actors, m_Beam, m_Bullets, m_Effects;
         int[] m_Order;
-        struct Effect { public float2 Position; public float Age, Scale; }
-        readonly Effect[] m_Fx = new Effect[96];
-        int m_FxCount, m_LevelVersion = -1;
+        readonly CombatVfxPool m_Fx = new CombatVfxPool(96);
+        int m_LevelVersion = -1, m_LastHitTick = -1;
+        uint m_EventSequence;
         BlobShadowProfile m_Shadow;
         public void SetQuality(int level) => QualityLevel = math.clamp(level,0,3);
         void Start()
@@ -42,7 +46,7 @@ namespace ShooterFoundation.Presentation
             m_Back = Batch(BlendKind.Opaque, 96, 0); m_Clouds = Batch(BlendKind.Translucent,24,0);
             m_Shadows = Batch(BlendKind.Translucent,130,1); m_Pickups = Batch(BlendKind.Translucent,s.PickupCapacity,2);
             m_Actors = Batch(BlendKind.Translucent,s.EnemyCapacity+4,3); m_Beam = Batch(BlendKind.Translucent,8,4);
-            m_Bullets = Batch(BlendKind.Translucent,s.BulletCapacity,5); m_Effects = Batch(BlendKind.Translucent,100,6);
+            m_Bullets = Batch(BlendKind.Translucent,s.BulletCapacity,5); m_Effects = Batch(BlendKind.Translucent,384,6);
             m_Order = new int[s.EnemyCapacity];
             m_Shadow = BlobShadowProfile.Default; m_Shadow.Size = new float2(1.2f,0.62f); m_Shadow.Offset = new float2(0.15f,-0.40f); m_Shadow.Color = new float4(0.015f,0.04f,0.08f,0.42f);
         }
@@ -52,8 +56,9 @@ namespace ShooterFoundation.Presentation
             if (m_Art == null || Host == null || Host.Session == null) return;
             var session = Host.Session; var w = session.World; ref var r = ref w.Resource(ShooterKeys.State).Run;
             var s = w.Resource(ShooterKeys.Rules).Settings; float alpha = r.Flow == ShooterFlow.Playing ? session.InterpolationAlpha : 1f;
-            if (m_LevelVersion != w.LevelVersion) { m_LevelVersion = w.LevelVersion; m_FxCount = 0; }
-            Clear(); Drain(w);
+            if (m_LevelVersion != w.LevelVersion) { m_LevelVersion = w.LevelVersion; m_Fx.Clear(); m_LastHitTick = -1; m_EventSequence = 0; }
+            Clear(); m_Fx.BeginFrame(r.Flow == ShooterFlow.Playing ? Time.deltaTime : 0f, QualityLevel); Drain(w);
+            int hitTick = (int)session.Clock.NextTickIndex / 3; bool emitHits = hitTick != m_LastHitTick; m_LastHitTick = hitTick;
             Background(s.ArenaHalf,r.Time);
             float2 hero = math.lerp(r.HeroPrevious,r.Hero,alpha);
             var p = w.Column(ShooterKeys.EnemyPosition); var prev = w.Column(ShooterKeys.EnemyPrevious); var info = w.Column(ShooterKeys.Enemies); var table = w.Table(ShooterKeys.Enemy);
@@ -67,7 +72,10 @@ namespace ShooterFoundation.Presentation
             {
                 int i=m_Order[j]; var e=info[i]; float2 pos=math.lerp(prev[i],p[i],alpha); float size=e.Radius*3.2f;
                 if (shadows++ < ShadowBudget) BlobShadow.Add(m_Shadows,Uv(m_Art.Shadow),pos,3f,m_Shadow,0f,size);
-                m_Actors.Add(pos,new float2(size),Uv(e.Kind==2?m_Art.Heavy:m_Art.Drone),0f,new float4(1f),0f,math.saturate(e.Flash*7f));
+                float hit = math.saturate(e.Flash * 8f);
+                m_Actors.Add(pos,new float2(size * (1f + hit * 0.035f), size * (1f - hit * 0.035f)),Uv(e.Kind==2?m_Art.Heavy:m_Art.Drone),0f,new float4(1f),0f,hit * 0.24f);
+                if (emitHits && e.Flash > 0f)
+                    m_Fx.Emit(ImpactProfile, pos + new float2(0f,-size*0.15f), ((ulong)(uint)(hitTick+1)<<32) | (uint)e.Id, 0.7f);
             }
             if (r.Flow != ShooterFlow.Menu)
             {
@@ -87,13 +95,7 @@ namespace ShooterFoundation.Presentation
                 if (bullets.DeadFlags[i]!=0) continue; var b=bi[i]; float2 pos=math.lerp(bprev[i],bp[i],alpha);
                 m_Bullets.Add(pos,b.Hostile?new float2(0.40f):new float2(0.18f,0.62f),Uv(b.Hostile?m_Art.Orb:m_Art.Bolt),-1f,new float4(1f),math.atan2(b.Velocity.y,b.Velocity.x)-math.PI*0.5f);
             }
-            for (int i=m_FxCount-1;i>=0;i--)
-            {
-                var fx=m_Fx[i]; fx.Age+=Time.unscaledDeltaTime;
-                if (fx.Age>0.36f) { m_Fx[i]=m_Fx[--m_FxCount]; continue; }
-                m_Fx[i]=fx; float t=fx.Age/0.36f;
-                if (i<EffectBudget) m_Effects.Add(fx.Position,new float2((0.3f+t*1.5f)*fx.Scale),Uv(m_Art.Ring),-2f,new float4(1f,0.72f,0.38f,1f-t));
-            }
+            m_Fx.Draw(m_Effects, m_Art.CombatFx.Resolve(m_Art.Sheet), Camera != null ? Camera.ViewRect : new float4(-s.ArenaHalf, s.ArenaHalf));
             var bounds=new Bounds(Vector3.zero,new Vector3(s.ArenaHalf.x*2f+10f,s.ArenaHalf.y*2f+10f,100f));
             SpritesDrawn=0; BytesUploaded=0;
             Draw(m_Back,bounds); Draw(m_Clouds,bounds); Draw(m_Shadows,bounds); Draw(m_Pickups,bounds); Draw(m_Actors,bounds); Draw(m_Beam,bounds); Draw(m_Bullets,bounds); Draw(m_Effects,bounds);
@@ -123,10 +125,10 @@ namespace ShooterFoundation.Presentation
         void DrawBeam(float2 start,float2 end,float time)
         {
             float2 delta=end-start; float length=math.length(delta); float angle=math.atan2(delta.y,delta.x)-math.PI*0.5f; float2 center=(start+end)*0.5f;
-            if (QualityLevel<2) m_Beam.Add(center,new float2(0.28f,length),Uv(m_Art.White),-0.6f,new float4(1f,0.48f,0.17f,0.26f),angle);
-            m_Beam.Add(center,new float2(0.10f,length),Uv(m_Art.White),-0.7f,new float4(1f,0.68f,0.28f,0.9f),angle);
+            if (QualityLevel<2) m_Beam.Add(center,new float2(0.30f,length+0.10f),Uv(m_Art.CombatFx.Glow),-0.6f,new float4(1f,0.48f,0.17f,0.26f),angle);
+            m_Beam.Add(center,new float2(0.085f,length),Uv(m_Art.White),-0.7f,new float4(1f,0.68f,0.28f,0.9f),angle);
             m_Beam.Add(center,new float2(0.035f,length),Uv(m_Art.White),-0.8f,new float4(1f,1f,0.85f,1f),angle);
-            m_Beam.Add(end,new float2(0.4f+0.05f*math.sin(time*35f)),Uv(m_Art.Ring),-0.9f,new float4(1f,0.83f,0.4f,0.85f));
+            m_Beam.Add(end,new float2(0.34f+0.045f*math.sin(time*35f)),Uv(m_Art.CombatFx.Core),-0.9f,new float4(1f,0.89f,0.62f,0.9f),time*1.4f);
         }
         float4 Uv(int sprite) => m_Art.Sheet[sprite].Uv;
         void AddRect(SpriteBatch batch,float2 pos,float2 size,float4 tint,float z) => batch.Add(pos,size,Uv(m_Art.White),z,tint);
@@ -135,7 +137,15 @@ namespace ShooterFoundation.Presentation
         void Drain(SimWorld w)
         {
             var events=w.Resource(ShooterKeys.Feedback);
-            for (int i=0;i<events.Count;i++) { var e=events[i]; Feedback?.Invoke(e); if (e.Kind==ShooterFeedbackKind.Destroyed && m_FxCount<EffectBudget) m_Fx[m_FxCount++]=new Effect { Position=e.Position,Scale=e.Scale }; }
+            for (int i=0;i<events.Count;i++)
+            {
+                var e=events[i]; Feedback?.Invoke(e);
+                ulong key = 0xf000000000000000ul | ++m_EventSequence;
+                if (e.Kind==ShooterFeedbackKind.Destroyed) m_Fx.Emit(DeathProfile,e.Position,key,e.Scale);
+                else if (e.Kind==ShooterFeedbackKind.Shot) m_Fx.Emit(ShotProfile,e.Position+new float2(0f,0.8f),key);
+                else if (e.Kind==ShooterFeedbackKind.Hit) m_Fx.Emit(ImpactProfile,e.Position,key);
+                else if (e.Kind==ShooterFeedbackKind.Hurt) m_Fx.Emit(VfxProfile.HeroHurt,e.Position,key);
+            }
             events.Clear();
         }
         void OnDestroy() { m_Back?.Dispose();m_Clouds?.Dispose();m_Shadows?.Dispose();m_Pickups?.Dispose();m_Actors?.Dispose();m_Beam?.Dispose();m_Bullets?.Dispose();m_Effects?.Dispose();m_Art?.Dispose(); }

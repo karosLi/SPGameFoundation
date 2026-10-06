@@ -1,0 +1,6 @@
+{
+  "name": "SPF.MobileExamples.Editor",
+  "references": ["BrawlerFoundation.Game", "SurvivorFoundation.Game"],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": true
+}

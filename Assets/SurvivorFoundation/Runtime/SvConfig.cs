@@ -12,6 +12,7 @@ namespace SurvivorFoundation
     public sealed class SvConfig : ScriptableObject
     {
         public SvSettings Settings = DefaultSettings();
+        public bool MobileSkills;
         public List<EnemyEntry> Enemies = EnemyEntry.Defaults();
         public CapacitySection Capacity = new CapacitySection();
 
@@ -102,6 +103,14 @@ namespace SurvivorFoundation
             return config;
         }
 
+        /// <summary>Portrait-first horde example with manual pulse and aimed blink skills.</summary>
+        public static SvConfig CreateMobileCombatExample()
+        {
+            var config = CreateGuardExample();
+            config.MobileSkills = true;
+            return config;
+        }
+
         public static SvConfig CreateDefault()
         {
             var config = CreateInstance<SvConfig>();
@@ -114,12 +123,13 @@ namespace SurvivorFoundation
     public sealed class SvRuntime : IDisposable
     {
         public SvSettings Settings;
+        public bool MobileSkills;
         public NativeArray<EnemyDef> Enemies;
         public string[] EnemyNames;
 
         public static SvRuntime Bake(SvConfig source)
         {
-            var r = new SvRuntime { Settings = source.Settings };
+            var r = new SvRuntime { Settings = source.Settings, MobileSkills = source.MobileSkills };
             int n = source.Enemies.Count;
             r.Enemies = new NativeArray<EnemyDef>(math.max(n, 1), Allocator.Persistent);
             r.EnemyNames = new string[n];

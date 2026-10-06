@@ -1,0 +1,1 @@
+{"name":"SPF.MotionValidation","rootNamespace":"SPF.MotionValidation","references":["SPF.Presentation","SPF.L1Simulation","Unity.Collections","Unity.Mathematics","Unity.Burst","UnityEngine.UI"],"autoReferenced":true}

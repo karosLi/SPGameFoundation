@@ -22,11 +22,13 @@ namespace BrawlerFoundation.Game
         [SerializeField] bool m_CreateUI = true;
         [SerializeField, Tooltip("Use bounded stable-handle combat histories (64 fighters). Classic saves use a different layout.")]
         bool m_SharedCombat;
+        [SerializeField] bool m_MobileCombat;
 
         ModeDefinition m_Mode;
         GameplayModuleAsset m_Module;
         SoundPlayer m_Sound;
         int m_Swing, m_Hit, m_Ko, m_Wave, m_Lose;
+        bool m_ScriptedInputOwner;
         BwFlow m_Flow = (BwFlow)255;
 
         public SessionHost Host { get; private set; }
@@ -35,7 +37,7 @@ namespace BrawlerFoundation.Game
         public BwRenderer Renderer { get; private set; }
         public InputRouter InputRouter { get; private set; }
         public SimSession Session => Host != null ? Host.Session : null;
-        public bool SharedCombatEnabled => m_SharedCombat;
+        public bool SharedCombatEnabled => m_SharedCombat || m_MobileCombat;
         public BwGameState State => Session?.World.Resource(BwKeys.Game);
 
         public BufferText StatsText { get; private set; }
@@ -47,17 +49,19 @@ namespace BrawlerFoundation.Game
         public TapButton PunchButton { get; private set; }
         public TapButton KickButton { get; private set; }
         public VirtualJoystick Joystick { get; private set; }
+        public MobileCombatHud MobileHud { get; private set; }
 
         /// <summary>Scripted input for tests and demos (replaces the stick; buttons add up).</summary>
         public System.Func<InputFrame> Script { get; set; }
 
-        public static BwGameBootstrap Create(bool ui = true, bool sharedCombat = false)
+        public static BwGameBootstrap Create(bool ui = true, bool sharedCombat = false, bool mobileCombat = false)
         {
             var go = new GameObject("BrawlerGame");
             go.SetActive(false);
             var game = go.AddComponent<BwGameBootstrap>();
             game.m_CreateUI = ui;
-            game.m_SharedCombat = sharedCombat;
+            game.m_SharedCombat = sharedCombat || mobileCombat;
+            game.m_MobileCombat = mobileCombat;
             go.SetActive(true);
             return game;
         }
@@ -65,11 +69,13 @@ namespace BrawlerFoundation.Game
         /// <summary>Playable stable-hit example at the renderer's existing 64-fighter bound.</summary>
         public static BwGameBootstrap CreateSharedCombat(bool ui = true) => Create(ui, sharedCombat: true);
 
+        public static BwGameBootstrap CreateMobileCombat(bool ui = true) => Create(ui, mobileCombat: true);
+
         void Awake()
         {
             Governor = gameObject.AddComponent<FrameGovernor>();
             Governor.SetFrameRates(60, 30);
-            m_Mode = m_SharedCombat
+            m_Mode = m_MobileCombat ? BwMode.CreateMobileCombat(out m_Module) : m_SharedCombat
                 ? BwMode.CreateSharedCombat(BwSharedCombatConfig.Default, out m_Module)
                 : BwMode.Create(out m_Module);
             var sim = new GameObject("Simulation");
@@ -113,7 +119,15 @@ namespace BrawlerFoundation.Game
                     scripted.Pressed |= frame.Pressed;
                     frame = scripted;
                 }
-                state.Input = InputFrame.Latch(state.Input, frame);
+                if (m_MobileCombat)
+                {
+                    bool scriptedOwner = InputRouter.Scripted.Active;
+                    if (scriptedOwner != m_ScriptedInputOwner)
+                    { MobileHud?.CancelInput(); state.Input = default; m_ScriptedInputOwner = scriptedOwner; }
+                    if (Session.State != SessionState.Running || state.Flow != BwFlow.Fighting) { state.Input = default; return; }
+                    state.Input = InputFrame.Latch(state.Input, frame);
+                }
+                else state.Input = InputFrame.Latch(state.Input, frame);
             };
             if (m_CreateUI) BuildUi();
             InputRouter.AddSource(new KeyboardInputSource().Map(KeyCode.J, BwButton.Punch).Map(KeyCode.K, BwButton.Kick));
@@ -123,17 +137,31 @@ namespace BrawlerFoundation.Game
         {
             var canvas = UIFactory.CreateCanvas(transform, "BrawlerUI");
             var root = canvas.transform;
+            if (m_MobileCombat)
+            {
+                MobileHud = gameObject.AddComponent<MobileCombatHud>();
+                MobileHud.Build(root, new MobileSource(this), preferLandscape: true);
+                MobileHud.Interrupted = () => { if (State != null) State.Input = default; };
+                MobileHud.SkillCanceled = slot => { if (State != null) State.Input = SkillInput.CancelSlot(State.Input, slot); };
+                Joystick = MobileHud.Joystick;
+                InputRouter.AddSource(MobileHud.Input);
+                root = MobileHud.SafeRoot;
+            }
             StatsText = BufferText.Create(root, "Stats", 40, TextAnchor.UpperLeft, new Vector2(0.01f, 0.86f), new Vector2(0.7f, 0.99f));
-            var stick = UIFactory.Panel(root, "Joystick", new Color(1f, 1f, 1f, 0.03f), Vector2.zero, new Vector2(0.45f, 0.6f));
-            Joystick = stick.gameObject.AddComponent<VirtualJoystick>();
-            var punch = UIFactory.Button(root, "PunchButton", "PUNCH", new Vector2(-420, 200), new Vector2(240, 240), new Color(0.9f, 0.45f, 0.3f, 0.55f), new Vector2(1f, 0f));
-            PunchButton = punch.gameObject.AddComponent<TapButton>();
-            var kick = UIFactory.Button(root, "KickButton", "KICK", new Vector2(-160, 300), new Vector2(220, 220), new Color(0.3f, 0.55f, 0.9f, 0.55f), new Vector2(1f, 0f));
-            KickButton = kick.gameObject.AddComponent<TapButton>();
-            InputRouter.AddSource(new TouchInputSource(Joystick).Tap(PunchButton, BwButton.Punch).Tap(KickButton, BwButton.Kick));
+            if (!m_MobileCombat)
+            {
+                var stick = UIFactory.Panel(root, "Joystick", new Color(1f, 1f, 1f, 0.03f), Vector2.zero, new Vector2(0.45f, 0.6f));
+                Joystick = stick.gameObject.AddComponent<VirtualJoystick>();
+                var punch = UIFactory.Button(root, "PunchButton", "PUNCH", new Vector2(-420, 200), new Vector2(240, 240), new Color(0.9f, 0.45f, 0.3f, 0.55f), new Vector2(1f, 0f));
+                PunchButton = punch.gameObject.AddComponent<TapButton>();
+                var kick = UIFactory.Button(root, "KickButton", "KICK", new Vector2(-160, 300), new Vector2(220, 220), new Color(0.3f, 0.55f, 0.9f, 0.55f), new Vector2(1f, 0f));
+                KickButton = kick.gameObject.AddComponent<TapButton>();
+                InputRouter.AddSource(new TouchInputSource(Joystick).Tap(PunchButton, BwButton.Punch).Tap(KickButton, BwButton.Kick));
+
+            }
 
             MenuPanel = UIFactory.Panel(root, "MenuPanel", new Color(0f, 0f, 0f, 0.5f), Vector2.zero, Vector2.one);
-            UIFactory.Label(MenuPanel, "Title", "BRAWL", 150, TextAnchor.MiddleCenter, new Vector2(0f, 0.6f), new Vector2(1f, 0.85f));
+            UIFactory.Label(MenuPanel, "Title", m_MobileCombat ? "BRAWL / MOBILE" : "BRAWL", m_MobileCombat ? 74 : 150, TextAnchor.MiddleCenter, new Vector2(0f, 0.6f), new Vector2(1f, 0.85f));
             StartButton = UIFactory.Button(MenuPanel, "StartButton", "FIGHT", new Vector2(0, -20), new Vector2(460, 140), new Color(0.85f, 0.4f, 0.3f, 0.95f), new Vector2(0.5f, 0.5f));
             StartButton.onClick.AddListener(() => State?.Send(BwCommandKind.Start));
 
@@ -148,6 +176,7 @@ namespace BrawlerFoundation.Game
             var state = State;
             if (state == null || StatsText == null) return;
             int hp = 0;
+            Session.Sync();
             var world = Session.World;
             var info = world.Column(BwKeys.Info);
             for (int i = 0; i < world.Table(BwKeys.Fighter).Count; i++) if (info[i].Team == 0) { hp = (int)info[i].Hp; break; }
@@ -160,6 +189,22 @@ namespace BrawlerFoundation.Game
             bool end = state.Flow == BwFlow.Won || state.Flow == BwFlow.Lost;
             EndPanel.gameObject.SetActive(end);
             if (end) EndText.text = state.Flow == BwFlow.Won ? "VICTORY" : "DOWN AND OUT";
+        }
+
+        sealed class MobileSource : IMobileCombatHudSource
+        {
+            readonly BwGameBootstrap m_Game;
+            public MobileSource(BwGameBootstrap game) => m_Game = game;
+            public int SlotCount => 2;
+            public int TickRate => 60;
+            public bool Playing => m_Game.Session != null && m_Game.Session.State == SessionState.Running && m_Game.State.Flow == BwFlow.Fighting && !m_Game.InputRouter.Scripted.Active;
+            public string SlotLabel(int slot) => slot == 0 ? "PUNCH / J" : "KICK / K";
+            public SkillSlotSnapshot ReadSlot(int slot)
+            {
+                m_Game.Session.Sync();
+                var world = m_Game.Session.World;
+                return world.Resource(BwMobileSkills.Key).GetSnapshot(slot, Playing && BwMobileSkills.CanAct(world));
+            }
         }
 
         void OnFeedback(BwFeedback e)

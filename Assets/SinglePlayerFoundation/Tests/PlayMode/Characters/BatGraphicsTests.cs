@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using NUnit.Framework;
+using SPF.Testing;
 using SPF.Presentation.Characters;
 using Unity.Mathematics;
 using UnityEngine;
@@ -101,11 +102,16 @@ namespace SPF.Characters.Tests.PlayMode
             RequireGraphics();using var asset=BatCharacterAsset.Bake();using var batch=new BatCharacterBatch(asset,64,forceCpu);
             var instance=asset.Instance(0,.3f,0,1,1,new float4(1));for(int i=0;i<64;i++)batch.Add(instance);
             for(int f=0;f<64;f++){instance.Frames.z=(f%10)*.1f;batch.Set(0,instance);batch.Prepare();}
-            long before=GC.GetAllocatedBytesForCurrentThread();
-            for(int f=0;f<64;f++){instance.Frames.z=(f%10)*.1f;batch.Set(0,instance);batch.Prepare();}
-            long allocated=GC.GetAllocatedBytesForCurrentThread()-before;
-            Assert.That(allocated,Is.Zero,"Warmed BAT Prepare main-thread managed bytes (not driver/native GPU memory).");
-            Debug.Log("BAT warmed Prepare backend="+batch.Backend+", main-thread managed bytes="+allocated+" over 64 updates after 64 warmup updates.");
+            Action measured = () =>
+            {
+                for(int f=0;f<64;f++){instance.Frames.z=(f%10)*.1f;batch.Set(0,instance);batch.Prepare();}
+            };
+            using var probe = new ManagedAllocationProbe();
+            var calibrationBefore = probe.Calibrate();
+            var sample = probe.Measure(measured);
+            var calibrationAfter = probe.Calibrate();
+            TestContext.WriteLine($"BAT warmed Prepare backend={batch.Backend}, 64 updates after 64 warm-up updates: {sample.Value} current-thread {sample.Metric}; independent process-wide gen0 collections={sample.Collections}; retained-array/empty calibration before={calibrationBefore.RetainedArrays.Value}/{calibrationBefore.Empty.Value}, after={calibrationAfter.RetainedArrays.Value}/{calibrationAfter.Empty.Value}.");
+            Assert.That(sample.Value, Is.Zero, $"Warmed BAT Prepare must allocate zero current-thread {sample.Metric}; excludes driver/native GPU memory.");
         }
         static BatClipSet CreateAsset(bool compact)
         {

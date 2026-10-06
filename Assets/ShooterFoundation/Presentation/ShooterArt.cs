@@ -1,5 +1,6 @@
 using System;
 using SPF.Presentation.Sprites;
+using SPF.Presentation.Combat;
 using Unity.Mathematics;
 using UnityEngine;
 
@@ -9,6 +10,7 @@ namespace ShooterFoundation.Presentation
     public sealed class ShooterArt : IDisposable
     {
         public SpriteSheet Sheet;
+        public CombatVfxArt CombatFx;
         public int Plane, Wing, Drone, Heavy, Bolt, Orb, Coin, Repair, Ring, White, Shadow, Cloud;
         static readonly Color32 Ink = C(17, 30, 51), Ivory = C(242, 241, 223), Teal = C(44, 202, 191), Coral = C(243, 99, 95);
         static Color32 C(byte r, byte g, byte b, byte a = 255) => new Color32(r, g, b, a);
@@ -25,6 +27,7 @@ namespace ShooterFoundation.Presentation
             a.White = atlas.Add(new[] { C(255,255,255), C(255,255,255), C(255,255,255), C(255,255,255) },2,2,"white");
             a.Shadow = atlas.Add(BlobShadow.CreateCanvas());
             a.Cloud = Add(atlas, 96, c => { Ellipse(c,34,43,28,18,C(127,178,205,70)); Ellipse(c,57,53,30,22,C(127,178,205,70)); Ellipse(c,73,40,16,16,C(127,178,205,70)); });
+            a.CombatFx = CombatVfxArt.AddTo(atlas);
             a.Sheet = atlas.Build(1024, FilterMode.Bilinear, 2, true); return a;
         }
         static int Add(SpriteAtlasBuilder atlas, int size, Action<PixelCanvas> draw) { var c = new PixelCanvas(size*4,size*4); draw(c); return atlas.Add(SmoothSpriteArt.Downsample(c,4)); }
@@ -44,6 +47,15 @@ namespace ShooterFoundation.Presentation
             Line(c,46,62,46,66,2.5f,C(208,247,255));
             Line(c,26,45,26,52,4,panel); Line(c,70,45,70,52,4,panel);
             Line(c,45,19,45,27,3,Ink); Line(c,51,19,51,27,3,Ink);
+            // Airframe panel shading, ceramic highlights, brass hardpoints and engine vents.
+            Line(c,13,40,36,52,2.5f,C(121,151,160)); Line(c,59,52,82,40,2.5f,C(121,151,160));
+            Line(c,17,47,34,55,1.7f,C(255,254,236)); Line(c,61,55,79,47,1.7f,C(255,254,236));
+            Line(c,37,30,39,45,2,C(136,160,167)); Line(c,57,30,55,45,2,C(136,160,167));
+            Line(c,42,38,42,48,1.5f,C(255,255,244));
+            Line(c,24,36,24,46,5,Ink); Line(c,72,36,72,46,5,Ink);
+            Line(c,24,43,24,48,2.5f,C(255,184,66)); Line(c,72,43,72,48,2.5f,C(255,184,66));
+            Ellipse(c,16,43,2.3f,2.3f,C(253,103,91)); Ellipse(c,80,43,2.3f,2.3f,C(83,236,197));
+            for(int i=0;i<3;i++) { Line(c,40,24+i*3,44,24+i*3,1.2f,Ink); Line(c,52,24+i*3,56,24+i*3,1.2f,Ink); }
             Ellipse(c,48,83,3,3,C(250,174,62));
         }
         static void Enemy(PixelCanvas c,bool heavy)
@@ -55,6 +67,14 @@ namespace ShooterFoundation.Presentation
             Line(c,30,49,50,49,10,Ink); Line(c,32,49,48,49,4,C(253,220,136));
             Ellipse(c,40,26,8,9,Ink); Ellipse(c,40,26,5,6,C(89,120,154));
             Line(c,40,61,40,66,4,Ivory);
+            // Warm raised armor against cool inset machinery; silhouettes remain readable on mobile.
+            Line(c,heavy?23:28,38,heavy?22:28,51,3,C(255,191,121));
+            Line(c,heavy?57:52,38,heavy?58:52,51,3,C(132,61,74));
+            Line(c,32,57,47,57,2,C(255,213,159));
+            Line(c,32,33,35,29,2.5f,C(112,58,77)); Line(c,48,33,45,29,2.5f,C(112,58,77));
+            Ellipse(c,38,29,2,2,C(129,203,226));
+            Line(c,10,51,23,43,2,C(255,195,136)); Line(c,58,43,70,51,2,C(255,195,136));
+            if(heavy) { Line(c,24,19,24,32,7,Ink); Line(c,56,19,56,32,7,Ink); Line(c,24,22,24,28,3,C(124,170,182)); Line(c,56,22,56,28,3,C(124,170,182)); }
         }
         public void Dispose() { Sheet?.Dispose(); Sheet = null; }
     }

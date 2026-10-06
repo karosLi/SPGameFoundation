@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using NUnit.Framework;
+using SPF.Testing;
 using SPF.Contracts;
 using SPF.L2.Combat;
 using SPF.Runtime.World;
@@ -188,10 +189,13 @@ namespace SPF.Tests.EditMode
             var job = new PrimitiveJob { Targets = targets, Result = result };
             job.Schedule().Complete(); Assert.AreEqual(1, result[0]);
             for (int i = 0; i < 32; i++) job.Execute();
-            long before = GC.GetAllocatedBytesForCurrentThread();
-            for (int i = 0; i < 1000; i++) job.Execute();
-            long bytes = GC.GetAllocatedBytesForCurrentThread() - before;
-            Assert.AreEqual(0, bytes, "primitive calls only; scheduler/frame allocations are a separate measurement");
+            Action measured = () => { for (int i = 0; i < 1000; i++) job.Execute(); };
+            using var probe = new ManagedAllocationProbe();
+            var calibrationBefore = probe.Calibrate();
+            var sample = probe.Measure(measured);
+            var calibrationAfter = probe.Calibrate();
+            TestContext.WriteLine($"Shared combat primitives, 1000 direct calls after 32 warm-up calls: {sample.Value} current-thread {sample.Metric}; independent process-wide gen0 collections={sample.Collections}; retained-array/empty calibration before={calibrationBefore.RetainedArrays.Value}/{calibrationBefore.Empty.Value}, after={calibrationAfter.RetainedArrays.Value}/{calibrationAfter.Empty.Value}.");
+            Assert.AreEqual(0, sample.Value, $"Primitive calls must allocate zero {sample.Metric}; scheduler/frame allocations are a separate measurement.");
         }
     }
 }

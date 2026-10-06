@@ -8,6 +8,7 @@ namespace UnityEngine
     public enum RenderMode { ScreenSpaceOverlay, ScreenSpaceCamera, WorldSpace }
     public sealed class Canvas : Behaviour
     {
+        public static void ForceUpdateCanvases() { }
         public RenderMode renderMode { get; set; }
         public int sortingOrder { get; set; }
         public Camera worldCamera { get; set; }

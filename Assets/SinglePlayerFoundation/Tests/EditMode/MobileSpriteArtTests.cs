@@ -1,5 +1,6 @@
 using System;
 using NUnit.Framework;
+using SPF.Testing;
 using SPF.Presentation;
 using SPF.Presentation.Sprites;
 using Unity.Mathematics;
@@ -120,14 +121,20 @@ namespace SPF.Tests.EditMode
             Assert.AreEqual(0.4f, sprite.Color.w, 1f / 255f);
             Assert.IsFalse(BlobShadow.Add(batch, uv, float2.zero, 0f, profile, 4f));
             Assert.IsFalse(BlobShadow.Add(batch, uv, float2.zero, 0f, profile, scale: 0f));
-            long before = GC.GetAllocatedBytesForCurrentThread();
-            for (int i = 0; i < 256; i++)
+            Action measured = () =>
             {
-                batch.Clear();
-                BlobShadow.Add(batch, uv, float2.zero, 0f, profile, i % 5);
-            }
-            long bytes = GC.GetAllocatedBytesForCurrentThread() - before;
-            Assert.AreEqual(0L, bytes);
+                for (int i = 0; i < 256; i++)
+                {
+                    batch.Clear();
+                    BlobShadow.Add(batch, uv, float2.zero, 0f, profile, i % 5);
+                }
+            };
+            using var probe = new ManagedAllocationProbe();
+            var calibrationBefore = probe.Calibrate();
+            var sample = probe.Measure(measured);
+            var calibrationAfter = probe.Calibrate();
+            TestContext.WriteLine($"Blob shadow, 256 iterations after the setup calls above: {sample.Value} current-thread {sample.Metric}; independent process-wide gen0 collections={sample.Collections}; retained-array/empty calibration before={calibrationBefore.RetainedArrays.Value}/{calibrationBefore.Empty.Value}, after={calibrationAfter.RetainedArrays.Value}/{calibrationAfter.Empty.Value}.");
+            Assert.AreEqual(0L, sample.Value, $"Warmed blob shadow calls must allocate zero {sample.Metric}.");
         }
 
 #if !SPF_DOTNET_HARNESS

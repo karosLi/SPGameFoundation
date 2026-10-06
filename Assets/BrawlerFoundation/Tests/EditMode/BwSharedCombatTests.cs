@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using NUnit.Framework;
+using SPF.Testing;
 using SPF.Contracts;
 using SPF.L2.Combat;
 using Unity.Collections;
@@ -195,9 +196,13 @@ namespace BrawlerFoundation.Tests
                 }
             }
             Run();
-            long before = GC.GetAllocatedBytesForCurrentThread(); Run();
-            long bytes = GC.GetAllocatedBytesForCurrentThread() - before;
-            Assert.AreEqual(0, bytes, "warmed simulation path, excludes rendering/native allocations");
+            Action measured = Run;
+            using var probe = new ManagedAllocationProbe();
+            var calibrationBefore = probe.Calibrate();
+            var sample = probe.Measure(measured);
+            var calibrationAfter = probe.Calibrate();
+            TestContext.WriteLine($"Brawler shared combat, 90 ticks after 90 warm-up ticks: {sample.Value} current-thread {sample.Metric}; independent process-wide gen0 collections={sample.Collections}; retained-array/empty calibration before={calibrationBefore.RetainedArrays.Value}/{calibrationBefore.Empty.Value}, after={calibrationAfter.RetainedArrays.Value}/{calibrationAfter.Empty.Value}.");
+            Assert.AreEqual(0, sample.Value, $"Warmed simulation must allocate zero current-thread {sample.Metric}; excludes rendering/native allocations.");
         }
 
         [Test]

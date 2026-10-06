@@ -5,6 +5,7 @@
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "SPF.Contracts",
+        "SPF.Testing",
         "SPF.L1Simulation",
         "SPF.L2Gameplay",
         "SPF.Runtime.Core",

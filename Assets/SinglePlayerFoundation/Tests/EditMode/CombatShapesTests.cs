@@ -1,5 +1,6 @@
 using System;
 using NUnit.Framework;
+using SPF.Testing;
 using SPF.L2.Combat;
 using Unity.Mathematics;
 
@@ -60,10 +61,13 @@ namespace SPF.Tests.EditMode
         {
             int hits = 0;
             for (int n = 0; n < 16; n++) Run(n, ref hits);
-            long before = GC.GetAllocatedBytesForCurrentThread();
-            for (int n = 0; n < 1000; n++) Run(n, ref hits);
-            long bytes = GC.GetAllocatedBytesForCurrentThread() - before;
-            Assert.AreEqual(0, bytes);
+            Action measured = () => { for (int n = 0; n < 1000; n++) Run(n, ref hits); };
+            using var probe = new ManagedAllocationProbe();
+            var calibrationBefore = probe.Calibrate();
+            var sample = probe.Measure(measured);
+            var calibrationAfter = probe.Calibrate();
+            TestContext.WriteLine($"Combat shapes, 1000 iterations after 16 warm-up iterations: {sample.Value} current-thread {sample.Metric}; independent process-wide gen0 collections={sample.Collections}; retained-array/empty calibration before={calibrationBefore.RetainedArrays.Value}/{calibrationBefore.Empty.Value}, after={calibrationAfter.RetainedArrays.Value}/{calibrationAfter.Empty.Value}.");
+            Assert.AreEqual(0, sample.Value, $"Warmed combat shape calls must allocate zero {sample.Metric}.");
             Assert.Greater(hits, 0);
         }
 

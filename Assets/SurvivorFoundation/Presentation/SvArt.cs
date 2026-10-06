@@ -1,5 +1,6 @@
 using System;
 using SPF.Presentation.Sprites;
+using SPF.Presentation.Combat;
 using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
@@ -18,6 +19,7 @@ namespace SurvivorFoundation.Presentation
         public int[] Bullets;                     // index = BulletVisual
         public int Gem, Blade, Ground, Glow, Ring, White, Shadow, Beacon;
         public SpriteClip Puff;
+        public CombatVfxArt CombatFx;
 
         /// <summary>Atlas rects of every enemy frame (kind - 1) * 2 + frame, for Burst draw jobs.</summary>
         public NativeArray<float4> EnemyUv;
@@ -104,6 +106,7 @@ namespace SurvivorFoundation.Presentation
                 c.Rect(2, 2, 20, 5, C(140, 148, 129)); c.Rect(3, 7, 4, 18, C(158, 168, 143));
                 c.Rect(17, 7, 4, 18, C(158, 168, 143)); c.Ellipse(12, 18, 4, 10, C(169, 238, 118)); c.Outline(Outline);
             });
+            art.CombatFx = CombatVfxArt.AddTo(atlas);
             art.Sheet = atlas.Build();
             art.EnemyUv = new NativeArray<float4>(math.max(enemyKinds, 1) * 2, Allocator.Persistent);
             for (int k = 0; k < enemyKinds; k++)

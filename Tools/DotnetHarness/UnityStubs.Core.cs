@@ -213,6 +213,7 @@ namespace UnityEngine
         public static int width { get; set; } = 1920;
         public static int height { get; set; } = 1080;
         public static float dpi => 160f;
+        public static Rect safeArea => new Rect(0, 0, width, height);
         public static bool fullScreen { get; set; }
         public static int sleepTimeout { get; set; }
     }

@@ -1,6 +1,7 @@
 using System;
 using System.Reflection;
 using NUnit.Framework;
+using SPF.Testing;
 using Unity.Collections;
 using UnityEngine.Rendering;
 using SPF.Presentation;
@@ -265,14 +266,20 @@ namespace SPF.Tests.EditMode
                 batch.Count = counts[i % counts.Length];
                 batch.Draw(bounds);
             }
-            long before = GC.GetAllocatedBytesForCurrentThread();
-            for (int i = 0; i < counts.Length * 4; i++)
+            Action measured = () =>
             {
-                batch.Count = counts[i % counts.Length];
-                batch.Draw(bounds);
-            }
-            long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
-            Assert.AreEqual(0L, allocated, "cached textures, copies, and count changes must allocate no managed memory");
+                for (int i = 0; i < counts.Length * 4; i++)
+                {
+                    batch.Count = counts[i % counts.Length];
+                    batch.Draw(bounds);
+                }
+            };
+            using var probe = new ManagedAllocationProbe();
+            var calibrationBefore = probe.Calibrate();
+            var sample = probe.Measure(measured);
+            var calibrationAfter = probe.Calibrate();
+            TestContext.WriteLine($"Data-texture sprite counts, 48 draws after 24 warm-up draws: {sample.Value} current-thread {sample.Metric}; independent process-wide gen0 collections={sample.Collections}; retained-array/empty calibration before={calibrationBefore.RetainedArrays.Value}/{calibrationBefore.Empty.Value}, after={calibrationAfter.RetainedArrays.Value}/{calibrationAfter.Empty.Value}.");
+            Assert.AreEqual(0L, sample.Value, $"Cached textures, copies, and count changes must allocate zero {sample.Metric}.");
         }
 
         [Test]

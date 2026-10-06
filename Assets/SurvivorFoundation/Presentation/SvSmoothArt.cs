@@ -1,5 +1,6 @@
 using System;
 using SPF.Presentation.Sprites;
+using SPF.Presentation.Combat;
 using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
@@ -20,12 +21,13 @@ namespace SurvivorFoundation.Presentation
         sealed class Pen
         {
             public readonly PixelCanvas Canvas;
+            public Color32 Rim = C(115, 138, 129);
             public Pen(int w, int h) { Canvas = new PixelCanvas(w * Super, h * Super); }
             public void Oval(float x, float y, float rx, float ry, Color32 color, bool rim = true)
             {
                 if (rim)
                 {
-                    Canvas.Ellipse(x * Super, y * Super, (rx + 1.8f) * Super, (ry + 1.8f) * Super, Paper);
+                    Canvas.Ellipse(x * Super, y * Super, (rx + 1.25f) * Super, (ry + 1.25f) * Super, Rim);
                     Canvas.Ellipse(x * Super, y * Super, (rx + 1f) * Super, (ry + 1f) * Super, Ink);
                 }
                 Canvas.Ellipse(x * Super, y * Super, rx * Super, ry * Super, color);
@@ -34,7 +36,7 @@ namespace SurvivorFoundation.Presentation
             {
                 if (rim)
                 {
-                    Canvas.Line(new float2(ax, ay) * Super, new float2(bx, by) * Super, (width + 3.6f) * Super, Paper);
+                    Canvas.Line(new float2(ax, ay) * Super, new float2(bx, by) * Super, (width + 2.5f) * Super, Rim);
                     Canvas.Line(new float2(ax, ay) * Super, new float2(bx, by) * Super, (width + 2f) * Super, Ink);
                 }
                 Canvas.Line(new float2(ax, ay) * Super, new float2(bx, by) * Super, width * Super, color);
@@ -57,6 +59,7 @@ namespace SurvivorFoundation.Presentation
                 int bob = f;
                 int frame = Add(atlas, 64, 64, p =>
                 {
+                    p.Rim = Paper;
                     p.Line(24, 10, 25, 21 + bob, 7, C(43, 68, 82));
                     p.Line(39, 10, 36, 22 + bob, 7, C(43, 68, 82));
                     p.Oval(31, 27 + bob, 12, 14, C(77, 156, 178));
@@ -69,6 +72,13 @@ namespace SurvivorFoundation.Presentation
                     p.Line(49, 12, 51, 43, 3.5f, C(170, 123, 81));
                     p.Oval(51, 47, 5, 6, C(148, 246, 246));
                     p.Line(24, 31 + bob, 39, 31 + bob, 3, C(242, 198, 91), false);
+                    p.Line(26, 17+bob, 24, 27+bob, 2, C(43,103,131), false);
+                    p.Line(35, 17+bob, 38, 27+bob, 2, C(128,215,219), false);
+                    p.Line(23, 51+bob, 28, 55+bob, 2, C(187,246,230), false);
+                    p.Line(39, 48+bob, 40, 40+bob, 2, C(50,128,155), false);
+                    p.Oval(31,31+bob,2.4f,2.5f,C(253,230,155),false);
+                    p.Line(49, 35, 53, 37, 2.5f, C(242,198,91), false);
+                    p.Oval(50,49,1.7f,2.5f,Paper,false);
                 });
                 if (f == 0) firstHero = frame;
             }
@@ -77,7 +87,8 @@ namespace SurvivorFoundation.Presentation
             for (int k = 0; k < enemyKinds; k++)
             {
                 int first = -1, shape = k % 4;
-                Color32 tint = (Color32)Color.Lerp(enemyColor(k), new Color(0.63f, 0.68f, 0.36f), 0.6f);
+                Color32 family = shape == 0 ? C(152,175,111) : shape == 1 ? C(106,159,164) : shape == 2 ? C(182,137,90) : C(150,120,174);
+                Color32 tint = (Color32)Color.Lerp(enemyColor(k), (Color)family, 0.78f);
                 for (int f = 0; f < 2; f++)
                 {
                     int bob = f;
@@ -94,6 +105,11 @@ namespace SurvivorFoundation.Presentation
                         p.Oval(27, 45 + bob, 1.7f, 2.3f, Ink, false);
                         p.Oval(36, 45 + bob, 1.7f, 2.3f, Ink, false);
                         p.Line(27, 37 + bob, 35, 37 + bob, 2.5f, Ink, false);
+                        p.Line(22,50+bob,26,54+bob,2,PixelCanvas.Shade(tint,1.2f),false);
+                        p.Line(38,38+bob,40,43+bob,2,dark,false);
+                        p.Oval(28,27+bob,5,7,PixelCanvas.Shade(tint,0.86f),false);
+                        p.Line(22,23+bob,39,23+bob,2.3f,C(77,71,62),false);
+                        p.Oval(32,23+bob,2,2,C(218,179,103),false);
                         if (shape == 0) { p.Oval(20, 54 + bob, 4, 5, tint); p.Oval(39, 55 + bob, 4, 4, tint); }
                         if (shape == 2) { p.Line(18, 52, 15, 59, 3, Paper); p.Line(43, 52, 46, 59, 3, Paper); }
                         if (shape == 3) p.Oval(53, 38 + bob, 4, 5, C(211, 129, 231));
@@ -117,18 +133,26 @@ namespace SurvivorFoundation.Presentation
             });
             art.Ground = Add(atlas, 64, 64, p =>
             {
-                p.Canvas.Rect(0, 0, 64 * Super, 64 * Super, C(182, 177, 151));
-                p.Line(4, 12, 23, 19, 0.6f, C(167, 164, 142), false);
-                p.Line(23, 19, 30, 31, 0.5f, C(167, 164, 142), false);
-                p.Line(48, 48, 61, 52, 0.6f, C(194, 188, 161), false);
-                p.Oval(14, 47, 1, 0.5f, C(158, 157, 136), false);
+                p.Canvas.Rect(0, 0, 64 * Super, 64 * Super, C(64, 82, 79));
+                p.Line(4, 12, 23, 19, 0.6f, C(53, 71, 70), false);
+                p.Line(23, 19, 30, 31, 0.5f, C(53, 71, 70), false);
+                p.Line(48, 48, 61, 52, 0.6f, C(78, 97, 88), false);
+                p.Oval(14, 47, 1, 0.5f, C(95, 111, 92), false);
+                p.Line(0, 2, 62, 2, 0.45f, C(57, 76, 74), false);
+                p.Line(2, 0, 2, 62, 0.45f, C(70, 89, 82), false);
+                p.Oval(53, 19, 2.6f, 1.0f, C(74, 89, 74), false);
             });
             art.Bullets = new int[4];
             var colors = new[] { C(120, 236, 255), C(255, 222, 119), C(143, 248, 191), C(237, 110, 188) };
             for (int b = 0; b < 4; b++)
             {
                 var color = colors[b];
-                art.Bullets[b] = Add(atlas, 24, 24, p => { p.Oval(12, 12, 9, 9, color, false); p.Oval(12, 12, 4, 4, Paper, false); });
+                int shape = b;
+                art.Bullets[b] = Add(atlas, 32, 32, p =>
+                {
+                    if (shape == 0) { p.Line(5,16,27,16,5,C(40,101,124),false); p.Line(9,16,26,16,3.2f,color,false); p.Line(16,16,26,16,1.4f,Paper,false); }
+                    else { p.Oval(16,16,10,10,C(44,63,71),false); p.Oval(16,16,8,8,color,false); p.Oval(14,18,3,3,Paper,false); p.Oval(18,13,3,2,PixelCanvas.Shade(color,0.65f),false); }
+                });
             }
             art.Gem = Add(atlas, 24, 32, p => { p.Line(12, 5, 7, 16, 6, C(135, 227, 233)); p.Line(7, 16, 12, 27, 6, C(184, 247, 240)); });
             art.Blade = Add(atlas, 32, 32, p => { p.Line(4, 4, 28, 28, 4, Paper); p.Line(9, 9, 18, 3, 3, C(199, 152, 69)); });
@@ -147,6 +171,7 @@ namespace SurvivorFoundation.Presentation
                 if (f == 0) puff = frame;
             }
             art.Puff = new SpriteClip(puff, 4, 14, false);
+            art.CombatFx = CombatVfxArt.AddTo(atlas);
             art.Sheet = atlas.Build(filterMode: FilterMode.Bilinear, padding: 2, extrudeEdges: true);
             art.EnemyUv = new NativeArray<float4>(math.max(enemyKinds, 1) * 2, Allocator.Persistent);
             for (int k = 0; k < enemyKinds; k++) for (int f = 0; f < 2; f++) art.EnemyUv[k * 2 + f] = art.Sheet[art.Enemies[k].First + f].Uv;

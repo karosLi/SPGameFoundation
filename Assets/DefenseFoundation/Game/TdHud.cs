@@ -13,6 +13,9 @@ namespace DefenseFoundation.Game
         int m_Version = -1;
         int2 m_Selected = new int2(-2);
         TdFlow m_Flow = (TdFlow)255;
+        readonly int[] m_BuildCosts = new int[Names.Length];
+        bool m_HasBuildLabels, m_HasTowerLabels, m_UpgradeMax;
+        int m_UpgradeCost, m_SellValue;
 
         public RectTransform HudPanel { get; private set; }
         public RectTransform BuildPanel { get; private set; }
@@ -31,6 +34,7 @@ namespace DefenseFoundation.Game
         public void Build(TdGameBootstrap game)
         {
             m_Game = game;
+            m_HasBuildLabels = m_HasTowerLabels = false;
             var root = UIFactory.CreateCanvas(transform, "DefenseUI").transform;
             HudPanel = UIFactory.Panel(root, "HudPanel", Color.clear, Vector2.zero, Vector2.one, raycast: false);
             StatsText = BufferText.Create(HudPanel, "StatsText", 34, TextAnchor.UpperLeft, new Vector2(0.01f, 0.88f), new Vector2(0.7f, 0.99f));
@@ -95,12 +99,22 @@ namespace DefenseFoundation.Game
             BuildPanel.gameObject.SetActive(inMap && !tower);
             TowerPanel.gameObject.SetActive(tower);
             if (inMap && !tower)
+            {
                 for (int i = 0; i < 3; i++)
                 {
                     bool ok = TdQueries.CanBuild(session, sel, (TowerKind)i, out _);
                     BuildButtons[i].interactable = ok;
-                    UIFactory.SetText(BuildButtons[i], $"{Names[i]} {rules.Towers[i].Cost}");
+                    int cost = rules.Towers[i].Cost;
+                    // Rewards/leaks change Version, but usually do not change any price label.
+                    // Test the numeric key before formatting: Text's equality check is too late.
+                    if (!m_HasBuildLabels || m_BuildCosts[i] != cost)
+                    {
+                        UIFactory.SetText(BuildButtons[i], $"{Names[i]} {cost}");
+                        m_BuildCosts[i] = cost;
+                    }
                 }
+                m_HasBuildLabels = true;
+            }
             if (tower)
             {
                 var towers = session.World.Column(TdKeys.TowerInfo);
@@ -109,9 +123,21 @@ namespace DefenseFoundation.Game
                     {
                         var t = towers[i];
                         int cost = rules.UpgradeCost(t.Kind, t.Level);
-                        UpgradeButton.interactable = t.Level < 3 && state.Gold >= cost;
-                        UIFactory.SetText(UpgradeButton, t.Level < 3 ? $"UPGRADE {cost}" : "MAX");
-                        UIFactory.SetText(SellButton, $"SELL {t.Invested * 7 / 10}");
+                        bool max = t.Level >= 3;
+                        int sellValue = t.Invested * 7 / 10;
+                        UpgradeButton.interactable = !max && state.Gold >= cost;
+                        if (!m_HasTowerLabels || m_UpgradeMax != max || (!max && m_UpgradeCost != cost))
+                        {
+                            UIFactory.SetText(UpgradeButton, max ? "MAX" : $"UPGRADE {cost}");
+                            m_UpgradeMax = max;
+                            m_UpgradeCost = cost;
+                        }
+                        if (!m_HasTowerLabels || m_SellValue != sellValue)
+                        {
+                            UIFactory.SetText(SellButton, $"SELL {sellValue}");
+                            m_SellValue = sellValue;
+                        }
+                        m_HasTowerLabels = true;
                     }
             }
         }

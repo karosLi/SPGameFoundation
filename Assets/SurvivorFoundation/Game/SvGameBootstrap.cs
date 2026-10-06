@@ -4,6 +4,7 @@ using SPF.Runtime.Session;
 using SPF.Shell.CameraRig;
 using SPF.Shell.Input;
 using SPF.Shell.Performance;
+using SPF.Shell.UI;
 using SurvivorFoundation.Presentation;
 using UnityEngine;
 
@@ -15,13 +16,14 @@ namespace SurvivorFoundation.Game
     {
         [SerializeField] SvConfig m_Config;
         [SerializeField] bool m_GuardExample;
+        [SerializeField] bool m_MobileCombatExample;
         [SerializeField] SvArtStyle m_ArtStyle = SvArtStyle.Pixel;
         [SerializeField] uint m_Seed = 1;
         [SerializeField] bool m_CreateUI = true;
         [SerializeField] bool m_PerfHud = true;
         [SerializeField] int m_TargetFrameRate = 60;
 
-        bool m_OwnsConfig;
+        bool m_OwnsConfig, m_ScriptedInputOwner;
         ModeDefinition m_Mode;
         GameplayModuleAsset m_Module;
         SvBot m_Bot;
@@ -74,13 +76,23 @@ namespace SurvivorFoundation.Game
             return game;
         }
 
+        public static SvGameBootstrap CreateMobileCombatExample(SvConfig config = null, uint seed = 1, bool ui = true)
+        {
+            bool owns = config == null;
+            if (owns) config = SvConfig.CreateMobileCombatExample();
+            if (!config.MobileSkills) throw new System.ArgumentException("Mobile example requires MobileSkills enabled.");
+            var game = Create(config, seed, ui, artStyle: SvArtStyle.SmoothOutline);
+            game.m_OwnsConfig = owns;
+            return game;
+        }
+
         void Awake()
         {
             Governor = gameObject.AddComponent<FrameGovernor>();
             Governor.ThrottleWhenIdle = false;
             Governor.SetFrameRates(m_TargetFrameRate, 30);
-            if (m_Config == null) { m_Config = m_GuardExample ? SvConfig.CreateGuardExample() : SvConfig.CreateDefault(); m_OwnsConfig = true; }
-            if (m_GuardExample) m_ArtStyle = SvArtStyle.SmoothOutline;
+            if (m_Config == null) { m_Config = m_MobileCombatExample ? SvConfig.CreateMobileCombatExample() : m_GuardExample ? SvConfig.CreateGuardExample() : SvConfig.CreateDefault(); m_OwnsConfig = true; }
+            if (m_GuardExample || m_MobileCombatExample) m_ArtStyle = SvArtStyle.SmoothOutline;
             m_Mode = SvMode.Create(m_Config, out m_Module);
 
             var sim = new GameObject("Simulation");
@@ -119,15 +131,25 @@ namespace SurvivorFoundation.Game
                     Session.Sync();   // ticks overlap rendering: finish the in-flight one before reading
                     frame = m_Bot.Think(Session.World);
                 }
-                state.Input = InputFrame.Latch(state.Input, frame);
+                if (m_Config.MobileSkills)
+                {
+                    bool scriptedOwner = InputRouter.Scripted.Active || AutoPlay;
+                    if (scriptedOwner != m_ScriptedInputOwner)
+                    { Hud?.MobileHud?.CancelInput(); state.Input = default; m_ScriptedInputOwner = scriptedOwner; }
+                    if (Session.State != SessionState.Running || state.Flow != SvFlow.Playing) { state.Input = default; return; }
+                    state.Input = SkillInput.Latch(state.Input, frame, SvMobileSkills.Dash);
+                }
+                else state.Input = InputFrame.Latch(state.Input, frame);
             };
             if (m_CreateUI)
             {
                 Hud = gameObject.AddComponent<SvHud>();
                 Hud.Build(this);
-                InputRouter.AddSource(Hud.TouchInput);
+                InputRouter.AddSource(Hud.MobileHud != null ? Hud.MobileHud.Input : Hud.TouchInput);
             }
-            InputRouter.AddSource(new KeyboardInputSource());
+            var keyboard = new KeyboardInputSource();
+            if (m_Config.MobileSkills) keyboard.Map(KeyCode.J, SvMobileSkills.Pulse).Map(KeyCode.K, SvMobileSkills.Dash);
+            InputRouter.AddSource(keyboard);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (m_PerfHud) gameObject.AddComponent<SPF.Runtime.Diagnostics.PerfHud>().Host = Host;
 #endif

@@ -42,6 +42,7 @@ namespace SurvivorFoundation
             layout.Resource(SvKeys.Feedback, new EventQueue<SvFeedback>(cap.Events, saved: false));
             if (s.CrossedBlades.Enabled)
                 layout.Resource(SvKeys.CrossedBlades, new SvCrossedBladeState(math.clamp(s.CrossedBlades.MaxTargets, 1, cap.Enemies)), levelScoped: true);
+            if (Config.MobileSkills) layout.Resource(SvMobileSkills.Key, SvMobileSkills.Create(), levelScoped: true);
             layout.DestroyQueueCapacity = cap.Enemies;
         }
 
@@ -59,6 +60,7 @@ namespace SurvivorFoundation
             .Add(new AnnularSkillSystem())
             .Add(new ResolveSystem());
             if (Config.Settings.CrossedBlades.Enabled) registry.Add(new CrossedBladeSystem());
+            if (Config.MobileSkills) registry.Add(new MobileSkillInputSystem()).Add(new MobileSkillPulseSystem());
         }
     }
 

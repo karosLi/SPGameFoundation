@@ -36,7 +36,11 @@ namespace SPF.Tests.EditMode
             var report = new System.Text.StringBuilder("=== Physics Burst backend diagnostics ===\n");
             report.AppendLine($"Unity {UnityEngine.Application.unityVersion}; processor {UnityEngine.SystemInfo.processorType}");
             report.AppendLine($"BurstCompiler.IsEnabled={Unity.Burst.BurstCompiler.IsEnabled}; Options.IsEnabled={options.IsEnabled}; EnableBurstCompilation={options.EnableBurstCompilation}");
-            report.AppendLine($"JobsUtility.JobCompilerEnabled={Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobCompilerEnabled}; compiler service initialized={Unity.Burst.LowLevel.BurstCompilerService.IsInitialized}");
+            // Unity exposes this service to the Burst package through InternalsVisibleTo, not to game
+            // tests. Inspect its read-only status when available; don't bind to its internal API.
+            var serviceType = typeof(UnityEngine.Application).Assembly.GetType("Unity.Burst.LowLevel.BurstCompilerService");
+            var initializedProperty = serviceType?.GetProperty("IsInitialized", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+            report.AppendLine($"JobsUtility.JobCompilerEnabled={Unity.Jobs.LowLevel.Unsafe.JobsUtility.JobCompilerEnabled}; compiler service initialized={initializedProperty?.GetValue(null) ?? "<unavailable>"}");
             report.AppendLine($"compile synchronously={options.EnableBurstCompileSynchronously}; safety checks={options.EnableBurstSafetyChecks}; force safety checks={options.ForceEnableBurstSafetyChecks}; debug={options.EnableBurstDebug}");
             report.AppendLine($"EditorPrefs BurstCompilation: exists={UnityEditor.EditorPrefs.HasKey("BurstCompilation")}, value={UnityEditor.EditorPrefs.GetBool("BurstCompilation", true)}");
             report.AppendLine($"UNITY_BURST_DISABLE_COMPILATION={System.Environment.GetEnvironmentVariable("UNITY_BURST_DISABLE_COMPILATION") ?? "<unset>"}");

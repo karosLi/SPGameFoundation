@@ -1,8 +1,14 @@
-# 移动端 2D 玩法接入与扩展边界
+# 移动端 2D 玩法接入与扩展边界（第一阶段记录）
 
-本轮给竖屏射击、守点幸存者切片补充可共用的技能形状、平滑贴图与接触阴影；现有九种玩法的默认点采样 atlas、30 Hz 模拟、快照与渲染层级不因此改变。代码入口见 `CombatShapes`、`SmoothSpriteArt`、`BlobShadow` 和 `BonePaletteMath`。
+> **阅读顺序已更新：** 新项目请先读 [新玩法接入配方](NewGameplayIntegrationRecipe.md)。本文保留第一阶段的形状、平滑图集、接触阴影及 CPU 矩阵参考设计；文中的“本轮”“将来”均指当时的检查点，不代表当前源码能力。
+>
+> 后续已经实现共享稳定命中历史/动作时间线、固定 Tick 技能 HUD、自然 cutout 人物、有限姿态阴影、独立 weighted BAT vertex / 可选 compute palette / CPU weighted fallback，以及飞剑与纵深 Belt 变体。当前入口和边界分别见 [共享战斗](SharedCombatStage2.md)、[技能 HUD](MobileSkillHud.md)、[实际自然人物](GameplayNaturalCharacters.md)、[自然动作与阴影](NaturalMotionValidation.md)、[Weighted BAT](BatCharacterValidation.md)、[Compute BAT](BatComputePaletteValidation.md)、[飞剑](FlyingSwordHorde.md) 和 [Belt](LandscapeBeltScroller.md)。这些新增能力不能理解为任意骨架导入器，也不提供统一真机帧率保证。
+>
+> 分配证据请同时读 [校准更正](AllocationMeasurementCalibration.md)；旧的未校准 Unity 0 B 读数不构成零分配证明。已记录第三阶段结果见 [检查点](MobilePresentationAndHudCheckpoint.md)，之后的执行结果看对应专题报告；未运行的设备验证仍未完成。
 
-## 1. 当前能力与明确未实现的部分
+本轮给竖屏射击、守点幸存者切片补充可共用的技能形状、平滑贴图与接触阴影；原有玩法的默认点采样 atlas、各自的固定 Tick 频率、快照与渲染层级不因此改变（例如 Survivor 为 30 Hz，Brawler 为 60 Hz）。代码入口见 `CombatShapes`、`SmoothSpriteArt`、`BlobShadow` 和 `BonePaletteMath`。
+
+## 1. 第一阶段能力与当时的实现边界
 
 | 能力 | 本轮可用 | 边界 |
 | --- | --- | --- |
@@ -10,7 +16,7 @@
 | 平滑 2D 美术 | 原始绘制图超采样降采样；可读 Texture2D / RGBA 数组导入；双线性 atlas 独立挤出边距 | 示例仍是原创程序占位美术，不是截图原资产；没有自动商业美术导入器、动画编辑器或资产下载 |
 | 接触阴影 | 一张软椭圆 mask，通过现有 SpriteBatch 两档绘制 | 不是 shadow map，不处理遮挡、投影接收面或光照方向 |
 | 骨骼动画、两骨 IK | 已有 `Skeletal` / `SkeletonPoseJob` / `SkeletonSpriteJob`：CPU/Burst 采样与 cutout 拼装 | 本轮不修改已有骨骼核心；新切片是否使用骨骼由其 renderer 决定 |
-| BAT / weighted mesh | 新增 CPU 仿射矩阵、bind-inverse 映射、帧采样参考及测试 | **没有** GPU 骨骼采样、权重网格蒙皮、矩阵纹理烘焙/上传、GPU IK 或相应 shader；不能把已有 GPU sprite instancing 称为 GPU 蒙皮 |
+| BAT / weighted mesh | 第一阶段只有 CPU 仿射矩阵、bind-inverse 映射、帧采样参考及测试 | 当时尚无 GPU 蒙皮；**当前已有独立的 weighted BAT vertex、可选 compute palette 和 CPU weighted fallback**，见上方专题文档。已有 sprite instancing 本身仍不是 GPU 蒙皮 |
 
 ## 2. 模拟与视觉的所有权
 
@@ -19,7 +25,7 @@
 - 飞行物快速移动用上一个 Tick 到当前 Tick 的 swept segment；`BeamHitsCircle` 表示圆头 capsule，不是无限射线或平头矩形。`halfWidth` 是半宽，不是直径。
 - 环形技能每次 Tick 是否伤害、是否一轮只命中一次、是否持续多段，由玩法系统保存状态。视觉圈的透明度、网格精度和生命周期不会隐式改变伤害。
 - 候选顺序不保证稳定。单目标/最近目标命中必须明确比较距离或线段参数，完全相同再比较稳定实体 ID；不要用渲染排序或并行写入顺序解平局。形状 helper 本身不选择目标。
-- 能力降级只影响呈现：关闭粒子、阴影、光照或未来 GPU 蒙皮不得改变移动、命中、掉落、随机序列、胜负与回放结果。
+- 能力降级只影响呈现：关闭粒子、阴影、光照或切换独立的角色后端不得改变移动、命中、掉落、随机序列、胜负与回放结果。
 
 ### 技能形状 API
 
@@ -72,21 +78,23 @@ height 非负；越高按 HeightSpread 变大、按 HeightFade 线性变淡。�
 
 ## 5. 骨骼、IK、BAT 的扩展合约
 
-### 5.1 当前实际运行路径
+### 5.1 第一阶段的 cutout 运行路径（当前仍保留）
 
 `SkeletonAsset` 保存只读 native 骨架与 clip；`Animator2D` 保存状态；`SkeletonPoseJob` 在 CPU/Burst 采样、混合、FK，已有 `Skeletal.TwoBoneIK` 可在 CPU pose 阶段处理指定链；`SkeletonSpriteJob` 输出 cutout 的 PackedSprite。每个 attachment 仍是一个四边形，**没有顶点权重**。现有 GpuDriven 只把这些实例送到间接绘制，DataTexture 使用静态分页网格和 RGBA8 实例数据纹理。
 
 武器/脚底等参与规则的 probe 必须在权威 Tick 的 CPU pose 中取得。渲染插值可重采样姿态，但不能反过来决定命中。当前两骨 IK 的父链索引 scratch 固定 16 层，脚本/导入资产应验证链长、正骨长和 parent-before-child；本轮没有扩展 IK 限制或提供自动约束编辑器。
 
-### 5.2 本轮提供的 CPU 数学参考
+### 5.2 第一阶段提供的 CPU 数学参考
 
 - `Affine2D` 为两行 float3：`[m00,m01,tx]`、`[m10,m11,ty]`，TransformPoint 乘列向量 `(x,y,1)`。Compose(a,b) 表示先 b 后 a。
 - FromBone 与已有 BoneWorld.Transform 的左右朝向镜像一致，包括镜像局部 Y。TryInverse 拒绝不可逆/非有限变换。矩阵来自同一模型空间时，`TrySkinningTransform(bind,pose)` 得到 `pose * inverse(bind)`，再把 character world placement 单独应用。
 - `SampleFrames` 定义唯一采样边界：循环 F 帧采样 `[0,duration)`，不存重复终帧；非循环 F 帧包含头尾。循环负时间 wrap，非循环 clamp；零/非法 clip 元数据返回 0/0/0，调用方不能因此读取空 palette。
 - `Lerp` 是矩阵逐元素插值的视觉参考，会缩短或剪切旋转；180° 混合可能塌缩。测试特意覆盖这个限制；不可用于权威 hitbox。需要保刚性的未来实现应比较旋转/位移采样方案与内存成本。
-- 这些类型没有 Texture2D、GraphicsBuffer、shader、baker、weighted vertex mesh 或自动接线。CPU struct 的 24 字节布局**不是**已发布 GPU ABI。
+- 这些 CPU 数学类型自身不包含 Texture2D、GraphicsBuffer、shader、baker 或 weighted vertex mesh。后续独立 `Presentation/Characters` 已提供有界实现；其 `BatRows` GPU ABI 为 32 字节，不能直接上传这里 24 字节的 `Affine2D`。
 
-### 5.3 将来落地 GPU 蒙皮时必须满足
+### 5.3 第一阶段提出的 GPU 蒙皮验收要求（历史设计）
+
+下面保留当时的设计清单，不能当作当前实现缺失列表。已落地布局、能力 gate、有限链 IK、CPU 回退与实际数值/像素验证见 [Weighted BAT](BatCharacterValidation.md) 和 [Compute BAT](BatComputePaletteValidation.md)。新的任意骨架支持仍需单独设计与验证。
 
 1. 资源版本化：骨骼稳定索引、parents、bind/inverse-bind、clip 首帧偏移/帧数/时长/循环、采样率、坐标/单位/朝向、bounds、顶点权重数量与归一化约定。缺资源或版本不支持须回退；同名 clip 不足以确认兼容。
 2. 可选择的视觉 backend 与模拟脱钩。保持 CPU/Burst cutout 或静态帧作已验证 fallback；不能强迫现有 SpriteTex shader 解新 palette。未来 GPU 实现应先定义 capability gate，再验证 Metal/Vulkan/GLES 的格式和顶点纹理读取。
@@ -115,15 +123,17 @@ height 非负；越高按 HeightSpread 变大、按 HeightFade 线性变淡。�
 - .NET harness 可验证纯数学、元数据和编译层次，纹理 stub 不保存 pixels；导入像素所有权与真实 atlas gutter 内容测试显式放在 Unity 专属分支中，不能拿 stub 通过当纹理验证。
 - 实际运行结果由本轮合并验证报告记录。此文不声称以上所有目标平台测试已执行，也不提高既有 GC 阈值。
 
-## 8. 新玩法的最小接入清单
+## 8. 新玩法的最小接入清单（详版已迁至新指南）
+
+准确 API、DriftSmoke 最小可执行闭环、三程序集/HUD 接线、四类验证入口和验收表见 [NewGameplayIntegrationRecipe](NewGameplayIntegrationRecipe.md)。下面保留第一阶段的简表。
 
 无需更改基座的公共玩法枚举，也不应复制另一玩法的完整模拟循环。以新增 Shooter 为示例：
 
-1. 独立 `Runtime` 程序集引用 Contracts / L1 / L2 / Runtime.Core；定义自己的 Keys、POD 列、容量与配置。优先组合已有 WorldComposer / IGameplayModule，不继承另一个游戏的规则。
+1. 独立 `Runtime` 程序集引用 Contracts / L1 / L2 / Runtime.Core / Runtime（`GameplayModuleAsset` 在 Runtime）；定义自己的 Keys、POD 列、容量与配置。优先组合已有 WorldComposer / IGameplayModule，不继承另一个游戏的规则。
 2. `DeclareData` 声明持久权威状态和固定容量队列；`RegisterSystems` 声明阶段与读写。Job 只写自己的 row 或有界队列，结构变更在既有提交阶段处理。
 3. 选用共享 `SpatialGrid`、`PatternEmitter`、`WaveSchedule`、形状数学；目标队伍、伤害周期、升级与胜负属于玩法规则。跨 tick 保存身份须完整 handle；row 只作为同一同步窗口内的地址。
 4. 所有临时 native 缓冲在构造/绑定时分配，说明由谁 Dispose、是否需要保存。纯派生 scratch 必须保证恢复后读前重写；权威状态不得假装 scratch 跳过快照。
 5. `Presentation` 只读已完成的模拟，独立选择 atlas/排序/批次/质量预算；`Game` 负责 SessionHost、HUD、输入命令适配。公共渲染能力不能引用某个游戏 Runtime。
 6. 最小验收是相同种子重放、快照续算、容量耗尽、暂停/恢复、取消输入、死亡/重开/回菜单、两档实际截图与稳态分配窗口；加入一个新配置不应要求修改共享碰撞枚举。
 
-新增 primitive 先让两种规则实际使用，再据共同需求扩展。当前下一阶段稳定命中历史/动作时间线和 BAT 是独立增量；本检查点没有宣称旧 Brawler 已具有纵深地面移动或通用加权角色导入器。
+新增 primitive 先让两种规则实际使用，再据共同需求扩展。第一阶段之后，稳定命中历史/动作时间线、独立 weighted BAT 和 opt-in Belt 纵深地面移动均已加入；经典 Brawler 默认规则保持隔离。通用任意骨架导入器仍不在当前实现范围。

@@ -22,9 +22,9 @@ namespace SPF.Tests.EditMode
 
         static int SubmittedVertices(Graphic graphic)
         {
-            var mesh = new Mesh();
-            try { graphic.GetComponent<CanvasRenderer>().GetMesh(mesh); return mesh.vertexCount; }
-            finally { Object.DestroyImmediate(mesh); }
+            // Unity 2022.3 returns the renderer-owned mesh; do not destroy the borrowed object.
+            var mesh = graphic.GetComponent<CanvasRenderer>().GetMesh();
+            return mesh != null ? mesh.vertexCount : 0;
         }
 
         [TestCase(-1, false)]

@@ -1,6 +1,9 @@
 #if !SPF_DOTNET_HARNESS
 using System;
 using System.Collections;
+using System.Globalization;
+using System.IO;
+using System.Text;
 using BrawlerFoundation.Game;
 using NUnit.Framework;
 using SPF.Contracts;
@@ -65,16 +68,41 @@ namespace BrawlerFoundation.Tests.PlayMode
                 Action warmed=()=>{for(int i=0;i<120;i++)game.Renderer.RenderFrame();};warmed();
                 using(var probe=new ManagedAllocationProbe()){probe.Calibrate();var sample=probe.Measure(warmed);probe.Calibrate();Assert.AreEqual(0,sample.Value,"calibrated synchronous full-render allocation samples");}
                 if(Environment.GetEnvironmentVariable("SPF_GAMEPLAY_CHARACTER_SEQUENCE")=="1")
-                {
-                    for(int frame=0;frame<30;frame++)
-                    {
-                        for(int tick=0;tick<6;tick++){game.State.Input=new InputFrame {Move=new float2(frame<15?-1:1,0),Held=1};game.Session.Step();}
-                        yield return capture.Save("natural-brawler-sequence-"+suffix+"-"+frame.ToString("D3"),safe);
-                    }
-                }
+                    yield return CaptureRunningSequence(game,capture,safe,suffix);
                 LogAssert.NoUnexpectedReceived();
             }
             finally{capture?.Dispose();RenderCapabilities.Override=null;if(Camera.main!=null)Object.Destroy(Camera.main.gameObject);Object.Destroy(game.gameObject);}
+        }
+        static IEnumerator CaptureRunningSequence(BwGameBootstrap game,CanvasCapture capture,Rect safe,string suffix)
+        {
+            bool manual=game.Session.ManualClock;var previous=game.State.Input;
+            var times=new double[30];var names=new string[30];double start=Time.realtimeSinceStartupAsDouble;
+            game.Session.ManualClock=false;
+            try
+            {
+                for(int frame=0;frame<30;frame++)
+                {
+                    while(Time.realtimeSinceStartupAsDouble<start+frame*.1)yield return null;
+                    game.State.Input=new InputFrame {Move=new float2(frame<15?-1:1,0),Held=1};
+                    names[frame]="natural-brawler-sequence-"+suffix+"-"+frame.ToString("D3");
+                    yield return capture.Save(names[frame],safe);
+                    times[frame]=capture.CaptureRealtime-start;
+                }
+            }
+            finally{game.Session.Sync();game.Session.ManualClock=manual;game.State.Input=previous;}
+            // Slow editor frames/readback may miss the target cadence. Preserve measured acquisition
+            // intervals in ffconcat instead of pretending these were thirty evenly spaced 10-Hz frames.
+            string dir=Path.Combine(Application.dataPath,"..","Artifacts","Screenshots","MobileHud");
+            var csv=new StringBuilder("frame,acquisition_seconds\n");var concat=new StringBuilder("ffconcat version 1.0\n");
+            for(int i=0;i<times.Length;i++)
+            {
+                csv.Append(i).Append(',').Append(times[i].ToString("F6",CultureInfo.InvariantCulture)).Append('\n');
+                double duration=i+1<times.Length?math.max(.001,(times[i+1]-times[i])):(times.Length>1?times[i]-times[i-1]:.1);
+                concat.Append("file '").Append(names[i]).Append(".png'\n").Append("duration ").Append(duration.ToString("F6",CultureInfo.InvariantCulture)).Append('\n');
+            }
+            concat.Append("file '").Append(names[names.Length-1]).Append(".png'\n");
+            string name="natural-brawler-sequence-"+suffix;
+            File.WriteAllText(Path.Combine(dir,name+".csv"),csv.ToString());File.WriteAllText(Path.Combine(dir,name+".ffconcat"),concat.ToString());
         }
         static int Difference(Color32[] a,Color32[] b){int n=0;for(int i=0;i<a.Length;i++)if(math.abs(a[i].r-b[i].r)+math.abs(a[i].g-b[i].g)+math.abs(a[i].b-b[i].b)>40)n++;return n;}
     }

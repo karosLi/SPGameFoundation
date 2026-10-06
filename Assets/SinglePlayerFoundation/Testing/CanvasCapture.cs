@@ -29,6 +29,8 @@ namespace SPF.Testing
         public int Width { get; }
         public int Height { get; }
         public Color32[] Pixels { get; private set; }
+        /// <summary>Monotonic acquisition time recorded immediately before GPU readback; capture-test only.</summary>
+        public double CaptureRealtime { get; private set; }
         public int CanvasCount => m_Canvases.Length;
         public RenderTexture Target => m_Target;
 
@@ -81,7 +83,7 @@ namespace SPF.Testing
             // Batchmode-safe: read the target after normal camera rendering, not WaitForEndOfFrame.
             yield return null; yield return null;
             var previous = RenderTexture.active;
-            try { RenderTexture.active = m_Target; m_Read.ReadPixels(new Rect(0, 0, Width, Height), 0, 0); m_Read.Apply(false); }
+            try { CaptureRealtime = Time.realtimeSinceStartupAsDouble; RenderTexture.active = m_Target; m_Read.ReadPixels(new Rect(0, 0, Width, Height), 0, 0); m_Read.Apply(false); }
             finally { RenderTexture.active = previous; }
             Pixels = m_Read.GetPixels32();
             string dir = Path.Combine(Application.dataPath, "..", "Artifacts", "Screenshots", "MobileHud");

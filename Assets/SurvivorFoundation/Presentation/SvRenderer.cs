@@ -110,11 +110,12 @@ namespace SurvivorFoundation.Presentation
             m_Art = SvArt.Build(config.EnemyKinds, k => { var c = config.Enemies[k].Color; return new Color(c.x, c.y, c.z, 1f); }, NaturalCharacters ? SvArtStyle.SmoothOutline : ArtStyle);
             var tier = m_Assets.Tier;
             var atlas = m_Art.Sheet.Texture;
+            // Jobs validate containers before Execute, including the classic path. Keep its zero mask valid.
+            m_NaturalMask = new NativeArray<byte>(world.Table(SvKeys.Enemy).Capacity, Allocator.Persistent);
             if (NaturalCharacters)
             {
                 m_Characters = new GameplayCharacterPresenter(tier, NaturalEnemyCapacity + 1 + NaturalDeathCapacity);
                 m_CharacterSelection = new GameplayCharacterSelection(NaturalEnemyCapacity);
-                m_NaturalMask = new NativeArray<byte>(world.Table(SvKeys.Enemy).Capacity, Allocator.Persistent);
                 m_Deaths = new NativeArray<DeathVisual>(NaturalDeathCapacity, Allocator.Persistent);
                 m_DeathSequence = 0; m_HeroCastTick = -100;
             }

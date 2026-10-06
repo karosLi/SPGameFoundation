@@ -49,6 +49,11 @@ namespace SurvivorFoundation.Tests.PlayMode
                 Assert.AreSame(hud.Buttons[0].gameObject, capture.FirstHit(hud.Buttons[0].gameObject));
                 Assert.AreSame(hud.Buttons[1].gameObject, capture.FirstHit(hud.Buttons[1].gameObject));
                 yield return capture.Save("survivor-sword-horde-portrait-" + suffix, safe, hud.Joystick.gameObject, hud.Buttons[0].gameObject, hud.Buttons[1].gameObject, game.Hud.HudMenuButton.gameObject);
+                // Public rendering is safe even before the ordinary SessionHost/SvRenderer LateUpdate sync.
+                game.Session.RequestTicks(); game.Session.Update(0f);
+                Assert.IsTrue(game.Session.Pipeline.HasPendingTick);
+                game.Swords.RenderFrame();
+                Assert.IsFalse(game.Session.Pipeline.HasPendingTick, "direct presentation completes the in-flight sword writer before native reads");
                 // Probe the actual presentation calls after construction, atlas upload and pool warmup.
                 Action frames = () => { for (int i = 0; i < 60; i++) game.Swords.RenderFrame(); };
                 using (var probe = new ManagedAllocationProbe())

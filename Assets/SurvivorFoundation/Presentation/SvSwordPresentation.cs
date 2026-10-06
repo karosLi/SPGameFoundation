@@ -66,6 +66,8 @@ namespace SurvivorFoundation.Presentation
             var session = m_Host != null ? m_Host.Session : null;
             var art = m_View != null ? m_View.Art : null;
             if (session == null || art == null || !session.World.HasResource(SvFlyingSwordState.Key)) return;
+            // Direct callers need the same safe read boundary as normal LateUpdate ordering.
+            session.Sync();
             if (art != m_BoundArt) Bind(art);
             var game = session.World.Resource(SvKeys.Game); var swords = session.World.Resource(SvFlyingSwordState.Key);
             if (game.Flow == SvFlow.Menu || game.RunTicks < m_Tick)

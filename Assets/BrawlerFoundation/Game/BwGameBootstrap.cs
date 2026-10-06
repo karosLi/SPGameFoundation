@@ -20,6 +20,8 @@ namespace BrawlerFoundation.Game
     public sealed class BwGameBootstrap : MonoBehaviour
     {
         [SerializeField] bool m_CreateUI = true;
+        [SerializeField, Tooltip("Use bounded stable-handle combat histories (64 fighters). Classic saves use a different layout.")]
+        bool m_SharedCombat;
 
         ModeDefinition m_Mode;
         GameplayModuleAsset m_Module;
@@ -33,6 +35,7 @@ namespace BrawlerFoundation.Game
         public BwRenderer Renderer { get; private set; }
         public InputRouter InputRouter { get; private set; }
         public SimSession Session => Host != null ? Host.Session : null;
+        public bool SharedCombatEnabled => m_SharedCombat;
         public BwGameState State => Session?.World.Resource(BwKeys.Game);
 
         public BufferText StatsText { get; private set; }
@@ -48,21 +51,27 @@ namespace BrawlerFoundation.Game
         /// <summary>Scripted input for tests and demos (replaces the stick; buttons add up).</summary>
         public System.Func<InputFrame> Script { get; set; }
 
-        public static BwGameBootstrap Create(bool ui = true)
+        public static BwGameBootstrap Create(bool ui = true, bool sharedCombat = false)
         {
             var go = new GameObject("BrawlerGame");
             go.SetActive(false);
             var game = go.AddComponent<BwGameBootstrap>();
             game.m_CreateUI = ui;
+            game.m_SharedCombat = sharedCombat;
             go.SetActive(true);
             return game;
         }
+
+        /// <summary>Playable stable-hit example at the renderer's existing 64-fighter bound.</summary>
+        public static BwGameBootstrap CreateSharedCombat(bool ui = true) => Create(ui, sharedCombat: true);
 
         void Awake()
         {
             Governor = gameObject.AddComponent<FrameGovernor>();
             Governor.SetFrameRates(60, 30);
-            m_Mode = BwMode.Create(out m_Module);
+            m_Mode = m_SharedCombat
+                ? BwMode.CreateSharedCombat(BwSharedCombatConfig.Default, out m_Module)
+                : BwMode.Create(out m_Module);
             var sim = new GameObject("Simulation");
             sim.transform.SetParent(transform, false);
             Host = sim.AddComponent<SessionHost>();

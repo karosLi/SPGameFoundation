@@ -37,7 +37,7 @@ The input buffer is latest-input-wins, one command, on absolute monotonic simula
 
 ## Survivor integration
 
-`SvConfig.CreateCrossedBladeExample()` enables two periodic crossed flying-blade paths (horizontal and vertical capsules) using the existing enemy grid and hit queue/resolver. It is a **simulation/configuration example**, with no new visuals or audio supplied here.
+`SvConfig.CreateCrossedBladeExample()` enables two periodic crossed flying-blade paths (horizontal and vertical capsules) using the existing enemy grid and hit queue/resolver. Use `SvGameBootstrap.CreateCrossedBladeExample()` for a playable entry with the existing input, UI, renderer and hit feedback, or assign a `SvConfig` with `Settings.CrossedBlades.Enabled` in the inspector. It is a **simulation/configuration example**: no new blade-path visuals or audio are supplied here.
 
 Defaults: one pulse every 12 playing simulation ticks, reach 5, half-width 0.35, damage 16 per pulse, history capacity 256. The origin is the current hero position. At world creation, history capacity clamps to 1 through the authored enemy-table capacity; intervals clamp to 1 through `int.MaxValue - 1` ticks. `SvSettings.CrossedBlades` exposes these values. Rendering quality has no effect on collision, cadence, or damage.
 
@@ -47,7 +47,7 @@ The singleton `SvCrossedBladeState` is registered only when enabled. It owns the
 
 ## Brawler integration
 
-Use `BwMode.CreateSharedCombat(BwSharedCombatConfig.Default, out module)` for the new path. The classic `BwMode.Create(out module)` remains unchanged. The existing bootstrap still selects classic, and the existing renderer still displays at most 64 fighters. Selecting the new factory is a simulation opt-in; more than 64 visible fighters needs a separate presentation change.
+Use `BwMode.CreateSharedCombat(BwSharedCombatConfig.Default, out module)` for the new path. The classic `BwMode.Create(out module)` remains unchanged. The bootstrap defaults to classic. Its **Shared Combat** inspector toggle or `BwGameBootstrap.CreateSharedCombat()` selects the new path at 64 fighters using the existing input, UI and renderer. The existing renderer displays at most 64 fighters; more than 64 visible fighters needs a separate presentation change.
 
 The shared path reuses the existing fighter update, skeleton probe, combat loop, damage, knockback, and flow. One bounded scope belongs to each active source handle; source lookup never assumes that registry indices equal rows or fit the fighter capacity. Expired/interrupted/deleted sources are pruned using the entity registry before scope acquisition. Same-swing history survives target/source swap-back, sorting, and recycled target generations. New swings/combos reset history through their timeline pulse IDs.
 
@@ -87,3 +87,14 @@ The .NET harness checks source compilation, logic, exact classic fixtures, deter
 - Complete Shooter EditMode logic suite: 14/14 passed after sweep extraction.
 - Warmed primitive calls, crossed-blade fixed ticks, and repeated shared Brawler attack ticks each measured zero managed bytes in the harness. These are scoped CPU simulation assertions, not whole-frame or device-performance claims.
 - Unity/Burst/PlayMode validation has not been run in this isolated worktree; the integration owner runs that gate separately.
+
+### Playable bootstrap wiring
+
+`BwGameBootstrap.CreateSharedCombat()` and the serialized **Shared Combat** toggle deliberately use the default 64-fighter configuration, matching existing rendering capacity. UI and renderer implementations are unchanged.
+
+Two new graphics PlayMode smokes, parameterized across GPU-driven and data-texture tiers, cover the concrete bootstrap routes:
+
+- `BwSharedCombatPlayTests.SharedCombatFactorySupportsTouchHitAndRestart`: shared resource installation, touch punch → one hit, existing skeletal parts, UI restart, old handle invalidation and history reset.
+- `SvCrossedBladePlayTests.CrossedBladeFactoryPulsesAndRestartsWithExistingRenderer`: overlapping path pulse → one hit, existing enemy rendering, quality-independent snapshot, UI restart and scope reset.
+
+The smoke fixtures pause the host after real UI startup to advance a controlled number of simulation ticks. These tests have been authored and harness-compiled; their actual Unity execution is a separate integration gate. No claim is made that the .NET stubs validate graphics or touch-frame scheduling.

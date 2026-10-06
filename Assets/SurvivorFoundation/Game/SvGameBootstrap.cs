@@ -63,6 +63,17 @@ namespace SurvivorFoundation.Game
             return game;
         }
 
+        /// <summary>Playable periodic crossed-path simulation with the existing Survivor renderer.
+        /// Enemies, health and hit feedback render normally; this stage does not add blade-path art.</summary>
+        public static SvGameBootstrap CreateCrossedBladeExample(SvConfig config = null, uint seed = 1, bool ui = true)
+        {
+            bool owns = config == null;
+            if (owns) config = SvConfig.CreateCrossedBladeExample();
+            var game = Create(config, seed, ui);
+            game.m_OwnsConfig = owns;
+            return game;
+        }
+
         void Awake()
         {
             Governor = gameObject.AddComponent<FrameGovernor>();

@@ -1,0 +1,6 @@
+=== GPU benchmark (GpuDriven, Metal, Apple M5 Pro) ===
+device: Mac17,9, 640x480, frame timing enabled: True
+2 interleaved rounds x 2.0 s per variant; visible snakes 6
+all optimisations on         GPU 0.246 ms   (241 samples)  CPU 0.100 ms  frames 241
+opaque node compaction off   GPU 0.367 ms   (241 samples)  CPU 0.100 ms  frames 241  (+49.3% vs all on)
+8-segment discs              GPU 0.291 ms   (242 samples)  CPU 0.100 ms  frames 242  (+18.5% vs all on)

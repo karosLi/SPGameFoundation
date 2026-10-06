@@ -1,0 +1,9 @@
+Belt complete-logic workload | runtime=unity-native-editmode | fighters=32 | initial layout=spread
+Warmup=90 ticks; density reset after warmup; samples=120 complete evolving ticks; fixed rate=60Hz.
+Tick ms: mean=0.1109, p50=0.1094, p95=0.1294, worst=0.1416.
+Separation candidates: total=3362, mean/tick=28.02, peak=72; hit candidates: total=274, mean/tick=2.28, peak=20.
+Grid drops=0; feedback pending peak=4/128; feedback overflow=0; rejected spawn=1 (one intentional setup request); rejected drop=0; rejected hit=0; rejected scope=0.
+Exact deterministic snapshot replay=PASS; timed-window state FNV64=673d8d7f29c367c7.
+Separate allocation window=120 ticks from the same reset density: 0 current-thread AllocationSamples; process-wide gen0 collections=0. Calibration retained/empty: before=32/0, after=32/0.
+Includes main-thread flow, skill/input, all fighter AI/movement, local separation, hit resolution, loot scan, session sync, two completed grid builds and feedback clearing. Grid build is scheduled Burst-capable work; the belt decisions/separation/hit loops currently execute on the main thread. Dense worst-case local overlap remains quadratic.
+Timing/allocation are report-only; no arbitrary device threshold. Excludes rendering, GPU upload, full-frame/other-thread/native allocation and target-device thermal/battery behavior. .NET stubs do not prove Burst or Unity performance. Native Unity results require running this same fixture centrally.

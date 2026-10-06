@@ -1,0 +1,28 @@
+big snakes, trail spacing per radius 0.25 (0 = fixed 0.4 m)
+mean radius 3.92 m, mean trail spacing 0.97 m
+live trail points 22528 (sum of Count, per tick average), points pushed per tick 19.4
+=== SPF snake tick benchmark ===
+platform: Unix 25.4.0.0, 15 logical cores, 64-bit: True
+snakes: 60  food: 7737  props: 88  projectiles: 0  body points used: 30720
+pipelined tick ms  mean 0.537  p50 0.516  p95 0.703  max 1.478
+main-thread schedule ms 0.064  sync wait ms 0.472
+body grid: 1 full rebuilds; last tick 0 snakes resynced, 4 nodes added, 5 removed, 6388 entries
+item grid: 1 full rebuilds, 871 incremental updates (6764 rows) in 1051 ticks
+per-system ms (serial profiling, includes scheduling):
+  AISystem                        0.130
+  HeadGridSystem                  0.127
+  BodySystem                      0.091
+  BodyGridSystem                  0.057
+  ContactSystem                   0.048
+  MovementSystem                  0.036
+  ResolveSystem                   0.016
+  PopulationSystem                0.014
+  ItemGridSystem                  0.010
+  LifecycleSystem                 0.004
+  WindowSystem                    0.002
+  ItemSpawnSystem                 0.001
+  StatsSystem                     0.001
+  RegionSystem                    0.000
+  PlayerControlSystem             0.000
+  ReplaySystem                    0.000
+  TOTAL (serial)                  0.536

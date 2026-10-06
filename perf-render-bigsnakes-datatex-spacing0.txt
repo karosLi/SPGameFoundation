@@ -1,0 +1,4 @@
+=== renderer CPU (DataTexture), 60 big snakes, trail spacing per radius 0 ===
+reuse off: 0.601 ms/frame over 241 frames (rebuilds 241, reuses 0), visible snakes 6
+reuse on : 0.573 ms/frame over 239 frames (rebuilds 120, reuses 119), visible snakes 4
+saving: 4.7%

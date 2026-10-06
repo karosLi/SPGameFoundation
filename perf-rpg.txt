@@ -1,0 +1,21 @@
+=== RPG horde benchmark ===
+actors: 342  monsters alive: 341/373  projectiles: 1  items: 9
+bot: kills 32, level 5
+pipelined tick ms  mean 0.764  p50 0.679  p95 1.914  max 2.362
+main-thread schedule ms 0.056  sync wait ms 0.706
+per-system ms (serial profiling, includes scheduling):
+  FloorSystem                     0.000
+  InventorySystem                 0.000
+  RewardSystem                    0.002
+  PropSystem                      0.012
+  StairsSystem                    0.000
+  ProjectileSpawnSystem           0.001
+  HeroControlSystem               0.007
+  FlowFieldSystem                 0.203
+  MonsterAISystem                 0.079
+  MovementSystem                  0.182
+  StatusSystem                    0.024
+  ActorGridSystem                 0.224
+  CombatSystem                    0.050
+  ResolveSystem                   0.009
+  TOTAL (serial)                  0.794

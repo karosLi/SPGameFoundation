@@ -1,0 +1,26 @@
+body grid cell: 4 m, trail spacing per radius 0.25 (0 = fixed)
+=== SPF snake tick benchmark ===
+platform: Unix 25.4.0.0, 15 logical cores, 64-bit: True
+snakes: 150  food: 12139  props: 76  projectiles: 0  body points used: 15296
+pipelined tick ms  mean 0.586  p50 0.570  p95 0.691  max 1.156
+main-thread schedule ms 0.083  sync wait ms 0.502
+body grid: 1 full rebuilds; last tick 0 snakes resynced, 31 nodes added, 31 removed, 2481 entries
+item grid: 1 full rebuilds, 935 incremental updates (4435 rows) in 1051 ticks
+per-system ms (serial profiling, includes scheduling):
+  HeadGridSystem                  0.158
+  AISystem                        0.146
+  BodyGridSystem                  0.093
+  BodySystem                      0.077
+  ContactSystem                   0.064
+  MovementSystem                  0.051
+  PopulationSystem                0.035
+  ResolveSystem                   0.020
+  ItemGridSystem                  0.008
+  ItemSpawnSystem                 0.002
+  WindowSystem                    0.002
+  StatsSystem                     0.001
+  LifecycleSystem                 0.001
+  RegionSystem                    0.000
+  PlayerControlSystem             0.000
+  ReplaySystem                    0.000
+  TOTAL (serial)                  0.658

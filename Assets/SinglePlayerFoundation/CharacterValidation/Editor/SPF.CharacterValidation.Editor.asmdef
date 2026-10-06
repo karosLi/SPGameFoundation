@@ -1,0 +1,1 @@
+{"name":"SPF.CharacterValidation.Editor","rootNamespace":"SPF.CharacterValidation.Editor","references":["SPF.Presentation"],"includePlatforms":["Editor"],"autoReferenced":true}

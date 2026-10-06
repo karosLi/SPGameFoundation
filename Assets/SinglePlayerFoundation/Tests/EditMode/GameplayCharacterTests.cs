@@ -1,0 +1,81 @@
+using System;
+using NUnit.Framework;
+using SPF.Contracts;
+using SPF.L1.Skeleton;
+using SPF.Presentation;
+using SPF.Presentation.Animation;
+using SPF.Testing;
+using Unity.Collections;
+using Unity.Mathematics;
+
+namespace SPF.Tests.EditMode
+{
+    public class GameplayCharacterTests
+    {
+        static GameplayCharacterInput Input(int index=1)=>new GameplayCharacterInput {Handle=new EntityHandle(index,1),Facing=1,Scale=1,Tint=new float4(1)};
+        [Test] public void SelectionUsesStableHandlesAcrossReorderAndHasHardBudget()
+        {
+            var a=new GameplayCharacterSelection(8);var b=new GameplayCharacterSelection(8);a.Begin(0,8);b.Begin(0,8);
+            for(int i=0;i<100;i++)a.Consider(new EntityHandle(i,1),new float2(i%13,i%7),i);
+            for(int i=99;i>=0;i--)b.Consider(new EntityHandle(i,1),new float2(i%13,i%7),99-i);
+            Assert.AreEqual(8,a.Count);Assert.AreEqual(8,b.Count);
+            for(int i=0;i<a.Count;i++){bool found=false;for(int k=0;k<b.Count;k++)if(a.Handle(i)==b.Handle(k))found=true;Assert.IsTrue(found);}
+            a.Begin(0,0);a.Consider(new EntityHandle(1,1),0,0);Assert.AreEqual(0,a.Count);
+        }
+        [Test] public void IdlePlantsAreExactAndTeleportResetsWorldAnchors()
+        {
+            var input=Input();var state=default(GameplayCharacterMotion);state.Step(input,1f/60);var foot=state.FarFoot.Position;
+            for(int i=0;i<120;i++)state.Step(input,1f/60);
+            Assert.AreEqual(foot,state.FarFoot.Position);
+            input.Root=input.Ground=new float2(100,200);state.Step(input,1f/60);
+            Assert.Less(math.distance(state.FarFoot.Position,input.Root),.3f);
+        }
+        [TestCase(30)] [TestCase(60)] [TestCase(120)]
+        public void MovingMirroredStatesAlwaysHaveFiniteLimitedIk(int hz)
+        {
+            using(var rig=NaturalCharacterRig.Create())
+            using(var local=new NativeArray<BoneLocal>(NaturalCharacterRig.Bones,Allocator.Temp))
+            using(var world=new NativeArray<BoneWorld>(NaturalCharacterRig.Bones,Allocator.Temp))
+            {
+                var input=Input();var motion=default(GameplayCharacterMotion);float dt=1f/hz;
+                for(int i=0;i<hz*5;i++)
+                {
+                    input.Root=input.Ground=new float2(i*dt*3,math.sin(i*dt));input.Velocity=new float2(3,math.cos(i*dt));
+                    input.State=(GameplayCharacterState)((i/hz)%6);input.Facing=(i/hz&1)==0?1:-1;
+                    input.Aim=true;input.AimTarget=new float2(1000,-200);input.Phase=math.frac(i*dt*2);motion.Step(input,dt);
+                    GameplayCharacterMotion.Pose(rig.View,local,world,input,motion,0);
+                    for(int k=0;k<world.Length;k++){Assert.IsTrue(math.all(math.isfinite(world[k].Position)));Assert.IsTrue(math.isfinite(world[k].Rotation));}
+                    Assert.LessOrEqual(math.distance(world[NaturalCharacterRig.NearArm].Position,world[NaturalCharacterRig.Hand].Position),.851f);
+                    Assert.LessOrEqual(math.distance(world[NaturalCharacterRig.FarThigh].Position,world[NaturalCharacterRig.FarFoot].Position),1.111f);
+                }
+            }
+        }
+        [Test] public void IdentitySurvivesReorderAndRecycledGenerationStartsFresh()
+        {
+            using(var presenter=new GameplayCharacterPresenter(RenderTier.DataTexture,3))
+            {
+                var a=Input(1);var b=Input(2);a.State=GameplayCharacterState.Hit;
+                for(int i=0;i<10;i++){presenter.Begin(.02f,0);presenter.Submit(a);presenter.Submit(b);presenter.Evaluate();}
+                Assert.IsTrue(presenter.TryRead(a.Handle,out var before));Assert.Greater(before.Hit,.8f);
+                presenter.Begin(0,3);presenter.Submit(b);presenter.Submit(a);Assert.IsFalse(presenter.Submit(a));presenter.Evaluate();
+                presenter.TryRead(a.Handle,out var after);Assert.AreEqual(before.Hit,after.Hit);Assert.AreEqual(before.FarFoot.Position,after.FarFoot.Position);
+                a.Handle=new EntityHandle(1,2);a.State=GameplayCharacterState.Idle;
+                presenter.Begin(.02f,0);presenter.Submit(a);presenter.Submit(b);presenter.Evaluate();
+                presenter.TryRead(a.Handle,out var recycled);Assert.AreEqual(0,recycled.Hit);Assert.AreEqual(28,presenter.PartsDrawn);
+            }
+        }
+        [Test] public void WarmedMotionAndSelectionAllocateNothingWithCalibratedProbe()
+        {
+            var input=Input();input.State=GameplayCharacterState.Run;input.Velocity=new float2(2,0);
+            var motion=default(GameplayCharacterMotion);var selection=new GameplayCharacterSelection(64);
+            Action work=()=>{for(int n=0;n<100;n++){input.Root.x+=.03f;input.Ground=input.Root;motion.Step(input,.016f);selection.Begin(input.Root,64);for(int k=0;k<512;k++)selection.Consider(new EntityHandle(k,1),new float2(k%20,k/20),k);}};
+            work();using(var probe=new ManagedAllocationProbe()){probe.Calibrate();var sample=probe.Measure(work);probe.Calibrate();Assert.AreEqual(0,sample.Value);}
+        }
+        [Test] public void AttackRecoveryCurveIsContinuousAndReturnsToRest()
+        {
+            Assert.AreEqual(0,GameplayCharacterMotion.Strike(0));Assert.AreEqual(0,GameplayCharacterMotion.Strike(1));
+            Assert.Greater(GameplayCharacterMotion.Strike(.42f),.999f);
+            Assert.Less(math.abs(GameplayCharacterMotion.Strike(.2f-1e-5f)-GameplayCharacterMotion.Strike(.2f+1e-5f)),.0001f);
+        }
+    }
+}

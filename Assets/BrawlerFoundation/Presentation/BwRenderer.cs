@@ -23,12 +23,18 @@ namespace BrawlerFoundation.Presentation
         const int MaxFighters = 64;
 
         public SessionHost Host;
+        public bool NaturalCharacters;
+        public int QualityLevel { get; private set; }
+        public void SetQualityLevel(int level) => QualityLevel = math.clamp(level, 0, 3);
+        public GameplayCharacterPresenter Characters => m_Characters;
+        GameplayCharacterPresenter m_Characters;
+        bool m_BoundNatural;
         public FollowCamera2D Camera;
         public System.Action<BwFeedback> Feedback;
 
         RenderAssets m_Assets;
         BwArt m_Art;
-        SpriteBatch m_Arena, m_Fighters, m_Effects;
+        SpriteBatch m_Arena, m_Fighters, m_Effects, m_NaturalShadows;
         SpriteEffects m_Fx;
         SimSession m_Session;
         NativeArray<Animator2D> m_Animators;
@@ -48,6 +54,8 @@ namespace BrawlerFoundation.Presentation
 
         void Release()
         {
+            m_NaturalShadows?.Dispose(); m_NaturalShadows = null;
+            m_Characters?.Dispose(); m_Characters = null;
             m_Arena?.Dispose(); m_Fighters?.Dispose(); m_Effects?.Dispose();
             m_Arena = m_Fighters = m_Effects = null;
             m_Art?.Dispose();
@@ -64,13 +72,15 @@ namespace BrawlerFoundation.Presentation
         void Bind(SimSession session)
         {
             Release();
-            m_Session = session;
+            m_Session = session; m_BoundNatural = NaturalCharacters;
             var rig = session.World.Resource(BwKeys.Rig);
             m_Assets = new RenderAssets(RenderCapabilities.Detect());
-            m_Art = BwArt.Build(rig);
+            m_Art = BwArt.Build(rig, NaturalCharacters);
+            if (NaturalCharacters) m_Characters = new GameplayCharacterPresenter(m_Assets.Tier, MaxFighters);
             var atlas = m_Art.Sheet.Texture;
             m_Arena = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Opaque, 1024, queueOffset: -10);
             m_Fighters = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Opaque, MaxFighters * (m_Art.Parts.Length + 4));
+            if (NaturalCharacters) { m_NaturalShadows = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Translucent, MaxFighters + 256, queueOffset: -60); m_NaturalShadows.Warmup(m_NaturalShadows.Capacity); }
             m_Effects = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Translucent, 512);
             // Preallocate dynamic pages and prefix textures at session bind, before counts grow in play.
             m_Fighters.Warmup(m_Fighters.Capacity);
@@ -89,11 +99,15 @@ namespace BrawlerFoundation.Presentation
             m_ArenaBuilt = false;
         }
 
-        void LateUpdate()
+        void LateUpdate() => RenderFrame();
+
+        /// <summary>Same live presentation path; exposed for calibrated synchronous probes.</summary>
+        public void RenderFrame()
         {
             var session = Host != null ? Host.Session : null;
             if (session == null) return;
-            if (session != m_Session) Bind(session);
+            session.Sync();
+            if (session != m_Session || m_BoundNatural != NaturalCharacters) Bind(session);
             var world = session.World;
             var game = world.Resource(BwKeys.Game);
             var rig = world.Resource(BwKeys.Rig);
@@ -103,12 +117,14 @@ namespace BrawlerFoundation.Presentation
             if (Camera != null && Camera.UpdateTarget == null) Camera.UpdateTarget = Frame;
             if (!m_ArenaBuilt) { BuildArena(); m_ArenaBuilt = true; }
 
+            m_NaturalShadows?.Clear();
             m_Fighters.Clear();
             m_Effects.Clear();
             DrainFeedback(world);
             PartsDrawn = 0;
             int count = game.Flow == BwFlow.Menu ? 0 : math.min(world.Table(BwKeys.Fighter).Count, MaxFighters);
-            if (count > 0)
+            if (NaturalCharacters) DrawNatural(world, game, rig, alpha, count);
+            else if (count > 0)
             {
                 var pos = world.Column(BwKeys.Position);
                 var prev = world.Column(BwKeys.Prev);
@@ -155,21 +171,24 @@ namespace BrawlerFoundation.Presentation
             }
             m_Fx.UpdateAndDraw(Time.deltaTime, m_Effects, m_Art.Sheet, null);
             m_Arena.Draw(bounds, dirty: false);
+            m_NaturalShadows?.Draw(bounds);
             m_Fighters.Draw(bounds);
+            m_Characters?.Draw(bounds);
             m_Effects.Draw(bounds);
-            SpritesDrawn = m_Arena.Count + m_Fighters.Count + m_Effects.Count;
+            SpritesDrawn = m_Arena.Count + m_Fighters.Count + m_Effects.Count + (m_Characters?.PartsDrawn ?? 0) + (m_NaturalShadows?.Count ?? 0);
         }
 
         void Frame(FollowCamera2D camera)
         {
             float aspect = math.max(camera.Camera != null ? camera.Camera.aspect : 16f / 9f, 0.3f);
-            camera.Size = math.max(3.2f, (BwRules.ArenaHalf + 0.6f) / aspect);
-            camera.Target = new float2(0f, camera.Size - 0.8f);
+            camera.Size = math.max(NaturalCharacters ? 4.3f : 3.2f, (BwRules.ArenaHalf + 0.6f) / aspect);
+            camera.Target = new float2(0f, NaturalCharacters ? 1.6f : camera.Size - 0.8f);
         }
 
         void BuildArena()
         {
             m_Arena.Clear();
+            if (NaturalCharacters) { BuildNaturalArena(); return; }
             for (int x = -14; x < 14; x++)
             {
                 m_Arena.Add(new float2(x + 0.5f, -0.5f), new float2(1.001f), m_Art.Sheet[m_Art.Floor].Uv, ArenaDepth, new float4(1f));
@@ -178,6 +197,68 @@ namespace BrawlerFoundation.Presentation
                     m_Arena.Add(new float2(x + 0.5f, y + 0.5f), new float2(1.001f), m_Art.Sheet[m_Art.Wall].Uv, ArenaDepth + 0.5f, new float4(1f));
             }
             m_Arena.Draw(new Bounds(Vector3.zero, new Vector3(1e5f, 1e5f, 100f)), dirty: true);
+        }
+
+        void DrawNatural(SPF.Runtime.World.SimWorld world, BwGameState game, BwRig rig, float alpha, int count)
+        {
+            bool belt=world.HasResource(BwBeltKeys.State);
+            var position=world.Column(BwKeys.Position);var previous=world.Column(BwKeys.Prev);var info=world.Column(BwKeys.Info);
+            var handles=world.Table(BwKeys.Fighter).Handles;
+            m_Characters.Begin(m_Session.State==SessionState.Running ? Time.deltaTime : 0,QualityLevel);
+            if(game.Flow==BwFlow.Menu)m_Characters.Clear();
+            for(int i=0;i<count;i++)
+            {
+                var f=info[i];float2 p=math.lerp(previous[i],position[i],alpha),ground=p;
+                float2 velocity=(position[i]-previous[i])*60f;
+                if(belt)
+                {
+                    ground=BwBeltRules.Project(math.lerp(world.Column(BwBeltKeys.PreviousGround)[i],world.Column(BwBeltKeys.Ground)[i],alpha),0);
+                    var v=world.Column(BwBeltKeys.Motion)[i].GroundVelocity;velocity=new float2(v.x,v.y*BwBeltRules.DepthProjection);
+                }
+                float phase=f.State==FighterState.Attack ? math.saturate(f.StateTime/math.max(.01f,rig.Attack(f.Attack).Duration)) : 0;
+                var state=f.State==FighterState.KO?GameplayCharacterState.Death:f.State==FighterState.Hit?GameplayCharacterState.Hit:
+                    f.State==FighterState.Attack?(phase>.58f?GameplayCharacterState.Recovery:GameplayCharacterState.Attack):
+                    f.State==FighterState.Walk?GameplayCharacterState.Run:GameplayCharacterState.Idle;
+                m_Characters.Submit(new GameplayCharacterInput {Handle=handles[i],Root=p,Ground=ground,Velocity=velocity,Facing=f.Facing,
+                    Scale=.9f,State=state,Phase=phase,Action=f.Attack==AttackKind.Kick?GameplayCharacterAction.Kick:GameplayCharacterAction.Punch,
+                    Kind=f.Team==0?0:1,Flash=f.Flash,Tint=f.Team==0?new float4(1f):new float4(1f,1f-f.Variant*.035f,1f-f.Variant*.06f,1f),Depth=FighterDepth+ground.y*.01f});
+                m_NaturalShadows.Add(ground+new float2(0,.01f),new float2(.95f,.24f),m_Art.Sheet[m_Art.Shadow].Uv,ShadowDepth,new float4(0,0,0,.34f));
+                if(f.Team==1&&f.State!=FighterState.KO)
+                {
+                    float hp=math.saturate(f.Hp/math.max(1,f.MaxHp));
+                    m_Effects.Add(p+new float2(0,2.3f),new float2(.84f,.12f),m_Art.Sheet[m_Art.Bar].Uv,FxDepth,new float4(.07f,.13f,.16f,1));
+                    m_Effects.Add(p+new float2(-.4f+.4f*hp,2.3f),new float2(.8f*hp,.06f),m_Art.Sheet[m_Art.Bar].Uv,FxDepth-.01f,new float4(.98f,.42f,.32f,1));
+                }
+            }
+            m_Characters.Evaluate();PartsDrawn=m_Characters.PartsDrawn;
+            if(belt)
+            {
+                var drops=world.Resource(BwBeltKeys.State).Drops;
+                for(int i=0;i<drops.Length;i++)
+                {
+                    var drop=drops[i];if(drop.RemainingTicks<=0)continue;
+                    float2 p=BwBeltRules.Project(drop.Ground,0)+new float2(0,.14f);
+                    var color=drop.Kind==BwBeltDropKind.Coin?new float4(1.3f,.91f,.3f,1):new float4(.4f,1.1f,.7f,1);
+                    m_Fighters.Add(p,new float2(.26f,.3f),m_Art.Sheet[m_Art.Star].Uv,FighterDepth+.1f,color);
+                    m_NaturalShadows.Add(p-new float2(0,.14f),new float2(.35f,.09f),m_Art.Sheet[m_Art.Shadow].Uv,ShadowDepth,new float4(0,0,0,.3f));
+                }
+            }
+        }
+
+        void BuildNaturalArena()
+        {
+            var white=m_Art.Sheet[m_Art.Bar].Uv;
+            m_Arena.Add(new float2(0,4),new float2(40,14),white,ArenaDepth+2,new float4(.055f,.10f,.16f,1));
+            for(int x=-7;x<7;x++)for(int y=-2;y<2;y++)
+                m_Arena.Add(new float2(x*2+1,y+ .5f),new float2(2.005f,1.005f),m_Art.Sheet[m_Art.Floor].Uv,ArenaDepth,new float4(y<0?.86f:1f,.96f,1f,1));
+            m_Arena.Add(new float2(0,2.1f),new float2(28,.18f),white,ArenaDepth-.05f,new float4(.25f,.36f,.42f,1));
+            m_Arena.Add(new float2(0,2.25f),new float2(28,.11f),white,ArenaDepth-.1f,new float4(.56f,.66f,.64f,1));
+            for(int x=-7;x<=7;x++)
+            {
+                m_Arena.Add(new float2(x*2,2.5f),new float2(.65f,.55f),m_Art.Sheet[m_Art.Wall].Uv,ArenaDepth+.1f,new float4(.65f,.8f,.85f,1));
+                m_Arena.Add(new float2(x*2,4.9f),new float2(.04f,3.9f),white,ArenaDepth+.5f,new float4(.08f,.15f,.19f,1));
+            }
+            m_Arena.Draw(new Bounds(Vector3.zero,new Vector3(1e5f,1e5f,100)),dirty:true);
         }
 
         void DrainFeedback(SPF.Runtime.World.SimWorld world)

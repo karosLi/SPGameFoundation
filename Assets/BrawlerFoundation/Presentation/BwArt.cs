@@ -26,7 +26,24 @@ namespace BrawlerFoundation.Presentation
 
         enum Part : byte { Skin, Shirt, Trousers, Shoe }
 
-        public static BwArt Build(BwRig rig)
+        static PixelCanvas SmoothStone(bool wall)
+        {
+            var c=new PixelCanvas(128,64);
+            for(int y=0;y<64;y++)for(int x=0;x<128;x++)
+            {
+                int noise=((x*37+y*71)^(x*y*13))&3;
+                c.Set(x,y,C((byte)(wall?52+noise:65+noise),(byte)(wall?70+noise:83+noise),(byte)(wall?85+noise:99+noise)));
+            }
+            c.Line(new float2(0,2),new float2(128,2),2,C(28,45,58));
+            c.Line(new float2(2,0),new float2(2,64),2,C(29,45,57));
+            c.Line(new float2(4,61),new float2(125,61),1,C(98,118,128));
+            c.Line(new float2(127,4),new float2(127,60),1,C(81,102,113));
+            c.Line(new float2(84,8),new float2(95,19),1,C(38,58,68));
+            c.Line(new float2(95,19),new float2(100,31),1,C(38,58,68));
+            return c;
+        }
+
+        public static BwArt Build(BwRig rig, bool smoothStage = false)
         {
             var art = new BwArt();
             var atlas = new SpriteAtlasBuilder();
@@ -52,19 +69,19 @@ namespace BrawlerFoundation.Presentation
             headCanvas.Outline(Line);
             int head = atlas.Add(headCanvas);
             var random = new Unity.Mathematics.Random(4);
-            art.Floor = atlas.Add(Fill(16, 16, c =>
+            art.Floor = atlas.Add(smoothStage ? SmoothStone(false) : Fill(16, 16, c =>
             {
                 c.Rect(0, 0, 16, 16, C(120, 100, 90));
                 c.Rect(0, 15, 16, 1, C(150, 130, 115));
                 for (int i = 0; i < 10; i++) c.Set(random.NextInt(16), random.NextInt(15), C(105, 88, 80));
             }));
-            art.Wall = atlas.Add(Fill(16, 16, c =>
+            art.Wall = atlas.Add(smoothStage ? SmoothStone(true) : Fill(16, 16, c =>
             {
                 c.Rect(0, 0, 16, 16, C(80, 72, 92));
                 c.Rect(0, 7, 16, 1, C(62, 56, 72)); c.Rect(0, 15, 16, 1, C(62, 56, 72));
                 c.Rect(7, 0, 1, 7, C(62, 56, 72)); c.Rect(3, 8, 1, 7, C(62, 56, 72)); c.Rect(12, 8, 1, 7, C(62, 56, 72));
             }));
-            art.Shadow = atlas.Add(Fill(16, 6, c => c.Ellipse(8, 3, 7.5f, 2.5f, C(0, 0, 0, 120))));
+            art.Shadow = atlas.Add(smoothStage ? BlobShadow.CreateCanvas() : Fill(16, 6, c => c.Ellipse(8, 3, 7.5f, 2.5f, C(0, 0, 0, 120))));
             art.Bar = atlas.Add(Fill(4, 4, c => c.Rect(0, 0, 4, 4, C(255, 255, 255))));
             art.Spark = atlas.Add(Fill(9, 9, c =>
             {
@@ -75,7 +92,7 @@ namespace BrawlerFoundation.Presentation
             }));
             art.Star = atlas.Add(Fill(7, 7, c => { c.Rect(3, 0, 1, 7, C(255, 230, 90)); c.Rect(0, 3, 7, 1, C(255, 230, 90)); c.Rect(2, 2, 3, 3, C(255, 240, 160)); }));
             art.Puff = new SpriteClip(atlas.AddStrip(4, 12, 12, (c, f) => c.Ellipse(6, 6, 2.5f + f * 1.2f, 2.5f + f * 1.2f, C(255, 255, 255, (byte)(220 - f * 50)))), 4, 16f, false);
-            art.Sheet = atlas.Build();
+            art.Sheet = atlas.Build(filterMode: smoothStage ? FilterMode.Bilinear : FilterMode.Point);
 
             // Parts, back to front: (bone, sprite, size along the bone, thickness, kind).
             var parts = new (int bone, int sprite, float length, float width, Part kind, float layer)[]

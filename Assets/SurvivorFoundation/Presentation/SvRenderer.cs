@@ -1,6 +1,7 @@
 using SPF.Presentation;
 using SPF.Presentation.Sprites;
 using SPF.Presentation.Combat;
+using SPF.Presentation.Animation;
 using SPF.Contracts;
 using SPF.Runtime.Session;
 using SPF.Runtime.World;
@@ -30,6 +31,18 @@ namespace SurvivorFoundation.Presentation
         public FollowCamera2D Camera;
         public System.Action<SvFeedback> Feedback;
         public SvArtStyle ArtStyle = SvArtStyle.Pixel;
+        public bool NaturalCharacters;
+        public const int NaturalEnemyCapacity = 192, NaturalDeathCapacity = 16;
+        public int NaturalEnemyBudget => QualityLevel >= 3 ? 48 : QualityLevel >= 2 ? 96 : NaturalEnemyCapacity;
+        public GameplayCharacterPresenter Characters => m_Characters;
+        public int ArticulatedEnemies { get; private set; }
+        GameplayCharacterPresenter m_Characters;
+        GameplayCharacterSelection m_CharacterSelection;
+        NativeArray<byte> m_NaturalMask;
+        struct DeathVisual { public float2 Position; public float Scale, Life; public int Generation; }
+        NativeArray<DeathVisual> m_Deaths;
+        int m_DeathSequence, m_HeroCastTick = -100;
+        bool m_BoundNatural;
         public int QualityLevel { get; private set; }
         public int ShadowBudget => QualityLevel >= 3 ? 32 : QualityLevel >= 2 ? 128 : QualityLevel >= 1 ? 256 : 768;
         public int EffectBudget => VfxBudget.ForQuality(QualityLevel).Active;
@@ -39,7 +52,7 @@ namespace SurvivorFoundation.Presentation
         public int HealthBarsDrawn { get; private set; }
         public int ShadowsDrawn { get; private set; }
         public int RingsDrawn { get; private set; }
-        public bool StableTranslucentActors => ArtStyle == SvArtStyle.SmoothOutline;
+        public bool StableTranslucentActors => ArtStyle == SvArtStyle.SmoothOutline || NaturalCharacters;
         public void SetQualityLevel(int level) => QualityLevel = math.clamp(level, 0, 3);
 
         RenderAssets m_Assets;
@@ -70,6 +83,9 @@ namespace SurvivorFoundation.Presentation
 
         void Release()
         {
+            m_Characters?.Dispose(); m_Characters = null; ArticulatedEnemies = 0;
+            if (m_NaturalMask.IsCreated) m_NaturalMask.Dispose();
+            if (m_Deaths.IsCreated) m_Deaths.Dispose();
             m_Ground?.Dispose(); m_Opaque?.Dispose(); m_Additive?.Dispose(); m_Effects?.Dispose();
             m_Shadows?.Dispose(); m_Health?.Dispose();
             m_Shadows = m_Health = null;
@@ -87,13 +103,21 @@ namespace SurvivorFoundation.Presentation
         void Bind(SimSession session)
         {
             Release();
-            m_Session = session; m_BoundStyle = ArtStyle;
+            m_Session = session; m_BoundStyle = ArtStyle; m_BoundNatural = NaturalCharacters;
             var world = session.World;
             var config = world.Resource(SvKeys.Config);
             m_Assets = new RenderAssets(RenderCapabilities.Detect());
-            m_Art = SvArt.Build(config.EnemyKinds, k => { var c = config.Enemies[k].Color; return new Color(c.x, c.y, c.z, 1f); }, ArtStyle);
+            m_Art = SvArt.Build(config.EnemyKinds, k => { var c = config.Enemies[k].Color; return new Color(c.x, c.y, c.z, 1f); }, NaturalCharacters ? SvArtStyle.SmoothOutline : ArtStyle);
             var tier = m_Assets.Tier;
             var atlas = m_Art.Sheet.Texture;
+            if (NaturalCharacters)
+            {
+                m_Characters = new GameplayCharacterPresenter(tier, NaturalEnemyCapacity + 1 + NaturalDeathCapacity);
+                m_CharacterSelection = new GameplayCharacterSelection(NaturalEnemyCapacity);
+                m_NaturalMask = new NativeArray<byte>(world.Table(SvKeys.Enemy).Capacity, Allocator.Persistent);
+                m_Deaths = new NativeArray<DeathVisual>(NaturalDeathCapacity, Allocator.Persistent);
+                m_DeathSequence = 0; m_HeroCastTick = -100;
+            }
             m_Ground = new SpriteBatch(tier, atlas, BlendKind.Opaque, 1024, queueOffset: -10);
             m_Opaque = new SpriteBatch(tier, atlas, StableTranslucentActors ? BlendKind.Translucent : BlendKind.Opaque, world.Table(SvKeys.Enemy).Capacity + world.Table(SvKeys.Gem).Capacity + 64, queueOffset: StableTranslucentActors ? -30 : 0);
             m_Shadows = new SpriteBatch(tier, atlas, BlendKind.Translucent, world.Table(SvKeys.Enemy).Capacity + 8, queueOffset: -60);
@@ -115,11 +139,15 @@ namespace SurvivorFoundation.Presentation
             m_Counts = new NativeArray<int>(4, Allocator.Persistent);
         }
 
-        void LateUpdate()
+        void LateUpdate() => RenderFrame();
+
+        /// <summary>Same live presentation path; exposed for calibrated synchronous probes.</summary>
+        public void RenderFrame()
         {
             var session = Host != null ? Host.Session : null;
             if (session == null) return;
-            if (session != m_Session || ArtStyle != m_BoundStyle) Bind(session);
+            session.Sync();
+            if (session != m_Session || ArtStyle != m_BoundStyle || NaturalCharacters != m_BoundNatural) Bind(session);
             var world = session.World;
             var game = world.Resource(SvKeys.Game);
             float alpha = session.InterpolationAlpha;
@@ -136,10 +164,14 @@ namespace SurvivorFoundation.Presentation
             m_Ground.Clear(); m_Opaque.Clear(); m_Additive.Clear(); m_Effects.Clear(); m_Shadows.Clear(); m_Health.Clear();
             RingsDrawn = 0;
             if (game.Flow == SvFlow.Menu || game.RunTicks < m_PreviousRunTicks)
-            { m_Fx.Clear(); m_CombatFx.Clear(); m_LastHitTick = -1; m_EventSequence = 0; }
+            { m_Fx.Clear(); m_CombatFx.Clear(); m_LastHitTick = -1; m_EventSequence = 0;
+                m_Characters?.Clear(); m_HeroCastTick = -100;
+                if(m_Deaths.IsCreated)for(int i=0;i<m_Deaths.Length;i++)m_Deaths[i]=default;
+            }
             m_CombatFx.BeginFrame(game.Flow == SvFlow.Playing ? dt : 0f, QualityLevel);
             m_PreviousRunTicks = game.RunTicks;
             DrainFeedback(world);
+            if(NaturalCharacters) PrepareCharacters(world,game,hero,alpha,view,session.State==SessionState.Running && game.Flow!=SvFlow.LevelUp && game.Flow!=SvFlow.Menu?dt:0);
             DrawGround(view);
 
             // Bulk: Burst jobs cull and pack straight into reserved batch slots.
@@ -153,8 +185,8 @@ namespace SurvivorFoundation.Presentation
                 var frame = m_Art.Hero.FrameAt(time);
                 float side = game.Facing.x < 0f ? -1f : 1f;
                 float flash = game.Invulnerable > 0f && ((int)(time * 20f) & 1) == 0 ? 0.22f : 0f;
-                m_Opaque.Add(hero + new float2(0f, 0.45f), StableTranslucentActors ? new float2(1.3f * side, 1.5f) : new float2(14f * side, 16f) / SvArt.PixelsPerUnit, m_Art.Sheet[frame].Uv, ActorDepth + hero.y * DepthPerY, new float4(1f), 0f, flash);
-                int blades = SvRules.OrbitBlades(game);
+                if (!NaturalCharacters) m_Opaque.Add(hero + new float2(0f, 0.45f), StableTranslucentActors ? new float2(1.3f * side, 1.5f) : new float2(14f * side, 16f) / SvArt.PixelsPerUnit, m_Art.Sheet[frame].Uv, ActorDepth + hero.y * DepthPerY, new float4(1f), 0f, flash);
+                int blades = world.Resource(SvKeys.Config).Settings.FlyingSwords.Enabled ? 0 : SvRules.OrbitBlades(game);
                 var s = world.Resource(SvKeys.Config).Settings;
                 for (int k = 0; k < blades; k++)
                 {
@@ -184,6 +216,7 @@ namespace SurvivorFoundation.Presentation
                     m_Effects.Add(hero, new float2(magnet * 2f), m_Art.Sheet[m_Art.Ring].Uv, GroundDepth - 0.5f, new float4(0.5f, 0.8f, 1f, 0.12f));
                 }
             }
+            m_Characters?.Evaluate();
             m_Fx.UpdateAndDraw(dt, m_Effects, m_Art.Sheet, m_Art.Font);
             m_CombatFx.Draw(m_Effects, m_Art.CombatFx.Resolve(m_Art.Sheet), effectView, BulletDepth - 0.2f);
 
@@ -193,11 +226,62 @@ namespace SurvivorFoundation.Presentation
             m_Ground.Draw(bounds);
             m_Shadows.Draw(bounds);
             m_Opaque.Draw(bounds);
+            m_Characters?.Draw(bounds);
             m_Additive.Draw(bounds);
             m_Effects.Draw(bounds); m_Health.Draw(bounds);
-            SpritesDrawn = m_Ground.Count + m_Opaque.Count + m_Additive.Count + m_Effects.Count + m_Shadows.Count + m_Health.Count;
+            SpritesDrawn = m_Ground.Count + m_Opaque.Count + m_Additive.Count + m_Effects.Count + m_Shadows.Count + m_Health.Count + (m_Characters?.PartsDrawn ?? 0);
             // API payload includes full data textures / indirect arguments, not just live packed sprites.
-            BytesUploaded = m_Ground.BytesUploaded + m_Opaque.BytesUploaded + m_Additive.BytesUploaded + m_Effects.BytesUploaded + m_Shadows.BytesUploaded + m_Health.BytesUploaded;
+            BytesUploaded = m_Ground.BytesUploaded + m_Opaque.BytesUploaded + m_Additive.BytesUploaded + m_Effects.BytesUploaded + m_Shadows.BytesUploaded + m_Health.BytesUploaded + (m_Characters?.BytesUploaded ?? 0);
+        }
+
+        void PrepareCharacters(SimWorld world,SvGameState game,float2 hero,float alpha,float4 view,float dt)
+        {
+            m_Characters.Begin(dt,QualityLevel);ArticulatedEnemies=0;
+            int count=world.Table(SvKeys.Enemy).Count;var pos=world.Column(SvKeys.Position);var prev=world.Column(SvKeys.PrevPosition);
+            var info=world.Column(SvKeys.Info);var handles=world.Table(SvKeys.Enemy).Handles;
+            m_CharacterSelection.Begin(hero,NaturalEnemyBudget);
+            for(int i=0;i<count;i++)
+            {
+                m_NaturalMask[i]=0;float2 p=math.lerp(prev[i],pos[i],alpha);
+                if(info[i].Has(EnemyFlags.Dead)||p.x<view.x||p.y<view.y||p.x>view.z||p.y>view.w)continue;
+                m_CharacterSelection.Consider(handles[i],p,i);
+            }
+            for(int n=0;n<m_CharacterSelection.Count;n++)
+            {
+                int i=m_CharacterSelection.Row(n);var e=info[i];float2 p=math.lerp(prev[i],pos[i],alpha),v=(pos[i]-prev[i])*30f;
+                float face=math.abs(v.x)>.02f?(v.x<0?-1:1):(hero.x<p.x?-1:1);
+                var state=e.Flash>.01f?GameplayCharacterState.Hit:math.lengthsq(v)>.001f?GameplayCharacterState.Run:GameplayCharacterState.Idle;
+                bool accepted=m_Characters.Submit(new GameplayCharacterInput {Handle=handles[i],Root=p,Ground=p,Velocity=v,Facing=face,Scale=math.clamp(e.Radius*1.22f,.28f,.85f),
+                    State=state,Kind=1,Flash=math.saturate(e.Flash*8),Depth=ActorDepth+p.y*DepthPerY,
+                    Tint=e.Has(EnemyFlags.Elite)?new float4(1.2f,.86f,.68f,1):new float4(1f,.93f+(e.Kind%3)*.035f,.85f+(e.Kind%2)*.12f,1)});
+                if(accepted){m_NaturalMask[i]=1;ArticulatedEnemies++;}
+            }
+            if(game.Flow!=SvFlow.Menu)
+            {
+                float2 velocity=(game.Hero-game.HeroPrev)*30f;int castAge=game.RunTicks-m_HeroCastTick;
+                var state=game.Hp<=0?GameplayCharacterState.Death:game.Invulnerable>.01f?GameplayCharacterState.Hit:
+                    castAge>=0&&castAge<12?(castAge>6?GameplayCharacterState.Recovery:GameplayCharacterState.Attack):
+                    math.lengthsq(velocity)>.001f?GameplayCharacterState.Run:GameplayCharacterState.Idle;
+                m_Characters.Submit(new GameplayCharacterInput {Handle=new EntityHandle(-1,1),Root=hero,Ground=hero,Velocity=velocity,Facing=game.Facing.x<0?-1:1,
+                    Scale=.66f,State=state,Phase=math.saturate(castAge/12f),Action=GameplayCharacterAction.Cast,Kind=0,
+                    Flash=game.Invulnerable>.01f?.5f:0,Depth=ActorDepth+hero.y*DepthPerY,Tint=new float4(1f)});
+            }
+            for(int i=0;i<m_Deaths.Length;i++)
+            {
+                var d=m_Deaths[i];if(d.Life<=0)continue;d.Life=math.max(0,d.Life-dt);m_Deaths[i]=d;
+                m_Characters.Submit(new GameplayCharacterInput {Handle=new EntityHandle(-2-i,d.Generation),Root=d.Position,Ground=d.Position,
+                    Facing=(i&1)==0?1:-1,Scale=d.Scale,State=GameplayCharacterState.Death,Kind=1,Depth=ActorDepth+d.Position.y*DepthPerY,Tint=new float4(1,1,1,math.saturate(d.Life*4))});
+            }
+        }
+        void AddNaturalDeath(SimWorld world,SvFeedback e)
+        {
+            // Death events supply position/kind, not an entity handle. These 16 short-lived presentation-only
+            // identities are explicitly separate from live actors; no culling disappearance is treated as death.
+            for(int i=0;i<m_Deaths.Length;i++)if(m_Deaths[i].Life<=0)
+            {
+                var config=world.Resource(SvKeys.Config);int kind=math.clamp(e.Enemy-1,0,config.EnemyKinds-1);
+                m_Deaths[i]=new DeathVisual {Position=e.Position,Scale=math.clamp(config.Enemies[kind].Radius*1.22f,.28f,.85f),Life=.55f,Generation=++m_DeathSequence};return;
+            }
         }
 
         /// <summary>Camera callback (runs before this renderer): follow the interpolated hero.</summary>
@@ -237,6 +321,7 @@ namespace SurvivorFoundation.Presentation
                 Uv = m_Art.EnemyUv, Out = slots, Written = m_Counts, Alpha = alpha, View = view, Time = time,
                 Count = math.min(count, slots.Length), Shadows = shadows, Bars = bars,
                 Hits = m_HitVisuals, Handles = world.Table(SvKeys.Enemy).Handles, EmitHits = emitHits,
+                NaturalMask = m_NaturalMask,
                 ShadowUv = m_Art.Sheet[m_Art.Shadow].Uv, WhiteUv = m_Art.Sheet[m_Art.White].Uv, Smooth = StableTranslucentActors,
             }.Run();
             m_Opaque.Trim(start + m_Counts[0]); m_Shadows.Trim(m_Counts[1]); m_Health.Trim(m_Counts[2]);
@@ -245,7 +330,7 @@ namespace SurvivorFoundation.Presentation
                 var hit = m_HitVisuals[i];
                 m_CombatFx.Emit(ImpactProfile, hit.Position, ((ulong)(uint)(hitTick + 1) << 32) | hit.Identity);
             }
-            return m_Counts[0];
+            return m_Counts[0] + ArticulatedEnemies;
         }
 
         void RunGems(SimWorld world, float4 view)
@@ -287,6 +372,7 @@ namespace SurvivorFoundation.Presentation
             public NativeArray<int> Written;
             public NativeArray<PackedSprite> Shadows, Bars;
             [ReadOnly] public NativeArray<EntityHandle> Handles;
+            [ReadOnly] public NativeArray<byte> NaturalMask;
             public NativeArray<HitVisual> Hits;
             public bool EmitHits;
             public float4 ShadowUv, WhiteUv;
@@ -326,7 +412,7 @@ namespace SurvivorFoundation.Presentation
                         Bars[bars++] = PackedSprite.Pack(bar, new float2(width, 0.075f), WhiteUv, 0.09f, new float4(0.32f, 0.3f, 0.25f, 1f));
                         Bars[bars++] = PackedSprite.Pack(bar + new float2(-width * (1f - fill) * 0.5f, 0f), new float2(width * fill, 0.075f), WhiteUv, 0.08f, new float4(0.91f, 0.42f, 0.4f, 1f));
                     }
-                    Out[n++] = PackedSprite.Pack(p + new float2(0f, size * 0.4f), new float2(size * side * (1f + squash), size * (1f - squash)), Uv[(info.Kind - 1) * 2 + frame],
+                    if (!NaturalMask.IsCreated || NaturalMask[i] == 0) Out[n++] = PackedSprite.Pack(p + new float2(0f, size * 0.4f), new float2(size * side * (1f + squash), size * (1f - squash)), Uv[(info.Kind - 1) * 2 + frame],
                         ActorDepth + p.y * DepthPerY, tint, Smooth ? SvVisualMotion.Wobble(Time, handle, moving) : 0f, hit * (Smooth ? 0.22f : 1f));
                 }
                 Written[0] = n; Written[1] = shadows; Written[2] = bars; Written[3] = hits;
@@ -436,12 +522,17 @@ namespace SurvivorFoundation.Presentation
                 switch (e.Kind)
                 {
                     case SvFeedbackKind.Death:
+                        if (NaturalCharacters) AddNaturalDeath(world, e);
                         m_CombatFx.Emit(DeathProfile, e.Position, key, math.clamp(e.Value, 0.5f, 1.5f));
                         break;
                     case SvFeedbackKind.Hit:
                         m_CombatFx.Emit(ImpactProfile, e.Position, key);
                         break;
+                    case SvFeedbackKind.Shoot:
+                        if (NaturalCharacters) m_HeroCastTick = world.Resource(SvKeys.Game).RunTicks;
+                        break;
                     case SvFeedbackKind.Nova:
+                        if (NaturalCharacters) m_HeroCastTick = world.Resource(SvKeys.Game).RunTicks;
                         m_CombatFx.Emit(PulseProfile, e.Position, key);
                         break;
                     case SvFeedbackKind.LevelUp:

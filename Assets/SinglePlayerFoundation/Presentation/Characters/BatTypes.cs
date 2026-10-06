@@ -5,7 +5,7 @@ using Unity.Mathematics;
 
 namespace SPF.Presentation.Characters
 {
-    public enum BatBackend { CpuWeighted, GpuVertex }
+    public enum BatBackend { CpuWeighted, GpuVertex, GpuComputePalette }
     public enum BatPrecision { Float, Half }
 
     /// <summary>Explicit shader ABI, four float4s, offsets 0/16/32/48. No simulation state lives here.</summary>
@@ -29,6 +29,15 @@ namespace SPF.Presentation.Characters
         public static BatRows Lerp(in BatRows a, in BatRows b, float t) => new BatRows { Row0 = math.lerp(a.Row0, b.Row0, t), Row1 = math.lerp(a.Row1, b.Row1, t) };
     }
 
+    /// <summary>CPU reference for three model-space skin matrices. GPU stores the same three BatRows contiguously per actor.</summary>
+    [StructLayout(LayoutKind.Sequential, Pack = 4)]
+    public struct BatPalette
+    {
+        public BatRows Root, Upper, Lower;
+        public BatRows Bone(int bone) => bone == 0 ? Root : bone == 1 ? Upper : bone == 2 ? Lower : throw new ArgumentOutOfRangeException(nameof(bone));
+        public const int Stride = BatLimits.Bones * BatRows.Stride;
+    }
+
     public struct BatVertex
     {
         public float2 Position, Uv;
@@ -47,6 +56,7 @@ namespace SPF.Presentation.Characters
     public static class BatLimits
     {
         public const int Bones = 3, MaxClips = 2, MaxFramesPerClip = 60, MaxVertices = 128, MaxIndices = 768, MaxCapacity = 256, CpuPageSize = 64;
+        public const int ComputeGroupSize = 64;
         public const float MaxScale = 4f, MaxPixelsPerUnit = 256f, HalfPixelBudget = 0.25f;
         public static void Capacity(int count) { if (count < 1 || count > MaxCapacity) throw new ArgumentOutOfRangeException(nameof(count)); }
         public static void Instance(in BatInstance i, int frameCount)
@@ -60,20 +70,29 @@ namespace SPF.Presentation.Characters
         }
     }
 
-    /// <summary>Pure selector: vertex SSBO, API, shader and exact sampled format support are separate gates.</summary>
+    /// <summary>Pure selector. Opt-in compute requires its own shader/kernel, two vertex buffers and a bounded palette buffer.</summary>
     public struct BatCapabilities
     {
         public bool Graphics, SupportedApi, Shader, Instancing, HalfSample, FloatSample;
-        public int ShaderLevel, VertexBuffers, MaxTextureSize;
+        public bool Compute, ComputeRenderShader, ComputeKernel;
+        public int ShaderLevel, VertexBuffers, MaxTextureSize, ComputeBuffers, ComputeGroupSize;
         public long MaxBufferBytes;
-        public BatBackend Select(bool forceCpu, bool halfAccepted, int frames, int capacity, out BatPrecision precision)
+        public BatBackend Select(bool forceCpu, bool halfAccepted, int frames, int capacity, out BatPrecision precision) =>
+            Select(forceCpu, halfAccepted, frames, capacity, false, out precision);
+
+        public BatBackend Select(bool forceCpu, bool halfAccepted, int frames, int capacity, bool preferCompute, out BatPrecision precision)
         {
             BatLimits.Capacity(capacity);
             if (frames < 1 || frames > BatLimits.MaxClips * BatLimits.MaxFramesPerClip) throw new ArgumentOutOfRangeException(nameof(frames));
             precision = halfAccepted && HalfSample ? BatPrecision.Half : BatPrecision.Float;
-            return !forceCpu && Graphics && SupportedApi && Shader && Instancing && ShaderLevel >= 45 && VertexBuffers >= 1 &&
+            bool common = !forceCpu && Graphics && SupportedApi && Instancing && ShaderLevel >= 45 &&
                 MaxTextureSize >= 2 * BatLimits.Bones && MaxTextureSize >= frames && MaxBufferBytes >= (long)capacity * BatInstance.Stride &&
-                (precision == BatPrecision.Half ? HalfSample : FloatSample) ? BatBackend.GpuVertex : BatBackend.CpuWeighted;
+                (precision == BatPrecision.Half ? HalfSample : FloatSample);
+            if (!common) return BatBackend.CpuWeighted;
+            if (preferCompute && Compute && ComputeRenderShader && ComputeKernel && VertexBuffers >= 2 && ComputeBuffers >= 2 &&
+                ComputeGroupSize >= BatLimits.ComputeGroupSize && MaxBufferBytes >= (long)capacity * BatPalette.Stride)
+                return BatBackend.GpuComputePalette;
+            return Shader && VertexBuffers >= 1 ? BatBackend.GpuVertex : BatBackend.CpuWeighted;
         }
     }
 

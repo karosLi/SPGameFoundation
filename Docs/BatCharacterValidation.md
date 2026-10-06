@@ -10,6 +10,7 @@ Open **SPF → Characters → Create Or Update Weighted BAT Scene**, then Play. 
 
 - `1`, `2`, `3`: 1 / 64 / 256 characters
 - `C`: recreate the batch with forced CPU fallback (a loading-time allocation)
+- `G`: opt into the separately gated compute-palette backend, or return to vertex preference; see [compute contracts and tests](BatComputePaletteValidation.md)
 - `I`: selected first character's IK on/off
 - Hold pointer: selected character's unmirrored model-space target
 - Inspector: bend sign, target, actor count, contact shadows
@@ -24,7 +25,7 @@ The default is 64 independently phased, tinted and alternately mirrored actors. 
 - Bind pose is independently evaluated from `BoneDef`, never assumed to be the first animation frame. Each matrix is posed-model × inverse(bind-model).
 - Loop samples exclude a duplicated endpoint, with explicit last-to-first interpolation. Non-loop clips include both endpoints. Single-frame clips work. Matrix interpolation can shrink/shear rotation and is not authoritative pose interpolation.
 - IK is full override on bones 1/2 for one static-parent two-bone chain. Both bend signs, zero target direction and min/max reach clamping match the CPU solver. It does not solve arbitrary hierarchies, blend IK weights, retarget, propagate descendants or compute root motion.
-- IK runs in the vertex stage, deliberately repeating small bounded trigonometry. No compute skinning/palette pass is fabricated. A later compute pass needs benchmark evidence that its dispatch, barriers and output reads beat this baseline.
+- The default vertex backend runs IK in the vertex stage, deliberately repeating small bounded trigonometry. The optional [compute-palette backend](BatComputePaletteValidation.md) computes once per actor and has separate gates/tests. Neither backend is claimed faster without device benchmarks.
 - Shaders target the built-in rendering pipeline tested by this project. No URP/mobile correctness claim is made without those runs.
 
 ### GPU layout

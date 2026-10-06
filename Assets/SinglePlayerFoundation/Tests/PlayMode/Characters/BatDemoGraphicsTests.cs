@@ -17,7 +17,10 @@ namespace SPF.Characters.Tests.PlayMode
         [UnityTest]
         public IEnumerator ActualDemo_ForcedCpuDrawMesh_IKAndRecreate() => CaptureActualDemo(true);
 
-        static IEnumerator CaptureActualDemo(bool forceCpu)
+        [UnityTest]
+        public IEnumerator ActualDemo_ComputePaletteRenderMeshPrimitives_IKAndRecreate() => CaptureActualDemo(false,true);
+
+        static IEnumerator CaptureActualDemo(bool forceCpu,bool preferCompute=false)
         {
             RequireGraphics();
             var cameraObject=new GameObject("BAT production capture camera");
@@ -25,13 +28,13 @@ namespace SPF.Characters.Tests.PlayMode
             var target=new RenderTexture(768,768,24,RenderTextureFormat.ARGB32,RenderTextureReadWrite.Linear){antiAliasing=1};target.Create();camera.targetTexture=target;
             var read=new Texture2D(768,768,TextureFormat.RGBA32,false,true);
             var root=new GameObject("BAT actual production demo");root.SetActive(false);
-            var demo=root.AddComponent<BatCharacterDemo>();demo.OutputCamera=camera;demo.ForceCpu=forceCpu;demo.ActorCount=64;demo.EnableIk=true;
-            string suffix=forceCpu?"cpu":"gpu";
+            var demo=root.AddComponent<BatCharacterDemo>();demo.OutputCamera=camera;demo.ForceCpu=forceCpu;demo.PreferCompute=preferCompute;demo.ActorCount=64;demo.EnableIk=true;
+            string suffix=forceCpu?"cpu":preferCompute?"compute":"gpu";
             try
             {
                 root.SetActive(true);
                 if(forceCpu)Assert.That(demo.ActiveBackend,Is.EqualTo(BatBackend.CpuWeighted));
-                else if(demo.ActiveBackend!=BatBackend.GpuVertex)Assert.Ignore("Actual production GPU draw unsupported here; separate forced-CPU demo test still runs.");
+                else if(demo.ActiveBackend!=(preferCompute?BatBackend.GpuComputePalette:BatBackend.GpuVertex))Assert.Ignore("Actual production GPU draw unsupported here; separate forced-CPU demo test still runs.");
                 yield return null;yield return null;
                 // Render the supplied camera after Update queued the real Draw() calls. No CommandBuffer test shim.
                 camera.Render();Read(target,read);var initial=read.GetPixels32();Save(read,"bat-demo-"+suffix+".png");

@@ -21,14 +21,14 @@ namespace SPF.Characters.Tests.PlayMode
         {
             if(batch.Backend!=BatBackend.GpuVertex)Assert.Ignore("Verified BAT capability gate selected CPU. GPU skinning is NOT validated on this backend.");
         }
-        [TestCase(false)][TestCase(true)]
-        public void VertexStageReadback_MatchesWeightedCpuAndBoundedIk(bool compactHalfAsset)
+        [TestCase(false,false)][TestCase(true,false)][TestCase(false,true)][TestCase(true,true)]
+        public void VertexStageReadback_MatchesWeightedCpuAndBoundedIk(bool compactHalfAsset,bool preferCompute)
         {
             RequireGraphics();
             if(!SystemInfo.SupportsRenderTextureFormat(RenderTextureFormat.ARGBFloat))Assert.Ignore("RGBAFloat render target unavailable; numeric GPU parity is unverified.");
-            using var asset=CreateAsset(compactHalfAsset);using var batch=new BatCharacterBatch(asset,1);RequireGpu(batch);
+            using var asset=CreateAsset(compactHalfAsset);using var batch=new BatCharacterBatch(asset,1,preferCompute:preferCompute);if(preferCompute)RequireCompute(batch);else RequireGpu(batch);
             if(compactHalfAsset){Assert.That(asset.HalfAccepted,Is.True);if(batch.Precision!=BatPrecision.Half)Assert.Ignore("Sampleable RGBAHalf absent: half GPU path is unverified.");}
-            var shader=Resources.Load<Shader>("SPF/Characters/BatVertexProbe");Assert.That(shader,Is.Not.Null);Assert.That(shader.isSupported,Is.True);
+            var shader=Resources.Load<Shader>(preferCompute?"SPF/Characters/BatComputedProbe":"SPF/Characters/BatVertexProbe");Assert.That(shader,Is.Not.Null);Assert.That(shader.isSupported,Is.True);
             var material=new Material(shader){enableInstancing=true};var mesh=ProbeMesh(asset);
             var target=new RenderTexture(asset.VertexCount,1,0,RenderTextureFormat.ARGBFloat,RenderTextureReadWrite.Linear){antiAliasing=1};target.Create();
             var read=new Texture2D(asset.VertexCount,1,TextureFormat.RGBAFloat,false,true);
@@ -55,20 +55,26 @@ namespace SPF.Characters.Tests.PlayMode
             }
             finally{UnityEngine.Object.DestroyImmediate(read);target.Release();UnityEngine.Object.DestroyImmediate(target);UnityEngine.Object.DestroyImmediate(mesh);UnityEngine.Object.DestroyImmediate(material);}
         }
-        [Test]
-        public void ProductionShader_CpuGpuPixelParity_AndEmptyReuse()
+        [TestCase(false)][TestCase(true)]
+        public void ProductionShader_CpuGpuPixelParity_AndEmptyReuse(bool preferCompute)
         {
-            RequireGraphics();using var asset=BatCharacterAsset.Bake();using var gpu=new BatCharacterBatch(asset,4);RequireGpu(gpu);using var cpu=new BatCharacterBatch(asset,4,true);
+            RequireGraphics();using var asset=BatCharacterAsset.Bake();using var gpu=new BatCharacterBatch(asset,4,preferCompute:preferCompute);if(preferCompute)RequireCompute(gpu);else RequireGpu(gpu);using var cpu=new BatCharacterBatch(asset,4,true);
             for(int i=0;i<4;i++)
             {
                 var data=asset.Instance(i%2,.173f+i*.193f,new float2(i%2*3,i/2*2.7f),1,i%2==0?1:-1,new float4(1,.8f+i*.05f,.7f,1),0,new float2(.6f,2),i>=2,i==2?-1:1);
+                if(preferCompute)
+                {
+                    data.Placement.z=i%2==0?.85f:1.15f;
+                    if(i==0)data.Frames=new float4(17,asset.Clip(1).FirstFrame+29,.37f,0);
+                    if(i==3)data.Ik.xy=new float2(3,-2);
+                }
                 gpu.Add(data);cpu.Add(data);
             }
             var target=new RenderTexture(512,512,24,RenderTextureFormat.ARGB32,RenderTextureReadWrite.Linear){antiAliasing=1};target.Create();
             var read=new Texture2D(512,512,TextureFormat.RGBA32,false,true);
             try
             {
-                var a=Render(gpu,target,read);Save(read,"bat-gpu.png");var b=Render(cpu,target,read);Save(read,"bat-cpu.png");
+                var a=Render(gpu,target,read);Save(read,preferCompute?"bat-compute.png":"bat-gpu.png");var b=Render(cpu,target,read);Save(read,preferCompute?"bat-compute-cpu.png":"bat-cpu.png");
                 int visible=0,mismatch=0,magenta=0;var quadrants=new int[4];
                 for(int y=0;y<512;y++)for(int x=0;x<512;x++)
                 {
@@ -96,10 +102,10 @@ namespace SPF.Characters.Tests.PlayMode
             batch.Prepare();Assert.That(batch.BytesUploaded,Is.Zero);batch.Clear();batch.Prepare();Assert.That(batch.Count,Is.Zero);Assert.That(batch.BytesUploaded,Is.Zero);
             batch.Add(instance);batch.Prepare();Assert.That(batch.Count,Is.EqualTo(1));batch.Dispose();batch.Dispose();Assert.Throws<ObjectDisposedException>(()=>batch.Clear());
         }
-        [TestCase(false)][TestCase(true)]
-        public void WarmedPrepareDoesNotAllocateManagedMemory(bool forceCpu)
+        [TestCase(false,false)][TestCase(true,false)][TestCase(false,true)]
+        public void WarmedPrepareDoesNotAllocateManagedMemory(bool forceCpu,bool preferCompute)
         {
-            RequireGraphics();using var asset=BatCharacterAsset.Bake();using var batch=new BatCharacterBatch(asset,64,forceCpu);
+            RequireGraphics();using var asset=BatCharacterAsset.Bake();using var batch=new BatCharacterBatch(asset,64,forceCpu,preferCompute:preferCompute);if(preferCompute)RequireCompute(batch);
             var instance=asset.Instance(0,.3f,0,1,1,new float4(1));for(int i=0;i<64;i++)batch.Add(instance);
             for(int f=0;f<64;f++){instance.Frames.z=(f%10)*.1f;batch.Set(0,instance);batch.Prepare();}
             Action measured = () =>

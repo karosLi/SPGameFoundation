@@ -10,12 +10,21 @@ namespace SPF.Presentation.Characters
 {
     public static class BatGraphics
     {
-        public static BatCapabilities Capabilities(Shader shader)
+        public static BatCapabilities Capabilities(Shader shader, Shader computeRenderShader=null, ComputeShader compute=null)
         {
             var api=SystemInfo.graphicsDeviceType;
             // GLES requires a separately validated non-SSBO implementation. CPU is the supported lower tier.
             bool supported=api==GraphicsDeviceType.Direct3D11||api==GraphicsDeviceType.Direct3D12||api==GraphicsDeviceType.Metal||api==GraphicsDeviceType.Vulkan||api==GraphicsDeviceType.OpenGLCore;
+            bool computeKernel=false;
+            if(supported&&SystemInfo.supportsComputeShaders&&compute!=null&&compute.HasKernel("BuildPalette"))
+            {
+                int kernel=compute.FindKernel("BuildPalette");
+                compute.GetKernelThreadGroupSizes(kernel,out uint x,out uint y,out uint z);
+                computeKernel=compute.IsSupported(kernel)&&x==BatLimits.ComputeGroupSize&&y==1&&z==1;
+            }
             return new BatCapabilities { Graphics=api!=GraphicsDeviceType.Null,SupportedApi=supported,Shader=shader!=null&&shader.isSupported,
+                Compute=SystemInfo.supportsComputeShaders,ComputeRenderShader=computeRenderShader!=null&&computeRenderShader.isSupported,ComputeKernel=computeKernel,
+                ComputeBuffers=SystemInfo.maxComputeBufferInputsCompute,ComputeGroupSize=Math.Min(SystemInfo.maxComputeWorkGroupSize,SystemInfo.maxComputeWorkGroupSizeX),
                 Instancing=SystemInfo.supportsInstancing,ShaderLevel=SystemInfo.graphicsShaderLevel,VertexBuffers=SystemInfo.maxComputeBufferInputsVertex,
                 MaxTextureSize=SystemInfo.maxTextureSize,MaxBufferBytes=SystemInfo.maxGraphicsBufferSize,
                 HalfSample=SystemInfo.IsFormatSupported(GraphicsFormat.R16G16B16A16_SFloat,FormatUsage.Sample),FloatSample=SystemInfo.IsFormatSupported(GraphicsFormat.R32G32B32A32_SFloat,FormatUsage.Sample) };

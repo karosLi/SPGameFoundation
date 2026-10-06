@@ -12,6 +12,8 @@ namespace SPF.Presentation.Characters
     {
         [Range(1,256)] public int ActorCount=64;
         public bool ForceCpu;
+        [Tooltip("Optional compute palette; falls back to vertex BAT, then CPU when unsupported.")]
+        public bool PreferCompute;
         public bool EnableIk=true;
         public bool ContactShadows=true;
         public float BendSign=1;
@@ -28,11 +30,11 @@ namespace SPF.Presentation.Characters
         NativeArray<BoneWorld> m_World;
         Camera m_Camera;
         GameObject m_CameraObject;
-        bool m_Forced;
+        bool m_Forced,m_PreferredCompute;
         int m_Shadow,m_Dot;
         void OnEnable()
         {
-            m_Asset=BatCharacterAsset.Bake();m_Batch=new BatCharacterBatch(m_Asset,BatLimits.MaxCapacity,ForceCpu);m_Forced=ForceCpu;
+            m_Asset=BatCharacterAsset.Bake();m_Batch=new BatCharacterBatch(m_Asset,BatLimits.MaxCapacity,ForceCpu,preferCompute:PreferCompute);m_Forced=ForceCpu;m_PreferredCompute=PreferCompute;
             m_Rig=BatCharacterAsset.CreateRig();m_Pose=new NativeArray<BoneLocal>(3,Allocator.Persistent);m_World=new NativeArray<BoneWorld>(3,Allocator.Persistent);
             var atlas=new SpriteAtlasBuilder();m_Shadow=atlas.Add(BlobShadow.CreateCanvas());
             var dot=new PixelCanvas(16,16);for(int y=0;y<16;y++)for(int x=0;x<16;x++){float2 d=new float2(x-7.5f,y-7.5f);dot.Pixels[y*16+x]=new Color32(255,255,255,(byte)(math.lengthsq(d)<49?255:0));}
@@ -44,13 +46,14 @@ namespace SPF.Presentation.Characters
             m_Camera=OutputCamera!=null?OutputCamera:Camera.main;
             if(m_Camera==null){m_CameraObject=new GameObject("BAT Validation Camera");m_Camera=m_CameraObject.AddComponent<Camera>();m_CameraObject.tag="MainCamera";}
             m_Camera.orthographic=true;m_Camera.clearFlags=CameraClearFlags.SolidColor;m_Camera.backgroundColor=new Color(.055f,.08f,.12f);
-            Debug.Log("BAT character validation: "+m_Batch.Backend+" / "+m_Batch.Precision+". Half max error "+m_Asset.HalfMaxPixelError+" px at 256 px/unit x4 scale. C toggles CPU; I toggles IK; 1/2/3 select 1/64/256 actors. Pointer controls first actor target; gold=target, green=CPU reference tip.");
+            Debug.Log("BAT character validation: "+m_Batch.Backend+" / "+m_Batch.Precision+". Half max error "+m_Asset.HalfMaxPixelError+" px at 256 px/unit x4 scale. C toggles CPU; G toggles compute preference; I toggles IK; 1/2/3 select 1/64/256 actors. Pointer controls first actor target; gold=target, green=CPU reference tip.");
         }
         void Update()
         {
+            if(Input.GetKeyDown(KeyCode.G))PreferCompute=!PreferCompute;
             if(Input.GetKeyDown(KeyCode.C))ForceCpu=!ForceCpu;if(Input.GetKeyDown(KeyCode.I))EnableIk=!EnableIk;
             if(Input.GetKeyDown(KeyCode.Alpha1))ActorCount=1;if(Input.GetKeyDown(KeyCode.Alpha2))ActorCount=64;if(Input.GetKeyDown(KeyCode.Alpha3))ActorCount=256;
-            if(m_Forced!=ForceCpu){m_Batch.Dispose();m_Batch=new BatCharacterBatch(m_Asset,BatLimits.MaxCapacity,ForceCpu);m_Forced=ForceCpu;}
+            if(m_Forced!=ForceCpu||m_PreferredCompute!=PreferCompute){m_Batch.Dispose();m_Batch=new BatCharacterBatch(m_Asset,BatLimits.MaxCapacity,ForceCpu,preferCompute:PreferCompute);m_Forced=ForceCpu;m_PreferredCompute=PreferCompute;Debug.Log("BAT active backend: "+m_Batch.Backend+" / "+m_Batch.Precision);}
             int count=math.clamp(ActorCount,1,256),columns=count==1?1:count<=64?8:16,rows=(count+columns-1)/columns;
             m_Camera.orthographicSize=math.max(2,math.max((rows*2.4f+1)*.5f,(columns*2.5f+1)*.5f/math.max(.1f,m_Camera.aspect)));m_Camera.transform.position=new Vector3((columns-1)*1.25f,(rows-1)*1.2f+.9f,-10);
             if(Input.GetMouseButton(0)){var p=m_Camera.ScreenToWorldPoint(Input.mousePosition);ModelTarget=new Vector2(p.x,p.y);}

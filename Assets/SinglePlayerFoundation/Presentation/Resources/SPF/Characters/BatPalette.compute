@@ -1,0 +1,21 @@
+#pragma kernel BuildPalette
+#pragma target 4.5
+#include "BatSampling.hlsl"
+StructuredBuffer<BatInstance> _BatInstances;
+RWStructuredBuffer<BatRows> _ComputedPalette;
+uint _InstanceCount;
+// One thread per actor: sample three matrices and solve one IK chain once.
+// Fixed 64-thread groups, rounded dispatch, explicit tail guard before all reads/writes.
+[numthreads(64,1,1)]
+void BuildPalette(uint3 id:SV_DispatchThreadID)
+{
+    if(id.x >= _InstanceCount) return;
+    BatInstance instance = _BatInstances[id.x];
+    BatRows root = BatSample(0,instance.frames), upper, lower;
+    if(instance.ik.z > 0.5) BatSolveIk(instance.ik,upper,lower);
+    else { upper=BatSample(1,instance.frames); lower=BatSample(2,instance.frames); }
+    uint first=id.x*3;
+    _ComputedPalette[first]=root;
+    _ComputedPalette[first+1]=upper;
+    _ComputedPalette[first+2]=lower;
+}

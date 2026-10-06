@@ -36,7 +36,10 @@ namespace SPF.Presentation.Characters
         NativeArray<BatCpuVertex> m_CpuVertices;
         readonly Material m_Material;
         readonly MaterialPropertyBlock m_Properties;
-        readonly GraphicsBuffer m_Buffer;
+        readonly GraphicsBuffer m_Buffer,m_ComputedPalette;
+        readonly ComputeShader m_Compute;
+        readonly int m_Kernel;
+        static readonly int InstanceCountId=Shader.PropertyToID("_InstanceCount");
         readonly Mesh[] m_Pages;
         int m_Count;bool m_Dirty=true,m_Disposed;
         readonly bool m_DrawSupported;
@@ -46,32 +49,51 @@ namespace SPF.Presentation.Characters
         public BatBackend Backend {get;}
         public BatPrecision Precision {get;}
         public long BytesUploaded {get;private set;}
-        public long PaletteBytes => Backend==BatBackend.GpuVertex?2L*BatLimits.Bones*m_Asset.FrameCount*(Precision==BatPrecision.Half?8:16):0;
+        public long PaletteBytes => Backend!=BatBackend.CpuWeighted?2L*BatLimits.Bones*m_Asset.FrameCount*(Precision==BatPrecision.Half?8:16):0;
+        /// <summary>Owned GPU buffer storage. Shared BAT texture storage is reported separately by PaletteBytes.</summary>
+        public long InstanceBufferBytes => !m_Disposed&&m_Buffer!=null?(long)Capacity*BatInstance.Stride:0;
+        public long ComputedPaletteBytes => !m_Disposed&&m_ComputedPalette!=null?(long)Capacity*BatPalette.Stride:0;
+        /// <summary>Logical output bytes written by the last Prepare, not CPU upload or measured bandwidth.</summary>
+        public long PaletteBytesWritten {get;private set;}
+        public int DispatchCalls {get;private set;}
+        public int DispatchGroups {get;private set;}
         public int DrawCalls {get;private set;}
         public Material Material=>m_Material;
         public Bounds WorldBounds=>m_Bounds;
-        public BatCharacterBatch(BatClipSet asset,int capacity,bool forceCpu=false,bool allowHalf=true)
+        public BatCharacterBatch(BatClipSet asset,int capacity,bool forceCpu=false,bool allowHalf=true,bool preferCompute=false)
         {
             if(asset==null)throw new ArgumentNullException(nameof(asset));asset.CheckAlive();BatLimits.Capacity(capacity);
             m_Asset=asset;Capacity=capacity;
             var gpuShader=Resources.Load<Shader>("SPF/Characters/BatWeighted");
-            var capabilities=BatGraphics.Capabilities(gpuShader);
-            Backend=capabilities.Select(forceCpu,allowHalf&&asset.HalfAccepted,asset.FrameCount,capacity,out var precision);Precision=precision;
+            var computeShader=preferCompute&&!forceCpu?Resources.Load<ComputeShader>("SPF/Characters/BatPalette"):null;
+            var computeRenderShader=preferCompute&&!forceCpu?Resources.Load<Shader>("SPF/Characters/BatComputed"):null;
+            var capabilities=BatGraphics.Capabilities(gpuShader,computeRenderShader,computeShader);
+            Backend=capabilities.Select(forceCpu,allowHalf&&asset.HalfAccepted,asset.FrameCount,capacity,preferCompute,out var precision);Precision=precision;
             m_Instances=new NativeArray<BatInstance>(capacity,Allocator.Persistent);
             m_DrawSupported=capabilities.Graphics;
             if(!m_DrawSupported)return;
-            var shader=Backend==BatBackend.GpuVertex?gpuShader:Resources.Load<Shader>("SPF/Characters/BatCpu");
+            var shader=Backend==BatBackend.GpuComputePalette?computeRenderShader:Backend==BatBackend.GpuVertex?gpuShader:Resources.Load<Shader>("SPF/Characters/BatCpu");
             if(shader==null||!shader.isSupported){m_Instances.Dispose();throw new NotSupportedException("BAT weighted fallback shader unavailable on this graphics backend.");}
             try
             {
-            m_Material=new Material(shader){name="BAT "+Backend,enableInstancing=Backend==BatBackend.GpuVertex};
+            m_Material=new Material(shader){name="BAT "+Backend,enableInstancing=Backend!=BatBackend.CpuWeighted};
             m_Material.SetTexture("_MainTex",Texture2D.whiteTexture);
             m_Properties=new MaterialPropertyBlock();m_Properties.SetVector("_IkShape",BatGraphics.Vector(asset.IkShape));
-            if(Backend==BatBackend.GpuVertex)
+            if(Backend!=BatBackend.CpuWeighted)
             {
                 m_Buffer=new GraphicsBuffer(GraphicsBuffer.Target.Structured,capacity,BatInstance.Stride);
                 m_Properties.SetBuffer("_BatInstances",m_Buffer);m_Properties.SetTexture("_BoneTexture",asset.Texture(Precision));
                 _=asset.BindMesh;
+                if(Backend==BatBackend.GpuComputePalette)
+                {
+                    m_ComputedPalette=new GraphicsBuffer(GraphicsBuffer.Target.Structured,checked(capacity*BatLimits.Bones),BatRows.Stride);
+                    // Each batch owns its bindings; other batches cannot replace buffers/shape on this shader instance.
+                    m_Compute=UnityEngine.Object.Instantiate(computeShader);m_Compute.name="BAT owned compute palette";
+                    m_Kernel=m_Compute.FindKernel("BuildPalette");
+                    m_Compute.SetBuffer(m_Kernel,"_BatInstances",m_Buffer);m_Compute.SetBuffer(m_Kernel,"_ComputedPalette",m_ComputedPalette);
+                    m_Compute.SetTexture(m_Kernel,"_BoneTexture",asset.Texture(Precision));m_Compute.SetVector("_IkShape",BatGraphics.Vector(asset.IkShape));
+                    m_Properties.SetBuffer("_ComputedPalette",m_ComputedPalette);
+                }
             }
             else
             {
@@ -96,7 +118,7 @@ namespace SPF.Presentation.Characters
         public BatInstance Get(int index){Check();if(index<0||index>=m_Count)throw new ArgumentOutOfRangeException(nameof(index));return m_Instances[index];}
         public void Prepare()
         {
-            Check();BytesUploaded=0;DrawCalls=0;if(m_Count==0||!m_Dirty||!m_DrawSupported)return;
+            Check();BytesUploaded=0;DrawCalls=0;DispatchCalls=0;DispatchGroups=0;PaletteBytesWritten=0;if(m_Count==0||!m_Dirty||!m_DrawSupported)return;
             float3 low=new float3(float.MaxValue),high=new float3(float.MinValue);
             for(int i=0;i<m_Count;i++)
             {
@@ -105,7 +127,18 @@ namespace SPF.Presentation.Characters
                 low=math.min(low,center-new float3(r,r,.01f));high=math.max(high,center+new float3(r,r,.01f));
             }
             m_Bounds=new Bounds(new Vector3((low.x+high.x)*.5f,(low.y+high.y)*.5f,(low.z+high.z)*.5f),new Vector3(high.x-low.x,high.y-low.y,high.z-low.z));
-            if(Backend==BatBackend.GpuVertex){m_Buffer.SetData(m_Instances,0,0,m_Count);BytesUploaded=(long)m_Count*BatInstance.Stride;}
+            if(Backend!=BatBackend.CpuWeighted)
+            {
+                m_Buffer.SetData(m_Instances,0,0,m_Count);BytesUploaded=(long)m_Count*BatInstance.Stride;
+                if(Backend==BatBackend.GpuComputePalette)
+                {
+                    m_Compute.SetInt(InstanceCountId,m_Count);
+                    int groups=(m_Count+BatLimits.ComputeGroupSize-1)/BatLimits.ComputeGroupSize;
+                    // Same graphics queue as the later draw; Unity owns the UAV -> vertex buffer dependency.
+                    m_Compute.Dispatch(m_Kernel,groups,1,1);
+                    DispatchCalls=1;DispatchGroups=groups;PaletteBytesWritten=(long)m_Count*BatPalette.Stride;
+                }
+            }
             else
             {
                 new BatCpuSkinJob { BindVertices=m_Asset.Vertices,Palette=Precision==BatPrecision.Half?m_Asset.HalfRows:m_Asset.FloatRows,Instances=m_Instances,Shape=m_Asset.IkShape,Output=m_CpuVertices }.Schedule(m_Count*m_Asset.VertexCount,64).Complete();
@@ -125,7 +158,7 @@ namespace SPF.Presentation.Characters
             Prepare();if(m_Count==0||!m_DrawSupported)return;
             if(Precision==BatPrecision.Half&&(camera==null||!camera.orthographic||camera.pixelHeight/(2f*camera.orthographicSize)>BatLimits.MaxPixelsPerUnit))
                 throw new InvalidOperationException("Half BAT requires an explicit orthographic camera within 256 pixels/world-unit; construct with allowHalf:false outside that validated envelope.");
-            if(Backend==BatBackend.GpuVertex)
+            if(Backend!=BatBackend.CpuWeighted)
             {
                 var rp=new RenderParams(m_Material){camera=camera,worldBounds=m_Bounds,matProps=m_Properties,shadowCastingMode=ShadowCastingMode.Off,receiveShadows=false,lightProbeUsage=LightProbeUsage.Off};
                 Graphics.RenderMeshPrimitives(in rp,m_Asset.BindMesh,0,m_Count);DrawCalls=1;
@@ -137,14 +170,26 @@ namespace SPF.Presentation.Characters
         public void Record(CommandBuffer commands)
         {
             Prepare();if(m_Count==0||!m_DrawSupported)return;
-            if(Backend==BatBackend.GpuVertex){commands.DrawMeshInstancedProcedural(m_Asset.BindMesh,0,m_Material,0,m_Count,m_Properties);DrawCalls=1;}
+            if(Backend!=BatBackend.CpuWeighted){commands.DrawMeshInstancedProcedural(m_Asset.BindMesh,0,m_Material,0,m_Count,m_Properties);DrawCalls=1;}
             else for(int p=0;p<m_Pages.Length&&p*BatLimits.CpuPageSize<m_Count;p++){commands.DrawMesh(m_Pages[p],Matrix4x4.identity,m_Material,0,0);DrawCalls++;}
         }
         /// <summary>Test hook reuses actual uploaded ABI and palette; performs no readback during normal frames.</summary>
         public void RecordProbe(CommandBuffer commands,Mesh probe,Material probeMaterial)
         {
-            Prepare();if(Backend!=BatBackend.GpuVertex||m_Count!=1)throw new InvalidOperationException("Probe requires exactly one GPU instance.");
-            commands.DrawMeshInstancedProcedural(probe,0,probeMaterial,0,1,m_Properties);
+            Prepare();if(Backend==BatBackend.CpuWeighted||m_Count!=1)throw new InvalidOperationException("Probe requires exactly one GPU instance.");
+            commands.DrawMeshInstancedProcedural(probe,0,probeMaterial,0,1,m_Properties);DrawCalls=1;
+        }
+        /// <summary>Explicit synchronous validation hook only. Normal Prepare/Draw never calls GetData.
+        /// Call Prepare first; only active rows are read, including zero rows for an empty batch.</summary>
+        public int ReadbackComputedPaletteForValidation(BatRows[] destination)
+        {
+            Check();if(Backend!=BatBackend.GpuComputePalette)throw new InvalidOperationException("Readback requires the compute palette backend.");
+            if(destination==null)throw new ArgumentNullException(nameof(destination));
+            int rows=m_Count*BatLimits.Bones;
+            if(destination.Length<rows)throw new ArgumentException("Destination must contain all active bone rows.",nameof(destination));
+            if(rows==0)return 0;
+            if(m_Dirty)throw new InvalidOperationException("Prepare the batch before reading its compute output.");
+            m_ComputedPalette.GetData(destination,0,0,rows);return rows;
         }
         Mesh CreatePage(int count)
         {
@@ -163,7 +208,7 @@ namespace SPF.Presentation.Characters
         void Check(){if(m_Disposed)throw new ObjectDisposedException(nameof(BatCharacterBatch));m_Asset.CheckAlive();}
         public void Dispose()
         {
-            if(m_Disposed)return;m_Disposed=true;if(m_Instances.IsCreated)m_Instances.Dispose();if(m_CpuVertices.IsCreated)m_CpuVertices.Dispose();m_Buffer?.Dispose();
+            if(m_Disposed)return;m_Disposed=true;if(m_Instances.IsCreated)m_Instances.Dispose();if(m_CpuVertices.IsCreated)m_CpuVertices.Dispose();m_Buffer?.Dispose();m_ComputedPalette?.Dispose();BatGraphics.Destroy(m_Compute);
             if(m_Pages!=null)foreach(var mesh in m_Pages)BatGraphics.Destroy(mesh);BatGraphics.Destroy(m_Material);
         }
     }

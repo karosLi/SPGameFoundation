@@ -52,6 +52,12 @@ namespace SPF.Presentation.Characters
             CheckAlive(); BatLimits.Instance(instance,FrameCount);
             return BatSkinning.Skin(Vertices[vertex], instance, precision == BatPrecision.Half ? HalfRows : FloatRows, IkShape);
         }
+        /// <summary>Independent CPU reference for compute output. No GPU access or mutation.</summary>
+        public BatPalette SamplePalette(in BatInstance instance, BatPrecision precision)
+        {
+            CheckAlive(); BatLimits.Instance(instance,FrameCount);
+            return BatSkinning.SamplePalette(instance,precision == BatPrecision.Half ? HalfRows : FloatRows,IkShape);
+        }
         internal void CheckAlive() { if (m_Disposed) throw new ObjectDisposedException(nameof(BatClipSet)); }
         public void Dispose()
         {
@@ -65,6 +71,21 @@ namespace SPF.Presentation.Characters
 
     public static class BatSkinning
     {
+        public static BatPalette SamplePalette(in BatInstance instance, NativeArray<BatRows> rows, float4 shape)
+        {
+            int a=(int)instance.Frames.x*BatLimits.Bones,b=(int)instance.Frames.y*BatLimits.Bones;
+            var palette=new BatPalette { Root=BatRows.Lerp(rows[a],rows[b],instance.Frames.z) };
+            if(instance.Ik.z>.5f) BatMath.SolveIk(shape,instance.Ik,out palette.Upper,out palette.Lower);
+            else
+            {
+                palette.Upper=BatRows.Lerp(rows[a+1],rows[b+1],instance.Frames.z);
+                palette.Lower=BatRows.Lerp(rows[a+2],rows[b+2],instance.Frames.z);
+            }
+            return palette;
+        }
+        public static float3 SkinFromPalette(in BatVertex v,in BatInstance instance,in BatPalette palette) =>
+            BatMath.Place(v.Skin.z*palette.Bone((int)v.Skin.x).Transform(v.Position)+v.Skin.w*palette.Bone((int)v.Skin.y).Transform(v.Position),instance);
+
         public static float3 Skin(in BatVertex v, in BatInstance instance, NativeArray<BatRows> rows, float4 shape)
         {
             int b0 = (int)v.Skin.x, b1 = (int)v.Skin.y;

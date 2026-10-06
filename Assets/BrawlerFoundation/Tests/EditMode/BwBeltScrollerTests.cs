@@ -22,6 +22,14 @@ namespace BrawlerFoundation.Tests
         static void Frame(BwTestWorld t, uint pressed = 0, uint held = 0, float2 move = default)
         { t.Game.Input = new InputFrame { Pressed = pressed, Held = held, Move = move }; t.Step(); }
 
+        [TestCase(int.MaxValue)]
+        [TestCase(int.MaxValue - 1)]
+        [TestCase(62)]
+        public void OversizedWaveConfigurationCannotOverflowValidation(int firstWaveEnemies)
+        {
+            var config = BwBeltConfig.Default; config.FirstWaveEnemies = firstWaveEnemies;
+            Assert.Throws<ArgumentOutOfRangeException>(() => config.Validate());
+        }
         [Test]
         public void StartsBoundedDepthWaveAndFourRealSkillSlots()
         {
@@ -145,6 +153,20 @@ namespace BrawlerFoundation.Tests
             t.Step(40); Assert.AreEqual(10, belt.Coins); Assert.AreEqual(1, belt.HealsCollected); Assert.AreEqual(68, t.Info(0).Hp);
             t.Game.Flow = BwFlow.Fighting; BwSpawner.Spawn(t.World, 1, new float2(8, -2), -1, 0);
             Frame(t, 1u << 3); Assert.AreEqual(92, t.Info(0).Hp); Assert.AreEqual(0, t.World.Resource(BwMobileSkills.Key).GetSnapshot(3).Charges);
+        }
+        [Test]
+        public void WaveClearMovesAndCollectsButIgnoresSkillsAndPausesRecharge()
+        {
+            using var t = World(); Duel(t, new float2(8, 0));
+            var skills = t.World.Resource(BwMobileSkills.Key); Assert.IsTrue(skills.TryActivate(1, true));
+            var before = skills.GetSnapshot(1); t.Game.Flow = BwFlow.WaveClear; t.Game.FlowTimer = 2.2f;
+            t.World.Resource(BwBeltKeys.State).TryDrop(new float2(4.2f, 0), BwBeltDropKind.Coin, 10);
+            t.Game.Input = new InputFrame { Move = new float2(1, 0), Held = 15, Pressed = 15 }; t.Step(75);
+            Assert.Greater(Ground(t).x, 3f); Assert.AreEqual(10, t.World.Resource(BwBeltKeys.State).Coins);
+            Assert.AreEqual(FighterState.Walk, t.Info(0).State); Assert.AreEqual(0, Motion(t).Height);
+            Assert.AreEqual(before.RechargeTicks, skills.GetSnapshot(1).RechargeTicks);
+            Assert.AreEqual(before.Charges, skills.GetSnapshot(1).Charges);
+            for (int slot = 0; slot < 4; slot++) Assert.IsFalse(BwBeltRules.CanUseSlot(t.World, slot));
         }
         [Test]
         public void DropOverflowRejectsNewestAndNeverAllocatesOrOverwrites()

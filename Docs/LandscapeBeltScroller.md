@@ -10,7 +10,7 @@ Use **SPF → Mobile Gameplay → Create Landscape Belt Scroller Scene**, open t
 - JUMP / Space: independent vertical height, gravity and landing. Ground depth continues moving while airborne.
 - HEAL / L: restores 24 HP, eight-second cooldown; disabled at full health or while unable to act.
 - Defeated enemies leave coins; every second defeat also drops healing. Nearby loot attracts toward the player and is collected close to the ground.
-- Three increasing waves, a short collection interval, victory/loss, and AGAIN reset the same session safely.
+- Three increasing waves, a short movement-only collection interval, victory/loss, and AGAIN reset the same session safely.
 
 This is an opt-in landscape layout and gameplay schema. It does not change global PlayerSettings or force other games into landscape. `Create()`, `CreateSharedCombat()` and `CreateMobileCombat()` keep their previous rules, controls, capacities and save layouts. `CreateNaturalCombat()` selects the natural character presenter with the existing mobile brawler rules, without adding the belt schema.
 
@@ -28,7 +28,7 @@ The variant uses the existing `BwModule`, `SimSession`, fighter table/registry, 
 - Grid and query counters are derived diagnostics. The grid is rebuilt before use from authoritative columns, including immediately after restore. It does not need snapshot storage.
 - Default bounds: 64 fighters, 64 targets per concurrent swing, 32 loot slots. Configured simulation maximum: 128 fighters/targets and 256 loot slots. Dense worst-case overlap can still visit many neighbors; this is a bounded belt arena, not a claim of unbounded horde scalability.
 - Full fighter capacity rejects a spawn and increments `RejectedSpawns`. Full loot capacity rejects the newest drop without evicting an existing reward; `RejectedDrops` records it. Shared target history retains its reject-newest policy and `RejectedHits` counter. Grid capacity matches fighter capacity and the grid covers all clamped ground coordinates.
-- Skill priority on simultaneous input is charged kick, buffered/held combo, jump, heal. Charges are consumed only when the corresponding action starts. Stagger/death clear the attack buffer.
+- Skill priority on simultaneous input is charged kick, buffered/held combo, jump, heal. Charges are consumed only when the corresponding action starts. Stagger/death clear the attack buffer. During the 2.2-second wave-clear collection interval the joystick/keyboard can still move; all four skills are disabled, action bits cannot carry into the next wave, and skill recharge is paused. Focus interruption releases the movement pointer and requires a new drag.
 - The renderer consumes ground roots for depth sorting/shadows and height for body placement. FrameGovernor quality changes affect presentation cadence only and never remove collisions, change AI, skip skill ticks or alter loot.
 
 ## Save and restart boundaries
@@ -39,10 +39,12 @@ Restart clears level-scoped entities, shared hit scopes, buffered attacks, airbo
 
 ## Verification
 
-The .NET harness passes **44/44 Brawler EditMode cases**, including **22 new belt cases** at the implementation checkpoint. Coverage includes depth hit/miss, height miss, exact tangency, normalized ground motion, independent jump/landing, combo/recovery buffer, pursuit/stagger, local separation, row-sort/recycled-generation hit identity, loot/healing, reject-newest overflow, 128-fighter capacity, snapshot continuation with airborne/buffer/loot state, same-input determinism, terminal/restart, schema isolation and classic/shared/mobile regressions.
+The .NET harness passes **48/48 Brawler EditMode cases**, including **26 new belt cases** at the implementation checkpoint. Coverage includes depth hit/miss, height miss, exact tangency, normalized ground motion, independent jump/landing, combo/recovery buffer, pursuit/stagger, local separation, row-sort/recycled-generation hit identity, loot/healing, reject-newest overflow, 128-fighter capacity, overflow-safe wave configuration validation, movement-only collection/recharge isolation, snapshot continuation with airborne/buffer/loot state, same-input determinism, terminal/restart, schema isolation and classic/shared/mobile regressions.
 
 A warmed 90-tick belt-logic allocation probe reported **0 current-thread managed bytes** in the standalone .NET harness with positive retained-array calibration. This excludes Unity engine/native allocations, renderer, upload cost and whole-frame collection. It is not mobile-device performance evidence.
 
 `BwBeltScrollerPlayTests.LandscapeBeltDepthJumpLootRestartAndBudgetIsolation` is an actual game/canvas/camera test for both GPU-driven and data-texture backends. It exercises real skill raycasts, four-slot safe-area layout, depth miss/hit, hit-stagger, joystick+jump, ground shadow placement, healing/loot, loss/restart and snapshot invariance while changing presentation quality. It records unmodified 1280×720 readbacks in `Artifacts/Screenshots/MobileHud/belt-landscape-*.png`.
+
+`BwBeltScrollerPlayTests.CollectionIntervalKeepsJoystickAndReachesDistantLootAfterPause` separately exercises the actual input sink/HUD across wave clear, focus interruption/resume and victory. Its pickup starts over four ground units from the player, outside attraction range; the joystick must move to collect it.
 
 Real Unity execution and visual review are centralized separately; the presence or harness compilation of these PlayMode assertions does not mean they have run. Android/iOS touch, safe area, thermal behavior and frame times still need target-device validation. The included art is original outlined placeholder character/environment art, not copied artwork from the supplied references.

@@ -18,7 +18,7 @@ namespace BrawlerFoundation
         public void Validate()
         {
             new BwSharedCombatConfig { Fighters = Fighters, TargetsPerAttack = TargetsPerAttack }.Validate();
-            if (Fighters < 2 || Drops < 1 || Drops > 256 || Waves < 1 || Waves > 32 || FirstWaveEnemies < 1 || FirstWaveEnemies + Waves > Fighters)
+            if (Fighters < 2 || Drops < 1 || Drops > 256 || Waves < 1 || Waves > 32 || FirstWaveEnemies < 1 || FirstWaveEnemies > Fighters - Waves)
                 throw new ArgumentOutOfRangeException(nameof(Fighters), "Belt waves, drops and fighters must fit fixed capacities.");
         }
     }

@@ -52,6 +52,69 @@ namespace BrawlerFoundation.Tests.PlayMode
             Assert.IsNotNull(game.Renderer.Characters); Assert.AreEqual(3, game.Renderer.Characters.Count);
         }
         [UnityTest]
+        public IEnumerator CollectionIntervalKeepsJoystickAndReachesDistantLootAfterPause()
+        {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null) Assert.Ignore("No graphics device");
+            var game = BwGameBootstrap.CreateBeltScroller(); CanvasCapture capture = null;
+            try
+            {
+                yield return null; UIDriver.Click(game.StartButton.gameObject);
+                yield return UIDriver.WaitUntil(() => game.State.Flow == BwFlow.Fighting, 5);
+                game.Session.Sync(); game.Session.ManualClock = true; game.InputRouter.enabled = false;
+                capture = new CanvasCapture(game.gameObject, game.CameraRig.Camera, 1280, 720);
+                game.MobileHud.SetPreviewViewport(1280, 720, new Rect(0, 0, 1280, 720));
+                game.MobileHud.Refresh(); game.CameraRig.Snap(); yield return null; Canvas.ForceUpdateCanvases();
+                var world = game.Session.World; var belt = world.Resource(BwBeltKeys.State);
+                Tap(game, capture, 1); // establish an actual charged attack and incomplete recharge
+                var skill = world.Resource(BwMobileSkills.Key).GetSnapshot(1);
+                for (int i = 1; i < world.Table(BwKeys.Fighter).Count; i++)
+                { var f = world.Column(BwKeys.Info)[i]; f.Hp = 0; f.State = FighterState.KO; world.Column(BwKeys.Info).Set(i, f); }
+                game.State.Wave = belt.Config.Waves;
+                belt.TryDrop(new float2(.2f, 0), BwBeltDropKind.Coin, 10);
+                Assert.Greater(math.distance(world.Column(BwBeltKeys.Ground)[0], belt.Drops[0].Ground), 4f, "pickup starts outside attraction radius");
+                game.Session.Step(); yield return null; game.MobileHud.Refresh();
+                Assert.AreEqual(BwFlow.WaveClear, game.State.Flow); Assert.IsTrue(game.Joystick.gameObject.activeInHierarchy);
+                foreach (var control in game.MobileHud.Buttons) Assert.IsFalse(control.Snapshot.Enabled, "collection keeps movement but disables all actions");
+                var pointer = capture.Pointer(game.Joystick.gameObject, 91);
+                Assert.AreSame(game.Joystick.gameObject, capture.FirstHit(game.Joystick.gameObject));
+                game.Joystick.OnPointerDown(pointer); pointer.position += new Vector2(120, 0); game.Joystick.OnDrag(pointer);
+                FeedHud(game); Assert.Greater(game.State.Input.Move.x, .9f);
+                game.InputRouter.Sink(new InputFrame { Move = new float2(1, 0), Held = 15, Pressed = 15 });
+                Assert.AreEqual(0u, game.State.Input.Held); Assert.AreEqual(0u, game.State.Input.Pressed, "keyboard/action bits cannot queue into next wave");
+
+                // Pause/focus interruption still releases collection controls; resuming requires a new drag.
+                var flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+                game.Host.GetType().GetMethod("OnApplicationFocus", flags).Invoke(game.Host, new object[] { false });
+                game.MobileHud.GetType().GetMethod("OnApplicationFocus", flags).Invoke(game.MobileHud, new object[] { false });
+                yield return null;
+                Assert.IsFalse(game.Joystick.Pressed); Assert.AreEqual(float2.zero, game.State.Input.Move);
+                game.Host.GetType().GetMethod("OnApplicationFocus", flags).Invoke(game.Host, new object[] { true });
+                game.MobileHud.GetType().GetMethod("OnApplicationFocus", flags).Invoke(game.MobileHud, new object[] { true });
+                yield return null; game.MobileHud.Refresh();
+                Assert.IsFalse(game.Joystick.Pressed);
+                pointer = capture.Pointer(game.Joystick.gameObject, 92); game.Joystick.OnPointerDown(pointer);
+                pointer.position += new Vector2(120, 0); game.Joystick.OnDrag(pointer);
+                for (int tick = 0; tick < 90; tick++) FeedHud(game);
+                game.Joystick.OnPointerUp(pointer); game.State.Input = default;
+                Assert.AreEqual(BwFlow.WaveClear, game.State.Flow);
+                Assert.Greater(world.Column(BwBeltKeys.Ground)[0].x, -1f, "actual joystick crossed arena ground during collection");
+                Assert.AreEqual(10, belt.Coins); Assert.AreEqual(0, belt.ActiveDrops);
+                var after = world.Resource(BwMobileSkills.Key).GetSnapshot(1);
+                Assert.AreEqual(skill.Charges, after.Charges); Assert.AreEqual(skill.RechargeTicks, after.RechargeTicks, "collection pauses recharge");
+                for (int tick = 0; tick < 60; tick++) game.Session.Step(); yield return null;
+                Assert.AreEqual(BwFlow.Won, game.State.Flow); Assert.IsFalse(game.Joystick.gameObject.activeInHierarchy);
+                game.InputRouter.Sink(new InputFrame { Move = new float2(1, 0) }); Assert.AreEqual(float2.zero, game.State.Input.Move);
+                LogAssert.NoUnexpectedReceived();
+            }
+            finally
+            {
+                capture?.Dispose();
+                if (Camera.main != null) Object.Destroy(Camera.main.gameObject);
+                Object.Destroy(game.gameObject);
+            }
+        }
+
+        [UnityTest]
         public IEnumerator LandscapeBeltDepthJumpLootRestartAndBudgetIsolation([Values(RenderTier.GpuDriven, RenderTier.DataTexture)] RenderTier tier)
         {
             if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null) Assert.Ignore("No graphics device");

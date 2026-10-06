@@ -136,8 +136,10 @@ namespace BrawlerFoundation.Game
                     bool scriptedOwner = InputRouter.Scripted.Active;
                     if (scriptedOwner != m_ScriptedInputOwner)
                     { MobileHud?.CancelInput(); state.Input = default; m_ScriptedInputOwner = scriptedOwner; }
-                    if (Session.State != SessionState.Running || state.Flow != BwFlow.Fighting) { state.Input = default; return; }
-                    state.Input = InputFrame.Latch(state.Input, frame);
+                    if (Session.State != SessionState.Running || !MovementPhase(state.Flow)) { state.Input = default; return; }
+                    // The belt collection interval keeps locomotion, but never latches an attack,
+                    // jump or heal for the next wave. Skill cooldowns remain simulation-paused.
+                    state.Input = state.Flow == BwFlow.WaveClear ? new InputFrame { Move = frame.Move } : InputFrame.Latch(state.Input, frame);
                 }
                 else state.Input = InputFrame.Latch(state.Input, frame);
             };
@@ -146,6 +148,8 @@ namespace BrawlerFoundation.Game
             if (m_BeltScroller) keyboard.Map(KeyCode.Space, BwBeltRules.JumpButton).Map(KeyCode.L, BwBeltRules.HealButton);
             InputRouter.AddSource(keyboard);
         }
+
+        bool MovementPhase(BwFlow flow) => flow == BwFlow.Fighting || (m_BeltScroller && flow == BwFlow.WaveClear);
 
         void BuildUi()
         {
@@ -200,6 +204,8 @@ namespace BrawlerFoundation.Game
             StatsText.Commit();
             if (state.Flow == m_Flow) return;
             m_Flow = state.Flow;
+            if (m_BeltScroller && state.Flow == BwFlow.WaveClear && MobileHud != null)
+                foreach (var button in MobileHud.Buttons) button.CancelInput(); // keep the independent movement pointer
             MenuPanel.gameObject.SetActive(state.Flow == BwFlow.Menu);
             bool end = state.Flow == BwFlow.Won || state.Flow == BwFlow.Lost;
             EndPanel.gameObject.SetActive(end);
@@ -212,7 +218,7 @@ namespace BrawlerFoundation.Game
             public MobileSource(BwGameBootstrap game) => m_Game = game;
             public int SlotCount => m_Game.m_BeltScroller ? 4 : 2;
             public int TickRate => 60;
-            public bool Playing => m_Game.Session != null && m_Game.Session.State == SessionState.Running && m_Game.State.Flow == BwFlow.Fighting && !m_Game.InputRouter.Scripted.Active;
+            public bool Playing => m_Game.Session != null && m_Game.Session.State == SessionState.Running && m_Game.MovementPhase(m_Game.State.Flow) && !m_Game.InputRouter.Scripted.Active;
             public string SlotLabel(int slot) => slot == 0 ? (m_Game.m_BeltScroller ? "COMBO / J" : "PUNCH / J") : slot == 1 ? "KICK / K" : slot == 2 ? "JUMP / SPACE" : "HEAL / L";
             public SkillSlotSnapshot ReadSlot(int slot)
             {

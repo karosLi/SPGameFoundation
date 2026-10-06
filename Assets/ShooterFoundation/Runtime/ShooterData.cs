@@ -127,9 +127,10 @@ namespace ShooterFoundation
         /// <summary>Positive repeat for continuously scrolling presentation, including negative inputs.</summary>
         public static float Repeat(float value, float length) => value - math.floor(value / length) * length;
 
-        /// <summary>Earliest closed-circle contact in [0,1], including initial overlap and tangent hits.</summary>
+        /// <summary>Legacy circle contact in [0,1], preserving the original tiny-motion cutoff for replay.
+        /// New consumers should use CombatSweep.PointCircle/Circles.</summary>
         public static bool Sweep(float2 from, float2 to, float2 center, float radius, out float t)
-            => SPF.L2.Combat.CombatSweep.PointCircle(from, to, center, radius, out t);
+            => SPF.L2.Combat.CombatSweep.PointCircleLegacy(from, to, center, radius, out t);
 
         public static float2 WingPosition(in ShooterRun run) => run.Hero + new float2(-0.95f, -0.25f);
     }

@@ -77,6 +77,7 @@ namespace ShooterFoundation.Tests
             Assert.IsTrue(ShooterMath.Sweep(new float2(-2,1),new float2(2,1),float2.zero,1,out var tangent));Assert.AreEqual(0.5f,tangent,0.0001f);
             Assert.IsTrue(ShooterMath.Sweep(float2.zero,float2.zero,float2.zero,1,out var overlap));Assert.AreEqual(0f,overlap);
             Assert.IsFalse(ShooterMath.Sweep(new float2(2),new float2(2),float2.zero,1,out _));
+            Assert.IsFalse(ShooterMath.Sweep(new float2(1.0000005f,0),new float2(1,0),float2.zero,1,out _),"legacy Shooter preserves its tiny-motion cutoff; new CombatSweep API has no cutoff");
         }
         [Test]
         public void RayUsesNearestTargetThenStableSpawnId()

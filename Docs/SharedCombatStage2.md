@@ -6,7 +6,7 @@ This stage adds three small reusable L2 combat helpers and two simulation consum
 
 - `HitHistory`: bounded, allocation-free full `EntityHandle` deduplication over caller-owned `NativeArray` slices.
 - `ActionTimeline`, `ActionWindow`, `TickInputBuffer`: integer fixed-tick active windows, explicit interruption/cancel rules, action/pulse IDs, and a one-command input buffer.
-- `CombatSweep`: shared closed-circle time of impact, including relative target motion. `ShooterMath.Sweep` forwards to the same arithmetic, and Survivor guard contact uses the shared helper.
+- `CombatSweep`: shared closed-circle time of impact, including relative target motion. `ShooterMath.Sweep` forwards to explicitly frozen `PointCircleLegacy` arithmetic, while new `PointCircle`/`Circles` and Survivor guard contact use the robust shared helper.
 
 Classic Survivor's `BulletInfo`, classic Brawler's `FighterInfo`, and their existing table/resource layouts are unchanged. The existing classic 97a2b34 snapshot fixture remains the byte-for-byte compatibility gate. The annular skill still uses its single-query OR predicate; it already deduplicates overlapping rings and does not need a history.
 
@@ -81,9 +81,9 @@ The .NET harness checks source compilation, logic, exact classic fixtures, deter
 ### Local validation result (2026-10-06)
 
 - All 69 generated harness assemblies compiled with zero warnings/errors (serial aggregate build).
-- Focused shared primitives: 7/7 passed.
+- Focused shared primitives: 8/8 passed after numerical-contract review.
 - Complete Brawler EditMode logic suite: 19/19 passed.
-- Survivor non-performance EditMode suite: 37/37 passed, including actual classic 97a2b34 byte fixture and continuation.
+- Survivor non-performance EditMode suite: 38/38 passed after pulse-relation review, including actual classic 97a2b34 byte fixture and continuation.
 - Complete Shooter EditMode logic suite: 14/14 passed after sweep extraction.
 - Warmed primitive calls, crossed-blade fixed ticks, and repeated shared Brawler attack ticks each measured zero managed bytes in the harness. These are scoped CPU simulation assertions, not whole-frame or device-performance claims.
 - Unity/Burst/PlayMode validation has not been run in this isolated worktree; the integration owner runs that gate separately.
@@ -98,3 +98,11 @@ Two new graphics PlayMode smokes, parameterized across GPU-driven and data-textu
 - `SvCrossedBladePlayTests.CrossedBladeFactoryPulsesAndRestartsWithExistingRenderer`: overlapping path pulse → one hit, existing enemy rendering, quality-independent snapshot, UI restart and scope reset.
 
 The smoke fixtures pause the host after real UI startup to advance a controlled number of simulation ticks. These tests have been authored and harness-compiled; their actual Unity execution is a separate integration gate. No claim is made that the .NET stubs validate graphics or touch-frame scheduling.
+
+### Reviewed edge contracts
+
+The new swept-circle solver has no arbitrary world-unit motion epsilon. It uses double intermediates, a cross-product discriminant (avoiding subtraction of large longitudinal terms), and a cancellation-resistant entering root. Tiny but representable motion still reaches a closed endpoint; very small radii do not disappear through float squared-displacement underflow. No geometric epsilon inflates hit areas. Inputs must be finite, and returned time is still quantized to float. This improves numerical range, not the precision already lost when world coordinates were authored as floats. The new double path is not a measured target-device performance claim.
+
+Shooter's public compatibility wrapper deliberately calls `PointCircleLegacy`, retaining its original `a <= 1e-12` cutoff and float arithmetic. New consumers use `PointCircle` or `Circles`; the two contracts are regression-tested separately.
+
+Crossed-blade snapshot reads additionally validate the history/timeline relationship: before any completed pulse the scope is inactive and timeline pulse is 1; afterward, the stored scope must be exactly the preceding nonzero timeline pulse (including wrap). An empty completed pulse is valid. A scope claiming the upcoming pulse is rejected, since accepting it would silently reuse old hit history.

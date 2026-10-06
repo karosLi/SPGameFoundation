@@ -73,7 +73,10 @@ namespace SurvivorFoundation
             if (!HitHistory.IsValid(Targets, 0, Targets.Length, scope) || !scope.Owner.IsNull ||
                 (scope.Count > 0 && scope.Pulse == 0) || Timeline.Tick < 0 || Timeline.PreviousTick < -1 ||
                 Timeline.PreviousTick > Timeline.Tick || Timeline.PulseId == 0 || !Timeline.Running ||
-                Pulses < 0 || Rejections[0] < 0 || Rejections[1] < 0)
+                Pulses < 0 || Rejections[0] < 0 || Rejections[1] < 0 ||
+                (Pulses == 0
+                    ? scope.Pulse != 0 || scope.Count != 0 || Timeline.PulseId != 1
+                    : scope.Pulse != (Timeline.PulseId == 1 ? uint.MaxValue : Timeline.PulseId - 1)))
                 throw new InvalidDataException("Invalid crossed-blade state.");
             for (int i = 0; i < scope.Count; i++)
                 if (Targets[i].Index < 0 || Targets[i].Generation <= 0) throw new InvalidDataException("Invalid saved blade target.");

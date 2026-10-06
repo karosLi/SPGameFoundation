@@ -157,6 +157,36 @@ namespace SurvivorFoundation.Tests
         }
 
         [Test]
+        public void SnapshotRejectsReusedPulseButAcceptsInitialEmptyAndWrappedScopes()
+        {
+            using var state = new SvCrossedBladeState(8);
+            void RoundTrip()
+            {
+                using var stream = new MemoryStream();
+                using var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, true);
+                state.WriteSnapshot(writer); stream.Position = 0;
+                using var reader = new BinaryReader(stream);
+                state.ReadSnapshot(reader);
+            }
+            RoundTrip(); // initial state: no completed pulse and inactive history
+            state.Timeline.Advance(2); RoundTrip(); // initial waiting ticks remain valid
+            state.Pulses = 1; state.Timeline.Begin();
+            state.Scope[0] = new SPF.L2.Combat.HitHistoryState { Pulse = 1 };
+            RoundTrip(); // a completed pulse with no accepted targets is valid
+            state.Targets[0] = new EntityHandle(2, 3);
+            state.Scope[0] = new SPF.L2.Combat.HitHistoryState { Pulse = 1, Count = 1 };
+            RoundTrip(); // accepted target belongs to the completed pulse
+            state.Scope[0] = new SPF.L2.Combat.HitHistoryState { Pulse = state.Timeline.PulseId, Count = 1 };
+            Assert.Throws<InvalidDataException>(() => RoundTrip(), "same pulse would suppress the next accepted pulse's targets");
+            state.Targets[0] = default;
+            state.Scope[0] = new SPF.L2.Combat.HitHistoryState { Pulse = uint.MaxValue };
+            state.Timeline.PulseId = 1; state.Pulses = int.MaxValue;
+            RoundTrip(); // nonzero pulse counter wraps; completed pulse count saturates
+            state.Pulses = 0;
+            Assert.Throws<InvalidDataException>(() => RoundTrip(), "initial state cannot already hold completed history");
+        }
+
+        [Test]
         public void SnapshotRejectsCapacityMismatchAndInvalidHistoryBounds()
         {
             using var state = new SvCrossedBladeState(8);

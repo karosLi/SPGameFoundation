@@ -146,6 +146,23 @@ namespace SPF.Tests.EditMode
             Assert.IsFalse(CombatSweep.PointCircle(new float2(-2, 1.001f), new float2(2, 1.001f), float2.zero, 1, out _));
         }
 
+        [Test]
+        public void SweepPreservesTinyMotionEndpointContactAndTinyCircles()
+        {
+            var justOutside = new float2(1.0000005f, 0);
+            Assert.IsTrue(CombatSweep.PointCircle(justOutside, new float2(1, 0), float2.zero, 1, out float t));
+            Assert.AreEqual(1, t);
+            Assert.IsFalse(CombatSweep.PointCircleLegacy(justOutside, new float2(1, 0), float2.zero, 1, out _), "legacy compatibility intentionally retains its cutoff");
+            Assert.IsTrue(CombatSweep.Circles(float2.zero, float2.zero, .5f, justOutside, new float2(1, 0), .5f, out t));
+            Assert.AreEqual(1, t);
+            Assert.IsTrue(CombatSweep.PointCircle(new float2(2e-20f, 0), float2.zero, float2.zero, 1e-20f, out t));
+            Assert.AreEqual(.5f, t, .000001f, "float squared displacement would underflow or fall below a fixed epsilon");
+            Assert.IsFalse(CombatSweep.PointCircle(justOutside, justOutside, float2.zero, 1, out _));
+            Assert.IsFalse(CombatSweep.PointCircle(new float2(-1e10f, 2), new float2(1e10f, 2), float2.zero, 1, out _), "large longitudinal terms must not cancel a real lateral miss");
+            Assert.IsTrue(CombatSweep.PointCircle(new float2(-1e10f, 1), new float2(1e10f, 1), float2.zero, 1, out t));
+            Assert.AreEqual(.5f, t);
+        }
+
         [BurstCompile(CompileSynchronously = true)]
         struct PrimitiveJob : IJob
         {

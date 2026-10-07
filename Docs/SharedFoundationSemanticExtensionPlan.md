@@ -2,7 +2,7 @@
 
 日期：2026-10-07。面向 SPGameFoundation 的后续演进，基于 `9a95654247f066ee9ff9164381bdd30ade4c9309` 源码和[开源共享基座调研](OpenSourceSharedFoundationSurvey.md)。本文最初交付为计划；下列实施状态记录后续独立提交，不把拟议能力当作已完成，也不产生未经测量的性能或设备结论。当前实现与验证状态继续以[能力清单](RequestedCapabilityChecklist.md)和[精确提交验证记录](MobileFoundationFollowupValidation.md)为准。
 
-实施状态：计划发布时的两项试验候选精度失败现已在精确 `e86ee87` 原生闭环解决（1,084 EditMode、154 graphics PlayMode、1,050 .NET 通过）。用户已授权在该闭环后执行本计划；P0 兼容/语义基线现已完成；P1 首批已实现有界[组合回滚](CompositionRollbackValidation.md)及[Session/View 生命周期修复](validation/SessionViewLifecycle-20261007.md)，本次集成的原生执行状态待独立闭环。可选[描述清单](OptionalCompositionPreflightValidation.md)和[调度异常恢复](TickFailureOwnershipValidation.md)已各自完成红测试与本地验证，集成/原生验收按[阶段记录](FoundationStageBAndCValidation.md)推进；后续阶段继续按门槛实施。见[证据与剩余设备门槛](MobileFoundationFollowupValidation.md)。 D 的[有界保存 envelope](VersionedSaveEnvelope.md)与 F 的[后端契约夹具](StageFBackendContracts.md)已完成[最终本地组合验证](FoundationStageDFValidation.md)；E/G 仍实施中。各自原生/真机门槛不能由本地结果代替。
+实施状态：计划发布时的两项试验候选精度失败现已在精确 `e86ee87` 原生闭环解决（1,084 EditMode、154 graphics PlayMode、1,050 .NET 通过）。用户已授权在该闭环后执行本计划；P0 兼容/语义基线现已完成；P1 首批已实现有界[组合回滚](CompositionRollbackValidation.md)及[Session/View 生命周期修复](validation/SessionViewLifecycle-20261007.md)，本次集成的原生执行状态待独立闭环。可选[描述清单](OptionalCompositionPreflightValidation.md)和[调度异常恢复](TickFailureOwnershipValidation.md)已各自完成红测试与本地验证，集成/原生验收按[阶段记录](FoundationStageBAndCValidation.md)推进；后续阶段继续按门槛实施。见[证据与剩余设备门槛](MobileFoundationFollowupValidation.md)。 D 的[有界保存 envelope](VersionedSaveEnvelope.md)与 F 的[后端契约夹具](StageFBackendContracts.md)已完成[最终本地组合验证](FoundationStageDFValidation.md)；E 的[两游戏规则组合](ComposedAbilityRules.md)与 G 的[共享验收/移动预算](SharedAcceptanceAndMobileBudgets.md)也已完成独立实现和本地验证，现与原生生命周期探针修复一起做最终组合检查。A–G 的代码/文档已齐备，但原生精确提交与真机门槛未因此完成。
 
 ## 1 推荐方向与完成标准
 

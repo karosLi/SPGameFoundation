@@ -47,7 +47,9 @@ namespace BrawlerFoundation.Tests.PlayMode
                     yield return capture.Save("weapon-belt-"+id+"-"+(side<0?"left-":"right-")+suffix,safe,game.SwitchWeaponButton.gameObject);
                     Assert.IsTrue(game.Renderer.Characters.TryReadWeapon(weapons.Owner,out var socket));Assert.AreEqual(id,socket.VisualId);
                     float2 root=world.Column(BwKeys.Position)[0];float2 canonical=root+new float2(side*weapons.Current.MuzzleOffset.x,weapons.Current.MuzzleOffset.y)*BwWeapons.ActorScale;
-                    Assert.Less(math.distance(canonical,socket.Muzzle),.17f,"contact/release socket follows the same authored muzzle used by simulation");
+                    float socketError=math.distance(canonical,socket.Muzzle);
+                    TestContext.WriteLine($"Belt weapon {id}, facing {side}: native socket error {socketError:R}, muzzle ({socket.Muzzle.x:R},{socket.Muzzle.y:R}), canonical ({canonical.x:R},{canonical.y:R})");
+                    Assert.Less(socketError,.17f,"contact/release socket follows the same authored muzzle used by simulation");
                     for(int i=0;i<60;i++)game.Session.Step();Assert.Less(info[1].Hp,1000,"equipped weapon must hit the actual enemy");
                 }
                 yield return null;game.Session.Pause();uint consumed=game.Renderer.LastWeaponCueSequence;Assert.Greater(consumed,0);

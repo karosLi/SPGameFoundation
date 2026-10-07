@@ -45,7 +45,10 @@ namespace SurvivorFoundation.Tests.PlayMode
                     TestContext.WriteLine($"Horde weapon {id}, facing {side}: ticks {weapons.Equipment.Timeline.PreviousTick}/{weapons.Equipment.Timeline.Tick}, alpha {game.Session.InterpolationAlpha:R}, sampled phase {sampled.Phase:R}, marker {(float)marker/weapons.Current.DurationTicks:R}");
                     yield return capture.Save("weapon-horde-"+id+"-"+(side<0?"left-":"right-")+suffix,safe,game.Hud.MobileHud.Buttons[3].gameObject);
                     Assert.IsTrue(game.Renderer.Characters.TryReadWeapon(new EntityHandle(-1,1),out var socket));Assert.AreEqual(id,socket.VisualId);
-                    float2 canonical=game.State.Hero+new float2(side*weapons.Current.MuzzleOffset.x,weapons.Current.MuzzleOffset.y)*SvWeapons.ActorScale;Assert.Less(math.distance(canonical,socket.Muzzle),.17f);
+                    float2 canonical=game.State.Hero+new float2(side*weapons.Current.MuzzleOffset.x,weapons.Current.MuzzleOffset.y)*SvWeapons.ActorScale;
+                    float socketError=math.distance(canonical,socket.Muzzle);
+                    TestContext.WriteLine($"Horde weapon {id}, facing {side}: native socket error {socketError:R}, muzzle ({socket.Muzzle.x:R},{socket.Muzzle.y:R}), canonical ({canonical.x:R},{canonical.y:R})");
+                    Assert.Less(socketError,.17f);
                     for(int i=0;i<35;i++)game.Session.Step();Assert.Greater(weapons.AcceptedHits,0);Assert.AreEqual(0,world.Table(SvKeys.Bullet).Count,"classic hero bolt is disabled only for this explicit variant");
                 }
                 yield return null;game.Session.Pause();uint consumed=game.Renderer.LastWeaponCueSequence;Assert.Greater(consumed,0);

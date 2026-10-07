@@ -302,7 +302,7 @@ namespace SurvivorFoundation.Presentation
                 var cue=weapons.Cues[i];
                 if(m_HasWeaponCue&&unchecked((int)(cue.Sequence-m_WeaponCueSequence))<=0)continue;
                 if(cue.ActionPulse==view.ActionPulse&&((cue.Kind==WeaponCueKind.Release&&view.Phase<view.ReleasePhase)||(cue.Kind==WeaponCueKind.Impact&&view.Stage==WeaponStage.Windup)))break;
-                cue.Position+=new float2(0,cue.Height);cue.Height=0;m_WeaponParticles.SubmitCue(cue,BulletDepth,true);m_WeaponCueSequence=cue.Sequence;m_HasWeaponCue=true;
+                cue.Position+=new float2(0,cue.Height);cue.Height=0;m_WeaponParticles.SubmitCue(cue,BulletDepth,true,weapons.Profile(cue.ContentId).Family);m_WeaponCueSequence=cue.Sequence;m_HasWeaponCue=true;
             }
             for(int i=0;i<weapons.Projectiles.Length;i++)
             {

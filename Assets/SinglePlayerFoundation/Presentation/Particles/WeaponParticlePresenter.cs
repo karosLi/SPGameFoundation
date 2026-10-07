@@ -52,7 +52,7 @@ namespace SPF.Presentation.Particles
                 m_Emitters[slot]=new Emitter{Owner=owner,Token=NextToken(),ContentId=state.ContentId};
             }
             ref var e=ref m_Emitters[slot];
-            if(e.ContentId!=state.ContentId || (e.HasTip && math.distance(e.Muzzle,muzzle)>2.5f) || e.Frame<m_Frame-1)
+            if(e.ContentId!=state.ContentId || (e.HasTip && (e.Action!=state.ActionPulse || e.VisualId!=state.VisualId || math.distance(e.Muzzle,muzzle)>2.5f)) || e.Frame<m_Frame-1)
             {
                 ResetSlot(slot);e=new Emitter{Owner=owner,Token=NextToken(),ContentId=state.ContentId};
             }
@@ -106,20 +106,29 @@ namespace SPF.Presentation.Particles
             e.Tip=tip;e.Muzzle=muzzle;e.Direction=aim;e.Depth=depth;e.Family=state.Family;e.Stage=state.Stage;e.Action=state.ActionPulse;e.VisualId=state.VisualId;
             e.Hero=hero;e.HasTip=true;e.Charging=charging;e.Frame=m_Frame;
         }
-        public void SubmitCue(in WeaponCue cue,float depth=0,bool hero=false)
+        public void SubmitCue(in WeaponCue cue,float depth=0,bool hero=false,WeaponActionFamily family=WeaponActionFamily.None)
         {
             Check();if(!AcceptCue(cue))return;
-            if((cue.Kind&(WeaponCueKind.Equip|WeaponCueKind.Cancel))!=0){ResetOwner(cue.Owner);return;}
             int slot=Find(cue.Owner);var emitter=slot>=0?m_Emitters[slot]:default;
+            bool sameContent=slot>=0&&(cue.ContentId==0||cue.ContentId==emitter.ContentId);
+            bool sameAction=sameContent&&cue.ActionPulse==emitter.Action;
+            if((cue.Kind&(WeaponCueKind.Equip|WeaponCueKind.Cancel))!=0)
+            {
+                // A retained ring can contain the prior action's stop after the next socket was
+                // submitted. Consume its sequence without invalidating a different live action.
+                if(sameAction)ResetSlot(slot);
+                return;
+            }
+            if(family==WeaponActionFamily.None&&sameContent)family=emitter.Family;
             var direction=math.normalizesafe(cue.Direction,new float2(1,0));
             uint seed=ParticleMath.Hash(cue.Sequence ^ cue.ActionPulse*2891336453u ^ (uint)cue.Owner.Generation*747796405u ^ (uint)cue.Owner.Index);
             if((cue.Kind&WeaponCueKind.Impact)!=0)
-                Burst(cue.Position,direction,depth,seed,hero?ParticlePriority.Hero:ParticlePriority.Impact,emitter.Family,true);
+                Burst(cue.Position,direction,depth,seed,hero?ParticlePriority.Hero:ParticlePriority.Impact,family,true);
             if((cue.Kind&WeaponCueKind.Release)!=0)
             {
-                var origin=slot>=0&&emitter.Frame==m_Frame?emitter.Muzzle:cue.Position;
-                var family=slot>=0?emitter.Family:WeaponActionFamily.Thrust;
-                Burst(origin,direction,depth,seed,hero?ParticlePriority.Hero:ParticlePriority.Release,family,false);
+                // Detached bursts belong to the authoritative release position, even when the
+                // renderer missed release and now observes recovery, movement or another weapon.
+                Burst(cue.Position,direction,depth,seed,hero?ParticlePriority.Hero:ParticlePriority.Release,family,false);
             }
         }
         bool AcceptCue(in WeaponCue cue)

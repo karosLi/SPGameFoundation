@@ -142,7 +142,7 @@ namespace SPF.Tests.EditMode
                 view.BeginFrame(1f/duration,View);
                 if(stop==WeaponCueKind.Release)state.Phase=(float)release/duration;
                 view.UpdateEmitter(owner,state,float2.zero,float2.zero,new float2(1,0));
-                if(stop!=WeaponCueKind.Release){var cue=Impact(owner,1);cue.Kind=stop;view.SubmitCue(cue);}
+                if(stop!=WeaponCueKind.Release){var cue=Impact(owner,1);cue.Kind=stop;cue.ActionPulse=state.ActionPulse;cue.ContentId=state.ContentId;view.SubmitCue(cue);}
                 view.EndFrame(new Bounds());Assert.That(AttachedCount(view),Is.Zero,"Authoritative release, cancel and equip must retire attached charge.");
             }
         }

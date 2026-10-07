@@ -241,7 +241,7 @@ namespace BrawlerFoundation.Presentation
                 if(m_HasWeaponCue&&unchecked((int)(cue.Sequence-m_WeaponCueSequence))<=0)continue;
                 if(cue.ActionPulse==view.ActionPulse&&((cue.Kind==WeaponCueKind.Release&&view.Phase<view.ReleasePhase)||(cue.Kind==WeaponCueKind.Impact&&view.Stage==WeaponStage.Windup)))break;
                 cue.Position=BwBeltRules.Project(cue.Position,cue.Height);cue.Height=0;cue.Direction=new float2(cue.Direction.x,cue.Direction.y*BwBeltRules.DepthProjection);
-                m_WeaponParticles.SubmitCue(cue,FxDepth,true);m_WeaponCueSequence=cue.Sequence;m_HasWeaponCue=true;
+                m_WeaponParticles.SubmitCue(cue,FxDepth,true,weapons.Profile(cue.ContentId).Family);m_WeaponCueSequence=cue.Sequence;m_HasWeaponCue=true;
             }
             for(int i=0;i<weapons.Projectiles.Length;i++)
             {

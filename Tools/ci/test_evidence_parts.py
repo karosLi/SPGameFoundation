@@ -2,12 +2,14 @@
 """Standard-library tests: python3 -m unittest discover -s Tools/ci -p 'test_*.py'."""
 
 import hashlib
+import io
 import json
 import os
 from pathlib import Path
 import tempfile
 import unittest
 from unittest import mock
+import zipfile
 
 import evidence_parts as evidence
 
@@ -42,6 +44,7 @@ class EvidencePartsTests(unittest.TestCase):
         # Incompressible data exercises the actual 16 MiB boundary, including ZIP overhead.
         self.write("profiler/story.raw", os.urandom(evidence.PART_BYTES + 1024))
         self.write("Screenshots/portrait.png", b"screenshot fixture")
+        self.write("Screenshots/review/frame0000.jpg", b"JPEG review fixture")
         self.write("editmode-results.xml", b"<test-run result='Passed'/>")
         self.write("playmode.log", b"Unity output\n")
         self.write("perf-story.txt", b"Story GC allocation samples\n")
@@ -65,6 +68,69 @@ class EvidencePartsTests(unittest.TestCase):
         self.assertEqual(originals, restored)
         self.assertEqual(len(originals), len(manifest["files"]))
         self.assertFalse((self.restored / "Library").exists())
+
+    def test_archive_and_manifest_prioritize_metadata_then_jpegs_globally(self):
+        fixtures = {
+            "00-raw.png": b"PNG evidence retained",
+            "01-oversized.xml": b"x" * (evidence.PRIORITY_METADATA_BYTES + 1),
+            "02-unknown.bin": b"binary evidence retained",
+            "reports/at-limit.XML": b"x" * evidence.PRIORITY_METADATA_BYTES,
+            "reports/data.tsv": b"tick\tphase\n0\twalk\n",
+            "reports/perf.txt": b"performance report",
+            "reports/summary.md": b"review notes",
+            "z-capture/.metadata.JSON": b'{"frame_count": 2}',
+            "z-capture/acquisition.csv": b"frame,seconds\n0,0\n1,0.016\n",
+            "z-capture/empty.log": b"",
+            "z-capture/frame0000.JPG": b"JPEG review fixture 0",
+            "z-capture/frame0001.jpeg": b"JPEG review fixture 1",
+            "z-capture/frames.ffconcat": b"ffconcat version 1.0\nfile frame0000.JPG\nduration 0.016\n",
+            "z-capture/large.jpg": b"j" * (evidence.PRIORITY_METADATA_BYTES + 1),
+            "z-results.xml": b"<test-run result='Passed'/>",
+        }
+        # Deliberately oppose both lexical and priority order during creation.
+        for name in reversed(sorted(fixtures)):
+            self.write(name, fixtures[name])
+        expected = ["Artifacts/" + name for name in (
+            "reports/at-limit.XML", "reports/data.tsv", "reports/perf.txt", "reports/summary.md",
+            "z-capture/.metadata.JSON", "z-capture/acquisition.csv", "z-capture/empty.log",
+            "z-capture/frames.ffconcat", "z-results.xml",
+            "z-capture/frame0000.JPG", "z-capture/frame0001.jpeg", "z-capture/large.jpg",
+            "00-raw.png", "01-oversized.xml", "02-unknown.bin",
+        )]
+        manifest = evidence.package_evidence(self.source, self.parts)
+        self.assertEqual(expected, [entry["path"] for entry in manifest["files"]])
+        combined = b"".join((self.parts / "part{:02d}".format(index) / part["name"]).read_bytes()
+                            for index, part in enumerate(manifest["parts"]))
+        with zipfile.ZipFile(io.BytesIO(combined)) as zipped:
+            self.assertEqual(expected, zipped.namelist())
+            self.assertEqual(expected, [info.filename for info in sorted(
+                zipped.infolist(), key=lambda info: info.header_offset)])
+            for name, content in fixtures.items():
+                self.assertEqual(content, zipped.read("Artifacts/" + name))
+        # Packaging identical evidence again must preserve archive/part/file hashes and order.
+        repeated = evidence.package_evidence(self.source, self.root / "parts-again")
+        self.assertEqual(manifest, repeated)
+        evidence.restore_evidence(self.parts, self.restored)
+        restored = {p.relative_to(self.restored / "Artifacts").as_posix(): p.read_bytes()
+                    for p in (self.restored / "Artifacts").rglob("*") if p.is_file()}
+        self.assertEqual(fixtures, restored)
+
+    def test_priority_size_boundary_applies_only_to_metadata(self):
+        limit = evidence.PRIORITY_METADATA_BYTES
+        self.assertEqual(1024 * 1024, limit)
+        for suffix in (".xml", ".csv", ".tsv", ".json", ".txt", ".md", ".log", ".ffconcat"):
+            for case in (suffix, suffix.upper()):
+                path = "Artifacts/report" + case
+                with self.subTest(path=path):
+                    self.assertEqual((0, path), evidence.evidence_priority(path, 0))
+                    self.assertEqual((0, path), evidence.evidence_priority(path, limit))
+                    self.assertEqual((2, path), evidence.evidence_priority(path, limit + 1))
+        for suffix in (".jpg", ".jpeg", ".JPG", ".JPEG"):
+            path = "Artifacts/review" + suffix
+            self.assertEqual((1, path), evidence.evidence_priority(path, limit + 1))
+        for name in ("frame.png", "frame.PNG", "report.xml.bin", "report", "capture.raw"):
+            path = "Artifacts/" + name
+            self.assertEqual((2, path), evidence.evidence_priority(path, 0))
 
     def test_missing_part_fails_without_partial_output(self):
         self.package_small()

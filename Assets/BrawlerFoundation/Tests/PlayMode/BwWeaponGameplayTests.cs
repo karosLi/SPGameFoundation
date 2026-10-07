@@ -119,7 +119,7 @@ namespace BrawlerFoundation.Tests.PlayMode
                             if(game.Renderer.Characters.TryRead(weapons.Owner,out var motion))locomotionStates|=1u<<(int)motion.Locomotion;
                             double acquiredAt=Time.realtimeSinceStartupAsDouble;frames.Capture(weapons.Tick/60d);next=acquiredAt+1d/30;
                         }
-                        game.Session.ManualClock=true;frames.Write("weapon-belt-live-"+suffix,"Actual automatic-clock belt gameplay: run, walk, idle, blade slash and switch into sword thrust. Kick/jump/heal have separate contact captures. Target30Hz, measured acquisition timestamps retained.");
+                        game.Session.ManualClock=true;frames.Write("weapon-belt-live-"+suffix,"Actual automatic-clock belt gameplay: run, walk, idle, blade slash and switch into sword thrust. Kick/jump/heal have separate contact captures. Target30Hz, measured acquisition timestamps retained.",BufferedFrameFormat.Jpeg95Review);
                         uint required=(1u<<(int)GameplayLocomotionState.Idle)|(1u<<(int)GameplayLocomotionState.Walk)|(1u<<(int)GameplayLocomotionState.Run);
                         Assert.AreEqual(required,locomotionStates&required,"the live hero recording must actually include idle, walk and run");
                         Assert.AreEqual(WeaponProfiles.Sword,weapons.Equipment.EquippedId);
@@ -142,7 +142,7 @@ namespace BrawlerFoundation.Tests.PlayMode
                             var handles=world.Table(BwKeys.Fighter).Handles;for(int row=0;row<math.min(3,world.Table(BwKeys.Fighter).Count);row++)trace.Capture(i,row,acquiredAt,game.Renderer.Characters,handles[row]);
                             next=acquiredAt+1d/30;
                         }
-                        game.Session.ManualClock=true;string directory=frames.Write("grounded-belt-live-"+suffix,"Actual automatic-clock hero, agile and heavy enemy movement: walk, run, stop, reverse and depth walk. Same camera and input schedule for before/after. Per-actor gait.csv is a readback annotation, not a manufactured render clock.");trace.Write(directory);
+                        game.Session.ManualClock=true;string directory=frames.Write("grounded-belt-live-"+suffix,"Actual automatic-clock hero, agile and heavy enemy movement: walk, run, stop, reverse and depth walk. Same camera and input schedule for before/after. Per-actor gait.csv is a readback annotation, not a manufactured render clock.",BufferedFrameFormat.Jpeg95Review);trace.Write(directory);
                     }
                 }
                 LogAssert.NoUnexpectedReceived();

@@ -16,6 +16,8 @@ PART_BYTES = 16 * 1024 * 1024
 MAX_PARTS = 32
 BLOCK_BYTES = 1024 * 1024
 MAX_MANIFEST_BYTES = 1024 * 1024
+PRIORITY_METADATA_BYTES = 1024 * 1024
+METADATA_SUFFIXES = frozenset((".xml", ".csv", ".tsv", ".json", ".txt", ".md", ".log", ".ffconcat"))
 MANIFEST_NAME = "evidence-manifest.json"
 ARCHIVE_NAME = "evidence.zip"
 
@@ -53,6 +55,23 @@ def walk_error(error):
     raise error
 
 
+def evidence_priority(relative, size):
+    """Order small metadata, JPEG reviews, then all other evidence by POSIX path.
+
+    Metadata suffixes are case-insensitive and the 1 MiB limit is per file,
+    inclusive. JPEGs have no size cutoff. This only orders complete ZIP members;
+    binary parts remain slices of one archive and all are required to restore it.
+    """
+    suffix = PurePosixPath(relative).suffix.lower()
+    if suffix in METADATA_SUFFIXES and size <= PRIORITY_METADATA_BYTES:
+        priority = 0
+    elif suffix in (".jpg", ".jpeg"):
+        priority = 1
+    else:
+        priority = 2
+    return priority, relative
+
+
 def package_evidence(source, output):
     source = Path(source).absolute()
     if source.name != "Artifacts" or source.is_symlink() or not source.is_dir():
@@ -67,26 +86,36 @@ def package_evidence(source, output):
         working = Path(temporary)
         archive = working / ARCHIVE_NAME
         files = []
+        candidates = []
+        for directory, directories, names in os.walk(source, followlinks=False, onerror=walk_error):
+            directories.sort()
+            for name in sorted(directories + names):
+                if (Path(directory) / name).is_symlink():
+                    raise ValueError("Symlinks are not evidence: {}".format(Path(directory) / name))
+            for name in sorted(names):
+                path = Path(directory) / name
+                info = path.stat()
+                if not stat.S_ISREG(info.st_mode):
+                    raise ValueError("Non-regular evidence file: {}".format(path))
+                relative = "Artifacts/" + path.relative_to(source).as_posix()
+                evidence_path(relative)
+                candidates.append((relative, path, info.st_size))
+        candidates.sort(key=lambda entry: evidence_priority(entry[0], entry[2]))
         with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as zipped:
-            for directory, directories, names in os.walk(source, followlinks=False, onerror=walk_error):
-                directories.sort()
-                for name in sorted(directories + names):
-                    if (Path(directory) / name).is_symlink():
-                        raise ValueError("Symlinks are not evidence: {}".format(Path(directory) / name))
-                for name in sorted(names):
-                    path = Path(directory) / name
-                    if not stat.S_ISREG(path.stat().st_mode):
-                        raise ValueError("Non-regular evidence file: {}".format(path))
-                    relative = "Artifacts/" + path.relative_to(source).as_posix()
-                    evidence_path(relative)
-                    digest = hashlib.sha256()
-                    size = 0
-                    with path.open("rb") as incoming, zipped.open(relative, "w", force_zip64=True) as outgoing:
-                        for block in iter(lambda: incoming.read(BLOCK_BYTES), b""):
-                            outgoing.write(block)
-                            digest.update(block)
-                            size += len(block)
-                    files.append({"path": relative, "size": size, "sha256": digest.hexdigest()})
+            for relative, path, _ in candidates:
+                # Recheck after collecting/sorting rather than trusting the earlier walk.
+                if path.is_symlink():
+                    raise ValueError("Symlinks are not evidence: {}".format(path))
+                if not stat.S_ISREG(path.stat().st_mode):
+                    raise ValueError("Non-regular evidence file: {}".format(path))
+                digest = hashlib.sha256()
+                size = 0
+                with path.open("rb") as incoming, zipped.open(relative, "w", force_zip64=True) as outgoing:
+                    for block in iter(lambda: incoming.read(BLOCK_BYTES), b""):
+                        outgoing.write(block)
+                        digest.update(block)
+                        size += len(block)
+                files.append({"path": relative, "size": size, "sha256": digest.hexdigest()})
 
         if not files:
             raise ValueError("Artifacts contains no evidence files")

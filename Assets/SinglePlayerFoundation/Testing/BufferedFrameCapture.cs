@@ -8,10 +8,28 @@ using Object = UnityEngine.Object;
 
 namespace SPF.Testing
 {
-    /// <summary>Test-only bounded readback buffer. PNG encoding and file writes happen after acquisition.
+    public enum BufferedFrameFormat
+    {
+        LosslessPng = 0,
+        Jpeg95Review = 1
+    }
+
+    /// <summary>Test-only bounded raw readback buffer. Image encoding and file writes happen after acquisition.
     /// Captures the supplied already-rendered target; it does not advance simulation or manufacture frames.</summary>
     public sealed class BufferedFrameCapture : IDisposable
     {
+        [Serializable]
+        sealed class CaptureMetadata
+        {
+            public int version = 1;
+            public string format, filename_extension;
+            public int jpeg_quality;
+            public bool lossy, alpha_preserved;
+            public int frame_count, width, height;
+            public long raw_buffer_bytes;
+            public string compression_scope, timestamp_source = "acquisition.csv";
+        }
+
         public const long MaximumBufferBytes = 128L * 1024 * 1024;
         readonly RenderTexture m_Target;
         readonly Texture2D m_Read;
@@ -72,9 +90,13 @@ namespace SPF.Testing
 
         /// <summary>Flush only after capture. The ffconcat preserves measured acquisition intervals;
         /// its final repeated image retains display duration and is explicitly documented.</summary>
-        public string Write(string name, string scenario)
+        public string Write(string name, string scenario, BufferedFrameFormat format = BufferedFrameFormat.LosslessPng)
         {
             ThrowIfDisposed();
+            if (format != BufferedFrameFormat.LosslessPng && format != BufferedFrameFormat.Jpeg95Review)
+                throw new ArgumentOutOfRangeException(nameof(format));
+            bool reviewJpeg = format == BufferedFrameFormat.Jpeg95Review;
+            string extension = reviewJpeg ? ".jpg" : ".png";
             if (Count < 2) throw new InvalidOperationException("At least two captured frames are needed to report cadence.");
             if (string.IsNullOrEmpty(name)) throw new ArgumentException("A capture name is required.", nameof(name));
             foreach (char c in name)
@@ -86,9 +108,11 @@ namespace SPF.Testing
             int clampedIntervals = 0;
             for (int i = 0; i < Count; i++)
             {
-                string filename = "frame-" + i.ToString("D3", CultureInfo.InvariantCulture) + ".png";
+                string filename = "frame-" + i.ToString("D3", CultureInfo.InvariantCulture) + extension;
                 m_Read.LoadRawTextureData(m_Frames[i]);
-                File.WriteAllBytes(Path.Combine(directory, filename), m_Read.EncodeToPNG());
+                // Compression only touches the deferred output; m_Frames remains the raw RGBA pixel oracle.
+                byte[] encoded = reviewJpeg ? ImageConversion.EncodeToJPG(m_Read, 95) : ImageConversion.EncodeToPNG(m_Read);
+                File.WriteAllBytes(Path.Combine(directory, filename), encoded);
                 csv.Append(i).Append(',').Append((m_Times[i] - m_Times[0]).ToString("F9", CultureInfo.InvariantCulture))
                     .Append(',').Append(m_SimulationTimes[i].ToString("F9", CultureInfo.InvariantCulture)).Append('\n');
                 double duration = i + 1 < Count ? m_Times[i + 1] - m_Times[i] : m_Times[i] - m_Times[i - 1];
@@ -96,14 +120,26 @@ namespace SPF.Testing
                 if (duration < .000001) { duration = .000001; clampedIntervals++; }
                 concat.Append("file '").Append(filename).Append("'\nduration ").Append(duration.ToString("F9", CultureInfo.InvariantCulture)).Append('\n');
             }
-            concat.Append("file 'frame-").Append((Count - 1).ToString("D3", CultureInfo.InvariantCulture)).Append(".png'\n");
+            concat.Append("file 'frame-").Append((Count - 1).ToString("D3", CultureInfo.InvariantCulture)).Append(extension).Append("'\n");
             File.WriteAllText(Path.Combine(directory, "acquisition.csv"), csv.ToString());
             File.WriteAllText(Path.Combine(directory, "acquisition.ffconcat"), concat.ToString());
+            File.WriteAllText(Path.Combine(directory, "capture.json"), JsonUtility.ToJson(new CaptureMetadata
+            {
+                format = reviewJpeg ? "jpeg" : "png", filename_extension = extension,
+                jpeg_quality = reviewJpeg ? 95 : 0, lossy = reviewJpeg, alpha_preserved = !reviewJpeg,
+                frame_count = Count, width = Width, height = Height, raw_buffer_bytes = BufferBytes,
+                compression_scope = reviewJpeg
+                    ? "Lossy JPEG95 review files only; RGB changes and alpha is discarded. Not a lossless pixel oracle. Raw acquisition buffers, every frame, CSV timestamps and assertions are unchanged."
+                    : "Lossless RGBA PNG files. Raw acquisition buffers, every frame, CSV timestamps and assertions are unchanged."
+            }, true) + "\n");
             File.WriteAllText(Path.Combine(directory, "README.txt"),
-                "Unmodified GPU target readbacks; no synthesized or interpolated image frames.\n" +
+                "Actual GPU target readbacks; no dropped, synthesized or interpolated image frames.\n" +
                 "Scenario: " + scenario + "\n" +
                 "Capture: " + Count + " frames, " + Width + "x" + Height + "; raw storage " + BufferBytes + " bytes.\n" +
-                "PNG encoding/file writes occurred after acquisition. Synchronous readback can still affect cadence.\n" +
+                (reviewJpeg
+                    ? "JPEG quality 95 review images are lossy RGB, with no alpha; they are not a lossless pixel oracle. Raw RGBA acquisition buffers and assertions are unchanged; the saved review files are compressed representations of those buffers.\n"
+                    : "Lossless RGBA PNG images retain captured pixel values.\n") +
+                "Image encoding/file writes occurred after acquisition. Synchronous readback can still affect cadence.\n" +
                 "CSV records actual acquisition times and a separate simulation-clock annotation. This is not a device frame-pacing benchmark.\n" +
                 "ffconcat uses measured intervals, with one final repeated image to retain display duration. Timer-resolution intervals clamped to 1 microsecond: " + clampedIntervals + ".\n");
             return directory;

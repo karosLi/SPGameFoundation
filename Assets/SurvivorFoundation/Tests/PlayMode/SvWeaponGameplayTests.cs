@@ -107,7 +107,7 @@ namespace SurvivorFoundation.Tests.PlayMode
                             game.State.Input=InputFrame.Latch(game.State.Input,new InputFrame{Move=i<40?new float2(.8f,.6f):new float2(-.3f,-.2f),Pressed=i==40?1u<<SvWeapons.SwitchButton:0});
                             double acquiredAt=Time.realtimeSinceStartupAsDouble;frames.Capture(weapons.Tick/30d);next=acquiredAt+1d/30;
                         }
-                        game.Session.ManualClock=true;frames.Write("weapon-horde-live-"+suffix,"Actual automatic-clock portrait horde: run/walk, pulse/blink in contact captures, staff charge/projectile, switch to bow draw/release while independent pulse/blink HUD remains. Target30Hz, measured timestamps retained.");
+                        game.Session.ManualClock=true;frames.Write("weapon-horde-live-"+suffix,"Actual automatic-clock portrait horde: run/walk, pulse/blink in contact captures, staff charge/projectile, switch to bow draw/release while independent pulse/blink HUD remains. Target30Hz, measured timestamps retained.",BufferedFrameFormat.Jpeg95Review);
                     }
                     // Move actual agile/heavy enemies for locomotion evidence; the weapon fixture
                     // above intentionally freezes enemies and cannot demonstrate their walking.
@@ -133,7 +133,7 @@ namespace SurvivorFoundation.Tests.PlayMode
                             var handles=world.Table(SvKeys.Enemy).Handles;for(int row=0;row<math.min(3,world.Table(SvKeys.Enemy).Count);row++)trace.Capture(i,row+1,acquiredAt,game.Renderer.Characters,handles[row]);
                             next=acquiredAt+1d/30;
                         }
-                        game.Session.ManualClock=true;string directory=frames.Write("grounded-horde-live-"+suffix,"Actual automatic-clock hero plus moving agile, standard and heavy enemies: walk, run, stop, reverse and depth walk. Same camera/input schedule for before/after. Per-actor gait.csv is a readback annotation, not a manufactured render clock.");trace.Write(directory);
+                        game.Session.ManualClock=true;string directory=frames.Write("grounded-horde-live-"+suffix,"Actual automatic-clock hero plus moving agile, standard and heavy enemies: walk, run, stop, reverse and depth walk. Same camera/input schedule for before/after. Per-actor gait.csv is a readback annotation, not a manufactured render clock.",BufferedFrameFormat.Jpeg95Review);trace.Write(directory);
                     }
                 }
                 LogAssert.NoUnexpectedReceived();

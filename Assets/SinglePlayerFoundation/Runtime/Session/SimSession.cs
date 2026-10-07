@@ -32,6 +32,9 @@ namespace SPF.Runtime.Session
         /// <summary>Effective state, including host lifecycle suspension and explicit gameplay pause.</summary>
         public SessionState State => m_HostSuspended && m_State == SessionState.Running
             ? SessionState.Paused : m_State;
+        // Host ownership cannot be released from a reentrant World cleanup callback merely
+        // because the public state has entered Disposed before the outer Dispose returns.
+        internal bool IsDisposalComplete => m_State == SessionState.Disposed && !m_Disposing;
         public FixedStepClock Clock => m_Clock;
 
         /// <summary>Unsaved lifecycle revision for read-only presentation caches. Changes on a

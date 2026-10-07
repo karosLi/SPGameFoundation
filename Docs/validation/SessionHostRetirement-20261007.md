@@ -1,12 +1,12 @@
 # B/C integration: retained Host cleanup ownership
 
-2026-10-07. This is a narrow follow-up to the Stage B rollback commits `40cec34`, `9ebdd9a`, `a332580` and Stage C Host/View checkpoints `fa706a4`, `7c5e821`. Retirement checkpoint: `d9b737b`; the additional publication-boundary cases below build on it. It changes only SessionHost ownership and its tests; World/Pipeline/Session implementation, authoritative state and snapshot layout remain unchanged.
+2026-10-07. This is a narrow follow-up to the Stage B rollback commits `40cec34`, `9ebdd9a`, `a332580` and Stage C Host/View checkpoints `fa706a4`, `7c5e821`. Retirement checkpoint: `d9b737b`; the additional publication-boundary cases below build on it. It changes SessionHost ownership and its tests plus one internal SimSession disposal-completion predicate. Public State timing/guards, World/Pipeline implementation, authoritative state and snapshot layout remain unchanged.
 
 ## Reproduction and fix
 
 Stage B deliberately keeps a SimSession retryable when Pipeline cleanup cannot establish completion. A deterministic reproduction is direct `session.Pipeline.Dispose()` calling a system's OnDestroy hook, which reenters `host.Initialize(...)`. The Pipeline is still inside its cleanup hooks, so SimSession refuses to release World and throws. Stage C's original detach-before-dispose code correctly unpublished the Session but discarded its only Host-held reference.
 
-The Host now has one bounded private retirement slot. It disables scheduling and removes the active/public Session first, but retains ownership until Dispose returns or throws with SessionState.Disposed. The next Initialize or OnDestroy retries this slot before creating another Session. Disable/enable neither erases it nor resumes its launcher. A separate reentry flag prevents cleanup hooks from creating replacements during an outer Host retirement, including resource hooks after the Session has already entered Disposed.
+The Host now has one bounded private retirement slot. It disables scheduling and removes the active/public Session first, but retains ownership until Dispose returns or throws and the internal completion predicate confirms both Disposed state and no active Dispose call. The next Initialize or OnDestroy retries this slot before creating another Session. Disable/enable neither erases it nor resumes its launcher. A separate reentry flag prevents cleanup hooks from creating replacements during an outer Host retirement, including resource hooks after the Session has already entered Disposed.
 
 Safe cleanup errors remain errors: system/resource cleanup finishes, the completed retirement slot clears, and original diagnostics (including secondary cleanup failures) propagate. A subsequent independent Initialize can retry successfully. No global cleanup manager, background retry loop, new public owner or snapshot field is added.
 
@@ -30,6 +30,14 @@ Initialize now rejects reentry until its creation/binding attempt finishes. The 
 This protects only objects owned by the Host. It does not undo arbitrary side effects or destroy partial assets allocated by a subscriber; each binding handler remains responsible for its own partially created view/resources. A successfully invoked earlier handler is not given a fictitious transactional rollback promise.
 
 After these 4 additional cases, the combined focused set above is **105/105 passed** (12 new retirement/publication cases in total). No authoritative content/layout/snapshot changes are involved. Integrated full-suite and actual Unity results remain the publishing checkpoint's responsibility.
+
+## External Session disposal completion predicate
+
+A final focused review found that public Disposed state alone is insufficient: direct external SimSession.Dispose enters that state before World resource hooks finish, and recursive Dispose returns immediately. A resource hook calling Host.Initialize could therefore admit a new Session while old World cleanup was still active; a hook calling Host.OnDestroy could erase the last Host owner too early. Both variants reproduced red.
+
+The only core addition is internal `SimSession.IsDisposalComplete`, defined as `m_State == SessionState.Disposed && !m_Disposing`. Host retirement uses it for both success and finally-clear. Public State semantics remain unchanged. The two regressions verify rejected replacement, retained ownership while external cleanup is active, and once-only safe replacement/destruction retry after the outer Dispose unwinds. They inject no native job completion failure.
+
+Final focused result: **107/107 passed**, including 14 new Host retirement/publication cases. All 503 Assets C# files compile against real Unity APIs with 0 errors (7 existing unused/serialized-field warnings). Full aggregate and native execution remain pending the parent's exact integrated checkpoint.
 
 All 503 current Assets C# files, including the new Host cases, compile against the installed Unity 2022.3 APIs. This is a compile-only gate, not a native execution result.
 

@@ -132,6 +132,35 @@ namespace SPF.Tests.EditMode
             m_Host.Initialize(m_ReplacementMode, 9); Assert.AreEqual(1, m_Replacement.Declarations);
         }
 
+        [Test]
+        public void DirectSessionDisposalCannotPublishReplacementInsideWorldCleanup()
+        {
+            m_Module.Resource.Callback = () => m_Host.Initialize(m_ReplacementMode, 8);
+            Assert.Throws<InvalidOperationException>(() => m_Old.Dispose());
+            Assert.IsNull(m_Host.Session); Assert.IsFalse(Launcher.enabled);
+            Assert.Zero(m_Replacement.Declarations, "Disposed state alone must not admit replacement from an outer World cleanup hook.");
+            Assert.AreSame(m_Old, Retired);
+            Assert.AreEqual(SessionState.Disposed, m_Old.State); Assert.AreEqual(1, m_Module.Resource.Disposals);
+            Assert.AreEqual(1, m_Module.First.Destroys); Assert.AreEqual(1, m_Module.Last.Destroys);
+            m_Host.Initialize(m_ReplacementMode, 9);
+            Assert.IsNull(Retired); Assert.AreEqual(1, m_Replacement.Declarations);
+        }
+
+        [Test]
+        public void DirectSessionDisposalRetainsOwnerWhenResourceReentersHostDestroy()
+        {
+            m_Module.Resource.Callback = () => Invoke("OnDestroy");
+            var failure = Assert.Throws<TargetInvocationException>(() => m_Old.Dispose());
+            Assert.IsInstanceOf<InvalidOperationException>(failure.InnerException);
+            Assert.IsNull(m_Host.Session); Assert.IsFalse(Launcher.enabled);
+            Assert.AreSame(m_Old, Retired, "The active external Dispose still owns cleanup when Host.OnDestroy returns.");
+            Assert.AreEqual(SessionState.Disposed, m_Old.State); Assert.AreEqual(1, m_Module.Resource.Disposals);
+            Assert.Zero(m_Replacement.Declarations);
+            Invoke("OnDisable"); Assert.AreSame(m_Old, Retired);
+            Invoke("OnDestroy"); Invoke("OnDestroy");
+            Assert.IsNull(Retired); Assert.AreEqual(1, m_Module.Resource.Disposals);
+        }
+
         [TestCase(false)] [TestCase(true)]
         public void ThrowingSessionCreatedBindingRetiresNewSessionAndPreservesDiagnostics(bool cleanupThrows)
         {

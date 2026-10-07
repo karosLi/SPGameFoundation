@@ -119,14 +119,14 @@ namespace SPF.Runtime.Session
             try
             {
                 retired.Dispose();
-                if (retired.State != SessionState.Disposed)
+                if (!retired.IsDisposalComplete)
                     throw new System.InvalidOperationException("Session cleanup is still in progress.");
             }
             finally
             {
                 // Safe cleanup may throw diagnostics after releasing everything. Unsafe or
                 // child-in-progress cleanup instead remains owned for Initialize/OnDestroy retry.
-                if (retired.State == SessionState.Disposed) m_RetiredSession = null;
+                if (retired.IsDisposalComplete) m_RetiredSession = null;
                 m_RetirementInProgress = false;
             }
         }

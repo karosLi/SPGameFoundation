@@ -114,7 +114,10 @@ namespace SurvivorFoundation.Tests.PlayMode
                     capture.Dispose();capture=new CanvasCapture(game.gameObject,game.CameraRig.Camera,320,568);game.Hud.MobileHud.SetPreviewViewport(320,568,new Rect(0,0,320,568));
                     world.ClearLevel();game.State.Flow=SvFlow.Playing;game.State.Hero=game.State.HeroPrev=0;game.State.Input=default;
                     for(int kind=0;kind<runtime.Enemies.Length;kind++){var enemy=runtime.Enemies[kind];enemy.Speed=kind==2?1.3f:kind==0?2.1f:1.7f;runtime.Enemies[kind]=enemy;}
-                    SvSpawner.SpawnEnemy(world,runtime,0,new float2(3.5f,4));SvSpawner.SpawnEnemy(world,runtime,1,new float2(-3.5f,3.5f));SvSpawner.SpawnEnemy(world,runtime,2,new float2(0,-4));
+                    Assert.GreaterOrEqual(runtime.EnemyKinds,3,"the locomotion fixture requires three authored enemy families");
+                    SvSpawner.SpawnEnemy(world,runtime,1,new float2(3.5f,4));SvSpawner.SpawnEnemy(world,runtime,2,new float2(-3.5f,3.5f));SvSpawner.SpawnEnemy(world,runtime,3,new float2(0,-4));
+                    Assert.AreEqual(3,world.Table(SvKeys.Enemy).Count);
+                    for(int row=0;row<3;row++)Assert.AreEqual(row+1,world.Column(SvKeys.Info)[row].Kind,"enemy content IDs are one-based");
                     Canvas.ForceUpdateCanvases();yield return null;yield return null;
                     using(var frames=new BufferedFrameCapture(capture.Target,160))
                     {

@@ -34,7 +34,10 @@ namespace BrawlerFoundation.Tests
                 return true;
             }
         }
-        [BurstCompile(CompileSynchronously = true)]
+        // Exact managed-reference parity requires an explicit arithmetic contract. Standard uses
+        // Medium intrinsic precision; preserving visitor order alone did not preserve dense outputs.
+        // Strict/High is not a portable bitwise guarantee: the exact comparisons below remain the gate.
+        [BurstCompile(FloatMode = FloatMode.Strict, FloatPrecision = FloatPrecision.High, CompileSynchronously = true)]
         struct CandidateJob : IJobParallelFor
         {
             public GridReader Grid;
@@ -62,6 +65,16 @@ namespace BrawlerFoundation.Tests
             [BurstDiscard] static void Managed(ref bool burst) => burst = false;
 #endif
         }
+        [Test]
+        public void CandidatePinsStrictHighPrecisionForExactManagedParity()
+        {
+            var settings = (BurstCompileAttribute)Attribute.GetCustomAttribute(typeof(CandidateJob), typeof(BurstCompileAttribute));
+            Assert.IsNotNull(settings);
+            Assert.AreEqual(FloatMode.Strict, settings.FloatMode);
+            Assert.AreEqual(FloatPrecision.High, settings.FloatPrecision);
+            Assert.IsTrue(settings.CompileSynchronously);
+        }
+
         [TestCase(32, false)] [TestCase(32, true)] [TestCase(128, false)] [TestCase(128, true)]
         [Category("Performance")]
         public void ImmutableGridParallelCandidateMatchesOrderedReferenceAndReportsCompletedCost(int count, bool clustered)
@@ -88,7 +101,9 @@ namespace BrawlerFoundation.Tests
             for (int i = 0; i < count; i++) a.Execute(i); b.Schedule(count, 16).Complete();
             for (int i = 0; i < count; i++)
             {
-                Assert.AreEqual(sequential[i], parallel[i], "ordered float accumulation row=" + i); Assert.AreEqual(countsA[i], countsB[i]);
+                Assert.AreEqual(sequential[i], parallel[i], "ordered float accumulation row=" + i +
+                    "; managed bits=" + math.asuint(sequential[i]) + "; Burst bits=" + math.asuint(parallel[i]) +
+                    "; policy=Strict/High; backend=" + backend[i]); Assert.AreEqual(countsA[i], countsB[i]);
 #if !SPF_DOTNET_HARNESS
                 Assert.AreEqual(1, backend[i], "candidate must really execute through Burst for native evidence");
 #endif
@@ -109,7 +124,7 @@ namespace BrawlerFoundation.Tests
             const string runtime = "unity-native-editmode"; string directory = Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath) ?? ".", "Artifacts");
 #endif
             string report = "Belt separation candidate ONLY; runtime=" + runtime + "; count=" + count + "; clustered=" + clustered + "\n" +
-                "Frozen completed grid; unchanged visitor order/float sums; per-row positions/counts, no atomics; exact outputs=PASS.\n" +
+                "Frozen completed grid; unchanged visitor order/float sums; Burst Strict/High; per-row positions/counts, no atomics; exact outputs=PASS.\n" +
                 "Ordered main-thread: " + Summary(mainMs) + "\nScheduled parallel including Complete: " + Summary(jobMs) + "\n" +
                 "20 alternating-order samples x 30 repeated passes; excludes grid build, copyback, rest of tick/render. Not retained in production pending native whole-tick benefit; stub job scheduling is synchronous and cannot establish a Burst speedup.\n";
             TestContext.WriteLine(report); Directory.CreateDirectory(directory);

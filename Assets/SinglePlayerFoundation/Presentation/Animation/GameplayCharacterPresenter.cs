@@ -37,10 +37,15 @@ namespace SPF.Presentation.Animation
         public bool WeaponsEnabled=>m_IncludeWeapons;
         public int Capacity { get; }
         public int Count { get; private set; }
+        /// <summary>Valid packed instances; a DataTexture prefix mesh can additionally submit zero-sized tail quads.</summary>
         public int PartsDrawn=>m_Batch.Count;
+        /// <summary>Useful packed records, excluding DataTexture padding/prefix tails and indirect arguments.</summary>
+        public long PackedPayloadBytes=>(long)m_Batch.Count*PackedSprite.Stride;
         public long BytesUploaded=>m_Batch.BytesUploaded;
         /// <summary>Cached base-pose refreshes. Continuous body/contact/weapon composition still runs every render.</summary>
-        public int PosesEvaluated { get; private set; }
+        public int BasePoseRefreshes { get; private set; }
+        /// <summary>Compatibility alias. Counts base/bind refreshes, not full-rate continuous body/IK work.</summary>
+        public int PosesEvaluated=>BasePoseRefreshes;
         public uint VisibleStates { get; private set; }
         public uint VisibleLocomotion { get; private set; }
         public int ColorAtlasBytes=>m_Art.Sheet.Texture.width*m_Art.Sheet.Texture.height*4;
@@ -78,7 +83,7 @@ namespace SPF.Presentation.Animation
         public void Begin(float dt,int quality)
         {
             m_Dt=math.clamp(dt,0,.1f);m_Time+=m_Dt;m_Quality=math.clamp(quality,0,3);
-            m_Frame++;m_Submitted.Clear();Count=0;VisibleStates=0;VisibleLocomotion=0;PosesEvaluated=0;m_Batch.Clear();
+            m_Frame++;m_Submitted.Clear();Count=0;VisibleStates=0;VisibleLocomotion=0;BasePoseRefreshes=0;m_Batch.Clear();
         }
         public bool Submit(in GameplayCharacterInput input)
         {
@@ -134,7 +139,7 @@ namespace SPF.Presentation.Animation
                 VisibleStates|=1u<<(int)input.State;VisibleLocomotion|=1u<<(int)motion.Locomotion;
                 int hz=input.Kind==0?60:m_Quality==0?30:m_Quality==1?24:15;
                 int tick=(int)(m_Time*hz);
-                if(m_PoseTicks[slot]!=tick)PosesEvaluated++;
+                if(m_PoseTicks[slot]!=tick)BasePoseRefreshes++;
             }
             if(Count==0)return;
             var output=m_Batch.Reserve(sprites);
@@ -147,6 +152,9 @@ namespace SPF.Presentation.Animation
         {if(m_Slots.TryGetValue(handle,out int slot)){motion=m_Motion[slot];return true;}motion=default;return false;}
         public bool TryReadWeapon(EntityHandle handle,out WeaponAttachmentSample sample)
         {if(m_IncludeWeapons&&m_Slots.TryGetValue(handle,out int slot)&&m_Seen[slot]==m_Frame){sample=m_WeaponSamples[slot];return sample.VisualId!=0;}sample=default;return false;}
+        /// <summary>Read-only diagnostic access to this frame's sorted packed stream.</summary>
+        public PackedSprite ReadPart(int partIndex)
+        {if((uint)partIndex>=(uint)m_Batch.Count)throw new ArgumentOutOfRangeException(nameof(partIndex));return m_Batch.Instances[partIndex];}
         public BoneWorld ReadBone(EntityHandle handle,int bone)
         {if(bone<0||bone>=NaturalCharacterRig.Bones)throw new ArgumentOutOfRangeException(nameof(bone));return m_Slots.TryGetValue(handle,out int slot)?m_World[slot*NaturalCharacterRig.Bones+bone]:default;}
         public void Dispose()

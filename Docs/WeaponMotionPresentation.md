@@ -6,7 +6,7 @@ The actual shared `GameplayCharacterPresenter` now consumes the authoritative `S
 
 The old gameplay composition always aimed the near arm and then solved it again during contact correction; this erased its run swing. The far forearm retained its bind angle. The replacement keeps a relaxed two-arm gait until an aim/action layer requests control. Actual near/far foot phases drive weight transfer, pelvis support, chest opposition and elbow swing. Smoothed travel velocity adds distinct forward, backpedal and ground-depth lean; the head counter-rotates. Breathing is only a small relaxed layer. A bounded turn value moves shoulders through the turn and narrows the chest silhouette. Stable identity, explicit teleport reset, reachable world-space foot plants and bounded foot-cycle durations remain in place.
 
-Body, foot, hand and weapon composition runs every render step. Quality-limited base/bind refreshes are still counted by `PosesEvaluated`; that counter does **not** measure every continuous body/IK evaluation. Reduced quality cannot hold a bowstring or hand pose at 15 Hz while the actor moves. It also cannot change action phase or simulation.
+Body, foot, hand and weapon composition runs every render step. Quality-limited base/bind refreshes are still counted by `BasePoseRefreshes` (`PosesEvaluated` is a compatibility alias); that counter does **not** measure every continuous body/IK evaluation. Reduced quality cannot hold a bowstring or hand pose at 15 Hz while the actor moves. It also cannot change action phase or simulation.
 
 Weapon trajectories use a narrowly scoped cubic Hermite sampler with shared tangents. The contact key is traversed with nonzero velocity rather than eased to a stop. `ContactPhase`, `ActiveEndPhase` and `ReleasePhase` come from the profile's fixed-tick timeline. There is no low-pass filter on action phase. The runtime adapter interpolates the authoritative previous/current action tick for rendering; hit windows remain integer simulation ticks.
 
@@ -60,3 +60,18 @@ A skill can release the support hand while the dominant hand keeps carrying the 
 Additional tests cover classifier hysteresis, idle→walk→run under moving attacks at 30/60/120 Hz, role distinctions, custom authored profiles, interrupt/teleport transitions, invalid-data rejection, zero warmed allocations, and all six skill peaks combined with all four weapons in eight aim directions while moving. Dominant and secondary contact errors remain below 3 mm in that matrix. The secondary shoulder correction also handles the nonzero inner reach radius of the unequal arm segments.
 
 Local checkpoint: 46 focused .NET tests pass, zero skipped; compilation has zero warnings/errors. This is math, layering, contacts and harness allocation evidence. The updated actual-game role/skill captures and real Unity/Burst graphics verification are separate integration gates.
+
+
+## Mixed-stream accounting regression
+
+Weapon capacity has always been separate from per-frame output in this implementation. The existing sorted CPU pass computes one bounded output offset per input. The Burst job writes 14 body records for an unarmed actor and 19 for an equipped actor, preserving ground-depth ordering and hand/weapon layering. `PackedPayloadBytes` exposes useful records only; `ReadPart` is read-only diagnostic access to the sorted output.
+
+For 192 unarmed actors plus one equipped actor:
+
+- Compact output: 2,707 records, **86,624 packed bytes**.
+- A hypothetical 19 records for all 193 actors: 3,667 records, 117,344 packed bytes.
+- Difference: 960 records / **30,720 packed bytes**, already avoided by the compact stream.
+- GpuDriven submits the exact compact instance count and uploads those records plus its indirect arguments. This describes API payload, not measured physical GPU traffic.
+- DataTexture still selects the same prewarmed final prefix in this 193-actor example: a 2048 × 15 RGBA8 data texture, **122,880 upload bytes**. Its prefix mesh can still submit the zero-sized tail quads. Compact packing alone therefore does not establish a DataTexture upload or vertex-submission reduction in this case.
+
+Three focused .NET stream tests pass with zero skips: mixed equipped/unarmed actor ordering, weapon removal and recycled-generation socket ownership; the exact 193-actor payload and maximum-capacity transitions with calibrated zero hot-path allocations; and the base-pose counter versus continuously corrected contacts. A separate Unity-only regression checks actual DataTexture upload accounting after the count shrinks; it remains pending the central graphics run. Numerical poses and rendering order were unchanged by this accounting/diagnostic follow-up.

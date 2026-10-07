@@ -26,15 +26,28 @@ namespace SnakeFoundation.Systems
 
         public override void OnCreate(SimWorld world)
         {
-            int capacity = world.Table(SnakeKeys.Snake).Capacity;
-            m_Work = new NativeArray<int>(capacity, Allocator.Persistent);
-            m_Counts = new NativeArray<int>(2, Allocator.Persistent);
+            try
+            {
+                int capacity = world.Table(SnakeKeys.Snake).Capacity;
+                m_Work = new NativeArray<int>(capacity, Allocator.Persistent);
+                m_Counts = new NativeArray<int>(2, Allocator.Persistent);
+            }
+            catch (System.Exception failure)
+            {
+                // OnCreate still owns partial buffers; the pipeline rolls back only completed systems.
+                CleanupErrors.Try(ReleaseBuffers, ref failure);
+                throw;
+            }
         }
 
-        public override void OnDestroy(SimWorld world)
+        public override void OnDestroy(SimWorld world) => ReleaseBuffers();
+
+        void ReleaseBuffers()
         {
-            if (m_Work.IsCreated) m_Work.Dispose();
-            if (m_Counts.IsCreated) m_Counts.Dispose();
+            System.Exception failure = null;
+            if (m_Work.IsCreated) CleanupErrors.Try(() => m_Work.Dispose(), ref failure);
+            if (m_Counts.IsCreated) CleanupErrors.Try(() => m_Counts.Dispose(), ref failure);
+            CleanupErrors.ThrowIfAny(failure);
         }
 
         public override JobHandle OnTick(in SimContext context, JobHandle dependency)

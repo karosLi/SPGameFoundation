@@ -31,7 +31,7 @@ Validation so far:
 
 ## Explicit remaining scope
 
-The reviewed classic multi-array OnCreate implementations in Snake Population/Resolve/BodyGrid, RPG Combat and BeltCombat need narrow self-cleanup; that follow-on is a separate commit. Arbitrary module/resource constructors also retain their own partial-allocation obligation.
+A separate follow-on now makes the five reviewed multi-array OnCreate implementations exception-safe: Snake Population/Resolve/BodyGrid, RPG Combat and BeltCombat. Each uses its own private buffer cleanup on failure, attempts every acquired buffer, and preserves the original cause. BodyGrid registers its managed change log only after native buffers succeed. Two real Resolve initializer cases omit Prop or Snake after earlier small NativeArrays were allocated: **2 red before the fix, 2 green after**, including a successful retry of the same system. The other native allocation-failure branches are code-reviewed, not claimed as allocator fault-injection tests. Arbitrary module/resource constructors retain their own partial-allocation obligation.
 
 Existing BeginTick *scheduling-failure recovery* is outside this construction checkpoint: a thrown recovery Complete/OnSync can mask the scheduling exception, and recovery-completion ownership needs a separate hardening test. This document does not claim all exceptional job-scheduling paths are fixed.
 

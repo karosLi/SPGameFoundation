@@ -398,14 +398,27 @@ namespace RpgFoundation.Systems
         NativeArray<byte> m_RequestPending;
         public override void OnCreate(SimWorld world)
         {
-            int capacity = world.Table(RpgKeys.Actor).Capacity;
-            m_RequestScratch = new NativeArray<ProjectileRequest>(capacity, Allocator.Persistent);
-            m_RequestPending = new NativeArray<byte>(capacity, Allocator.Persistent);
+            try
+            {
+                int capacity = world.Table(RpgKeys.Actor).Capacity;
+                m_RequestScratch = new NativeArray<ProjectileRequest>(capacity, Allocator.Persistent);
+                m_RequestPending = new NativeArray<byte>(capacity, Allocator.Persistent);
+            }
+            catch (System.Exception failure)
+            {
+                // OnCreate still owns partial buffers; the pipeline rolls back only completed systems.
+                CleanupErrors.Try(ReleaseBuffers, ref failure);
+                throw;
+            }
         }
-        public override void OnDestroy(SimWorld world)
+        public override void OnDestroy(SimWorld world) => ReleaseBuffers();
+
+        void ReleaseBuffers()
         {
-            if (m_RequestScratch.IsCreated) m_RequestScratch.Dispose();
-            if (m_RequestPending.IsCreated) m_RequestPending.Dispose();
+            System.Exception failure = null;
+            if (m_RequestScratch.IsCreated) CleanupErrors.Try(() => m_RequestScratch.Dispose(), ref failure);
+            if (m_RequestPending.IsCreated) CleanupErrors.Try(() => m_RequestPending.Dispose(), ref failure);
+            CleanupErrors.ThrowIfAny(failure);
         }
         public override SimPhase Phase => SimPhase.Collision;
 

@@ -85,20 +85,33 @@ namespace SnakeFoundation.Systems
 
         public override void OnCreate(SimWorld world)
         {
-            var table = world.Table(SnakeKeys.Snake);
-            m_Log = table.CreateChangeLog();
-            m_Records = new NativeArray<NodeRecord>(table.Capacity, Allocator.Persistent);
-            m_AddFrom = new NativeArray<uint>(table.Capacity, Allocator.Persistent);
-            m_Dirty = new NativeArray<byte>(table.Capacity, Allocator.Persistent);
-            m_Stats = new NativeArray<int>(StatSlots, Allocator.Persistent);
+            try
+            {
+                var table = world.Table(SnakeKeys.Snake);
+                m_Records = new NativeArray<NodeRecord>(table.Capacity, Allocator.Persistent);
+                m_AddFrom = new NativeArray<uint>(table.Capacity, Allocator.Persistent);
+                m_Dirty = new NativeArray<byte>(table.Capacity, Allocator.Persistent);
+                m_Stats = new NativeArray<int>(StatSlots, Allocator.Persistent);
+                m_Log = table.CreateChangeLog();
+            }
+            catch (System.Exception failure)
+            {
+                // OnCreate still owns partial buffers; the pipeline rolls back only completed systems.
+                CleanupErrors.Try(ReleaseBuffers, ref failure);
+                throw;
+            }
         }
 
-        public override void OnDestroy(SimWorld world)
+        public override void OnDestroy(SimWorld world) => ReleaseBuffers();
+
+        void ReleaseBuffers()
         {
-            if (m_Records.IsCreated) m_Records.Dispose();
-            if (m_AddFrom.IsCreated) m_AddFrom.Dispose();
-            if (m_Dirty.IsCreated) m_Dirty.Dispose();
-            if (m_Stats.IsCreated) m_Stats.Dispose();
+            System.Exception failure = null;
+            if (m_Records.IsCreated) CleanupErrors.Try(() => m_Records.Dispose(), ref failure);
+            if (m_AddFrom.IsCreated) CleanupErrors.Try(() => m_AddFrom.Dispose(), ref failure);
+            if (m_Dirty.IsCreated) CleanupErrors.Try(() => m_Dirty.Dispose(), ref failure);
+            if (m_Stats.IsCreated) CleanupErrors.Try(() => m_Stats.Dispose(), ref failure);
+            CleanupErrors.ThrowIfAny(failure);
         }
 
         public override JobHandle OnTick(in SimContext context, JobHandle dependency)

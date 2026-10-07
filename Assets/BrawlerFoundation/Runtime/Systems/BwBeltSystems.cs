@@ -236,10 +236,27 @@ namespace BrawlerFoundation.Systems
         NativeArray<BoneLocal> m_Pose; NativeArray<BoneWorld> m_Bones;
         public override void OnCreate(SimWorld world)
         {
-            int n = world.Resource(BwKeys.Rig).Asset.BoneCount;
-            m_Pose = new NativeArray<BoneLocal>(n * 2, Allocator.Persistent); m_Bones = new NativeArray<BoneWorld>(n, Allocator.Persistent);
+            try
+            {
+                int n = world.Resource(BwKeys.Rig).Asset.BoneCount;
+                m_Pose = new NativeArray<BoneLocal>(n * 2, Allocator.Persistent); m_Bones = new NativeArray<BoneWorld>(n, Allocator.Persistent);
+            }
+            catch (System.Exception failure)
+            {
+                // OnCreate still owns partial buffers; the pipeline rolls back only completed systems.
+                CleanupErrors.Try(ReleaseBuffers, ref failure);
+                throw;
+            }
         }
-        public override void OnDestroy(SimWorld world) { if (m_Pose.IsCreated) m_Pose.Dispose(); if (m_Bones.IsCreated) m_Bones.Dispose(); }
+        public override void OnDestroy(SimWorld world) => ReleaseBuffers();
+
+        void ReleaseBuffers()
+        {
+            System.Exception failure = null;
+            if (m_Pose.IsCreated) CleanupErrors.Try(() => m_Pose.Dispose(), ref failure);
+            if (m_Bones.IsCreated) CleanupErrors.Try(() => m_Bones.Dispose(), ref failure);
+            CleanupErrors.ThrowIfAny(failure);
+        }
         public override JobHandle OnTick(in SimContext context, JobHandle dependency)
         {
             dependency.Complete(); var world = context.World; var game = world.Resource(BwKeys.Game);

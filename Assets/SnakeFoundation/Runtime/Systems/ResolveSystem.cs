@@ -38,16 +38,29 @@ namespace SnakeFoundation.Systems
 
         public override void OnCreate(SimWorld world)
         {
-            m_FoodTaken = new NativeArray<byte>(world.Table(SnakeKeys.Food).Capacity, Allocator.Persistent);
-            m_PropTaken = new NativeArray<byte>(world.Table(SnakeKeys.Prop).Capacity, Allocator.Persistent);
-            m_HeadOnDone = new NativeArray<byte>(world.Table(SnakeKeys.Snake).Capacity, Allocator.Persistent);
+            try
+            {
+                m_FoodTaken = new NativeArray<byte>(world.Table(SnakeKeys.Food).Capacity, Allocator.Persistent);
+                m_PropTaken = new NativeArray<byte>(world.Table(SnakeKeys.Prop).Capacity, Allocator.Persistent);
+                m_HeadOnDone = new NativeArray<byte>(world.Table(SnakeKeys.Snake).Capacity, Allocator.Persistent);
+            }
+            catch (System.Exception failure)
+            {
+                // OnCreate still owns partial buffers; the pipeline rolls back only completed systems.
+                CleanupErrors.Try(ReleaseBuffers, ref failure);
+                throw;
+            }
         }
 
-        public override void OnDestroy(SimWorld world)
+        public override void OnDestroy(SimWorld world) => ReleaseBuffers();
+
+        void ReleaseBuffers()
         {
-            if (m_FoodTaken.IsCreated) m_FoodTaken.Dispose();
-            if (m_PropTaken.IsCreated) m_PropTaken.Dispose();
-            if (m_HeadOnDone.IsCreated) m_HeadOnDone.Dispose();
+            System.Exception failure = null;
+            if (m_FoodTaken.IsCreated) CleanupErrors.Try(() => m_FoodTaken.Dispose(), ref failure);
+            if (m_PropTaken.IsCreated) CleanupErrors.Try(() => m_PropTaken.Dispose(), ref failure);
+            if (m_HeadOnDone.IsCreated) CleanupErrors.Try(() => m_HeadOnDone.Dispose(), ref failure);
+            CleanupErrors.ThrowIfAny(failure);
         }
 
         public override JobHandle OnTick(in SimContext context, JobHandle dependency)

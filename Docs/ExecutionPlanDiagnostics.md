@@ -39,7 +39,7 @@
 
 测试范围：`ExecutionPlanTests` 的冲突/读读/屏障/稳定排序、来源与 unknown、write 升级、只读模型、无二次 Declare、导出不完成 pending Tick/改变 raw pipeline snapshot、SerialProfiling/失败完成原因、增删模块、构造元数据隔离、来源数量拒绝、转义/区域设置；同时运行原 Pipeline/AccessGuard/Composition/TickFailureOwnership 回归。
 
-红阶段在原始运行时代码上编译新增测试，4 个缺失执行计划 API 错误；实施后重新生成并构建受影响测试程序集，通过 49/49（16 项新测试、33 项相关回归），0 跳过。初次绿测试曾因一个单系统 DOT 用例错误要求实际调用顺序边而失败；修正测试为在双系统用例检查虚线，在单系统用例检查 SerialProfiling note，最终结果重新执行。
+红阶段在原始运行时代码上编译新增测试，4 个缺失执行计划 API 错误；实施后重新生成并构建受影响测试程序集，通过 49/49（15 项新测试、34 项相关回归），0 跳过。初次绿测试曾因一个单系统 DOT 用例错误要求实际调用顺序边而失败；修正测试为在双系统用例检查虚线，在单系统用例检查 SerialProfiling note，最终结果重新执行。
 
 19 组合的 `.txt` / `.dot` 在每个 Session 重复导出一致，再用第二个独立进程全部复跑字节一致；Graphviz 能解析全部 19 个 DOT。原冷组合 JSON SHA-256 仍为 `a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30`。这证明该冷清单相同，不等于所有玩法 raw/hash 和原生 Jobs safety 已验收；完整 aggregate、精确提交原生 EditMode/PlayMode/Burst 与物理移动设备门槛由整合验收另外执行，不引用旧绿灯代替。
 

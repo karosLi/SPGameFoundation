@@ -1,0 +1,149 @@
+{
+  "date": "2026-10-07",
+  "testedLocalCommit": "4f70cc266ac3931b50dabbc97a42215e365fa6b4",
+  "baseLocalCommit": "9fc4e2b7e20a17e5586a68f756e92f8102f99339",
+  "baseRemoteEquivalent": "d7f357a4043223b08e72b668e98054de49b6d785",
+  "scope": "A1/A2/A3 integrated root source; isolated S1a preparation only",
+  "harness": {
+    "projects": 78,
+    "passed": 1533,
+    "failed": 0,
+    "assemblies": [
+      {
+        "name": "BrawlerFoundation.Tests.EditMode",
+        "passed": 167
+      },
+      {
+        "name": "DefenseFoundation.Tests.EditMode",
+        "passed": 8
+      },
+      {
+        "name": "FoundationAcceptance.Tests.EditMode",
+        "passed": 9
+      },
+      {
+        "name": "PlatformerFoundation.Tests.EditMode",
+        "passed": 18
+      },
+      {
+        "name": "PuzzleFoundation.Tests.EditMode",
+        "passed": 7
+      },
+      {
+        "name": "RpgFoundation.Tests.EditMode",
+        "passed": 88
+      },
+      {
+        "name": "SPF.Tests.EditMode",
+        "passed": 981
+      },
+      {
+        "name": "ShooterFoundation.Tests.EditMode",
+        "passed": 24
+      },
+      {
+        "name": "SlingFoundation.Tests.EditMode",
+        "passed": 4
+      },
+      {
+        "name": "SnakeFoundation.Tests.EditMode",
+        "passed": 62
+      },
+      {
+        "name": "StoryFoundation.Tests.EditMode",
+        "passed": 5
+      },
+      {
+        "name": "SurvivorFoundation.Tests.EditMode",
+        "passed": 160
+      }
+    ],
+    "explicitDiagnosticCasesNotInPassedTotal": 6,
+    "explicitDiagnosticNote": "2 existing diagnostics plus 4 new config cold/raw reporting cases; no prior test disabled. PlayMode API-stub assemblies contain no native graphics/audio execution."
+  },
+  "newNonExplicitTests": {
+    "A1": 15,
+    "A2": 39,
+    "A3": 43,
+    "reviewBoundaryCases": 4
+  },
+  "realUnityApiCompile": {
+    "sourceFiles": 576,
+    "references": 95,
+    "targets": [
+      "net8.0",
+      "netstandard2.1"
+    ],
+    "errorsEach": 0,
+    "existingWarningsEach": 7,
+    "nativeExecution": false,
+    "isolatedLabIncluded": false
+  },
+  "coldComposition": {
+    "count": 19,
+    "sha256": "a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30",
+    "byteIdenticalToBaseline": true,
+    "independentRepeatedOutputIdentical": true,
+    "textAndDotExports": 19,
+    "dotParseErrors": 0
+  },
+  "python": {
+    "rootCi": 30,
+    "acceptance": 24,
+    "audioAuthoring": 10,
+    "isolatedLabStatic": 22,
+    "allPassed": true
+  },
+  "sourceReview": {
+    "A1A2A3": "no remaining source-level P1/P2 after shared-world admission and valid-room-boundary fixes",
+    "S1a": "prepared source reviewed; original pinned upstream reactive cleanup risk retained as strict unrun native oracle"
+  },
+  "rootPackagesProjectSettingsWorkflowsChanged": false,
+  "newRootNativeStatus": "NOT_RUN at this checkpoint; publication will queue exact integrated source",
+  "latiosNativeStatus": "NOT_RUN; no resolved lock/import/build evidence",
+  "androidIosStatus": "PENDING physical-device evidence",
+  "sourceSha256": {
+    "Assets/RpgFoundation/Runtime/RpgConfig.cs": "30a9c4c3eb7039bb17a7cbdb89dc85889eb487ecf6209d0c0fd6aacf224256e5",
+    "Assets/RpgFoundation/Runtime/RpgConfigContent.cs": "2f1bb78c97e99e70efb5bf43373d354b9f1d4065ec3bbbbb221de92c12029f13",
+    "Assets/RpgFoundation/Runtime/RpgConfigValidation.cs": "8ad7523101384812a4bf42604f170a2fe5ae72ab0d7e8125c6d57afa55bcf313",
+    "Assets/RpgFoundation/Runtime/RpgModules.cs": "5d44bd31063e64ee0a66ac6da5d1ef279a40f4fda238cdb7a266c342c6ef7baa",
+    "Assets/RpgFoundation/Runtime/RpgRuntimeConfig.cs": "3a720c25815ba3d3ecd89fd577a692aabe7e2fe3d83a98b0c7b9af155af058c5",
+    "Assets/RpgFoundation/Tests/EditMode/RpgConfigIsolationTests.cs": "ef2115d613fefca23891b7cff55ab2409f926897f7cfdbdcdb754cd9234a8a93",
+    "Assets/SinglePlayerFoundation/Runtime/Composition/IGameplayModule.cs": "f6873d72ebe73206fde7d084de90c64224597df67b3d7fe270b551eebbd26c81",
+    "Assets/SinglePlayerFoundation/Runtime/Composition/WorldComposer.cs": "0c15961ba27581e15098a77e2bb321f41b52f099e714e2d3cc6f0b185b1e1d4d",
+    "Assets/SinglePlayerFoundation/Runtime/Configuration/RuntimeConfigValidation.cs": "d5bcc6c2b24bf7a5b40490296e4fc07c4b83f5e249d6553c050148fdb654d103",
+    "Assets/SinglePlayerFoundation/Runtime/Scheduling/AccessDeclaration.cs": "0871e4be26c5405509c04fc60c085e4801a293173386051975951236179a0272",
+    "Assets/SinglePlayerFoundation/Runtime/Scheduling/ExecutionPlan.cs": "7123b77fe15f3f2a3d2277d241833fa29275279aefd2b0014a88b721a23fc0e9",
+    "Assets/SinglePlayerFoundation/Runtime/Scheduling/ISimSystem.cs": "8d28b928fbb70be3561ad1ec05d07888be34033476647cac7a6d57c004f30b4c",
+    "Assets/SinglePlayerFoundation/Runtime/Scheduling/TickPipeline.cs": "4f6f73094054d65a75e079ab87db1d647ff3144dc31a64982088160182044e1a",
+    "Assets/SinglePlayerFoundation/Runtime/World/AccessGuard.cs": "26382d8978f30d977c34d357e37da4900602e708f16ee0d8bca7365bc8bca645",
+    "Assets/SinglePlayerFoundation/Runtime/World/SimTable.cs": "2b5e983ac2cdcfc83c66f4005b9c970267643303b1a95f823a80d17c54497c19",
+    "Assets/SinglePlayerFoundation/Runtime/World/SimWorld.cs": "095144f51bc3a848f7d5c973d91077bbd859c018fb4db917d3a6a6a2bee78b3d",
+    "Assets/SinglePlayerFoundation/Samples/DriftSmoke/DriftSmokeModule.cs": "4061de86b00178c9be74252cafe7973e7f1a584d18a0f76bd2bae5b6f94b7c2c",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs": "da6cf96d16eaabb62aea4529d002965f0742818cf7f8b8ff8f2df3d25744f985",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/ExecutionPlanTests.cs": "7a09070bb352d3f4176bc7392bf1a52044f97a864be115c501aeafd91e9eb50c",
+    "Assets/SnakeFoundation/Runtime/SnakeConfig.cs": "93d254c4394dac11b84598027b2deaa91911a7ef472a831d9528fe0270855957",
+    "Assets/SnakeFoundation/Runtime/SnakeConfigContent.cs": "a4ea5c3c762b385c46c107325bc0e74efc0df2f3bac12faa34bd0f0a27c4019d",
+    "Assets/SnakeFoundation/Runtime/SnakeConfigValidation.cs": "2309f10d7479de54b0b6af12bb27457b0c89d7718fc1e18f666105c3d321063b",
+    "Assets/SnakeFoundation/Runtime/SnakeGameModule.cs": "25c81d8810acac31dbd2ce0a5079f5a7c1f4609b37ed0a19feb537a610ee6869",
+    "Assets/SnakeFoundation/Runtime/SnakeRuntimeConfig.cs": "e4f876846238b05cb25c13992f2e78717c82e94f0568e34959a18c5fc7c0db29",
+    "Assets/SnakeFoundation/Runtime/Systems/MovementSystem.cs": "fc886127421770ffa424b2f03c9109ea00fac6c6d4a8c80102d7bf1029b93b36",
+    "Assets/SnakeFoundation/Tests/EditMode/SnakeConfigIsolationTests.cs": "53bc847fb14b08c29e3ff08469b7e3500a2cb04bcb820e5968535116a74dbdcd",
+    "Tools/DotnetHarness/UnityStubs.cs": "91498e3e7ebdadcfcb464ebf56b0e76ce6c107275abfee913f5a324cbda90d06"
+  },
+  "logSha256": {
+    "build-final.log": "3ce893307d491921121213a35d3e70ff84e0cbb50e98a7f733edfcda893292cb",
+    "tests-final.log": "35d1a105a6c01214b714323bb8f0b9b275c70c95357f6ba2059e45a31dd6aee4",
+    "api-generation.log": "296ebed5ec1dfd77b201c06f7774a49e04b807b26a2526e9c19a8e24091d1f64",
+    "api-build.log": "7605d9663903a8fe9f6fa9954bf2318b5e601a0a12860cff8bbebb3069495abd",
+    "netstandard-api-generation.log": "0f1333a1f79bcd40cd26a378b683f377177666d69b39bb0f701c9addcc4b8b11",
+    "netstandard-api-build.log": "db401f4dd02a04b4ffd93520b80242bd5f07d84b11dd29ce7df57fe0bc5282d2",
+    "probe-build.log": "aa85ee0cdf731f7add2c646f1d28f856ef246b5ce2b96a5265bc55cd7baa4589",
+    "ci-python-tests.log": "4a5c9796484fd7513ff7d45a9bb9229b165e27a7282d9a783be65b55557e3dd1",
+    "acceptance-python-tests.log": "d4e55328fcd452311fc4afab8bd488cf5f0453c7edbc1cbe948500c86d931c46",
+    "audio-python-tests.log": "8c72a37216c4c6980baf1a3c0ce9d4fa2581146505fff3406cd592c006343cac",
+    "lab-static-tests.log": "a48f42e506ea373473f0e241dbadab52b3d63b83e9682d58a01eb80bab351a53",
+    "lab-preflight.json": "283ae59eef7fa98fe6e2643ff5949320ac55897007fe969c13b918040de8a569",
+    "graphviz.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

@@ -24,7 +24,7 @@
     "passed": 49,
     "failed": 0,
     "skipped": 0,
-    "newPlanTests": 16,
+    "newPlanTests": 15,
     "filter": "FullyQualifiedName~ExecutionPlanTests|FullyQualifiedName~PipelineTests|FullyQualifiedName~TickFailureOwnershipTests|FullyQualifiedName~CompositionTests|FullyQualifiedName~AccessGuardTests",
     "trxSha256": "94b0c3923b7bad0f23584e4f44bad049a86cdfb6199b52f863f7e32e1b3a821c",
     "buildLogSha256": "7a189735179b72b4b063cb926463a3178f529d5f9ee94ccec897dddcdae3f0ba",
@@ -226,7 +226,8 @@
         "name": "WriterWaitsForAllReadersSinceLastWriterAndResetsReaderSet",
         "outcome": "Passed"
       }
-    ]
+    ],
+    "relatedRegressionTests": 34
   },
   "coldCompositions": {
     "count": 19,

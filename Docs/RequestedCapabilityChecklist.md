@@ -31,3 +31,7 @@ The weapon/motion checkpoint is now fully green on exact remote `52c1ec8`, as re
 The subsequent collision/quadtree, industry-grounded AI, original-art and continuous-action software/native checkpoint is now closed at e86ee87; [MobileFoundationFollowupValidation](MobileFoundationFollowupValidation.md) retains its exact evidence and visibility limits. Work continues with the newly authorized semantic/layered plan. Physical-device validation remains externally blocked on hardware/access.
 
 This is a bounded capability slice, not a claim that arbitrary rig importing, every possible editor feature or device certification is finished. No physics or GC budget was weakened.
+
+## 新增：普通/暴击伤害飘字
+
+[有界伤害飘字合约](BoundedDamageNumbers.md)记录两个真实玩法的可选接入、实际 HP 损失、权威暴击、合并/溢出预算、稳定身份与保存兼容性。当前实现和软件/原生验证分层推进；没有把池数学或编译当作真实图形验收。物理 Android/iOS 门槛保持不变。

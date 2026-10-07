@@ -296,7 +296,7 @@ namespace BrawlerFoundation.Systems
                 float2 tip = BwProbe.Tip(rig, f, anim[i], new float2(ground[i].x, motion[i].Height), m_Pose, m_Bones);
                 var visitor = new HitVisitor { World = world, Game = game, Belt = belt, Shared = shared, Rig = rig,
                     Info = info, Anim = anim, Ground = ground, Motion = motion, Handles = handles,
-                    Attacker = f, Source = handles[i], Scope = scope, Tip = tip, Depth = ground[i].y, Definition = def };
+                    Attacker = f, Source = handles[i], Scope = scope, Tip = tip, Depth = ground[i].y, Definition = def, Tick = context.Time.Tick };
                 // Broadphase covers every authored bone reach plus target body. Narrowphase separates
                 // ground depth from the vertical height interval; no projected-Y collisions are possible.
                 belt.Grid.AsReader().QueryCells(ground[i] - new float2(2.4f, 1f), ground[i] + new float2(2.4f, 1f), ref visitor);
@@ -309,7 +309,7 @@ namespace BrawlerFoundation.Systems
             public SimWorld World; public BwGameState Game; public BwBeltState Belt; public BwSharedCombatState Shared; public BwRig Rig;
             public NativeArray<FighterInfo> Info; public NativeArray<Animator2D> Anim; public NativeArray<float2> Ground;
             public NativeArray<BwBeltMotion> Motion; public NativeArray<EntityHandle> Handles;
-            public FighterInfo Attacker; public EntityHandle Source; public int Scope, Candidates; public float2 Tip; public float Depth; public BwRules.AttackDef Definition;
+            public long Tick; public FighterInfo Attacker; public EntityHandle Source; public int Scope, Candidates; public float2 Tip; public float Depth; public BwRules.AttackDef Definition;
             public bool Visit(in GridEntry entry)
             {
                 int row = entry.Owner; var target = Info[row];
@@ -321,7 +321,10 @@ namespace BrawlerFoundation.Systems
                 if (!GroundCombatQueries.ProbeOverlaps(Tip.x, Depth, Tip.y, BwRules.ProbeRadius, Attacker.Attack == AttackKind.Kick ? .5f : .32f, hurt)) return true;
                 if (Shared.Record(Scope, Handles[row]) != HitRecordResult.Added) return true;
                 float previousHp = target.Hp;
-                target.Hp = math.max(0, target.Hp - Definition.Damage); target.Flash = 1; target.VelocityX = Attacker.Facing * Definition.Knockback;
+                bool facts = World.HasResource(AppliedDamageJournal.Key), critical = false;
+                float damage = Definition.Damage;
+                if (facts && Attacker.Team == 0) damage = World.Resource(CriticalDamageState.Key).Apply(damage, previousHp, out critical);
+                target.Hp = math.max(0, target.Hp - damage); target.Flash = 1; target.VelocityX = Attacker.Facing * Definition.Knockback;
                 target.Facing = -Attacker.Facing; target.StateTime = 0; target.Attack = AttackKind.None;
                 m.BufferedAttack.Clear(); m.ComboGraceTicks = 0;
                 var a = Anim[row];
@@ -340,6 +343,8 @@ namespace BrawlerFoundation.Systems
                 if (Attacker.Attack == AttackKind.Kick) m.HeightVelocity = 3.8f;
                 if (Attacker.Team == 0) Game.Score += (int)Definition.Damage;
                 World.Resource(BwKeys.Feedback).TryAdd(new BwFeedback { Kind = BwFeedbackKind.Hit, Position = BwBeltRules.Project(new float2(Tip.x, Depth), Tip.y), Value = Definition.Damage });
+                if (facts) World.Resource(AppliedDamageJournal.Key).AsWriter().Publish(Handles[row], BwBeltRules.Project(new float2(Tip.x, Depth), Tip.y),
+                    math.min(math.max(0, previousHp), previousHp - target.Hp), critical, Tick);
                 Info[row] = target; Anim[row] = a; Motion[row] = m; Game.Version++;
                 if (Attacker.Team == 0 && Attacker.Attack == AttackKind.Kick && World.HasResource(BwComposedAbilityState.Key))
                     World.Resource(BwComposedAbilityState.Key).RecordSettledKick(World, Source, previousHp - target.Hp);

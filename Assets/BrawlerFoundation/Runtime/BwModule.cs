@@ -14,6 +14,9 @@ namespace BrawlerFoundation
         bool m_BeltScroller;
         bool m_Weapons;
         bool m_ComposedAbilities;
+        bool m_DamageNumbers;
+        SPF.L2.Combat.CriticalDamageRule m_CriticalRule;
+        int m_DamageJournalCapacity;
         BwComposedAbilityConfig m_AbilityConfig;
         SPF.L2.Weapons.WeaponProfile[] m_WeaponProfiles;
         BwBeltConfig m_BeltConfig;
@@ -59,6 +62,16 @@ namespace BrawlerFoundation
             module.m_ComposedAbilities = true; module.m_AbilityConfig = abilities; return module;
         }
 
+        public static BwModule CreateDamageNumbersBelt(BwBeltConfig config, BwComposedAbilityConfig abilities,
+            SPF.L2.Combat.CriticalDamageRule criticalRule, int journalCapacity = AppliedDamageJournal.DefaultCapacity)
+        {
+            criticalRule.Validate();
+            if (journalCapacity < 2 || journalCapacity > AppliedDamageJournal.DefaultCapacity) throw new System.ArgumentOutOfRangeException(nameof(journalCapacity));
+            var module = CreateComposedAbilityBelt(config, abilities);
+            module.m_DamageNumbers = true; module.m_CriticalRule = criticalRule; module.m_DamageJournalCapacity = journalCapacity;
+            return module;
+        }
+
         /// <summary>Cold, partial metadata for the opt-in weapon belt: its fighter table and
         /// weapon/pose/skill resource slice only. Other resources and complete save coverage are not
         /// claimed; SnapshotHook checks the resource type's interface, not a full save contract.</summary>
@@ -80,6 +93,14 @@ namespace BrawlerFoundation
             };
             if (m_ComposedAbilities) data.Add(ModuleDataDeclaration.Resource(BwComposedAbilityState.Key, 1, levelScoped: true,
                 save: ResourceSaveRequirement.SnapshotHook, capacity: 1, capacitySource: "One bounded player heal-credit and pending action owner"));
+            if (m_DamageNumbers)
+            {
+                data.Add(ModuleDataDeclaration.Resource(AppliedDamageJournal.Key, 1, levelScoped: true,
+                    save: ResourceSaveRequirement.SnapshotHook, capacity: m_DamageJournalCapacity, capacitySource: "Authored settled damage ring"));
+                data.Add(ModuleDataDeclaration.Resource(SPF.L2.Combat.CriticalDamageState.Key, 1, levelScoped: true,
+                    save: ResourceSaveRequirement.SnapshotHook, capacity: 1, capacitySource: "One deterministic outgoing accepted-hit cadence"));
+                return new ModuleManifest("brawler.damage-numbers", 1, data: data.ToArray());
+            }
             return new ModuleManifest(m_ComposedAbilities ? "brawler.composed-ability-belt" : "brawler.weapon-belt", 1, data: data.ToArray());
         }
 
@@ -100,6 +121,11 @@ namespace BrawlerFoundation
             layout.Resource(BwKeys.Feedback, new EventQueue<BwFeedback>(128, saved: false));
             if (m_MobileSkills) layout.Resource(BwMobileSkills.Key, m_ComposedAbilities ? m_AbilityConfig.CreateSkills() : m_BeltScroller ? BwBeltRules.CreateSkills() : BwMobileSkills.Create(), levelScoped: true);
             if (m_SharedCombat) layout.Resource(BwKeys.SharedCombat, new BwSharedCombatState(m_CombatConfig), levelScoped: true);
+            if (m_DamageNumbers)
+            {
+                layout.Resource(AppliedDamageJournal.Key, new AppliedDamageJournal(m_DamageJournalCapacity), levelScoped: true);
+                layout.Resource(SPF.L2.Combat.CriticalDamageState.Key, new SPF.L2.Combat.CriticalDamageState(m_CriticalRule), levelScoped: true);
+            }
         }
 
         public override void RegisterSystems(SystemRegistry registry)
@@ -113,6 +139,14 @@ namespace BrawlerFoundation
 
     public static class BwMode
     {
+        public static ModeDefinition CreateDamageNumbersBelt(BwBeltConfig config, BwComposedAbilityConfig abilities,
+            SPF.L2.Combat.CriticalDamageRule criticalRule, out GameplayModuleAsset module, int journalCapacity = AppliedDamageJournal.DefaultCapacity)
+        {
+            module = BwModule.CreateDamageNumbersBelt(config, abilities, criticalRule, journalCapacity);
+            var settings = SessionSettings.Default; settings.TickRate = 60; settings.MaxTicksPerFrame = 4;
+            return ModeDefinition.Create(new[] { module }, settings);
+        }
+
         public static ModeDefinition CreateComposedAbilityBelt(BwBeltConfig config, BwComposedAbilityConfig abilities, out GameplayModuleAsset module)
         {
             module = BwModule.CreateComposedAbilityBelt(config, abilities);

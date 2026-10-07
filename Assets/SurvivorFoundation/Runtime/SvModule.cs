@@ -56,6 +56,16 @@ namespace SurvivorFoundation
                     save: ResourceSaveRequirement.SnapshotHook, capacity: 4, capacitySource: "SvComposedPulseState.CreateSkills authored slots");
                 extended[data.Length] = ModuleDataDeclaration.Resource(SvComposedPulseState.Key, 1, levelScoped: true,
                     save: ResourceSaveRequirement.SnapshotHook, capacity: m_Config.ComposedPulse.Targets, capacitySource: "SvPulseDefinition.Targets stable history");
+                if (m_Config.DamageNumbers)
+                {
+                    var damageData = new ModuleDataDeclaration[extended.Length + 2];
+                    System.Array.Copy(extended, damageData, extended.Length);
+                    damageData[extended.Length] = ModuleDataDeclaration.Resource(AppliedDamageJournal.Key, 1, levelScoped: true,
+                        save: ResourceSaveRequirement.SnapshotHook, capacity: m_Config.DamageNumberJournalCapacity, capacitySource: "SvConfig.DamageNumberJournalCapacity ring");
+                    damageData[extended.Length + 1] = ModuleDataDeclaration.Resource(SPF.L2.Combat.CriticalDamageState.Key, 1, levelScoped: true,
+                        save: ResourceSaveRequirement.SnapshotHook, capacity: 1, capacitySource: "One deterministic outgoing accepted-hit cadence");
+                    return new ModuleManifest("survivor.damage-numbers", 1, data: damageData);
+                }
                 return new ModuleManifest("survivor.composed-pulse", 1, data: extended);
             }
             return new ModuleManifest("survivor.weapon-combat", 1, data: data);
@@ -65,6 +75,12 @@ namespace SurvivorFoundation
         {
             var cap = Config.Capacity;
             var s = Config.Settings;
+            if (Config.DamageNumbers)
+            {
+                Config.DamageNumberCriticalRule.Validate();
+                if (!Config.ComposedPulse.Enabled || Config.DamageNumberJournalCapacity < 2 || Config.DamageNumberJournalCapacity > AppliedDamageJournal.DefaultCapacity)
+                    throw new System.ArgumentException("Damage numbers require the composed pulse mode and a journal of 2 through 512 facts.");
+            }
             if (Config.ComposedPulse.Enabled)
             {
                 Config.ComposedPulse.Validate();
@@ -98,6 +114,11 @@ namespace SurvivorFoundation
                 layout.Resource(SvMobileSkills.Key, pulse.CreateSkills(), levelScoped: true);
             }
             else if (Config.MobileSkills || Config.WeaponCombat) layout.Resource(SvMobileSkills.Key, Config.WeaponCombat ? SvWeapons.CreateSkills() : SvMobileSkills.Create(), levelScoped: true);
+            if (Config.DamageNumbers)
+            {
+                layout.Resource(AppliedDamageJournal.Key, new AppliedDamageJournal(Config.DamageNumberJournalCapacity), levelScoped: true);
+                layout.Resource(SPF.L2.Combat.CriticalDamageState.Key, new SPF.L2.Combat.CriticalDamageState(Config.DamageNumberCriticalRule), levelScoped: true);
+            }
             layout.DestroyQueueCapacity = cap.Enemies;
         }
 

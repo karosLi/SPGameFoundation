@@ -15,6 +15,9 @@ namespace SurvivorFoundation
         public bool MobileSkills;
         public bool WeaponCombat;
         public SvPulseDefinition ComposedPulse;
+        public bool DamageNumbers;
+        public CriticalDamageRule DamageNumberCriticalRule = CriticalDamageRule.Default;
+        public int DamageNumberJournalCapacity = SPF.Runtime.World.AppliedDamageJournal.DefaultCapacity;
         public SPF.L2.Weapons.WeaponProfile[] WeaponProfiles;
         public List<EnemyEntry> Enemies = EnemyEntry.Defaults();
         public CapacitySection Capacity = new CapacitySection();
@@ -146,6 +149,14 @@ namespace SurvivorFoundation
         {
             var config = CreateWeaponCombatExample();
             config.ComposedPulse = repulse ? SvPulseDefinition.Repulse : SvPulseDefinition.Wide;
+            return config;
+        }
+
+        /// <summary>Opt-in composed pulse plus settled normal/critical damage facts; classic config stays unchanged.</summary>
+        public static SvConfig CreateDamageNumbersExample(bool repulse = true)
+        {
+            var config = CreateComposedPulseExample(repulse);
+            config.DamageNumbers = true;
             return config;
         }
 

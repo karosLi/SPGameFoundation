@@ -1,6 +1,7 @@
 using SPF.Presentation.ArtDirection;
 using SPF.Presentation.Particles;
 using SPF.Contracts.Weapons;
+using SPF.Contracts.Combat;
 using SPF.L2.Weapons;
 using SPF.L1.Skeleton;
 using SPF.Presentation;
@@ -8,6 +9,7 @@ using SPF.Presentation.Animation;
 using SPF.Presentation.Combat;
 using SPF.Presentation.Sprites;
 using SPF.Runtime.Session;
+using SPF.Runtime.World;
 using SPF.Shell.CameraRig;
 using Unity.Collections;
 using Unity.Jobs;
@@ -46,6 +48,16 @@ namespace BrawlerFoundation.Presentation
         bool m_HasWeaponCue;
         public uint LastWeaponCueSequence => m_WeaponCueSequence;
         public WeaponParticlePresenter WeaponParticles => m_WeaponParticles;
+        DamageNumberPool m_DamageNumbers;
+        SpriteBatch m_DamageGlyphs;
+        AppliedDamageJournal m_DamageJournal;
+        DamageFactCursor m_DamageCursor;
+        uint m_DamageRevision;
+        public DamageNumberPool DamageNumbers => m_DamageNumbers;
+        public int DamageNumberGlyphsDrawn => m_DamageGlyphs?.Count ?? 0;
+        public long DamageNumberBytesUploaded => m_DamageGlyphs?.BytesUploaded ?? 0;
+        public ulong MissedDamageFacts => m_DamageCursor.Missed;
+
         bool m_BoundNatural;
         public FollowCamera2D Camera;
         public System.Action<BwFeedback> Feedback;
@@ -85,6 +97,7 @@ namespace BrawlerFoundation.Presentation
         void ClearTransientState()
         {
             m_Fx?.Clear(); m_Characters?.Clear(); m_WeaponParticles?.Clear();
+            m_DamageNumbers?.Clear(); m_DamageGlyphs?.Clear();
             m_HasWeaponCue = false;
             if (m_WeaponTrailValid != null) System.Array.Clear(m_WeaponTrailValid, 0, m_WeaponTrailValid.Length);
         }
@@ -110,6 +123,8 @@ namespace BrawlerFoundation.Presentation
         {
             DetachCamera(); m_Timeline.Reset(); m_Session = null; m_PoseClock = null; m_WeaponRuntime = null;
             m_WeaponTrailPoints = null; m_WeaponTrailBirths = null; m_WeaponTrailValid = null;
+            m_DamageGlyphs?.Dispose(); m_DamageGlyphs = null; m_DamageNumbers = null;
+            m_DamageJournal = null; m_DamageCursor = default; m_DamageRevision = 0;
             m_WeaponCueSequence = 0; m_HasWeaponCue = false; m_ResumePending = false;
             m_Fx = null;
             m_Sanctuary?.Dispose(); m_Sanctuary=null;
@@ -137,7 +152,7 @@ namespace BrawlerFoundation.Presentation
             m_Session = session; m_BoundNatural = NaturalCharacters;
             var rig = session.World.Resource(BwKeys.Rig);
             m_Assets = new RenderAssets(RenderCapabilities.Detect());
-            m_Art = BwArt.Build(rig, NaturalCharacters, session.World.HasResource(BwWeapons.Key));
+            m_Art = BwArt.Build(rig, NaturalCharacters, session.World.HasResource(BwWeapons.Key), session.World.HasResource(AppliedDamageJournal.Key));
             if(NaturalCharacters)m_Sanctuary=new SanctuaryBackdrop(m_Assets.Tier,SanctuaryScene.Terrace);
             if (NaturalCharacters) m_Characters = new GameplayCharacterPresenter(m_Assets.Tier, math.clamp(session.World.Table(BwKeys.Fighter).Capacity, 1, 128), includeWeapons: session.World.HasResource(BwWeapons.Key));
             if(NaturalCharacters&&session.World.HasResource(BwWeapons.Key))m_WeaponParticles=new WeaponParticlePresenter(m_Assets.Tier, lowQuality: m_Assets.Tier!=RenderTier.GpuDriven);
@@ -150,6 +165,17 @@ namespace BrawlerFoundation.Presentation
                 m_WeaponCueSequence=equipped.Equipment.CueSequence;m_HasWeaponCue=m_WeaponCueSequence!=0;
             }
             var atlas = m_Art.Sheet.Texture;
+            if (session.World.HasResource(AppliedDamageJournal.Key))
+            {
+                m_DamageNumbers = new DamageNumberPool();
+                m_DamageNumbers.Bind(session, session.TimelineRevision, session.World.LevelVersion);
+                m_DamageJournal = session.World.Resource(AppliedDamageJournal.Key);
+                m_DamageRevision = m_DamageJournal.Revision;
+                m_DamageCursor = m_DamageJournal.CreateCursor();
+                // Damage has an independent, fully warmed glyph budget; it cannot crowd out particles.
+                m_DamageGlyphs = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Translucent, 192, queueOffset: 180);
+                m_DamageGlyphs.Warmup(m_DamageGlyphs.Capacity);
+            }
             m_Arena = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Opaque, 1024, queueOffset: -10);
             m_Fighters = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Opaque, MaxFighters * (m_Art.Parts.Length + 4));
             if (NaturalCharacters) { m_NaturalShadows = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Translucent, m_Characters.Capacity + 256, queueOffset: -60); m_NaturalShadows.Warmup(m_NaturalShadows.Capacity); }
@@ -194,6 +220,7 @@ namespace BrawlerFoundation.Presentation
             var world = session.World;
             var game = world.Resource(BwKeys.Game);
             bool interpolationDiscontinuity = m_Timeline.Update(session, session.TimelineRevision, world.LevelVersion);
+            bool damageDiscontinuity = interpolationDiscontinuity || m_ResumePending;
             if (interpolationDiscontinuity) ClearTransientState();
             if (m_ResumePending)
             {
@@ -280,14 +307,33 @@ namespace BrawlerFoundation.Presentation
             }
             if(world.HasResource(BwWeapons.Key))DrawWeaponProjectiles(world.Resource(BwWeapons.Key),alpha);
             m_Fx.UpdateAndDraw(presentationDeltaTime, m_Effects, m_Art.Sheet, null);
+            UpdateDamageNumbers(session, damageDiscontinuity || game.Flow == BwFlow.Menu, session.State == SessionState.Running && (game.Flow == BwFlow.Fighting || game.Flow == BwFlow.WaveClear) ? presentationDeltaTime : 0f, Camera != null ? Camera.ViewRect : new float4(-12, -3, 12, 7));
             if(m_Sanctuary!=null&&m_Sanctuary.Ready)m_Sanctuary.Draw(Camera!=null?Camera.ViewRect:new float4(-12,-3,12,7),bounds);
             else m_Arena.Draw(bounds, dirty: false);
             m_NaturalShadows?.Draw(bounds);
             m_Fighters.Draw(bounds);
             m_Characters?.Draw(bounds);
-            m_Effects.Draw(bounds);
+            m_Effects.Draw(bounds); m_DamageGlyphs?.Draw(bounds);
             if(m_WeaponParticles!=null){UpdateWeaponParticles(world,game,alpha,presentationDeltaTime);m_WeaponParticles.EndFrame(bounds);}
-            SpritesDrawn = (m_Sanctuary!=null&&m_Sanctuary.Ready?m_Sanctuary.SpritesDrawn:m_Arena.Count) + m_Fighters.Count + m_Effects.Count + (m_Characters?.PartsDrawn ?? 0) + (m_NaturalShadows?.Count ?? 0);
+            SpritesDrawn = (m_Sanctuary!=null&&m_Sanctuary.Ready?m_Sanctuary.SpritesDrawn:m_Arena.Count) + m_Fighters.Count + m_Effects.Count + (m_DamageGlyphs?.Count ?? 0) + (m_Characters?.PartsDrawn ?? 0) + (m_NaturalShadows?.Count ?? 0);
+        }
+
+        void UpdateDamageNumbers(SimSession session, bool reset, float dt, float4 view)
+        {
+            if (m_DamageNumbers == null) return;
+            var journal = session.World.Resource(AppliedDamageJournal.Key);
+            bool rebound = m_DamageNumbers.Bind(session, session.TimelineRevision, session.World.LevelVersion);
+            if (reset || rebound || !ReferenceEquals(m_DamageJournal, journal) || m_DamageRevision != journal.Revision)
+            {
+                m_DamageNumbers.Clear(); m_DamageJournal = journal; m_DamageRevision = journal.Revision;
+                // Same-tick restores, level resets and hidden intervals start at the current head.
+                m_DamageCursor = journal.CreateCursor();
+            }
+            m_DamageGlyphs.Clear();
+            m_DamageNumbers.BeginFrame(dt, QualityLevel);
+            while (journal.TryRead(ref m_DamageCursor, out var fact))
+                m_DamageNumbers.Emit(fact.Target, fact.Position, fact.Amount, fact.Critical, fact.Sequence, fact.Tick, session.Clock.StepSeconds);
+            m_DamageNumbers.Draw(m_DamageGlyphs, m_Art.Sheet, m_Art.Font, view);
         }
 
         void UpdateWeaponParticles(SPF.Runtime.World.SimWorld world,BwGameState game,float alpha,float presentationDeltaTime)

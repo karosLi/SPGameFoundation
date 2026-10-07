@@ -35,6 +35,10 @@ Unity 2022.3 2D 单机小游戏基座（面向移动端），保留贪吃蛇、A
 - `BwGameBootstrap.CreateSharedCombat()` 与 `SvGameBootstrap.CreateCrossedBladeExample()` 是两个选配接入，不修改经典保存结构。
 - **SPF → Characters → Create Or Update Weighted BAT Scene**：真实 weighted mesh、GPU 矩阵纹理动画/限定两骨 IK 与 CPU 回退；这是独立的三骨加权后端验证场景，支持选配 compute palette（G）与强制 CPU（C），不是任意骨架导入器。
 
+## 可选普通/暴击伤害飘字
+
+`SvGameBootstrap.CreateDamageNumbersExample()` 与 `BwGameBootstrap.CreateDamageNumbersBelt()` 在既有竖屏怪潮/横屏动作中接入真实扣血数字。默认每第4次实际扣血的目标命中结算为2倍暴击，旧工厂不变；固定池、同目标/类型时间窗合并、暴击保留、GPU/DataTexture 两档和完整新保存适配器见 [伤害飘字合约与验证边界](Docs/BoundedDamageNumbers.md)。
+
 ## 新增移动端示例
 
 - **SPF → Weapons → Create Landscape Weapon Brawler Scene / Create Portrait Weapon Horde Scene**：刀、剑、法杖、弓箭四种真实可切换武器；固定 Tick 攻击/拉弓/换装、自然握持 IK、GPU 粒子与 CPU/Burst 回退，保留摇杆和独立技能。Q / SWITCH 换装；[共享武器合约与验证范围](Docs/AuthoritativeWeapons.md)。

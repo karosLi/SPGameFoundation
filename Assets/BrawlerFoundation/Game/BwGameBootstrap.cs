@@ -26,6 +26,8 @@ namespace BrawlerFoundation.Game
         [SerializeField] bool m_BeltScroller;
         [SerializeField] bool m_WeaponCombat;
         bool m_ComposedAbilities;
+        bool m_DamageNumbers;
+        SPF.L2.Combat.CriticalDamageRule m_DamageCriticalRule;
         BwComposedAbilityConfig m_AbilityConfig;
         [SerializeField] bool m_NaturalCharacters;
 
@@ -96,13 +98,26 @@ namespace BrawlerFoundation.Game
             go.SetActive(true); return game;
         }
 
+        /// <summary>Existing composed belt with optional settled normal/critical damage labels.</summary>
+        public static BwGameBootstrap CreateDamageNumbersBelt(bool ui = true, BwComposedAbilityConfig? abilities = null,
+            SPF.L2.Combat.CriticalDamageRule? criticalRule = null)
+        {
+            var config = abilities ?? BwComposedAbilityConfig.Default; config.Validate();
+            var rule = criticalRule ?? SPF.L2.Combat.CriticalDamageRule.Default; rule.Validate();
+            var go = new GameObject("DamageNumbersBelt"); go.SetActive(false);
+            var game = go.AddComponent<BwGameBootstrap>(); game.m_CreateUI = ui;
+            game.m_DamageNumbers = game.m_ComposedAbilities = true; game.m_DamageCriticalRule = rule; game.m_AbilityConfig = config;
+            game.m_WeaponCombat = game.m_BeltScroller = game.m_MobileCombat = game.m_SharedCombat = game.m_NaturalCharacters = true;
+            go.SetActive(true); return game;
+        }
+
         void Awake()
         {
             Governor = gameObject.AddComponent<FrameGovernor>();
             Governor.SetFrameRates(60, 30);
             if (m_WeaponCombat) m_BeltScroller = true;
             if (m_BeltScroller) { m_MobileCombat = true; m_NaturalCharacters = true; }
-            m_Mode = m_ComposedAbilities ? BwMode.CreateComposedAbilityBelt(BwBeltConfig.Default, m_AbilityConfig, out m_Module) : m_WeaponCombat ? BwMode.CreateWeaponBelt(BwBeltConfig.Default, out m_Module) : m_BeltScroller ? BwMode.CreateBeltScroller(BwBeltConfig.Default, out m_Module) : m_MobileCombat ? BwMode.CreateMobileCombat(out m_Module) : m_SharedCombat
+            m_Mode = m_DamageNumbers ? BwMode.CreateDamageNumbersBelt(BwBeltConfig.Default, m_AbilityConfig, m_DamageCriticalRule, out m_Module) : m_ComposedAbilities ? BwMode.CreateComposedAbilityBelt(BwBeltConfig.Default, m_AbilityConfig, out m_Module) : m_WeaponCombat ? BwMode.CreateWeaponBelt(BwBeltConfig.Default, out m_Module) : m_BeltScroller ? BwMode.CreateBeltScroller(BwBeltConfig.Default, out m_Module) : m_MobileCombat ? BwMode.CreateMobileCombat(out m_Module) : m_SharedCombat
                 ? BwMode.CreateSharedCombat(BwSharedCombatConfig.Default, out m_Module)
                 : BwMode.Create(out m_Module);
             var sim = new GameObject("Simulation");

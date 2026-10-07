@@ -69,14 +69,14 @@ namespace BrawlerFoundation.Systems
     {
         public override SimPhase Phase=>SimPhase.Resolve;
         public override int Order=>-10;
-        public override void Declare(AccessDeclaration a)=>a.Write(BwWeapons.Key).Read(BwKeys.Rig).Read(BwKeys.Fighter).Write(BwKeys.Info).Write(BwKeys.Anim).Write(BwBeltKeys.Motion).Read(BwBeltKeys.Ground).Read(BwBeltKeys.PreviousGround).Write(BwBeltKeys.State).Write(BwKeys.Feedback);
+        public override void Declare(AccessDeclaration a)=>a.Write(BwWeapons.Key).Read(BwKeys.Rig).Read(BwKeys.Fighter).Write(BwKeys.Info).Write(BwKeys.Anim).Write(BwBeltKeys.Motion).Read(BwBeltKeys.Ground).Read(BwBeltKeys.PreviousGround).Write(BwBeltKeys.State).Write(BwKeys.Feedback).Write(AppliedDamageJournal.Key).Write(CriticalDamageState.Key);
         public override JobHandle OnTick(in SimContext context,JobHandle dependency)
         {
             dependency.Complete();var world=context.World;var game=world.Resource(BwKeys.Game);if(game.Flow!=BwFlow.Fighting)return dependency;
             var weapons=world.Resource(BwWeapons.Key);weapons.CollisionDebug.Begin(weapons.Tick);var belt=world.Resource(BwBeltKeys.State);belt.Rebuild(world);
             int player=-1;var info=world.Column(BwKeys.Info);for(int i=0;i<world.Table(BwKeys.Fighter).Count;i++)if(info[i].Team==0){player=i;break;}
             if(player<0||info[player].Hp<=0)return dependency;
-            var visitor=new ContactVisitor{World=world,Weapons=weapons,Info=info,Ground=world.Column(BwBeltKeys.Ground),PreviousGround=world.Column(BwBeltKeys.PreviousGround),Motion=world.Column(BwBeltKeys.Motion),Handles=world.Table(BwKeys.Fighter).Handles,Player=player};
+            var visitor=new ContactVisitor{World=world,Tick=context.Time.Tick,Weapons=weapons,Info=info,Ground=world.Column(BwBeltKeys.Ground),PreviousGround=world.Column(BwBeltKeys.PreviousGround),Motion=world.Column(BwBeltKeys.Motion),Handles=world.Table(BwKeys.Fighter).Handles,Player=player};
             var p=weapons.Current;
             if(weapons.MeleeActive)
             {
@@ -96,7 +96,7 @@ namespace BrawlerFoundation.Systems
         }
         struct ContactVisitor:IGridVisitor
         {
-            public SimWorld World;public WeaponRuntime Weapons;public NativeArray<FighterInfo> Info;public NativeArray<float2> Ground,PreviousGround;public NativeArray<BwBeltMotion> Motion;public NativeArray<EntityHandle> Handles;
+            public long Tick; public SimWorld World;public WeaponRuntime Weapons;public NativeArray<FighterInfo> Info;public NativeArray<float2> Ground,PreviousGround;public NativeArray<BwBeltMotion> Motion;public NativeArray<EntityHandle> Handles;
             public WeaponProfile Profile;public float2 Start,End,Direction;public float Height,Radius,BestFraction;public int Player,Scope,BestRow;public bool Projectile;
             public bool Visit(in GridEntry e)
             {
@@ -147,9 +147,13 @@ namespace BrawlerFoundation.Systems
                 var f=Info[row];var m=Motion[row];var anim=World.Column(BwKeys.Anim);var a=anim[row];var game=World.Resource(BwKeys.Game);var belt=World.Resource(BwBeltKeys.State);var rig=World.Resource(BwKeys.Rig);
                 if(!Weapons.RecordHit(Scope,Handles[row],contact,Height))return;
                 Trace(row,CombatContactReason.Accepted,Projectile?BestFraction:0,contact);
-                f.Hp=math.max(0,f.Hp-Profile.Damage);f.Flash=1;f.VelocityX=Direction.x*Profile.Knockback;f.StateTime=0;f.Attack=AttackKind.None;if(math.abs(Direction.x)>.0001f)f.Facing=Direction.x<0?1:-1;m.BufferedAttack.Clear();m.ComboGraceTicks=0;
+                float previousHp=f.Hp; bool critical=false; float damage=Profile.Damage;
+                bool facts=World.HasResource(AppliedDamageJournal.Key);
+                if(facts)damage=World.Resource(CriticalDamageState.Key).Apply(damage,previousHp,out critical);
+                f.Hp=math.max(0,f.Hp-damage);f.Flash=1;f.VelocityX=Direction.x*Profile.Knockback;f.StateTime=0;f.Attack=AttackKind.None;if(math.abs(Direction.x)>.0001f)f.Facing=Direction.x<0?1:-1;m.BufferedAttack.Clear();m.ComboGraceTicks=0;
                 if(f.Hp<=0){f.State=FighterState.KO;a.Play(rig.KO,.05f,restart:true);game.Kos++;game.Score+=100;belt.TryDrop(Ground[row],BwBeltDropKind.Coin,10);if((game.Kos&1)==0)belt.TryDrop(Ground[row],BwBeltDropKind.Heal,18);}
                 else{f.State=FighterState.Hit;a.Play(rig.Hit,.04f,restart:true);}
+                if(facts)World.Resource(AppliedDamageJournal.Key).AsWriter().Publish(Handles[row],BwBeltRules.Project(contact,Height),math.min(math.max(0,previousHp),previousHp-f.Hp),critical,Tick);
                 game.Score+=(int)Profile.Damage;game.Version++;Info[row]=f;Motion[row]=m;anim[row]=a;
                 World.Resource(BwKeys.Feedback).TryAdd(new BwFeedback{Kind=f.Hp<=0?BwFeedbackKind.KO:BwFeedbackKind.Hit,Position=BwBeltRules.Project(contact,Height),Value=Profile.Damage});
             }

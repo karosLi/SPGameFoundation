@@ -893,7 +893,8 @@ namespace SurvivorFoundation.Systems
 
         public override void Declare(AccessDeclaration access) => access
             .Read(SvKeys.Enemy).Write(SvKeys.Position).Write(SvKeys.Info)
-            .Write(SvKeys.Hits).Write(SvKeys.Deaths).Write(SvKeys.Feedback).Write(SimWorld.DestroyQueueKey);
+            .Write(SvKeys.Hits).Write(SvKeys.Deaths).Write(SvKeys.Feedback).Write(SimWorld.DestroyQueueKey)
+            .Write(AppliedDamageJournal.Key).Write(SPF.L2.Combat.CriticalDamageState.Key);
 
         struct HitOrder : IComparer<SvHit>
         {
@@ -911,7 +912,7 @@ namespace SurvivorFoundation.Systems
         public override JobHandle OnTick(in SimContext context, JobHandle dependency)
         {
             var world = context.World;
-            return new ResolveJob
+            var job = new ResolveJob
             {
                 Hits = context.Resource(SvKeys.Hits).Raw,
                 Deaths = context.Resource(SvKeys.Deaths).Raw,
@@ -923,7 +924,11 @@ namespace SurvivorFoundation.Systems
                 Defs = world.Resource(SvKeys.Config).Enemies,
                 Count = context.Count(SvKeys.Enemy),
                 HitNumbers = world.Resource(SvKeys.Config).Settings.FlyingSwords.Enabled,
-            }.Schedule(dependency);
+            };
+            if (world.HasResource(AppliedDamageJournal.Key))
+                return new DamageResolveJob { Core = job, Facts = world.Resource(AppliedDamageJournal.Key).AsWriter(),
+                    Critical = world.Resource(SPF.L2.Combat.CriticalDamageState.Key).AsWriter(), Tick = context.Time.Tick }.Schedule(dependency);
+            return job.Schedule(dependency);
         }
 
         [BurstCompile(CompileSynchronously = true)]
@@ -940,7 +945,9 @@ namespace SurvivorFoundation.Systems
             public int Count;
             public bool HitNumbers;
 
-            public void Execute()
+            public void Execute() => Execute(default, default, 0, false);
+
+            public void Execute(AppliedDamageJournal.Writer facts, SPF.L2.Combat.CriticalDamageState.Writer critical, long tick, bool enhanced)
             {
                 var hits = Hits.AsArray();
                 hits.Sort(new HitOrder());
@@ -951,6 +958,15 @@ namespace SurvivorFoundation.Systems
                     if ((uint)hit.Target >= (uint)Count) continue;
                     var info = Info[hit.Target];
                     if (info.Has(EnemyFlags.Dead)) continue;
+                    float damage = hit.Damage;
+                    bool isCritical = false;
+                    float previousHp = info.Hp;
+                    float2 acceptedPosition = Position[hit.Target];
+                    if (enhanced)
+                    {
+                        damage = critical.Apply(damage, previousHp, out isCritical);
+                        if (damage <= 0) continue;
+                    }
                     if (HitNumbers)
                     {
                         if (numberRow != hit.Target)
@@ -960,7 +976,8 @@ namespace SurvivorFoundation.Systems
                         }
                         amount += math.min(math.max(0f, info.Hp), math.max(0f, hit.Damage));
                     }
-                    info.Hp -= hit.Damage;
+                    info.Hp -= damage;
+                    if (enhanced) facts.Publish(Handles[hit.Target], acceptedPosition, math.min(math.max(0, previousHp), previousHp - math.max(0, info.Hp)), isCritical, tick);
                     info.Flash = 0.1f;
                     Position[hit.Target] += hit.Knock / math.max(info.Radius * 2f, 0.5f);
                     if (info.Hp <= 0f)
@@ -977,6 +994,17 @@ namespace SurvivorFoundation.Systems
                 if (HitNumbers && numberRow >= 0 && amount > 0f) Feedback.TryAdd(new SvFeedback { Kind = SvFeedbackKind.Hit, Position = Position[numberRow], Value = amount });
                 Hits.Clear();
             }
+        }
+        // Separate wrapper means the classic Burst job never contains uninitialized optional native
+        // containers. It reuses exactly the same resolver and adds only the opt-in authoritative rule.
+        [BurstCompile(CompileSynchronously = true)]
+        struct DamageResolveJob : IJob
+        {
+            public ResolveJob Core;
+            public AppliedDamageJournal.Writer Facts;
+            public SPF.L2.Combat.CriticalDamageState.Writer Critical;
+            public long Tick;
+            public void Execute() => Core.Execute(Facts, Critical, Tick, true);
         }
     }
 }

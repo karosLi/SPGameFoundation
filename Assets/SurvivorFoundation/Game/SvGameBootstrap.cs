@@ -119,6 +119,16 @@ namespace SurvivorFoundation.Game
             var game = Create(config, seed, ui, artStyle: SvArtStyle.SmoothOutline, naturalCharacters: true); game.m_OwnsConfig = owns; return game;
         }
 
+        /// <summary>Existing composed horde with optional settled normal/critical damage labels.</summary>
+        public static SvGameBootstrap CreateDamageNumbersExample(SvConfig config = null, uint seed = 1, bool ui = true)
+        {
+            bool owns = config == null; if (owns) config = SvConfig.CreateDamageNumbersExample();
+            if (!config.DamageNumbers || !config.ComposedPulse.Enabled)
+                throw new System.ArgumentException("Damage-number example requires damage facts and composed pulse content.");
+            var game = Create(config, seed, ui, artStyle: SvArtStyle.SmoothOutline, naturalCharacters: true);
+            game.m_OwnsConfig = owns; return game;
+        }
+
         public static SvGameBootstrap CreateComposedPulseExample(SvConfig config = null, uint seed = 1, bool ui = true)
         {
             bool owns = config == null; if (owns) config = SvConfig.CreateComposedPulseExample();

@@ -1,6 +1,7 @@
 using SPF.Presentation.ArtDirection;
 using SPF.Presentation.Particles;
 using SPF.Contracts.Weapons;
+using SPF.Contracts.Combat;
 using SPF.L2.Weapons;
 using SPF.Presentation;
 using SPF.Presentation.Sprites;
@@ -60,6 +61,16 @@ namespace SurvivorFoundation.Presentation
         bool m_HasWeaponCue;
         public uint LastWeaponCueSequence => m_WeaponCueSequence;
         public WeaponParticlePresenter WeaponParticles => m_WeaponParticles;
+        DamageNumberPool m_DamageNumbers;
+        SpriteBatch m_DamageGlyphs;
+        AppliedDamageJournal m_DamageJournal;
+        DamageFactCursor m_DamageCursor;
+        uint m_DamageRevision;
+        public DamageNumberPool DamageNumbers => m_DamageNumbers;
+        public int DamageNumberGlyphsDrawn => m_DamageGlyphs?.Count ?? 0;
+        public long DamageNumberBytesUploaded => m_DamageGlyphs?.BytesUploaded ?? 0;
+        public ulong MissedDamageFacts => m_DamageCursor.Missed;
+
         public int QualityLevel { get; private set; }
         public int ShadowBudget => QualityLevel >= 3 ? 32 : QualityLevel >= 2 ? 128 : QualityLevel >= 1 ? 256 : 768;
         public int EffectBudget => VfxBudget.ForQuality(QualityLevel).Active;
@@ -113,6 +124,7 @@ namespace SurvivorFoundation.Presentation
         void ClearTransientState()
         {
             m_Fx?.Clear(); m_Characters?.Clear(); m_WeaponParticles?.Clear();
+            m_DamageNumbers?.Clear(); m_DamageGlyphs?.Clear();
             m_HasWeaponCue = false;
             if (m_WeaponTrailValid != null) System.Array.Clear(m_WeaponTrailValid, 0, m_WeaponTrailValid.Length);
             m_CombatFx?.Clear(); m_LastHitTick = -1; m_EventSequence = 0; m_HeroCastTick = -100;
@@ -140,6 +152,8 @@ namespace SurvivorFoundation.Presentation
         {
             DetachCamera(); m_Timeline.Reset(); m_Session = null; m_PoseClock = null; m_WeaponRuntime = null;
             m_WeaponTrailPoints = null; m_WeaponTrailBirths = null; m_WeaponTrailValid = null;
+            m_DamageGlyphs?.Dispose(); m_DamageGlyphs = null; m_DamageNumbers = null;
+            m_DamageJournal = null; m_DamageCursor = default; m_DamageRevision = 0;
             m_WeaponCueSequence = 0; m_HasWeaponCue = false; m_ResumePending = false;
             m_Fx = null; m_CombatFx = null;
             m_Sanctuary?.Dispose();m_Sanctuary=null;
@@ -183,6 +197,17 @@ namespace SurvivorFoundation.Presentation
                 m_WeaponCueSequence=equipped.Equipment.CueSequence;m_HasWeaponCue=m_WeaponCueSequence!=0;
             }
             var atlas = m_Art.Sheet.Texture;
+            if (session.World.HasResource(AppliedDamageJournal.Key))
+            {
+                m_DamageNumbers = new DamageNumberPool();
+                m_DamageNumbers.Bind(session, session.TimelineRevision, session.World.LevelVersion);
+                m_DamageJournal = session.World.Resource(AppliedDamageJournal.Key);
+                m_DamageRevision = m_DamageJournal.Revision;
+                m_DamageCursor = m_DamageJournal.CreateCursor();
+                // Damage has an independent, fully warmed glyph budget; it cannot crowd out particles.
+                m_DamageGlyphs = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Translucent, 192, queueOffset: 180);
+                m_DamageGlyphs.Warmup(m_DamageGlyphs.Capacity);
+            }
             // Jobs validate containers before Execute, including the classic path. Keep its zero mask valid.
             m_NaturalMask = new NativeArray<byte>(world.Table(SvKeys.Enemy).Capacity, Allocator.Persistent);
             if (NaturalCharacters)
@@ -241,6 +266,7 @@ namespace SurvivorFoundation.Presentation
             var world = session.World;
             var game = world.Resource(SvKeys.Game);
             bool interpolationDiscontinuity = m_Timeline.Update(session, session.TimelineRevision, world.LevelVersion);
+            bool damageDiscontinuity = interpolationDiscontinuity || m_ResumePending;
             if (interpolationDiscontinuity) ClearTransientState();
             if (m_ResumePending)
             {
@@ -284,6 +310,7 @@ namespace SurvivorFoundation.Presentation
                 if(m_Deaths.IsCreated)for(int i=0;i<m_Deaths.Length;i++)m_Deaths[i]=default;
             }
             m_CombatFx.BeginFrame(game.Flow == SvFlow.Playing ? dt : 0f, QualityLevel);
+            damageDiscontinuity |= game.Flow == SvFlow.Menu || game.RunTicks < m_PreviousRunTicks;
             m_PreviousRunTicks = game.RunTicks;
             DrainFeedback(world);
             if(NaturalCharacters) PrepareCharacters(world,game,hero,alpha,view,session.State==SessionState.Running && game.Flow!=SvFlow.LevelUp && game.Flow!=SvFlow.Menu?dt:0);
@@ -335,6 +362,7 @@ namespace SurvivorFoundation.Presentation
             if(world.HasResource(SvWeapons.Key))DrawWeaponProjectiles(world.Resource(SvWeapons.Key),alpha);
             m_Fx.UpdateAndDraw(dt, m_Effects, m_Art.Sheet, m_Art.Font);
             m_CombatFx.Draw(m_Effects, m_Art.CombatFx.Resolve(m_Art.Sheet), effectView, BulletDepth - 0.2f);
+            UpdateDamageNumbers(session, damageDiscontinuity, session.State == SessionState.Running && game.Flow == SvFlow.Playing ? dt : 0f, effectView);
 
             if (StableTranslucentActors)
                 new SvSpriteOrder { Sprites = m_Opaque.Instances, Scratch = m_SortScratch, Count = m_Opaque.Count }.Run();
@@ -345,11 +373,29 @@ namespace SurvivorFoundation.Presentation
             m_Opaque.Draw(bounds);
             m_Characters?.Draw(bounds);
             m_Additive.Draw(bounds);
-            m_Effects.Draw(bounds); m_Health.Draw(bounds);
+            m_Effects.Draw(bounds); m_Health.Draw(bounds); m_DamageGlyphs?.Draw(bounds);
             if(m_WeaponParticles!=null){UpdateWeaponParticles(world,game,alpha,effectView,presentationDeltaTime);m_WeaponParticles.EndFrame(bounds);}
-            SpritesDrawn = (m_Sanctuary!=null&&m_Sanctuary.Ready?m_Sanctuary.SpritesDrawn:m_Ground.Count) + m_Opaque.Count + m_Additive.Count + m_Effects.Count + m_Shadows.Count + m_Health.Count + (m_Characters?.PartsDrawn ?? 0);
+            SpritesDrawn = (m_Sanctuary!=null&&m_Sanctuary.Ready?m_Sanctuary.SpritesDrawn:m_Ground.Count) + m_Opaque.Count + m_Additive.Count + m_Effects.Count + m_Shadows.Count + m_Health.Count + (m_DamageGlyphs?.Count ?? 0) + (m_Characters?.PartsDrawn ?? 0);
             // API payload includes full data textures / indirect arguments, not just live packed sprites.
-            BytesUploaded = (m_Sanctuary!=null&&m_Sanctuary.Ready?m_Sanctuary.BytesUploaded:m_Ground.BytesUploaded) + m_Opaque.BytesUploaded + m_Additive.BytesUploaded + m_Effects.BytesUploaded + m_Shadows.BytesUploaded + m_Health.BytesUploaded + (m_Characters?.BytesUploaded ?? 0);
+            BytesUploaded = (m_Sanctuary!=null&&m_Sanctuary.Ready?m_Sanctuary.BytesUploaded:m_Ground.BytesUploaded) + m_Opaque.BytesUploaded + m_Additive.BytesUploaded + m_Effects.BytesUploaded + m_Shadows.BytesUploaded + m_Health.BytesUploaded + (m_DamageGlyphs?.BytesUploaded ?? 0) + (m_Characters?.BytesUploaded ?? 0);
+        }
+
+        void UpdateDamageNumbers(SimSession session, bool reset, float dt, float4 view)
+        {
+            if (m_DamageNumbers == null) return;
+            var journal = session.World.Resource(AppliedDamageJournal.Key);
+            bool rebound = m_DamageNumbers.Bind(session, session.TimelineRevision, session.World.LevelVersion);
+            if (reset || rebound || !ReferenceEquals(m_DamageJournal, journal) || m_DamageRevision != journal.Revision)
+            {
+                m_DamageNumbers.Clear(); m_DamageJournal = journal; m_DamageRevision = journal.Revision;
+                // Same-tick restores, level resets and hidden intervals start at the current head.
+                m_DamageCursor = journal.CreateCursor();
+            }
+            m_DamageGlyphs.Clear();
+            m_DamageNumbers.BeginFrame(dt, QualityLevel);
+            while (journal.TryRead(ref m_DamageCursor, out var fact))
+                m_DamageNumbers.Emit(fact.Target, fact.Position, fact.Amount, fact.Critical, fact.Sequence, fact.Tick, session.Clock.StepSeconds);
+            m_DamageNumbers.Draw(m_DamageGlyphs, m_Art.Sheet, m_Art.Font, view);
         }
 
         void UpdateWeaponParticles(SimWorld world,SvGameState game,float alpha,float4 viewRect,float presentationDeltaTime)

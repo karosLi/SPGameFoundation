@@ -200,7 +200,7 @@ namespace RpgFoundation.Presentation
                 // Actual tick displacement includes collision, patrol/chase speed and analog intent.
                 // It remains stable between simulation ticks and does not depend on render FPS/culling.
                 float speed = math.length(positions[i] - prev[i]) / (float)m_Session.Clock.StepSeconds;
-                float runSpeed = hero ? config.HeroSpeed : config.Monsters[info.Kind - 1].Speed;
+                float runSpeed = hero ? config.Settings.HeroSpeed : config.Monsters[info.Kind - 1].Speed;
                 SkillKind skill = c.PhaseSkill > 0 && c.PhaseSkill <= config.Skills.Length
                     ? config.Skills[c.PhaseSkill - 1].Kind : SkillKind.None;
                 v.Animation.Sample(handle.Generation, art, c, skill, info.Has(ActorFlags.Dead), speed, runSpeed, dt);

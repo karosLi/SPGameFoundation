@@ -7,7 +7,7 @@ using UnityEngine;
 namespace BrawlerFoundation
 {
     /// <summary>The brawler as one module: a fighter table (skeletal animators in a column), the shared rig, flow, fighters, combat.</summary>
-    public sealed class BwModule : GameplayModuleAsset
+    public sealed class BwModule : GameplayModuleAsset, ICompositionManifestProvider
     {
         bool m_SharedCombat;
         bool m_MobileSkills;
@@ -50,6 +50,27 @@ namespace BrawlerFoundation
 
         public static BwModule CreateWeaponBelt(BwBeltConfig config, SPF.L2.Weapons.WeaponProfile[] profiles = null)
         { var module = CreateBeltScroller(config); module.m_Weapons = true; module.m_WeaponProfiles = profiles; return module; }
+
+        /// <summary>Cold, partial metadata for the opt-in weapon belt: its fighter table and
+        /// weapon/pose/skill resource slice only. Other resources and complete save coverage are not
+        /// claimed; SnapshotHook checks the resource type's interface, not a full save contract.</summary>
+        public ModuleManifest DescribeComposition()
+        {
+            if (!m_Weapons) return null;
+            return new ModuleManifest("brawler.weapon-belt", 1, data: new[]
+            {
+                // The belt's grids and scratch buffers use the same fixed fighter budget.
+                ModuleDataDeclaration.Table(BwKeys.Fighter, 1, m_CombatConfig.Fighters, "BwBeltConfig.Fighters",
+                    levelScoped: true, maxCapacity: m_CombatConfig.Fighters),
+                ModuleDataDeclaration.Resource(BwWeapons.PoseKey, 1, levelScoped: true,
+                    save: ResourceSaveRequirement.SnapshotHook, capacity: 1, capacitySource: "One ActionPoseClock per weapon belt"),
+                // Primary bound only; targets-per-attack/cues/profile contents remain runtime contracts.
+                ModuleDataDeclaration.Resource(BwWeapons.Key, 1, levelScoped: true,
+                    save: ResourceSaveRequirement.SnapshotHook, capacity: 32, capacitySource: "WeaponRuntime default projectile capacity"),
+                ModuleDataDeclaration.Resource(BwMobileSkills.Key, 1, levelScoped: true,
+                    save: ResourceSaveRequirement.SnapshotHook, capacity: 4, capacitySource: "BwBeltRules.CreateSkills authored slots")
+            });
+        }
 
         public override void DeclareData(WorldLayout layout)
         {

@@ -8,7 +8,7 @@ using UnityEngine;
 namespace SurvivorFoundation
 {
     /// <summary>The whole bullet-heaven game as one module.</summary>
-    public sealed class SvModule : GameplayModuleAsset
+    public sealed class SvModule : GameplayModuleAsset, ICompositionManifestProvider
     {
         [SerializeField] SvConfig m_Config;
 
@@ -21,6 +21,34 @@ namespace SurvivorFoundation
         }
 
         SvConfig Config => m_Config != null ? m_Config : (m_Config = SvConfig.CreateDefault());
+
+        /// <summary>Cold, partial metadata for the opt-in weapon mode: its tables and weapon/pose/skill
+        /// resource slice only. This does not describe every resource or promise complete save support;
+        /// SnapshotHook only requires the listed resource type to implement the snapshot interface.</summary>
+        public ModuleManifest DescribeComposition()
+        {
+            // Do not invoke Config here: describing a default module must not create a ScriptableObject.
+            if (m_Config == null || !m_Config.WeaponCombat) return null;
+            var cap = m_Config.Capacity;
+            return new ModuleManifest("survivor.weapon-combat", 1, data: new[]
+            {
+                // Fixed tables also bound the grids/queues built by DeclareData; extensions cannot
+                // silently increase these opt-in budgets beyond the authored configuration.
+                ModuleDataDeclaration.Table(SvKeys.Enemy, 1, cap.Enemies, "SvConfig.Capacity.Enemies",
+                    levelScoped: true, maxCapacity: cap.Enemies),
+                ModuleDataDeclaration.Table(SvKeys.Bullet, 1, cap.Bullets, "SvConfig.Capacity.Bullets",
+                    levelScoped: true, pooled: true, maxCapacity: cap.Bullets),
+                ModuleDataDeclaration.Table(SvKeys.Gem, 1, cap.Gems, "SvConfig.Capacity.Gems",
+                    levelScoped: true, pooled: true, maxCapacity: cap.Gems),
+                ModuleDataDeclaration.Resource(SvWeapons.PoseKey, 1, levelScoped: true,
+                    save: ResourceSaveRequirement.SnapshotHook, capacity: 1, capacitySource: "One ActionPoseClock per weapon mode"),
+                // Primary bound only; history/cues/profile contents remain WeaponRuntime's contract.
+                ModuleDataDeclaration.Resource(SvWeapons.Key, 1, levelScoped: true,
+                    save: ResourceSaveRequirement.SnapshotHook, capacity: 32, capacitySource: "WeaponRuntime default projectile capacity"),
+                ModuleDataDeclaration.Resource(SvMobileSkills.Key, 1, levelScoped: true,
+                    save: ResourceSaveRequirement.SnapshotHook, capacity: 4, capacitySource: "SvWeapons.CreateSkills authored slots")
+            });
+        }
 
         public override void DeclareData(WorldLayout layout)
         {

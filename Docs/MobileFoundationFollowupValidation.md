@@ -2,6 +2,23 @@
 
 This page tracks the finite collision/AI, art, gait and projectile follow-up to the green [weapon checkpoint](WeaponMotionStage5Validation.md). It does not replace the detailed implementation contracts or claim physical Android/iOS validation.
 
+## Latest runtime checkpoint: 3f6362f
+
+Exact remote `3f6362f659cc5bc72955e019cca14010744784e2`, local `677611a85aab71eb33561aeb479f032c7188c113`, tree `1cb7401216d679de2d091a5e1a998755eede574d`. [Native run](https://github.com/karosLi/SPGameFoundation/actions/runs/37581211270): **1,077 EditMode passed / 2 failed / 5 skipped**, **154 graphics PlayMode passed / 0 failed / 1 explicit diagnostic skip**. [.NET CI](https://github.com/karosLi/SPGameFoundation/actions/runs/37581211300) passes **1,045 tests**, zero build errors. This runtime checkpoint is **not fully green**.
+
+The same dense test-only separation comparisons still fail under Strict/High, with actual Burst backend=1: count32 row0 managed `uint2(3189493657,3175785598)` versus Burst `uint2(3189493657,3175785599)`; count128 row2 managed `(1025170858,3189639816)` versus Burst `(1025170860,3189639816)`. The precision-flag hypothesis did not resolve the mismatch. Production remains on the original ordered path; the exact equality gate is retained. A subsequent arithmetic investigation reproduced both managed results in bundled Mono with float32 optimization disabled; that investigation is not a completed native repair.
+
+All **19 parts / 1,655 files** are fully restored and verified: archive **303,898,026 bytes**, SHA-256 `fbbc6d5e19b6aff3104647b34db67758dab42e116e9098aff6533228ed3c45f2`. The 1,002 JPEG95 review files total 76,890,593 bytes; the full archive also adds new collision evidence, so its size is not a same-workload compression benchmark. Raw acquisition/pixel assertions and dedicated lossless PNG tests remain separate.
+
+Targeted acceptance now supported by actual execution and reviewed pixels:
+
+- All four real gait captures have zero visible grounded-Walk samples with both feet unsupported. The former Belt hit/restart exception and deep reversal/restart crouches are absent in the inspected windows; actual hit flashes/recoil remain. All Horde roles genuinely move, including the formerly pinned heavy. `current_frame_visible` means camera-frustum/current submission, not HUD-occlusion detection: the heavy is partly under the top panel early and fully clear from about frame48.
+- Compact HUD is visually accepted for its bounded change: both tiers, normal and720×1600 tall safe-area layouts,110px two-row and134px armed panels. Status/health labels, Menu and skills remain readable. This is not a blanket final-art claim for all dense crowds.
+- Arrow-tip pixel cases, all four collision-debug graphics cases and JPEG export/raw-preservation checks pass. Actual overlay sequences show projectile flight, accepted contact, off-lane rejection and separate body/hurt/attack shapes.
+- New same-camera Belt videos retain160 source frames plus one final hold: GPU7.218990 seconds, DataTexture7.427300 seconds, maximum PTS error0.0005ms, normal1× playback. They use declared JPEG95 review sources. Late Belt movement is constrained by nearby enemies; early enemies partly overlap right-side controls.
+
+The subsequent shared-foundation survey, semantic plan and AGENTS links are **documentation only**. Their publication uses an explicit `[skip ci]` marker to avoid repeating unchanged rendering/capture work; it does not clear these two runtime failures or claim new runtime validation. The actual precision-repair commit must run full CI without that marker.
+
 ## Exact recovered checkpoint: 4af9b87
 
 - Remote: `4af9b87cc32fcd1a5f10a4bd2817848044ad4649`; equivalent local: `cf45385ba0f3e13d2576542d1a35fbc4e50151ef`; identical tree: `c0173dec0f2cbda34c5734b496d0915f5bd38d1e`.

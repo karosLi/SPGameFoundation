@@ -1,0 +1,152 @@
+{
+  "date_utc": "2026-10-07",
+  "base_commit": "e7bd1e49e240c23fea3a8d1e59e59410f2f42a0a",
+  "source_identification": "Changed source content is identified below by SHA-256; commit with this record identifies the delivered revision. Later main gait/collision changes were not present.",
+  "scope": "Render-only arrow authored-tip anchor. No collision, damage, clock, save schema, atlas, mask, size or capacity changes.",
+  "before_fix": {
+    "cases": 4,
+    "failed": 4,
+    "first_sample_belt_error": 0.248818398,
+    "first_sample_horde_error": 0.178750038,
+    "sample_scale": 0.4
+  },
+  "build": {
+    "projects": 76,
+    "warnings": 0,
+    "errors": 0
+  },
+  "tests": {
+    "passed": 871,
+    "failed": 0,
+    "skipped": 0,
+    "assemblies": [
+      {
+        "failed": 0,
+        "passed": 79,
+        "skipped": 0,
+        "total": 79,
+        "assembly": "BrawlerFoundation.Tests.EditMode"
+      },
+      {
+        "failed": 0,
+        "passed": 8,
+        "skipped": 0,
+        "total": 8,
+        "assembly": "DefenseFoundation.Tests.EditMode"
+      },
+      {
+        "failed": 0,
+        "passed": 10,
+        "skipped": 0,
+        "total": 10,
+        "assembly": "PlatformerFoundation.Tests.EditMode"
+      },
+      {
+        "failed": 0,
+        "passed": 7,
+        "skipped": 0,
+        "total": 7,
+        "assembly": "PuzzleFoundation.Tests.EditMode"
+      },
+      {
+        "failed": 0,
+        "passed": 45,
+        "skipped": 0,
+        "total": 45,
+        "assembly": "RpgFoundation.Tests.EditMode"
+      },
+      {
+        "failed": 0,
+        "passed": 568,
+        "skipped": 0,
+        "total": 568,
+        "assembly": "SPF.Tests.EditMode"
+      },
+      {
+        "failed": 0,
+        "passed": 16,
+        "skipped": 0,
+        "total": 16,
+        "assembly": "ShooterFoundation.Tests.EditMode"
+      },
+      {
+        "failed": 0,
+        "passed": 4,
+        "skipped": 0,
+        "total": 4,
+        "assembly": "SlingFoundation.Tests.EditMode"
+      },
+      {
+        "failed": 0,
+        "passed": 38,
+        "skipped": 0,
+        "total": 38,
+        "assembly": "SnakeFoundation.Tests.EditMode"
+      },
+      {
+        "failed": 0,
+        "passed": 5,
+        "skipped": 0,
+        "total": 5,
+        "assembly": "StoryFoundation.Tests.EditMode"
+      },
+      {
+        "failed": 0,
+        "passed": 91,
+        "skipped": 0,
+        "total": 91,
+        "assembly": "SurvivorFoundation.Tests.EditMode"
+      }
+    ]
+  },
+  "pivot_matrix": {
+    "headings": 16,
+    "scales_per_game": 3,
+    "interpolation_fractions": [
+      0,
+      0.35,
+      1
+    ],
+    "games": 2,
+    "tiers": 2,
+    "profiles": [
+      "Bow",
+      "Staff"
+    ],
+    "presentation_samples": 1152,
+    "snapshot_bytes_unchanged": true,
+    "packed_error_limit_world": 0.0005,
+    "maximum_belt_error_world": 0.0002876261,
+    "maximum_horde_error_world": 0.00021171573
+  },
+  "native_api_compile": {
+    "unity": "2022.3.62f2",
+    "errors": 0,
+    "warnings": 4,
+    "warning_scope": "Existing serialized SvGameBootstrap fields"
+  },
+  "native_pixel_execution": {
+    "new_cases": 2,
+    "executed": false,
+    "artifact_names": [
+      "arrow-tip-pivot-gpu.png",
+      "arrow-tip-pivot-fallback.png"
+    ]
+  },
+  "physical_mobile_evidence": false,
+  "source_sha256": {
+    "Assets/BrawlerFoundation/Presentation/BwRenderer.cs": "690fe981d2f265380e8add74c6f3c930abc1342d3ab8648cea67c2a18dead239",
+    "Assets/BrawlerFoundation/Tests/EditMode/BwProjectileArtTests.cs": "0a4c992e4b11159c9f37613e31dca3044726378844ae4bdb0979c4f4bb9eed77",
+    "Assets/SinglePlayerFoundation/Presentation/Combat/WeaponProjectileArt.cs": "8477adb6732a722134e27f1336b3b53a811202ccea280f947ed033946a34dff5",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/WeaponProjectileArtTests.cs": "7b14b455f3cf46eaeb6f4b93d10bfb79858d3498646900b5367675bbf734728a",
+    "Assets/SinglePlayerFoundation/Tests/PlayMode/Particles/WeaponProjectileGraphicsTests.cs": "a08e32fc272a65b8930f22e5aabb5034538cdb5875937e747f1cf2874152e5fa",
+    "Assets/SurvivorFoundation/Presentation/SvRenderer.cs": "ad5edeb5fa9ba8d701fab8fbeea2619368ed961cd0811ed3efaec506b442b305",
+    "Assets/SurvivorFoundation/Tests/EditMode/SvProjectileArtTests.cs": "7d52093912363648ff5dd44923b016eb1a0396bbdd3d32f692cd8def1b27f6d3"
+  },
+  "log_sha256": {
+    "arrow-pivot-before.log": "495f33eb2600daf9b758a347ef7fbe922e3006d98df7b262d7f413160131fcd6",
+    "arrow-pivot-build-final.log": "a1961174fa970732bbe678503b03bd4965fa701a7165ca25a043bc32906eda56",
+    "arrow-pivot-full-tests.log": "4ae255c7741b7e5674ebbb6242d79d1b8dec5d13dd402cb65d8d50ee607c16f5",
+    "arrow-pivot-native-final.log": "e4fd4bbaec0f6fb9bc4a427a462b70d2a5406a221bc7ed5730f70034fb2f7e50"
+  }
+}

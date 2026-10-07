@@ -8,13 +8,22 @@ namespace SPF.Presentation.Combat
     /// One quad per projectile; art never defines hit geometry or changes the fixed-tick trajectory.</summary>
     public struct WeaponProjectileArt
     {
+        // Authored arrow head apex is pixel (60,16) in the 64×32 source rectangle.
+        // Its pivot is independent of the transparent rectangle and collision radius.
+        public const float ArrowTipU = 60f / 64f;
         public int Bullet, Arrow, Spell;
         public static WeaponProjectileArt AddTo(SpriteAtlasBuilder atlas) => new WeaponProjectileArt
         {
             Bullet = atlas.Add(Draw(0)), Arrow = atlas.Add(Draw(1)), Spell = atlas.Add(Draw(2))
         };
+        /// <summary>Move the quad so its authored arrow tip lands on a caller-projected forward
+        /// collision boundary. Project the ground-space centre + direction * radius first;
+        /// a normalized screen direction times a ground radius is wrong in depth-projected games.</summary>
+        public static float2 ArrowCentre(float2 projectedForwardBoundary, float2 projectedDirection, float spriteWidth)
+            => projectedForwardBoundary - math.normalizesafe(projectedDirection, new float2(1, 0)) * (spriteWidth * (ArrowTipU - .5f));
         /// <summary>0: compact bullet, 1: arrow with shaft/head/fletching, 2: compact spell core.
-        /// +X is forward, with the collision centre at the texture centre. No broad glow quad.</summary>
+        /// +X is forward. ArrowCentre maps the authored tip pivot to collision's forward boundary;
+        /// spell/bullet cores retain a centred pivot. No broad glow quad.</summary>
         public static PixelCanvas Draw(int kind)
         {
             const int sample = 3;

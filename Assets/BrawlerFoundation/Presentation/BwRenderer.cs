@@ -5,6 +5,7 @@ using SPF.L2.Weapons;
 using SPF.L1.Skeleton;
 using SPF.Presentation;
 using SPF.Presentation.Animation;
+using SPF.Presentation.Combat;
 using SPF.Presentation.Sprites;
 using SPF.Runtime.Session;
 using SPF.Shell.CameraRig;
@@ -257,9 +258,11 @@ namespace BrawlerFoundation.Presentation
         {
             for(int i=0;i<weapons.Projectiles.Length;i++)
             {
-                var shot=weapons.Projectiles[i];if(!weapons.ProjectileVisible(i,alpha))continue;bool arrow=weapons.Profile(shot.ContentId).Family==WeaponActionFamily.Draw;
-                float2 point=BwBeltRules.Project(math.lerp(shot.Previous,shot.Position,alpha),shot.Height);
+                var shot=weapons.Projectiles[i];if(!weapons.ProjectileVisible(i,alpha))continue;var profile=weapons.Profile(shot.ContentId);bool arrow=profile.Family==WeaponActionFamily.Draw;
+                float2 ground=math.lerp(shot.Previous,shot.Position,alpha);
+                float2 point=BwBeltRules.Project(ground,shot.Height);
                 float2 direction=new float2(shot.Direction.x,shot.Direction.y*BwBeltRules.DepthProjection);
+                if(arrow)point=WeaponProjectileArt.ArrowCentre(BwBeltRules.Project(ground+shot.Direction*(profile.Radius*shot.Scale),shot.Height),direction,.66f);
                 m_Effects.Add(point,arrow?new float2(.66f,.22f):new float2(.28f),m_Art.Sheet[arrow?m_Art.WeaponProjectiles.Arrow:m_Art.WeaponProjectiles.Spell].Uv,FxDepth,new float4(1),math.atan2(direction.y,direction.x));
             }
         }

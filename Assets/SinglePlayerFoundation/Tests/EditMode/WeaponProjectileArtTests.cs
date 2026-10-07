@@ -33,6 +33,10 @@ namespace SPF.Tests.EditMode
                 Assert.That(canvas.Get(48, 19).a, Is.GreaterThan(0), "Arrowhead has visible width.");
                 Assert.That(canvas.Get(27, 19).a, Is.Zero, "Shaft is narrower than the head.");
                 Assert.That(canvas.Get(10, 20).a, Is.GreaterThan(0), "Fletching is distinct from a bar.");
+                int lastCovered = -1;
+                for (int x = 0; x < canvas.Width; x++) for (int y = 0; y < canvas.Height; y++)
+                    if (canvas.Get(x, y).a > 0) lastCovered = math.max(lastCovered, x);
+                Assert.That(lastCovered + 1, Is.EqualTo(WeaponProjectileArt.ArrowTipU * canvas.Width), "The authored pivot must track the actual alpha silhouette's leading edge.");
             }
             // Optional source-art preview, not a camera capture or graphical-backend test.
             string output = Environment.GetEnvironmentVariable("SPF_PROJECTILE_ART_PREVIEW");

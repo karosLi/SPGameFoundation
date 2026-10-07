@@ -318,8 +318,9 @@ namespace SurvivorFoundation.Presentation
         {
             for(int i=0;i<weapons.Projectiles.Length;i++)
             {
-                var shot=weapons.Projectiles[i];if(!weapons.ProjectileVisible(i,alpha))continue;bool arrow=weapons.Profile(shot.ContentId).Family==WeaponActionFamily.Draw;
+                var shot=weapons.Projectiles[i];if(!weapons.ProjectileVisible(i,alpha))continue;var profile=weapons.Profile(shot.ContentId);bool arrow=profile.Family==WeaponActionFamily.Draw;
                 float2 point=math.lerp(shot.Previous,shot.Position,alpha)+new float2(0,shot.Height);
+                if(arrow)point=WeaponProjectileArt.ArrowCentre(point+shot.Direction*(profile.Radius*shot.Scale),shot.Direction,.5f);
                 m_Effects.Add(point,arrow?new float2(.5f,.167f):new float2(.23f),m_Art.Sheet[arrow?m_Art.WeaponProjectiles.Arrow:m_Art.WeaponProjectiles.Spell].Uv,BulletDepth,new float4(1),math.atan2(shot.Direction.y,shot.Direction.x));
             }
         }

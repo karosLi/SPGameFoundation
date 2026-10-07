@@ -1,0 +1,97 @@
+{
+  "source": "7e9419155827a40dfe9a1cea19546e053f9f7c47",
+  "source_tree": "7f8514b3f1471da793670c4ea8590aaa5383c047",
+  "build_projects": 76,
+  "build_errors": 0,
+  "harness_passed": 1045,
+  "harness_failed": 0,
+  "harness_console_skipped": 0,
+  "harness_exit": 0,
+  "harness_log_sha256": "3ef5e78f1e6c7af44473601667dba39fe4498ebc27a73527e4d75baf774ecb2b",
+  "suites": [
+    {
+      "failed": "0",
+      "passed": "98",
+      "skipped": "0",
+      "total": "98",
+      "assembly": "BrawlerFoundation.Tests.EditMode.dll (net8.0)"
+    },
+    {
+      "failed": "0",
+      "passed": "8",
+      "skipped": "0",
+      "total": "8",
+      "assembly": "DefenseFoundation.Tests.EditMode.dll (net8.0)"
+    },
+    {
+      "failed": "0",
+      "passed": "10",
+      "skipped": "0",
+      "total": "10",
+      "assembly": "PlatformerFoundation.Tests.EditMode.dll (net8.0)"
+    },
+    {
+      "failed": "0",
+      "passed": "7",
+      "skipped": "0",
+      "total": "7",
+      "assembly": "PuzzleFoundation.Tests.EditMode.dll (net8.0)"
+    },
+    {
+      "failed": "0",
+      "passed": "63",
+      "skipped": "0",
+      "total": "63",
+      "assembly": "RpgFoundation.Tests.EditMode.dll (net8.0)"
+    },
+    {
+      "failed": "0",
+      "passed": "694",
+      "skipped": "0",
+      "total": "694",
+      "assembly": "SPF.Tests.EditMode.dll (net8.0)"
+    },
+    {
+      "failed": "0",
+      "passed": "16",
+      "skipped": "0",
+      "total": "16",
+      "assembly": "ShooterFoundation.Tests.EditMode.dll (net8.0)"
+    },
+    {
+      "failed": "0",
+      "passed": "4",
+      "skipped": "0",
+      "total": "4",
+      "assembly": "SlingFoundation.Tests.EditMode.dll (net8.0)"
+    },
+    {
+      "failed": "0",
+      "passed": "38",
+      "skipped": "0",
+      "total": "38",
+      "assembly": "SnakeFoundation.Tests.EditMode.dll (net8.0)"
+    },
+    {
+      "failed": "0",
+      "passed": "5",
+      "skipped": "0",
+      "total": "5",
+      "assembly": "StoryFoundation.Tests.EditMode.dll (net8.0)"
+    },
+    {
+      "failed": "0",
+      "passed": "102",
+      "skipped": "0",
+      "total": "102",
+      "assembly": "SurvivorFoundation.Tests.EditMode.dll (net8.0)"
+    }
+  ],
+  "python_tooling_tests": 30,
+  "real_unity_api_sources": 211,
+  "real_unity_api_references": 96,
+  "real_unity_api_errors": 0,
+  "real_unity_api_existing_warnings": 4,
+  "native_execution": "Pending new exact-head Mac CI; Unity API compilation is not native execution",
+  "unexecuted": "Original explicit tuning/export tools and graphics PlayMode are not executed by .NET harness"
+}

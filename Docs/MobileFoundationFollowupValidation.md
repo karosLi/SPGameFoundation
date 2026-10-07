@@ -52,3 +52,11 @@ Both retain the same camera without explanatory image overlays. Source-frame has
 2. Publish exact trees on the existing feature branch and run native EditMode/graphics PlayMode with actual Burst.
 3. Inspect compact normal/tall safe-area HUD, opposing arrow tips, joint ground/height contact/rejection overlays, weapon impact timing, and normal-speed gait with explicit state traces.
 4. Record exact results, failures and source links here and in the relevant implementation docs. A later green test result still requires actual visual review. Do not generalize desktop proof to physical devices.
+
+## Combined follow-up local gate
+
+The combined runtime/capture source `7e9419155827a40dfe9a1cea19546e053f9f7c47`, tree `7f8514b3f1471da793670c4ea8590aaa5383c047`, now passes **1,045/1,045 .NET logic tests**, all 76 generated assemblies and zero build errors. The tooling suite passes 30 Python tests. A separate actual Unity-DLL compile covers 211 current sources against 96 Unity/package references: zero errors and four existing serialized-field warnings. [Machine-readable scope and log hash](validation/MobileFoundationFollowup-local-20261007.json).
+
+This combines compact HUD, forward arrow-tip alignment, joint ground/height collision and overlays, unchanged exact separation parity with Strict/High, three reproduced gait fixes, richer action/support traces, visible per-role Horde cadence checks and deferred JPEG95 review capture. The conflicting Horde capture line was resolved to retain both the honest scripted-speed description/role assertions and JPEG95 output. No test threshold or scenario was removed.
+
+The independent gait source aggregate also passes 1,045 cases; focused motion/action/socket tests pass 70 and controlled-Horde cadence preflights pass six (20/21/22/23/30 Hz and alternating20–23 Hz). This establishes regression/compilation readiness, **not final visual acceptance**. The next exact native run must resolve the two prior dense parity failures and supply the new real screenshots and normal-speed footage. Physical Android/iOS remains unmeasured.

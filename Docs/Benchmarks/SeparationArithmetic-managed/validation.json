@@ -1,0 +1,106 @@
+{
+  "date_utc": "2026-10-07",
+  "base_commit": "9a95654",
+  "source_trees": {
+    "Assets": "1abb47fe1c9f225ad7df2e28620c52b9bbdf6b64",
+    "Tools": "b421db6e462fc23a274c77208cf6f1ca5dcbffbb",
+    "Packages": "c7c1c4d43c1d6c01ca25ff8ab6bd5bc4267de7d0",
+    "ProjectSettings": "655300176ee62b6ef8079e5537d61e1dc32a430c",
+    ".github": "196f859968e285d0aa5cff4126de0ac8b4274ac6"
+  },
+  "dotnet": {
+    "build_errors": 0,
+    "build_warnings": 0,
+    "passed": 1050,
+    "failed": 0,
+    "assemblies": [
+      {
+        "assembly": "BrawlerFoundation.Tests.EditMode.dll",
+        "passed": 103,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "assembly": "DefenseFoundation.Tests.EditMode.dll",
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "assembly": "PlatformerFoundation.Tests.EditMode.dll",
+        "passed": 10,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "assembly": "PuzzleFoundation.Tests.EditMode.dll",
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "assembly": "RpgFoundation.Tests.EditMode.dll",
+        "passed": 63,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "assembly": "SPF.Tests.EditMode.dll",
+        "passed": 694,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "assembly": "ShooterFoundation.Tests.EditMode.dll",
+        "passed": 16,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "assembly": "SlingFoundation.Tests.EditMode.dll",
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "assembly": "SnakeFoundation.Tests.EditMode.dll",
+        "passed": 38,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "assembly": "StoryFoundation.Tests.EditMode.dll",
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "assembly": "SurvivorFoundation.Tests.EditMode.dll",
+        "passed": 102,
+        "failed": 0,
+        "skipped": 0
+      }
+    ],
+    "build_log_sha256": "591b5516fcbbbb5c337094459dd151d079e290c443b7621bb6422a9442421b27",
+    "test_log_sha256": "ca9df1f7e9042a9f6b27b445c102fcd4d70e74bc30d5731084419ecb8365ea0f",
+    "scope": "Final-source .NET stub aggregate. No native Unity, graphics or Burst execution claim."
+  },
+  "unity_api_compile": {
+    "errors": 0,
+    "existing_serialized_field_warnings": 4,
+    "log_sha256": "4744b2ce43be0a15864e877c49e661d31f492de14eecf9fa936e9b4579697307",
+    "scope": "Installed real Unity 2022.3.62f2 APIs, compile only."
+  },
+  "managed_probe": {
+    "runtime": "Unity bundled Mono 6.13.0 explicit/98b53367 Linux x64",
+    "mathematics_dll_sha256": "dccd3f9292d7235bcf5debe11db9acac92198c96596edfcffd560eb797edb3e2",
+    "modes": [
+      "float32",
+      "-float32"
+    ],
+    "exact_pairs_and_height_comparisons_per_mode": 200000,
+    "dense_rows_per_mode": 160,
+    "result": "PASS in both modes; each reproduces and matches its own frozen production fingerprint."
+  },
+  "native_burst": "Pending exact-head Mac CI; required backend=1 and exact bit comparisons remain. Production unadopted and unchanged."
+}

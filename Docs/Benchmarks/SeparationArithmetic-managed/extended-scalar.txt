@@ -1,0 +1,4 @@
+Managed evaluation=ExtendedScalar
+dense=32; row=0; production=uint2(3189493657, 3175785598); candidate=uint2(3189493657, 3175785598)
+dense=128; row=2; production=uint2(1025170858, 3189639816); candidate=uint2(1025170858, 3189639816)
+PASS: 200000 exact pairs and all 160 dense accumulation/clamp rows; managed diagnostic only.

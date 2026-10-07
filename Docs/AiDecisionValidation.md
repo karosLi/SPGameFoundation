@@ -82,3 +82,7 @@
 Belt 树的 p50 在四个场景中慢 2.13–4.79%；RPG 中位数变化为 -1.65% 到 +3.05%，尾部结果混合。不能把单个 outlier 的变化宣传为稳定收益。RPG 包含原感知、导航、碰撞、动作、生命周期和已完成 jobs；Belt 包含原 ordered 逻辑、网格、分离、命中、掉落、同步。两者都不包含渲染、GPU 或设备发热/电量。
 
 **独立 separation 候选仍不得启用。** spread 32 / 128 的 ordered p50 为 .05644 / .19818 ms，scheduled+Complete 为 .01434 / .01322 ms，但两个 dense 用例在精确浮点比较处失败，因而没有对应 timing 报告。这个候选比较还混合了主线程与原生编译/调度因素，排除了 build/copyback/其余 Tick。后续 source `5193305` 显式请求 Strict/High 精度，保留原精确相等断言和密集场景；本地通过不能替代新的原生结果，也尚不能确定具体指令根因。只有先修复精确语义，再做完整 Tick A/B，才有采用依据。
+
+### 精确分离候选的算术定位（2026-10-07，原生复验待完成）
+
+后续 `677611a` 的 Strict/High 仍出现原两项 dense 精度失败。现已用 Unity 自带 Mono 的 float32 / extended scalar 两种求值模式逐位复现两列结果，新增 test-only 显式舍入候选、独立未改生产 reference、原生逐贡献/累加/clamp 原始位轨迹与对抗用例；200,000 pair 和 160 dense row 在两种 managed 模式均匹配。完整原始精确断言保留，生产仍不采用候选。详见[诊断、指纹、复现命令和验收边界](SeparationArithmeticParity.md)；本地通过不代替这次补丁的真实 Burst 复验。

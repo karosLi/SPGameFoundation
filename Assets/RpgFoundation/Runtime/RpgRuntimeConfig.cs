@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using SPF.L2.Progression;
+using SPF.L2.AI;
 using Unity.Collections;
 using Unity.Mathematics;
 
@@ -65,6 +66,7 @@ namespace RpgFoundation
     {
         public RpgSettings Settings;
         public NativeArray<MonsterDef> Monsters;
+        public NativeArray<DecisionNode> CombatDecisionProgram; // immutable derived configuration, not snapshot state
         public NativeArray<WeaponDef> Weapons;     // indexed by WeaponKind
         public NativeArray<SkillDef> Skills;       // indexed by skill id - 1
         public GearDef[] Gear;
@@ -96,6 +98,7 @@ namespace RpgFoundation
                 Loot = source.Loot,
                 Capacity = source.Capacity,
                 StartPotions = h.StartPotions,
+                CombatDecisionProgram = RpgDecisions.CreateProgram(),
                 HeroSkillSlots = h.SkillSlots ?? new int[0],
             };
 
@@ -218,6 +221,7 @@ namespace RpgFoundation
             if (Monsters.IsCreated) Monsters.Dispose();
             if (Weapons.IsCreated) Weapons.Dispose();
             if (Skills.IsCreated) Skills.Dispose();
+            if (CombatDecisionProgram.IsCreated) CombatDecisionProgram.Dispose();
         }
     }
 }

@@ -155,12 +155,14 @@ namespace BrawlerFoundation.Systems
                         // spatial separation below supplies crowd avoidance without all-pairs scans.
                         float2 delta = playerGround - p; f.Facing = delta.x >= 0 ? 1 : -1;
                         float reach = f.Variant == 2 ? 1.2f : .92f;
-                        if (math.abs(delta.x) > reach || math.abs(delta.y) > .38f)
+                        var decision = BwBeltDecisions.Select(belt.DecisionProgram,
+                            BwBeltDecisions.Facts(true, delta, reach, f.Cooldown), out _);
+                        if (decision == BwBeltIntent.Approach)
                         {
                             float2 target = playerGround + new float2(-f.Facing * (reach - .1f), (handles[i].Index % 3 - 1) * .18f);
                             move = math.normalizesafe(target - p) * BwRules.EnemySpeed * (.9f + f.Variant * .07f);
                         }
-                        else if (f.Cooldown <= 0)
+                        else if (decision == BwBeltIntent.Attack)
                         { BeginAttack(ref f, ref a, rig, f.Variant == 2 ? AttackKind.Kick : AttackKind.Jab); f.Cooldown = 1.15f + .17f * f.Variant; }
                     }
                     if (f.State != FighterState.Attack)

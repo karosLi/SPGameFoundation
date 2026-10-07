@@ -139,5 +139,43 @@ namespace BrawlerFoundation.Tests
             Directory.CreateDirectory(directory);
             File.WriteAllText(Path.Combine(directory, "perf-belt-" + runtime + "-" + fighters + "-" + layout + ".txt"), report);
         }
+
+        [TestCase(32, false)] [TestCase(32, true)] [TestCase(128, false)] [TestCase(128, true)]
+        [Category("Performance")]
+        public void CompleteTickFrozenLegacyVersusDecisionTreeAbba(int fighters, bool clustered)
+        {
+            var config = BwBeltConfig.Default; config.Fighters = config.TargetsPerAttack = fighters;
+            config.Waves = config.FirstWaveEnemies = 1;
+            using var tree = new BwTestWorld(start: false, belt: config);
+            using var legacy = new BwTestWorld(start: false, belt: config, legacyAi: true);
+            Populate(tree, fighters, clustered); Populate(legacy, fighters, clustered);
+            Run(tree, 0, WarmupTicks); Run(legacy, 0, WarmupTicks);
+            CollectionAssert.AreEqual(tree.Session.CaptureSnapshot(), legacy.Session.CaptureSnapshot());
+            Populate(tree, fighters, clustered); Populate(legacy, fighters, clustered);
+            byte[] initial = tree.Session.CaptureSnapshot(), expected = null;
+            var baselineMs = new double[TimedTicks * 2]; var treeMs = new double[TimedTicks * 2];
+            for (int window = 0; window < 4; window++)
+            {
+                bool useTree = window == 1 || window == 2; var world = useTree ? tree : legacy;
+                world.Session.RestoreSnapshot(initial); var times = useTree ? treeMs : baselineMs; int offset = window < 2 ? 0 : TimedTicks;
+                for (int i = 0; i < TimedTicks; i++)
+                { long start = Stopwatch.GetTimestamp(); Tick(world, i); times[offset + i] = (Stopwatch.GetTimestamp() - start) * 1000d / Stopwatch.Frequency; }
+                var snapshot = world.Session.CaptureSnapshot();
+                if (expected == null) expected = snapshot; else CollectionAssert.AreEqual(expected, snapshot, "ABBA window=" + window);
+            }
+            string Summary(double[] values)
+            { double sum = 0; foreach (double v in values) sum += v; Array.Sort(values); return string.Format(CultureInfo.InvariantCulture, "mean={0:F5} p50={1:F5} p95={2:F5} worst={3:F5} ms", sum / values.Length, values[values.Length / 2], values[(int)(values.Length * .95)], values[values.Length - 1]); }
+#if SPF_DOTNET_HARNESS
+            const string runtime = "dotnet-stubs"; string directory = Path.Combine(Path.GetTempPath(), "spf-artifacts");
+#else
+            const string runtime = "unity-native-editmode"; string directory = Path.Combine(Path.GetDirectoryName(UnityEngine.Application.dataPath) ?? ".", "Artifacts");
+#endif
+            string report = "Belt full tick ABBA | runtime=" + runtime + " | fighters=" + fighters + " | clustered=" + clustered + "\n" +
+                "A=frozen 1c9731a executor; B=bounded decision tree; warmup=90; four 120-tick windows restored to the same authored density, identical input/cadence.\n" +
+                "Legacy: " + Summary(baselineMs) + "\nTree: " + Summary(treeMs) + "\nAll complete snapshots byte-exact=PASS.\n" +
+                "Includes ordered fighter/player/weapon logic, completed grids, separation, hits, loot, feedback drain and sync. No render/device evidence. Timing report-only; a policy tree is a reuse feature, not an automatic speedup.\n";
+            TestContext.WriteLine(report); Directory.CreateDirectory(directory);
+            File.WriteAllText(Path.Combine(directory, "perf-belt-ai-abba-" + runtime + "-" + fighters + "-" + clustered + ".txt"), report);
+        }
     }
 }

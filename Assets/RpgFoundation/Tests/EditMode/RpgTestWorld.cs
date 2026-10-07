@@ -15,12 +15,18 @@ namespace RpgFoundation.Tests
         readonly GameplayModuleAsset[] m_Modules;
         readonly ModeDefinition m_Mode;
 
-        public RpgTestWorld(uint seed = 7, uint runSeed = 99, Action<RpgConfig> tweak = null, bool start = true)
+        public RpgTestWorld(uint seed = 7, uint runSeed = 99, Action<RpgConfig> tweak = null, bool start = true, bool legacyAi = false)
         {
             Config = RpgConfig.CreateDefault();
             tweak?.Invoke(Config);
             m_Mode = RpgMode.Create(Config, out m_Modules);
-            Session = SimSession.Create(m_Mode, seed);
+            if (legacyAi)
+            {
+                var modules = new IGameplayModule[m_Modules.Length];
+                for (int i = 0; i < modules.Length; i++) modules[i] = new LegacyAiModule(m_Modules[i]);
+                Session = new SimSession(modules, m_Mode.Settings, seed);
+            }
+            else Session = SimSession.Create(m_Mode, seed);
             Session.Start();
             if (start)
             {

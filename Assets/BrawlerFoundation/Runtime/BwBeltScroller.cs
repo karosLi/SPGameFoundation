@@ -3,6 +3,7 @@ using System.IO;
 using SPF.Contracts;
 using SPF.L1.Spatial;
 using SPF.L2.Combat;
+using SPF.L2.AI;
 using SPF.L2.Skills;
 using SPF.Runtime.World;
 using Unity.Collections;
@@ -83,6 +84,7 @@ namespace BrawlerFoundation
         const int Magic = 0x42454C54;
         public readonly BwBeltConfig Config;
         public readonly SpatialGrid Grid;
+        public NativeArray<DecisionNode> DecisionProgram; // derived immutable policy; excluded from snapshots
         public NativeArray<float2> SeparatedGround;
         public NativeArray<BwBeltDrop> Drops;
         public int Coins, HealsCollected, RejectedDrops, RejectedSpawns;
@@ -92,6 +94,7 @@ namespace BrawlerFoundation
         public BwBeltState(BwBeltConfig config)
         {
             config.Validate(); Config = config;
+            DecisionProgram = BwBeltDecisions.CreateProgram();
             Grid = new SpatialGrid(new int2(20, 8), 1f, config.Fighters) { Origin = new float2(-10, -4) };
             SeparatedGround = new NativeArray<float2>(config.Fighters, Allocator.Persistent);
             Drops = new NativeArray<BwBeltDrop>(config.Drops, Allocator.Persistent);
@@ -140,6 +143,6 @@ namespace BrawlerFoundation
             }
             Grid.OnReset(); SeparationCandidates = HitCandidates = LastGridDropped = 0;
         }
-        public void Dispose() { Grid.Dispose(); SeparatedGround.Dispose(); Drops.Dispose(); }
+        public void Dispose() { Grid.Dispose(); SeparatedGround.Dispose(); Drops.Dispose(); DecisionProgram.Dispose(); }
     }
 }

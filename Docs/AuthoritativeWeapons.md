@@ -23,6 +23,8 @@ Staff and bow release exactly once at their authored marker. Bow has a longer dr
 
 Profile offsets use (forward distance along aim, visual height) before actor scale. Collision uses ground-space forward distance and a separate height; belt ground depth is projected only in the adapter. Presentation uses the same offset definition. The pose hits the canonical socket at contact/release, then follows through. `View(alpha)` samples the previous/current authoritative ticks for continuous pose motion, with phase and markers derived from the same action. No rendered bone position controls damage.
 
+Each renderer resolves one monotonic interpolation fraction for the current fixed tick, shared by bodies, camera follow, weapons, projectiles, trails and cue gating. After a paused frame presents alpha1, resuming at raw alpha0.3 keeps1 until the next tick begins its new interval. Session restore/restart exposes an unsaved timeline revision; level/resource replacement also resets the view cursor. This policy never rebases the simulation clock or changes snapshot bytes.
+
 ## Bounded effects and persistence
 
 Each runtime owns32 projectile slots by default, one history slice per contact/projectile scope, and32 retained cue entries. Retained cues are oldest to newest, monotonically sequenced and independent of render frequency. They describe actual begin, release, accepted hit, cancellation and equip events. A full cosmetic ring retires its oldest event; gameplay remains unchanged. Cue backlog and diagnostic overwrite counts are intentionally unsaved. Restore never replays old effects.

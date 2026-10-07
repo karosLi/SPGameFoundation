@@ -33,6 +33,10 @@ namespace SPF.Runtime.Session
             ? SessionState.Paused : m_State;
         public FixedStepClock Clock => m_Clock;
 
+        /// <summary>Unsaved lifecycle revision for read-only presentation caches. Changes on a
+        /// successful snapshot restore or restart, including a restore to the same fixed tick.</summary>
+        public uint TimelineRevision { get; private set; }
+
         int m_RequestedTicks;
 
         /// <summary>
@@ -190,6 +194,7 @@ namespace SPF.Runtime.Session
                 World.ReadSnapshot(reader);
                 Pipeline.ReadSnapshot(reader);
                 m_Clock.Restore(tick, elapsed);
+                TimelineRevision = TimelineRevision == uint.MaxValue ? 1 : TimelineRevision + 1;
                 ResetPendingTicks();
             }
             catch
@@ -222,6 +227,7 @@ namespace SPF.Runtime.Session
             Pipeline.Reset();
             World.Reset();
             m_Clock.Reset();
+            TimelineRevision = TimelineRevision == uint.MaxValue ? 1 : TimelineRevision + 1;
             ResetPendingTicks();
             m_State = SessionState.Running;
         }

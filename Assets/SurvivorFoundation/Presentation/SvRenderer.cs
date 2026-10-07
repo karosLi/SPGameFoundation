@@ -82,6 +82,8 @@ namespace SurvivorFoundation.Presentation
         int m_LastHitTick = -1;
         uint m_EventSequence;
         SimSession m_Session;
+        MonotonicInterpolation m_Interpolation;
+        int m_InterpolationLevelVersion;
         SvArtStyle m_BoundStyle;
         NativeArray<float4> m_EnemyColors;
         NativeArray<int> m_Counts;
@@ -119,6 +121,7 @@ namespace SurvivorFoundation.Presentation
 
         void Bind(SimSession session)
         {
+            if (session != m_Session) m_Interpolation.Reset();
             Release();
             m_Session = session; m_BoundStyle = ArtStyle; m_BoundNatural = NaturalCharacters;
             var world = session.World;
@@ -182,18 +185,21 @@ namespace SurvivorFoundation.Presentation
             if (session != m_Session || ArtStyle != m_BoundStyle || NaturalCharacters != m_BoundNatural) Bind(session);
             var world = session.World;
             var game = world.Resource(SvKeys.Game);
+            bool interpolationDiscontinuity = m_InterpolationLevelVersion != world.LevelVersion;
+            m_InterpolationLevelVersion = world.LevelVersion;
             if(NaturalCharacters&&world.HasResource(SvWeapons.PoseKey))
             {
                 var poseClock=world.Resource(SvWeapons.PoseKey);
-                if(!ReferenceEquals(m_PoseClock,poseClock)||m_PoseRevision!=poseClock.Revision)m_Characters?.Clear();
+                if(!ReferenceEquals(m_PoseClock,poseClock)||m_PoseRevision!=poseClock.Revision){m_Characters?.Clear();interpolationDiscontinuity=true;}
                 m_PoseClock=poseClock;m_PoseRevision=poseClock.Revision;
             }
             if(NaturalCharacters&&world.HasResource(SvWeapons.Key))
             {
                 var equipped=world.Resource(SvWeapons.Key);
-                if(!ReferenceEquals(m_WeaponRuntime,equipped)||m_WeaponRevision!=equipped.Revision)m_Characters?.Clear();
+                if(!ReferenceEquals(m_WeaponRuntime,equipped)||m_WeaponRevision!=equipped.Revision){m_Characters?.Clear();interpolationDiscontinuity=true;}
             }
-            float alpha = session.State == SessionState.Running && game.Flow == SvFlow.Playing ? session.InterpolationAlpha : 1f;
+            float requestedAlpha = session.State == SessionState.Running && game.Flow == SvFlow.Playing ? session.InterpolationAlpha : 1f;
+            float alpha = m_Interpolation.Resolve(session.Clock.NextTickIndex, session.TimelineRevision, requestedAlpha, interpolationDiscontinuity);
             float dt = Time.deltaTime;
             float time = Time.time;
             float2 hero = math.lerp(game.HeroPrev, game.Hero, alpha);
@@ -373,7 +379,12 @@ namespace SurvivorFoundation.Presentation
             var session = Host != null ? Host.Session : null;
             if (session == null) return;
             var game = session.World.Resource(SvKeys.Game);
-            float2 hero = math.lerp(game.HeroPrev, game.Hero, session.InterpolationAlpha);
+            if(session!=m_Session)m_Interpolation.Reset();
+            bool discontinuity=m_InterpolationLevelVersion!=session.World.LevelVersion;
+            m_InterpolationLevelVersion=session.World.LevelVersion;
+            float requested=session.State==SessionState.Running&&game.Flow==SvFlow.Playing?session.InterpolationAlpha:1f;
+            float alpha=m_Interpolation.Resolve(session.Clock.NextTickIndex,session.TimelineRevision,requested,discontinuity);
+            float2 hero = math.lerp(game.HeroPrev, game.Hero, alpha);
             var s = session.World.Resource(SvKeys.Config).Settings;
             camera.Target = s.Variant == SvVariant.GuardBeacon ? math.lerp(hero, s.BeaconPosition, 0.2f) : hero;
         }

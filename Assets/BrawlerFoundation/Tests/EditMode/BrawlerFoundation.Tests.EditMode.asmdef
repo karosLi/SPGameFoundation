@@ -8,6 +8,7 @@
         "SPF.Testing",
         "SPF.L1Simulation",
         "SPF.L2Gameplay",
+        "SPF.Presentation",
         "SPF.Runtime.Core",
         "SPF.Runtime",
         "Unity.Collections",

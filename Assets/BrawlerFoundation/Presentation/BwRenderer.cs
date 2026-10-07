@@ -53,6 +53,8 @@ namespace BrawlerFoundation.Presentation
         SpriteBatch m_Arena, m_Fighters, m_Effects, m_NaturalShadows;
         SpriteEffects m_Fx;
         SimSession m_Session;
+        MonotonicInterpolation m_Interpolation;
+        int m_InterpolationLevelVersion;
         NativeArray<Animator2D> m_Animators;
         NativeArray<float2> m_Roots;
         NativeArray<float> m_Facing, m_Flash, m_Depth;
@@ -88,6 +90,7 @@ namespace BrawlerFoundation.Presentation
 
         void Bind(SimSession session)
         {
+            if (session != m_Session) m_Interpolation.Reset();
             Release();
             m_Session = session; m_BoundNatural = NaturalCharacters;
             var rig = session.World.Resource(BwKeys.Rig);
@@ -136,19 +139,22 @@ namespace BrawlerFoundation.Presentation
             if (session != m_Session || m_BoundNatural != NaturalCharacters) Bind(session);
             var world = session.World;
             var game = world.Resource(BwKeys.Game);
+            bool interpolationDiscontinuity = m_InterpolationLevelVersion != world.LevelVersion;
+            m_InterpolationLevelVersion = world.LevelVersion;
             if(NaturalCharacters&&world.HasResource(BwWeapons.PoseKey))
             {
                 var poseClock=world.Resource(BwWeapons.PoseKey);
-                if(!ReferenceEquals(m_PoseClock,poseClock)||m_PoseRevision!=poseClock.Revision)m_Characters?.Clear();
+                if(!ReferenceEquals(m_PoseClock,poseClock)||m_PoseRevision!=poseClock.Revision){m_Characters?.Clear();interpolationDiscontinuity=true;}
                 m_PoseClock=poseClock;m_PoseRevision=poseClock.Revision;
             }
             if(NaturalCharacters&&world.HasResource(BwWeapons.Key))
             {
                 var equipped=world.Resource(BwWeapons.Key);
-                if(!ReferenceEquals(m_WeaponRuntime,equipped)||m_WeaponRevision!=equipped.Revision)m_Characters?.Clear();
+                if(!ReferenceEquals(m_WeaponRuntime,equipped)||m_WeaponRevision!=equipped.Revision){m_Characters?.Clear();interpolationDiscontinuity=true;}
             }
             var rig = world.Resource(BwKeys.Rig);
-            float alpha = session.State == SessionState.Running && (game.Flow == BwFlow.Fighting || game.Flow == BwFlow.WaveClear) ? session.InterpolationAlpha : 1f;
+            float requestedAlpha = session.State == SessionState.Running && (game.Flow == BwFlow.Fighting || game.Flow == BwFlow.WaveClear) ? session.InterpolationAlpha : 1f;
+            float alpha = m_Interpolation.Resolve(session.Clock.NextTickIndex, session.TimelineRevision, requestedAlpha, interpolationDiscontinuity);
             float tickDt = 1f / 60f;
             var bounds = new Bounds(Vector3.zero, new Vector3(1e5f, 1e5f, 100f));
             if (Camera != null && Camera.UpdateTarget == null) Camera.UpdateTarget = Frame;

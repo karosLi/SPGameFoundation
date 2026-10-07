@@ -3,6 +3,7 @@ using NUnit.Framework;
 using SPF.Contracts;
 using SPF.L2.Weapons;
 using SPF.Testing;
+using SPF.Presentation;
 using Unity.Collections;
 using Unity.Mathematics;
 
@@ -49,6 +50,38 @@ namespace BrawlerFoundation.Tests
             var target=a.World.Table(BwKeys.Fighter).Handles[1];using(var order=new NativeArray<uint>(new uint[]{2,1},Allocator.Temp))a.World.SortRows(BwKeys.Fighter,order);
             var saved=a.Session.CaptureSnapshot();using var b=Create(0,start:false);b.Session.RestoreSnapshot(saved);a.Step(25);b.Step(25);CollectionAssert.AreEqual(a.Session.CaptureSnapshot(),b.Session.CaptureSnapshot());
             Assert.IsTrue(a.World.Registry.TryResolve(target,out _,out int row));Assert.AreEqual(9982,a.Info(row).Hp);
+        }
+        [Test]
+        public void SameTickPauseResumeCannotRewindBodyWeaponOrReleasedArrow()
+        {
+            using var t=Create(new float2(8,0));Equip(t,WeaponProfiles.Bow);var weapon=W(t);
+            t.Press(0);t.Step(weapon.Current.ReleaseTick-1);
+            var fighter=t.Info(0);fighter.VelocityX=2;t.World.Column(BwKeys.Info).Set(0,fighter);t.Step();
+            Assert.AreEqual(weapon.Current.ReleaseTick,weapon.Equipment.Timeline.Tick);Assert.AreEqual(1,weapon.Releases);
+            t.Session.Update((float)t.Session.Clock.StepSeconds*.3f);t.Session.Sync();
+            uint tick=t.Session.Clock.NextTickIndex;Assert.AreEqual(.3f,t.Session.InterpolationAlpha,.00001f);
+            var cursor=new MonotonicInterpolation();
+            float playing=cursor.Resolve(tick,t.Session.TimelineRevision,t.Session.InterpolationAlpha);
+            Assert.IsFalse(weapon.ProjectileVisible(0,playing));Assert.Less(weapon.View(playing).Phase,weapon.View(playing).ReleasePhase);
+            var previous=t.World.Column(BwKeys.Prev)[0];var current=t.World.Column(BwKeys.Position)[0];Assert.Greater(math.distance(previous,current),.02f);
+            var saved=t.Session.CaptureSnapshot();t.Session.Pause();
+            float paused=cursor.Resolve(tick,t.Session.TimelineRevision,1);var pausedView=weapon.View(paused);
+            var pausedRoot=math.lerp(previous,current,paused);var pausedArrow=math.lerp(weapon.Projectiles[0].Previous,weapon.Projectiles[0].Position,paused);
+            Assert.IsTrue(weapon.ProjectileVisible(0,paused));Assert.GreaterOrEqual(pausedView.Phase,pausedView.ReleasePhase);
+            t.Session.Resume();Assert.AreEqual(tick,t.Session.Clock.NextTickIndex);Assert.AreEqual(.3f,t.Session.InterpolationAlpha,.00001f);
+            Assert.IsFalse(weapon.ProjectileVisible(0,t.Session.InterpolationAlpha),"the former raw-alpha resume policy reproduces the disappearing arrow");
+            float resumed=cursor.Resolve(tick,t.Session.TimelineRevision,t.Session.InterpolationAlpha);
+            Assert.AreEqual(1,resumed);Assert.AreEqual(pausedRoot,math.lerp(previous,current,resumed));Assert.IsTrue(weapon.ProjectileVisible(0,resumed));
+            Assert.AreEqual(pausedView.Phase,weapon.View(resumed).Phase);CollectionAssert.AreEqual(saved,t.Session.CaptureSnapshot(),"view resolution and pause/resume do not write simulation bytes");
+            t.Session.Update((float)(t.Session.Clock.StepSeconds*.700001));t.Session.Sync();
+            Assert.AreEqual(tick+1,t.Session.Clock.NextTickIndex);
+            float next=cursor.Resolve(t.Session.Clock.NextTickIndex,t.Session.TimelineRevision,t.Session.InterpolationAlpha);Assert.Less(next,.00001f);
+            Assert.Less(math.distance(pausedRoot,math.lerp(t.World.Column(BwKeys.Prev)[0],t.World.Column(BwKeys.Position)[0],next)),.00001f);
+            Assert.Less(math.distance(pausedArrow,math.lerp(weapon.Projectiles[0].Previous,weapon.Projectiles[0].Position,next)),.00001f);Assert.IsTrue(weapon.ProjectileVisible(0,next));
+            Assert.AreEqual(pausedView.Phase,weapon.View(next).Phase,.00001f);
+            saved=t.Session.CaptureSnapshot();uint revision=t.Session.TimelineRevision;cursor.Resolve(t.Session.Clock.NextTickIndex,revision,.8f);
+            t.Session.RestoreSnapshot(saved);Assert.AreNotEqual(revision,t.Session.TimelineRevision);
+            Assert.AreEqual(0,cursor.Resolve(t.Session.Clock.NextTickIndex,t.Session.TimelineRevision,t.Session.InterpolationAlpha));CollectionAssert.AreEqual(saved,t.Session.CaptureSnapshot());
         }
         [Test]
         public void ProjectileUsesSimultaneousMovingTargetSweepAndMeasuredBroadphasePadding()

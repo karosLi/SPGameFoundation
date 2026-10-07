@@ -1,0 +1,303 @@
+name: Latios S1a isolated Editor control
+
+# Deliberate release only: ordinary stage pushes never run this lab.
+# The exact-branch root-suite exclusion is justified by the fail-closed source check below.
+on:
+  push:
+    branches: [dot/latios-lab-validate]
+    paths: [Latios2022Lab/ci-request.json]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+
+concurrency:
+  group: latios-s1a-control
+  cancel-in-progress: false
+
+jobs:
+  release-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify exact P0 evidence and lab-only source
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          UNITY_SELF_HOSTED: ${{ vars.UNITY_SELF_HOSTED }}
+        run: |
+          test "$UNITY_SELF_HOSTED" = true || { echo "Approved native runner is disabled; lab remains NOT_RUN"; exit 1; }
+          python3 Tools/ci/latios_lab_ci.py validate
+      - name: Run static launcher tests without Unity
+        run: |
+          python3 -m unittest discover -s Tools/ci -p test_latios_lab_ci.py -v
+          python3 -m unittest discover -s Latios2022Lab/Tools -p 'test_*.py' -v
+
+  editor-control:
+    needs: release-gate
+    runs-on: [self-hosted, unity]
+    timeout-minutes: 180
+    env:
+      LAB_SOURCE: latios-s1a-source-${{ github.run_id }}-${{ github.run_attempt }}
+      LAB_WORKSPACE: ${{ runner.temp }}/latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}
+      LAB_EVIDENCE: ${{ runner.temp }}/latios-s1a-evidence-${{ github.run_id }}-${{ github.run_attempt }}
+      UNITY_EDITOR_PATH: ${{ vars.UNITY_EDITOR_PATH }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: ${{ env.LAB_SOURCE }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Run isolated import and strict Burst on/off Editor gates
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd "$LAB_SOURCE"
+          args=()
+          if [ -n "$UNITY_EDITOR_PATH" ]; then args+=(--editor "$UNITY_EDITOR_PATH"); fi
+          python3 Tools/ci/latios_lab_ci.py execute --workspace "$LAB_WORKSPACE" "${args[@]}"
+      - name: Package original evidence and labelled early review
+        if: always()
+        shell: bash
+        run: |
+          cd "$LAB_SOURCE"
+          python3 Tools/ci/latios_lab_ci.py package --workspace "$LAB_WORKSPACE" --output "$LAB_EVIDENCE"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-early-review
+          path: ${{ env.LAB_EVIDENCE }}/early/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part00
+          path: ${{ env.LAB_EVIDENCE }}/parts/part00/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part01
+          path: ${{ env.LAB_EVIDENCE }}/parts/part01/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part02
+          path: ${{ env.LAB_EVIDENCE }}/parts/part02/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part03
+          path: ${{ env.LAB_EVIDENCE }}/parts/part03/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part04
+          path: ${{ env.LAB_EVIDENCE }}/parts/part04/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part05
+          path: ${{ env.LAB_EVIDENCE }}/parts/part05/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part06
+          path: ${{ env.LAB_EVIDENCE }}/parts/part06/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part07
+          path: ${{ env.LAB_EVIDENCE }}/parts/part07/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part08
+          path: ${{ env.LAB_EVIDENCE }}/parts/part08/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part09
+          path: ${{ env.LAB_EVIDENCE }}/parts/part09/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part10
+          path: ${{ env.LAB_EVIDENCE }}/parts/part10/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part11
+          path: ${{ env.LAB_EVIDENCE }}/parts/part11/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part12
+          path: ${{ env.LAB_EVIDENCE }}/parts/part12/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part13
+          path: ${{ env.LAB_EVIDENCE }}/parts/part13/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part14
+          path: ${{ env.LAB_EVIDENCE }}/parts/part14/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part15
+          path: ${{ env.LAB_EVIDENCE }}/parts/part15/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part16
+          path: ${{ env.LAB_EVIDENCE }}/parts/part16/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part17
+          path: ${{ env.LAB_EVIDENCE }}/parts/part17/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part18
+          path: ${{ env.LAB_EVIDENCE }}/parts/part18/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part19
+          path: ${{ env.LAB_EVIDENCE }}/parts/part19/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part20
+          path: ${{ env.LAB_EVIDENCE }}/parts/part20/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part21
+          path: ${{ env.LAB_EVIDENCE }}/parts/part21/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part22
+          path: ${{ env.LAB_EVIDENCE }}/parts/part22/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part23
+          path: ${{ env.LAB_EVIDENCE }}/parts/part23/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part24
+          path: ${{ env.LAB_EVIDENCE }}/parts/part24/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part25
+          path: ${{ env.LAB_EVIDENCE }}/parts/part25/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part26
+          path: ${{ env.LAB_EVIDENCE }}/parts/part26/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part27
+          path: ${{ env.LAB_EVIDENCE }}/parts/part27/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part28
+          path: ${{ env.LAB_EVIDENCE }}/parts/part28/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part29
+          path: ${{ env.LAB_EVIDENCE }}/parts/part29/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part30
+          path: ${{ env.LAB_EVIDENCE }}/parts/part30/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-s1a-part31
+          path: ${{ env.LAB_EVIDENCE }}/parts/part31/
+          compression-level: 0
+          if-no-files-found: ignore

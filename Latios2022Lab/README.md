@@ -20,7 +20,7 @@ python3 Latios2022Lab/Tools/lab.py preflight
 python3 -m unittest discover -s Latios2022Lab/Tools -p 'test_*.py' -v
 ```
 
-Neither command imports packages or starts Unity. No CI workflow is added. The existing root `Assets`, `Packages`, `ProjectSettings`, `Library` and test launcher are not used by this lab.
+Neither command imports packages or starts Unity. The [deliberate CI launcher](../Docs/Latios2022LabCI.md) requires a separately reviewed release request on its exact lab-only branch; ordinary stage pushes do not run the lab. The existing root `Assets`, `Packages`, `ProjectSettings`, `Library` and test launcher are not used by this lab.
 
 `Packages/packages-lock.json` is deliberately absent until Unity creates it. Never copy a sample lock, manufacture one from this README, or report manifest pins as resolved versions. The real lock must subsequently be reviewed and committed separately with exact environment evidence.
 

@@ -6,6 +6,7 @@ name: Unity tests (self-hosted runner)
 # → Actions → Variables). Optional variable UNITY_EDITOR_PATH if Unity is not in the default Hub location.
 on:
   push:
+    branches-ignore: [dot/latios-lab-validate]
   pull_request:
   workflow_dispatch:
     inputs:

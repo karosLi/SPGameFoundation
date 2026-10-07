@@ -118,6 +118,8 @@ namespace SurvivorFoundation.Tests.PlayMode
                     SvSpawner.SpawnEnemy(world,runtime,1,new float2(3.5f,4));SvSpawner.SpawnEnemy(world,runtime,2,new float2(-3.5f,3.5f));SvSpawner.SpawnEnemy(world,runtime,3,new float2(0,-4));
                     Assert.AreEqual(3,world.Table(SvKeys.Enemy).Count);
                     for(int row=0;row<3;row++)Assert.AreEqual(row+1,world.Column(SvKeys.Info)[row].Kind,"enemy content IDs are one-based");
+                    Assert.Less(world.Column(SvKeys.Info)[0].Radius,.65f,"first captured enemy uses the agile profile");
+                    Assert.GreaterOrEqual(world.Column(SvKeys.Info)[2].Radius,.65f,"third captured enemy uses the heavy profile");
                     Canvas.ForceUpdateCanvases();yield return null;yield return null;
                     using(var frames=new BufferedFrameCapture(capture.Target,160))
                     {

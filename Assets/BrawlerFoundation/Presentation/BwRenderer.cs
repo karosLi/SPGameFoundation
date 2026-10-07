@@ -35,6 +35,9 @@ namespace BrawlerFoundation.Presentation
         long m_WeaponTick=-1;
         uint m_WeaponRevision;
         WeaponRuntime m_WeaponRuntime;
+        float2[] m_WeaponTrailPoints;
+        long[] m_WeaponTrailBirths;
+        bool[] m_WeaponTrailValid;
         public WeaponParticlePresenter WeaponParticles => m_WeaponParticles;
         bool m_BoundNatural;
         public FollowCamera2D Camera;
@@ -87,6 +90,7 @@ namespace BrawlerFoundation.Presentation
             m_Art = BwArt.Build(rig, NaturalCharacters);
             if (NaturalCharacters) m_Characters = new GameplayCharacterPresenter(m_Assets.Tier, math.clamp(session.World.Table(BwKeys.Fighter).Capacity, 1, 128), includeWeapons: session.World.HasResource(BwWeapons.Key));
             if(NaturalCharacters&&session.World.HasResource(BwWeapons.Key))m_WeaponParticles=new WeaponParticlePresenter(m_Assets.Tier, lowQuality: m_Assets.Tier!=RenderTier.GpuDriven);
+            if(m_WeaponParticles!=null){int capacity=session.World.Resource(BwWeapons.Key).Projectiles.Length;m_WeaponTrailPoints=new float2[capacity];m_WeaponTrailBirths=new long[capacity];m_WeaponTrailValid=new bool[capacity];}
             var atlas = m_Art.Sheet.Texture;
             m_Arena = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Opaque, 1024, queueOffset: -10);
             m_Fighters = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Opaque, MaxFighters * (m_Art.Parts.Length + 4));
@@ -198,8 +202,7 @@ namespace BrawlerFoundation.Presentation
         void UpdateWeaponParticles(SPF.Runtime.World.SimWorld world,BwGameState game,float alpha)
         {
             var weapons=world.Resource(BwWeapons.Key);
-            if(!ReferenceEquals(m_WeaponRuntime,weapons)||m_WeaponRevision!=weapons.Revision||weapons.Tick<m_WeaponTick||game.Flow==BwFlow.Menu)m_WeaponParticles.Clear();
-            bool advancing=weapons.Tick!=m_WeaponTick;
+            if(!ReferenceEquals(m_WeaponRuntime,weapons)||m_WeaponRevision!=weapons.Revision||weapons.Tick<m_WeaponTick||game.Flow==BwFlow.Menu){m_WeaponParticles.Clear();System.Array.Clear(m_WeaponTrailValid,0,m_WeaponTrailValid.Length);}
             m_WeaponParticles.BeginFrame(m_Session.State==SessionState.Running&&game.Flow==BwFlow.Fighting?Time.deltaTime:0,Camera!=null?Camera.ViewRect:new float4(-12,-5,12,8));
             var view=weapons.View(alpha);view.AimDirection=new float2(view.AimDirection.x,view.AimDirection.y*BwBeltRules.DepthProjection);
             if(m_Characters.TryReadWeapon(weapons.Owner,out var socket))m_WeaponParticles.UpdateEmitter(weapons.Owner,view,socket.Tip,socket.Muzzle,socket.Direction,FxDepth,true);
@@ -210,10 +213,12 @@ namespace BrawlerFoundation.Presentation
                 cue.Position=BwBeltRules.Project(cue.Position,cue.Height);cue.Height=0;cue.Direction=new float2(cue.Direction.x,cue.Direction.y*BwBeltRules.DepthProjection);
                 m_WeaponParticles.SubmitCue(cue,FxDepth,true);
             }
-            if(advancing)for(int i=0;i<weapons.Projectiles.Length;i++)
+            for(int i=0;i<weapons.Projectiles.Length;i++)
             {
-                var shot=weapons.Projectiles[i];if(!weapons.ProjectileVisible(i,alpha)||weapons.Profile(shot.ContentId).Family!=WeaponActionFamily.Draw)continue;
-                m_WeaponParticles.ProjectileTrail(BwBeltRules.Project(shot.Previous,shot.Height),BwBeltRules.Project(shot.Position,shot.Height),FxDepth,shot.Pulse^(uint)i,true);
+                var shot=weapons.Projectiles[i];if(!weapons.ProjectileVisible(i,alpha)||weapons.Profile(shot.ContentId).Family!=WeaponActionFamily.Draw){m_WeaponTrailValid[i]=false;continue;}
+                float2 point=BwBeltRules.Project(math.lerp(shot.Previous,shot.Position,alpha),shot.Height);
+                if(m_WeaponTrailValid[i]&&m_WeaponTrailBirths[i]==shot.SpawnTick)m_WeaponParticles.ProjectileTrail(m_WeaponTrailPoints[i],point,FxDepth,shot.Pulse^(uint)i,true);
+                m_WeaponTrailPoints[i]=point;m_WeaponTrailBirths[i]=shot.SpawnTick;m_WeaponTrailValid[i]=true;
             }
             m_WeaponTick=weapons.Tick;m_WeaponRevision=weapons.Revision;m_WeaponRuntime=weapons;
         }

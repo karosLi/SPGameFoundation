@@ -51,6 +51,12 @@ namespace BrawlerFoundation.Tests
             Assert.IsTrue(a.World.Registry.TryResolve(target,out _,out int row));Assert.AreEqual(9982,a.Info(row).Hp);
         }
         [Test]
+        public void VerticalWeaponContactKeepsTargetFacingInTheAuthoredTwoDirections()
+        {
+            using var t=Create(new float2(0,1.2f));t.Game.Input=new InputFrame{Pressed=1,Aim=new float2(0,1)};t.Step();t.Game.Input=default;t.Step(W(t).Current.Active.From);
+            Assert.AreEqual(1,W(t).AcceptedHits);Assert.AreEqual(1,math.abs(t.Info(1).Facing));
+        }
+        [Test]
         public void TwelveSwitchPressesCycleAllProfilesAndCancelUnreleasedBowDraws()
         {
             using var t=Create(new float2(8,0));

@@ -46,6 +46,7 @@ namespace SurvivorFoundation.Tests.PlayMode
                 {
                     capture.Dispose();capture=new CanvasCapture(game.gameObject,game.CameraRig.Camera,360,640);game.Hud.MobileHud.SetPreviewViewport(360,640,new Rect(0,0,360,640));world.ClearLevel();game.State.Flow=SvFlow.Playing;game.State.Hero=game.State.HeroPrev=0;weapons.RequestEquip(WeaponProfiles.Staff);
                     for(int i=0;i<weapons.Profile(WeaponProfiles.Staff).EquipTicks;i++)game.Session.Step();for(int i=0;i<24;i++){float a=i*2.399963f;SvSpawner.SpawnEnemy(world,runtime,1,new float2(math.cos(a),math.sin(a))*(4+i*.08f));}
+                    Canvas.ForceUpdateCanvases();yield return null;yield return null;
                     using(var frames=new BufferedFrameCapture(capture.Target,90))
                     {
                         game.Session.ManualClock=false;double next=Time.realtimeSinceStartupAsDouble;

@@ -24,6 +24,7 @@ namespace SPF.L2.Weapons
         public bool Active;
         public int ContentId, RemainingTicks;
         public uint Pulse;
+        public long SpawnTick;
         public float2 Position, Previous, Direction;
         public float Height, Scale, Damage;
     }
@@ -132,7 +133,7 @@ namespace SPF.L2.Weapons
                 var shot=Projectiles[i];if(!shot.Active)continue;
                 // The release tick starts at the canonical muzzle. Travel begins next tick, matching
                 // previous/current pose interpolation without drawing held and flying arrows together.
-                if(shot.RemainingTicks==Profile(shot.ContentId).ProjectileLifeTicks){shot.RemainingTicks--;Projectiles[i]=shot;continue;}
+                if(shot.SpawnTick==Tick)continue;
                 shot.Previous=shot.Position;shot.Position+=shot.Direction*(Profile(shot.ContentId).ProjectileSpeed/TickRate);shot.RemainingTicks--;
                 Projectiles[i]=shot;
             }
@@ -151,7 +152,7 @@ namespace SPF.L2.Weapons
         {
             for(int i=0;i<Projectiles.Length;i++)if(!Projectiles[i].Active)
             {
-                Projectiles[i]=new WeaponProjectile{Active=true,ContentId=p.ContentId,RemainingTicks=p.ProjectileLifeTicks,Pulse=Equipment.Timeline.PulseId,Position=point,Previous=point,Direction=Equipment.Aim,Height=height,Scale=scale,Damage=p.Damage};
+                Projectiles[i]=new WeaponProjectile{Active=true,ContentId=p.ContentId,RemainingTicks=p.ProjectileLifeTicks,Pulse=Equipment.Timeline.PulseId,SpawnTick=Tick,Position=point,Previous=point,Direction=Equipment.Aim,Height=height,Scale=scale,Damage=p.Damage};
                 var s=Scopes[i+1];HitHistory.Begin(History,(i+1)*HistoryPerAttack,HistoryPerAttack,ref s,Owner,Equipment.Timeline.PulseId);Scopes[i+1]=s;return;
             }
             if(RejectedProjectiles<int.MaxValue)RejectedProjectiles++;
@@ -193,14 +194,14 @@ namespace SPF.L2.Weapons
         }
         public void WriteSnapshot(BinaryWriter w)
         {
-            w.Write(Magic);w.Write(1);w.Write(m_Fingerprint);w.Write(TickRate);w.Write(Projectiles.Length);w.Write(HistoryPerAttack);w.Write(Cues.Length);
+            w.Write(Magic);w.Write(2);w.Write(m_Fingerprint);w.Write(TickRate);w.Write(Projectiles.Length);w.Write(HistoryPerAttack);w.Write(Cues.Length);
             var saved=Equipment;saved.Cues=WeaponCueKind.None;NativeIO.WriteValue(w,saved);NativeIO.Write(w,Owner);w.Write(Tick);w.Write(RejectedProjectiles);w.Write(RejectedHits);w.Write(Releases);w.Write(AcceptedHits);
             NativeIO.Write(w,Projectiles);NativeIO.Write(w,History);NativeIO.Write(w,Scopes);
         }
         public void ReadSnapshot(BinaryReader r)
         {
             Revision=Revision==uint.MaxValue?1:Revision+1;
-            if(r.ReadInt32()!=Magic||r.ReadInt32()!=1||r.ReadUInt32()!=m_Fingerprint||r.ReadInt32()!=TickRate||r.ReadInt32()!=Projectiles.Length||r.ReadInt32()!=HistoryPerAttack||r.ReadInt32()!=Cues.Length)throw new InvalidDataException("Weapon content or capacity differs from snapshot.");
+            if(r.ReadInt32()!=Magic||r.ReadInt32()!=2||r.ReadUInt32()!=m_Fingerprint||r.ReadInt32()!=TickRate||r.ReadInt32()!=Projectiles.Length||r.ReadInt32()!=HistoryPerAttack||r.ReadInt32()!=Cues.Length)throw new InvalidDataException("Weapon content or capacity differs from snapshot.");
             Equipment=NativeIO.ReadValue<WeaponEquipment>(r);Owner=NativeIO.ReadHandle(r);Tick=r.ReadInt64();RejectedProjectiles=r.ReadInt32();RejectedHits=r.ReadInt32();RejectedCues=0;Releases=r.ReadInt32();AcceptedHits=r.ReadInt32();
             NativeIO.ReadAll(r,Projectiles);NativeIO.ReadAll(r,History);NativeIO.ReadAll(r,Scopes);CueCount=0;Equipment.Cues=WeaponCueKind.None;
             if(!HasProfile(Equipment.EquippedId)||(Equipment.PendingId!=0&&!HasProfile(Equipment.PendingId))||Equipment.EquipRemaining<0||(Equipment.EquipRemaining>0&&(Equipment.PendingId==0||Equipment.EquipRemaining>Profile(Equipment.PendingId).EquipTicks))||Tick<0||RejectedProjectiles<0||RejectedHits<0||RejectedCues<0||Releases<0||AcceptedHits<0||!math.all(math.isfinite(Equipment.Aim))||math.lengthsq(Equipment.Aim)<.9f||math.lengthsq(Equipment.Aim)>1.1f||Equipment.Timeline.Tick<0||Equipment.Timeline.PreviousTick< -1||Equipment.Timeline.PreviousTick>Equipment.Timeline.Tick||(Equipment.Timeline.Running&&(Equipment.Timeline.PulseId==0||Equipment.Timeline.Tick>=Current.DurationTicks)))throw new InvalidDataException("Invalid weapon equipment state.");
@@ -211,7 +212,7 @@ namespace SPF.L2.Weapons
                 var s=Scopes[i];if(!HitHistory.IsValid(History,i*HistoryPerAttack,HistoryPerAttack,s)||(s.Pulse==0&&(s.Count!=0||!s.Owner.IsNull))||(s.Pulse!=0&&s.Owner!=Owner))throw new InvalidDataException("Invalid weapon hit scope.");
                 for(int j=0;j<s.Count;j++){var h=History[i*HistoryPerAttack+j];if(h.Index<0||h.Generation<=0)throw new InvalidDataException("Invalid weapon target.");for(int k=0;k<j;k++)if(History[i*HistoryPerAttack+k]==h)throw new InvalidDataException("Duplicate weapon target.");}
                 if(i==0){if(s.Pulse!=(Equipment.Timeline.Running?Equipment.Timeline.PulseId:0))throw new InvalidDataException("Weapon timeline and contact history differ.");continue;}var p=Projectiles[i-1];
-                if(!p.Active&&s.Pulse!=0)throw new InvalidDataException("Inactive projectile retains hit history.");if(p.Active&&(!HasProfile(p.ContentId)||!Profile(p.ContentId).Ranged||p.RemainingTicks<0||p.RemainingTicks>Profile(p.ContentId).ProjectileLifeTicks||p.Pulse==0||s.Pulse!=p.Pulse||!math.all(math.isfinite(p.Position))||!math.all(math.isfinite(p.Previous))||!math.all(math.isfinite(p.Direction))||math.lengthsq(p.Direction)<.999f||math.lengthsq(p.Direction)>1.001f||!math.isfinite(p.Scale)||p.Scale<=0||p.Scale>4||!math.isfinite(p.Height)||p.Height<0||!math.isfinite(p.Damage)||p.Damage<0))throw new InvalidDataException("Invalid weapon projectile.");
+                if(!p.Active&&s.Pulse!=0)throw new InvalidDataException("Inactive projectile retains hit history.");if(p.Active&&(!HasProfile(p.ContentId)||!Profile(p.ContentId).Ranged||p.SpawnTick<1||p.SpawnTick>Tick||p.RemainingTicks<0||p.RemainingTicks>Profile(p.ContentId).ProjectileLifeTicks||p.Pulse==0||s.Pulse!=p.Pulse||!math.all(math.isfinite(p.Position))||!math.all(math.isfinite(p.Previous))||!math.all(math.isfinite(p.Direction))||math.lengthsq(p.Direction)<.999f||math.lengthsq(p.Direction)>1.001f||!math.isfinite(p.Scale)||p.Scale<=0||p.Scale>4||!math.isfinite(p.Height)||p.Height<0||!math.isfinite(p.Damage)||p.Damage<0))throw new InvalidDataException("Invalid weapon projectile.");
             }
         }
         public void Dispose(){Projectiles.Dispose();History.Dispose();Scopes.Dispose();Cues.Dispose();}

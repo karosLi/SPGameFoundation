@@ -53,6 +53,7 @@ namespace BrawlerFoundation.Tests.PlayMode
                     capture.Dispose();capture=new CanvasCapture(game.gameObject,game.CameraRig.Camera,640,360);game.MobileHud.SetPreviewViewport(640,360,new Rect(0,0,640,360));
                     world.ClearLevel();game.State.Flow=BwFlow.Fighting;BwSpawner.Spawn(world,0,new float2(-2,0),1,0);BwSpawner.Spawn(world,1,new float2(4,0),-1,1);var target=world.Column(BwKeys.Info)[1];target.Hp=target.MaxHp=10000;world.Column(BwKeys.Info).Set(1,target);
                     weapons.RequestEquip(WeaponProfiles.Bow);for(int i=0;i<weapons.Profile(WeaponProfiles.Bow).EquipTicks;i++)game.Session.Step();
+                    Canvas.ForceUpdateCanvases();yield return null;yield return null;
                     using(var frames=new BufferedFrameCapture(capture.Target,90))
                     {
                         game.Session.ManualClock=false;double next=Time.realtimeSinceStartupAsDouble;

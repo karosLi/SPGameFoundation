@@ -88,7 +88,7 @@ namespace BrawlerFoundation.Systems
             {
                 var f=Info[row];var m=Motion[row];var anim=World.Column(BwKeys.Anim);var a=anim[row];var game=World.Resource(BwKeys.Game);var belt=World.Resource(BwBeltKeys.State);var rig=World.Resource(BwKeys.Rig);
                 if(!Weapons.RecordHit(Scope,Handles[row],contact,Height))return;
-                f.Hp=math.max(0,f.Hp-Profile.Damage);f.Flash=1;f.VelocityX=Direction.x*Profile.Knockback;f.StateTime=0;f.Attack=AttackKind.None;f.Facing=-math.sign(Direction.x);m.BufferedAttack.Clear();m.ComboGraceTicks=0;
+                f.Hp=math.max(0,f.Hp-Profile.Damage);f.Flash=1;f.VelocityX=Direction.x*Profile.Knockback;f.StateTime=0;f.Attack=AttackKind.None;if(math.abs(Direction.x)>.0001f)f.Facing=Direction.x<0?1:-1;m.BufferedAttack.Clear();m.ComboGraceTicks=0;
                 if(f.Hp<=0){f.State=FighterState.KO;a.Play(rig.KO,.05f,restart:true);game.Kos++;game.Score+=100;belt.TryDrop(Ground[row],BwBeltDropKind.Coin,10);if((game.Kos&1)==0)belt.TryDrop(Ground[row],BwBeltDropKind.Heal,18);}
                 else{f.State=FighterState.Hit;a.Play(rig.Hit,.04f,restart:true);}
                 game.Score+=(int)Profile.Damage;game.Version++;Info[row]=f;Motion[row]=m;anim[row]=a;

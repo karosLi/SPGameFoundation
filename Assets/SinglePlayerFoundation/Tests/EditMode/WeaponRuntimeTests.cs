@@ -69,6 +69,15 @@ namespace SPF.Tests.EditMode
             Assert.AreEqual(SPF.L2.Combat.HitRecordResult.Full,r.CheckHit(0,new EntityHandle(7,2)));Assert.AreEqual(1,r.AcceptedHits);
             Step(r,r.Current.DurationTicks);Step(r,1,pressed:true);Assert.IsTrue(r.RecordHit(0,new EntityHandle(7,2),0));
         }
+        [Test]
+        public void OneTickProjectileLifetimeStillTravelsOneFullIntervalBeforeExpiry()
+        {
+            var profiles=WeaponProfiles.CreateDefaults(60);profiles[2].ProjectileLifeTicks=1;
+            using var r=new WeaponRuntime(profiles,60,4,4,8);Equip(r,WeaponProfiles.Staff);Step(r,1,pressed:true);Step(r,r.Current.ReleaseTick);
+            Assert.AreEqual(1,r.Projectiles[0].RemainingTicks);float muzzle=r.Projectiles[0].Position.x;r.ExpireProjectiles();Assert.AreEqual(1,r.ActiveProjectiles);
+            Step(r);Assert.AreEqual(muzzle+r.Current.ProjectileSpeed/60f,r.Projectiles[0].Position.x,.0001f);Assert.AreEqual(0,r.Projectiles[0].RemainingTicks);
+            r.ExpireProjectiles();Assert.AreEqual(0,r.ActiveProjectiles);
+        }
         [TestCase(0f,false)]
         [TestCase(.5f,false)]
         [TestCase(1f,true)]

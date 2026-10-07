@@ -34,6 +34,7 @@ namespace SPF.Presentation.Animation
         public int WeaponVisualId;
         public float2 HeldGrip, ChangeGrip, HeldGripVelocity, ChangeGripVelocity;
         public float HeldAngle, ChangeAngle, HeldAngleVelocity, ChangeAngleVelocity, EquipAge;
+        public float HeldWeaponBody, ChangeWeaponBody, HeldWeaponBodyVelocity, ChangeWeaponBodyVelocity;
         public float Phase, Run, Attack, Hit, Death, Facing, Scale, FarSwingSeconds, NearSwingSeconds;
         public bool Initialized, Airborne, Moving, WeaponWasActing, ChangingWeapon;
 
@@ -133,13 +134,13 @@ namespace SPF.Presentation.Animation
             }
             bool changed=input.Weapon.VisualId!=WeaponVisualId;
             if(changed||WeaponWasActing&&!WeaponMotion.Acting(input.Weapon))
-            {ChangeGrip=HeldGrip;ChangeAngle=HeldAngle;ChangeGripVelocity=HeldGripVelocity;ChangeAngleVelocity=HeldAngleVelocity;EquipAge=0;ChangingWeapon=changed;}
+            {ChangeGrip=HeldGrip;ChangeAngle=HeldAngle;ChangeGripVelocity=HeldGripVelocity;ChangeAngleVelocity=HeldAngleVelocity;ChangeWeaponBody=HeldWeaponBody;ChangeWeaponBodyVelocity=HeldWeaponBodyVelocity;EquipAge=0;ChangingWeapon=changed;}
             else EquipAge=math.min(1,EquipAge+dt/.2f);
             WeaponWasActing=WeaponMotion.Acting(input.Weapon);WeaponVisualId=input.Weapon.VisualId;PreviousVelocity=velocity;
             var held=WeaponMotion.Sample(input,this);
             if(!reset&&dt>0)
-            {HeldGripVelocity=math.clamp((held.Grip-HeldGrip)/dt,new float2(-8),new float2(8));HeldAngleVelocity=math.clamp(WeaponMotion.AngleDelta(HeldAngle,held.Angle)/dt,-15,15);}
-            HeldGrip=held.Grip;HeldAngle=held.Angle;
+            {HeldGripVelocity=math.clamp((held.Grip-HeldGrip)/dt,new float2(-8),new float2(8));HeldAngleVelocity=math.clamp(WeaponMotion.AngleDelta(HeldAngle,held.Angle)/dt,-15,15);HeldWeaponBodyVelocity=math.clamp((held.Body-HeldWeaponBody)/dt,-3,3);}
+            HeldGrip=held.Grip;HeldAngle=held.Angle;HeldWeaponBody=held.Body;
             float2 target = input.Aim && input.Action!=GameplayCharacterAction.Kick ? input.AimTarget : input.Root + new float2(facing * math.lerp(.34f,.83f,math.max(0,Attack)), math.lerp(1.5f,1.65f,math.max(0,Attack))) * scale;
             NaturalMotion.SmoothAim(ref Aim,target,dt,24);
             PreviousRoot=input.Root;

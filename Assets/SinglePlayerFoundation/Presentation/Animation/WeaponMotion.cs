@@ -25,6 +25,7 @@ namespace SPF.Presentation.Animation
     /// every key. Whole-action phase and release markers are authoritative; only aim/hold transitions ease.</summary>
     public static class WeaponMotion
     {
+        const float MarkerEpsilon=.00001f;
         public static bool Acting(in WeaponViewState w)=>w.Stage==WeaponStage.Windup||w.Stage==WeaponStage.Active||w.Stage==WeaponStage.Recovery;
         public static float Hermite(float a,float b,float ta,float tb,float u,float duration)
         {
@@ -33,7 +34,7 @@ namespace SPF.Presentation.Animation
         }
         public static float Curve(float phase,float contact,float activeEnd,float rest,float windup,float impact,float follow)
         {
-            contact=math.clamp(contact,.08f,.8f);activeEnd=math.clamp(activeEnd,contact+.04f,.94f);
+            contact=math.clamp(contact,MarkerEpsilon,1-2*MarkerEpsilon);activeEnd=math.clamp(activeEnd,contact+MarkerEpsilon,1-MarkerEpsilon);
             float t1=contact*.55f,t2=contact,t3=activeEnd;
             float v1=(impact-rest)/t2,v2=(follow-windup)/(t3-t1),v3=(rest-impact)/(1-t2);
             if(phase<t1)return Hermite(rest,windup,0,v1,phase/t1,t1);
@@ -49,8 +50,9 @@ namespace SPF.Presentation.Animation
         {
             var w=input.Weapon;if(!w.Equipped)return default;
             bool acting=Acting(w);float phase=acting?math.saturate(w.Phase):0;
-            float contact=math.clamp(w.ContactPhase,.08f,.8f),end=math.clamp(w.ActiveEndPhase,contact+.04f,.94f);
-            float reachWeight=acting?NaturalMotion.Ease(phase/contact)*(1-NaturalMotion.Ease((phase-end)/math.max(.001f,1-end))):0;
+            float impactMarker=w.Family==WeaponActionFamily.Cast?w.ReleasePhase:w.ContactPhase;
+            float contact=math.clamp(impactMarker,MarkerEpsilon,1-2*MarkerEpsilon),end=math.clamp(w.ActiveEndPhase,contact+MarkerEpsilon,1-MarkerEpsilon);
+            float reachWeight=acting?NaturalMotion.Ease(phase/contact)*(1-NaturalMotion.Ease((phase-end)/math.max(MarkerEpsilon,1-end))):0;
             float2 aim=math.lerp(motion.WeaponAim,w.AimDirection,acting?NaturalMotion.Ease(phase/contact):0);
             if(math.lengthsq(aim)<.01f)aim=new float2(motion.Facing,0);
             // Preserve projected ground-aim length. It encodes belt depth foreshortening.
@@ -72,7 +74,7 @@ namespace SPF.Presentation.Animation
                     rotation=Curve(phase,contact,end,.78f,1.1f,0,-.13f);body=Curve(phase,contact,end,0,.08f,-.09f,-.06f);break;
                 case WeaponActionFamily.Draw:
                     // Draw remains taut until the simulation's exact release marker. Recoil then settles.
-                    float release=math.clamp(w.ReleasePhase,.1f,.95f);
+                    float release=math.clamp(w.ReleasePhase,MarkerEpsilon,1-MarkerEpsilon);
                     draw=acting?(phase<release?NaturalMotion.Ease(phase/release):1-NaturalMotion.Ease((phase-release)/.09f)):0;
                     offset=new float2(-.11f*(1-reachWeight),.035f*(1-reachWeight));
                     rotation=.10f*(1-reachWeight);body=.08f*draw;break;
@@ -94,6 +96,7 @@ namespace SPF.Presentation.Animation
                 grip=new float2(Hermite(motion.ChangeGrip.x,grip.x,motion.ChangeGripVelocity.x,0,blendTime,.2f),
                     Hermite(motion.ChangeGrip.y,grip.y,motion.ChangeGripVelocity.y,0,blendTime,.2f));
                 angle=Hermite(motion.ChangeAngle,motion.ChangeAngle+AngleDelta(motion.ChangeAngle,angle),motion.ChangeAngleVelocity,0,blendTime,.2f);
+                body=Hermite(motion.ChangeWeaponBody,body,motion.ChangeWeaponBodyVelocity,0,blendTime,.2f);
             }
             float length=math.distance(canonical,muzzle)/math.max(.001f,input.Scale);
             float2 support;
@@ -117,6 +120,16 @@ namespace SPF.Presentation.Animation
                 float2 actual=NaturalMotion.BonePoint(rig,local,NaturalCharacterRig.Hand,0,at);
                 actual=input.Root+new float2(actual.x*motion.Facing,actual.y)*motion.Scale;
                 float2 support=pose.Support+actual-pose.Grip;
+                float2 shoulder=NaturalMotion.BonePoint(rig,local,NaturalCharacterRig.FarArm,0,at);
+                float2 reach=NaturalMotion.ModelPoint(support,input.Root,motion.Facing,motion.Scale)-shoulder;
+                float distance=math.length(reach);
+                if(distance>.82f)
+                {
+                    // A small scapular glide closes a two-hand grip without locking the elbow.
+                    float2 slide=reach*(math.min(.035f,distance-.82f)/math.max(.001f,distance));
+                    var arm=local[at+NaturalCharacterRig.FarArm];
+                    arm.Position+=Rotate(slide,-local[at+NaturalCharacterRig.Torso].Rotation);local[at+NaturalCharacterRig.FarArm]=arm;
+                }
                 NaturalMotion.BlendAim(rig,local,NaturalCharacterRig.FarArm,NaturalCharacterRig.FarForearm,support,input.Root,motion.Facing,motion.Scale,-1,pose.Weight,at);
             }
         }

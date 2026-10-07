@@ -15,10 +15,12 @@ namespace SPF.Presentation.Animation
         /// including its matching pivot/size, rather than clamping an unknown ID onto an unrelated UV.</summary>
         public static int Resolve(int visualId,WeaponActionFamily family)=>Supported(visualId)?visualId:1000+math.clamp((int)family,1,4);
         public static int Index(int visualId)=>Supported(visualId)?visualId-1001:0;
+        public static float TipPixels(int visualId)=>visualId==1001?math.sqrt(201*201+20*20):visualId==1003?157:198;
+        public static float AngleOffset(int visualId)=>visualId==1001?-math.atan2(20,201):0;
         public static float2 Size(int visualId,float length)=>visualId==1004?new float2(.68f,1.40f):
-            new float2(256,96)*(length/(visualId==1003?157:198));
+            new float2(256,96)*(length/TipPixels(visualId));
         public static float2 Centre(int visualId,float length)=>visualId==1004?new float2(-.116875f,0):
-            new float2((128-(visualId==1003?62:46))*length/(visualId==1003?157:198),0);
+            new float2((128-(visualId==1003?62:46))*length/TipPixels(visualId),0);
         public static PixelCanvas Draw(int kind)
         {
             const int sample=3;int width=kind==3?128:256,height=kind==3?256:96;
@@ -46,9 +48,9 @@ namespace SPF.Presentation.Animation
                 if(kind==0)
                 {
                     // A broad forward-curved saber, with an asymmetric cut edge and thick spine.
-                    Poly(ink,66,39,165,35,214,44,244,48,227,54,193,59,71,63);
-                    Poly(steel,72,43,164,40,211,48,239,49,196,54,72,58);
-                    Poly(pale,79,56,191,53,239,49,226,55,193,59,76,62);
+                    Poly(ink,66,39,165,35,214,44,247,68,227,66,193,59,71,63);
+                    Poly(steel,72,43,164,40,211,48,235,62,196,54,72,58);
+                    Poly(pale,79,56,191,53,235,62,226,65,193,59,76,62);
                     Line(79,46,170,43,3,shadow);Line(70,27,65,70,15,ink);Line(70,29,66,68,9,gold);
                     Ellipse(69,48,8,8,ink);Ellipse(69,48,4,4,teal);
                 }

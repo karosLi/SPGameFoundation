@@ -33,11 +33,31 @@ namespace SPF.Tests.EditMode
                 input.Weapon=default;Assert.IsTrue(classic.Submit(input));classic.Evaluate();Assert.AreEqual(14,classic.PartsDrawn);
             }
         }
+        [Test] public void CurvedBladeSpriteTipMatchesTheAttachmentAtBothFacings()
+        {
+            for(int face=-1;face<=1;face+=2)
+            {float rotation=face<0?math.PI:0;float2 tip=new float2(201,20*face)/WeaponArt.TipPixels(1001);
+                float2 rendered=WeaponMotion.Rotate(tip,rotation+WeaponArt.AngleOffset(1001)*face);
+                Assert.That(math.distance(rendered,new float2(face,0)),Is.LessThan(.00001f));}
+        }
         [Test] public void UnknownVisualUsesMatchingFamilyArtAndPivot()
         {
             for(int family=1;family<=4;family++)
             {int resolved=WeaponArt.Resolve(2001,(WeaponActionFamily)family);Assert.AreEqual(1000+family,resolved);Assert.AreEqual(family-1,WeaponArt.Index(resolved));Assert.IsTrue(WeaponArt.Supported(resolved));}
             Assert.AreEqual(1002,WeaponArt.Resolve(1002,WeaponActionFamily.Slash));
+        }
+        [Test] public void AuthoredEarlyAndLateMarkersAreNotRemappedToDefaultTimings()
+        {
+            var input=Input();input.Weapon.ContactPhase=.95f;input.Weapon.ActiveEndPhase=.98f;input.Weapon.Stage=WeaponStage.Active;input.Weapon.Phase=.95f;
+            var motion=default(GameplayCharacterMotion);motion.Step(input,1f/60);var pose=WeaponMotion.Sample(input,motion);
+            Assert.That(math.distance(pose.Grip,WeaponMotion.WorldOffset(input,input.Weapon.AimDirection,input.Weapon.GripOffset)),Is.LessThan(.0001f));
+            Assert.That(WeaponMotion.Curve(.95f,.95f,.98f,0,-.4f,1,.6f),Is.EqualTo(1).Within(1e-6f));
+            input=Input(1004);input.Weapon.ContactPhase=.01f;input.Weapon.ReleasePhase=.01f;input.Weapon.ActiveEndPhase=.02f;input.Weapon.Phase=.01f;input.Weapon.Stage=WeaponStage.Active;
+            motion=default;motion.Step(input,1f/60);Assert.That(WeaponMotion.Sample(input,motion).Draw,Is.EqualTo(1).Within(1e-6f));
+            input=Input(1003);input.Weapon.ContactPhase=.333333f;input.Weapon.ReleasePhase=.5f;input.Weapon.ActiveEndPhase=.666667f;input.Weapon.Phase=.5f;input.Weapon.Stage=WeaponStage.Active;
+            motion=default;motion.Step(input,1f/60);pose=WeaponMotion.Sample(input,motion);
+            Assert.That(math.distance(pose.Grip,WeaponMotion.WorldOffset(input,input.Weapon.AimDirection,input.Weapon.GripOffset)),Is.LessThan(.0001f));
+            Assert.That(math.abs(pose.Angle-math.atan2(.35f,.8f)),Is.LessThan(.0001f),"staff aligns to its release marker even when release is later than active start");
         }
         [Test] public void WeaponCurvesPassThroughContactWithContinuousNonzeroVelocity()
         {
@@ -110,6 +130,8 @@ namespace SPF.Tests.EditMode
                         input.Root=input.Ground+=input.Velocity/120;motion.Step(input,1f/120);GameplayCharacterMotion.Pose(rig.View,local,world,input,motion,0);
                         var sample=WeaponMotion.Attach(input,motion,world,0);
                         Assert.That(math.distance(sample.Muzzle,WeaponMotion.WorldOffset(input,input.Weapon.AimDirection,input.Weapon.MuzzleOffset)),Is.LessThan(.003f),"id="+id+" travel="+travel+" aim="+aim+" frame="+frame);
+                        var planned=WeaponMotion.Sample(input,motion);
+                        Assert.That(math.distance(sample.SupportGrip,planned.Support+sample.PrimaryGrip-planned.Grip),Is.LessThan(.003f),"moving secondary grip");
                     }
                 }
             }
@@ -186,6 +208,7 @@ namespace SPF.Tests.EditMode
                 Assert.That(math.distance(before.Grip,interrupted.Grip),Is.LessThan(.00001f));
                 Assert.That(math.abs(WeaponMotion.AngleDelta(before.Angle,interrupted.Angle)),Is.LessThan(.00001f));
                 Assert.That(math.distance(velocity,motion.ChangeGripVelocity),Is.LessThan(.00001f));
+                Assert.That(math.abs(before.Body-interrupted.Body),Is.LessThan(.00001f),"weapon torso anticipation must not snap off at interruption");
                 for(int i=0;i<30;i++)
                 {motion.Step(input,1f/120);var next=WeaponMotion.Sample(input,motion);Assert.That(math.distance(interrupted.Grip,next.Grip),Is.LessThan(.08f));interrupted=next;}
             }

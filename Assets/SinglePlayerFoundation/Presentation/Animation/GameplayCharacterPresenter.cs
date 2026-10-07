@@ -58,10 +58,10 @@ namespace SPF.Presentation.Animation
             m_Motion=new NativeArray<GameplayCharacterMotion>(capacity,Allocator.Persistent);
             m_InputSlots=new NativeArray<int>(capacity,Allocator.Persistent);m_PoseTicks=new NativeArray<int>(capacity,Allocator.Persistent);
             m_SpriteOffsets=new NativeArray<int>(capacity,Allocator.Persistent);
-            m_WeaponSamples=new NativeArray<WeaponAttachmentSample>(capacity,Allocator.Persistent);
-            m_WeaponUv=new NativeArray<float4>(WeaponArt.Count+1,Allocator.Persistent);
-            for(int k=0;k<WeaponArt.Count;k++)m_WeaponUv[k]=m_Art.Sheet[m_Art.WeaponFrames[k]].Uv;
-            m_WeaponUv[WeaponArt.Count]=m_Art.Sheet[m_Art.White].Uv;
+            m_WeaponSamples=new NativeArray<WeaponAttachmentSample>(includeWeapons?capacity:0,Allocator.Persistent);
+            m_WeaponUv=new NativeArray<float4>(includeWeapons?WeaponArt.Count+1:0,Allocator.Persistent);
+            if(includeWeapons){for(int k=0;k<WeaponArt.Count;k++)m_WeaponUv[k]=m_Art.Sheet[m_Art.WeaponFrames[k]].Uv;
+            m_WeaponUv[WeaponArt.Count]=m_Art.Sheet[m_Art.White].Uv;}
             m_Local=new NativeArray<BoneLocal>(capacity*NaturalCharacterRig.Bones,Allocator.Persistent);
             m_World=new NativeArray<BoneWorld>(capacity*NaturalCharacterRig.Bones,Allocator.Persistent);
             m_Attachments=new NativeArray<BoneAttachment>(2*NaturalCharacterArt.Parts,Allocator.Persistent);
@@ -144,7 +144,7 @@ namespace SPF.Presentation.Animation
         public bool TryRead(EntityHandle handle,out GameplayCharacterMotion motion)
         {if(m_Slots.TryGetValue(handle,out int slot)){motion=m_Motion[slot];return true;}motion=default;return false;}
         public bool TryReadWeapon(EntityHandle handle,out WeaponAttachmentSample sample)
-        {if(m_Slots.TryGetValue(handle,out int slot)&&m_Seen[slot]==m_Frame){sample=m_WeaponSamples[slot];return sample.VisualId!=0;}sample=default;return false;}
+        {if(m_IncludeWeapons&&m_Slots.TryGetValue(handle,out int slot)&&m_Seen[slot]==m_Frame){sample=m_WeaponSamples[slot];return sample.VisualId!=0;}sample=default;return false;}
         public BoneWorld ReadBone(EntityHandle handle,int bone)
         {if(bone<0||bone>=NaturalCharacterRig.Bones)throw new ArgumentOutOfRangeException(nameof(bone));return m_Slots.TryGetValue(handle,out int slot)?m_World[slot*NaturalCharacterRig.Bones+bone]:default;}
         public void Dispose()
@@ -181,7 +181,7 @@ namespace SPF.Presentation.Animation
                 float fall=NaturalMotion.Ease(motion.Death),angle=-motion.Facing*fall*1.48f;
                 float c=math.cos(angle),s=math.sin(angle);
                 float4 tint=input.Tint;tint.w*=1f-math.saturate((motion.Death-.8f)*5f);
-                var sample=WeaponMotion.Attach(input,motion,World,at);WeaponSamples[slot]=sample;
+                var sample=WeaponMotion.Attach(input,motion,World,at);if(WeaponSamples.Length>0)WeaponSamples[slot]=sample;
                 if(input.Weapon.Equipped)DrawWeapon(SpriteOffsets[i],input,motion,sample,tint,angle);
                 for(int k=0;k<NaturalCharacterArt.Parts;k++)
                 {
@@ -205,9 +205,10 @@ namespace SPF.Presentation.Animation
             {
                 float scale=motion.Scale;float length=math.distance(sample.PrimaryGrip,sample.Muzzle)/scale;
                 float4 color=tint;color.w*=sample.Visibility;
-                float2 centre=sample.PrimaryGrip+WeaponMotion.Rotate(WeaponArt.Centre(sample.VisualId,length)*new float2(scale,scale*motion.Facing),sample.Rotation);
+                float spriteAngle=sample.Rotation+WeaponArt.AngleOffset(sample.VisualId)*motion.Facing;
+                float2 centre=sample.PrimaryGrip+WeaponMotion.Rotate(WeaponArt.Centre(sample.VisualId,length)*new float2(scale,scale*motion.Facing),spriteAngle);
                 Sprites[first+11]=PackedSprite.Pack(Fallen(centre,input,fallAngle),WeaponArt.Size(sample.VisualId,length)*new float2(scale,scale*motion.Facing),
-                    WeaponUv[WeaponArt.Index(sample.VisualId)],input.Depth,color,sample.Rotation+fallAngle,math.saturate(input.Flash)*.25f);
+                    WeaponUv[WeaponArt.Index(sample.VisualId)],input.Depth,color,spriteAngle+fallAngle,math.saturate(input.Flash)*.25f);
                 for(int j=12;j<=14;j++)Sprites[first+j]=PackedSprite.Pack(input.Root,new float2(.001f),WeaponUv[WeaponArt.Count],input.Depth,new float4(0));
                 if(input.Weapon.Family==SPF.Contracts.Weapons.WeaponActionFamily.Draw)
                 {

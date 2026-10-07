@@ -50,6 +50,9 @@ namespace RpgFoundation.Presentation
         int m_TileBuild = -1;
         uint m_TileVersion = uint.MaxValue;
         SimSession m_Session;
+        SimSession m_CameraSession;
+        EntityHandle m_CameraHero;
+        int m_CameraLevelVersion = -1;
         float m_Time;
         Unity.Mathematics.Random m_Random = new Unity.Mathematics.Random(17);
 
@@ -575,6 +578,13 @@ namespace RpgFoundation.Presentation
             if (session == null) return;
             var world = session.World;
             var game = world.Resource(RpgKeys.Game);
+            // A UI request can arrive before the fixed tick that creates the next floor/hero.
+            // Snapping only at request time consumes the snap against the old menu target.
+            // Observe the authoritative presentation discontinuity here, before the camera moves
+            // and before this frame's actor culling, including snapshot restore/session rebuild.
+            if (session != m_CameraSession || world.LevelVersion != m_CameraLevelVersion || game.Hero != m_CameraHero)
+                camera.Snap();
+            m_CameraSession = session; m_CameraLevelVersion = world.LevelVersion; m_CameraHero = game.Hero;
             camera.Size = ViewSize;
             if (world.Registry.TryResolve(game.Hero, out _, out int row))
                 camera.Target = math.lerp(world.Column(RpgKeys.PrevPosition)[row], world.Column(RpgKeys.Position)[row], session.InterpolationAlpha) + new float2(0f, 0.4f);

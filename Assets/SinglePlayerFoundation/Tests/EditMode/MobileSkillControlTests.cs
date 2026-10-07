@@ -111,6 +111,30 @@ namespace SPF.Tests.EditMode
             public int ReadFallbackGlyph(int slot, in SkillSlotSnapshot snapshot) => FallbackGlyph;
         }
 
+        [Test]
+        public void CancelKeepsHighContrastTextWhileWarningArtUsesCoral()
+        {
+            var canvas = UIFactory.CreateCanvas(m_Object.transform);
+            var hud = m_Object.AddComponent<MobileCombatHud>();
+            hud.Build(canvas.transform, new AssetSource(), false);
+            var button = hud.Buttons[0];
+            button.OnPointerDown(Pointer(31));
+            button.OnDrag(Pointer(31, 0, button.CancelRadius + 40));
+            hud.Refresh();
+            Assert.IsTrue(button.AimingCanceled);
+            var text = button.transform.Find("SkillState").GetComponent<BufferText>();
+            var icon = button.transform.Find("Icon").GetComponent<CombatControlGraphic>();
+            Assert.AreEqual(SanctuaryUiTheme.Ivory, text.color, "cancel must remain a readable word, not color alone");
+            Assert.AreEqual(SanctuaryUiTheme.Coral, icon.color);
+            Assert.Greater(text.color.g, .8f); Assert.Greater(text.color.b, .75f);
+            const string expected = "CANCEL  1/2";
+            Assert.AreEqual(expected.Length, text.Length);
+            for (int i = 0; i < expected.Length; i++) Assert.AreEqual(expected[i], text[i]);
+            button.OnPointerUp(Pointer(31, 0, button.CancelRadius + 40));
+            var input = default(InputFrame); hud.Input.TryRead(ref input);
+            Assert.AreEqual(0u, input.Pressed, "contrast changes never turn cancellation into a cast");
+        }
+
         [TestCase(false)]
         [TestCase(true)]
         public void FallbackChangesKeepAuthoritativeAssetKeyAndCustomSpritePrecedence(bool hasAsset)

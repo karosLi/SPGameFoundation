@@ -101,6 +101,35 @@ namespace RpgFoundation.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator DelayedNewFloorSnapsOnTheFirstAuthoritativeHeroFrame()
+        {
+            m_Game.Session.ManualClock = true;
+            var rig = m_Game.CameraRig;
+            var aim = rig.UpdateTarget;
+            float snapDistance = rig.SnapDistance;
+            try
+            {
+                Assert.IsNotNull(aim, "the renderer has installed its normal camera callback");
+                // Consume the request-time snap while the fixed tick is deliberately held.
+                // A very large distance threshold prevents the emergency distance snap from
+                // hiding an ordering defect when the hero finally becomes authoritative.
+                rig.SnapDistance = 10000f;
+                rig.UpdateTarget = camera => { camera.Target = new float2(-80, -80); camera.Size = 7.5f; };
+                m_Game.NewGame(21);
+                yield return null;
+                yield return null;
+                rig.UpdateTarget = aim;
+                m_Game.Session.Step();
+                Assert.AreEqual(RpgFlow.Playing, State.Flow);
+                yield return null;
+                var centre = (rig.ViewRect.xy + rig.ViewRect.zw) * .5f;
+                Assert.Less(math.distance(centre, rig.Target), .001f, "new authoritative floor snaps before rendering/culling");
+                Assert.Greater(m_Game.WorldRenderer.LastActorsDrawn, 0, "hero appears on the first frame of the new floor");
+            }
+            finally { rig.UpdateTarget = aim; rig.SnapDistance = snapDistance; m_Game.Session.ManualClock = false; }
+        }
+
+        [UnityTest]
         public IEnumerator JoystickMovesTheHero()
         {
             yield return StartNewGame();

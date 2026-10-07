@@ -133,7 +133,8 @@ namespace SPF.Shell.UI
                     m_Icons[i].enabled = m_AssetIcons[i].sprite == null;
                 }
                 m_Icons[i].color = tint; m_Rings[i].color = progress; m_AssetIcons[i].color = tint;
-                m_Status[i].color = Buttons[i].AimingCanceled ? SanctuaryUiTheme.Coral : snapshot.Enabled ? SanctuaryUiTheme.Muted : SanctuaryUiTheme.Disabled;
+                // Cancellation is encoded by the coral icon/ring; keep the word legible on every background.
+                m_Status[i].color = Buttons[i].AimingCanceled ? SanctuaryUiTheme.Ivory : snapshot.Enabled ? SanctuaryUiTheme.Muted : SanctuaryUiTheme.Disabled;
                 m_Backs[i].color = Buttons[i].Pressed ? SanctuaryUiTheme.Surface : SanctuaryUiTheme.Ink;
                 var aim = Buttons[i].Aim;
                 Quaternion aimRotation = Buttons[i].Pressed && snapshot.Definition.Activation == SkillActivation.AimRelease && math.lengthsq(aim) > 0f

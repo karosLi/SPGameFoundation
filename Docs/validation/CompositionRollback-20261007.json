@@ -1,29 +1,346 @@
 {
   "baseline_commit": "9bc7c41",
-  "scope": "Stage B core ownership and settings preflight; native execution pending",
-  "focused_cases": 35,
+  "verified_runtime_commit": "a332580d7002955205a43bd48bcec26a7a8f2c56",
+  "local_runtime_commits": [
+    "40cec34dca65c983ab586779e7413890fcc5de4f",
+    "9ebdd9af74201525ade383c020cae7cbdeb114bf",
+    "a332580d7002955205a43bd48bcec26a7a8f2c56"
+  ],
+  "scope": "Isolated Stage B composition rollback, initializer cleanup and resource-free layout compatibility; native execution not run",
   "initial_red": {
     "failed": 15,
-    "passed": 6
+    "passed": 6,
+    "cases": [
+      {
+        "name": "RejectedLevelResourceStaysWithCaller",
+        "outcome": "Failed"
+      },
+      {
+        "name": "RegistrationFailureReleasesWorldWithoutDestroyingUninitializedSystems(True)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "LaterDeclarationFailureReleasesAcceptedResourcesAndPreservesCause(True)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "InvalidSettingsFailBeforeAnyModuleAllocation(30,-1,4096)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "FailedInitializerRollsBackOnlyCompletedSystemsInReverseOrder(0,False)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "InvalidSettingsFailBeforeAnyModuleAllocation(0,3,4096)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "FailedInitializerRollsBackOnlyCompletedSystemsInReverseOrder(1,False)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "LaterDeclarationFailureReleasesAcceptedResourcesAndPreservesCause(False)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "InvalidSettingsFailBeforeAnyModuleAllocation(30,0,4096)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "FailedInitializerRollsBackOnlyCompletedSystemsInReverseOrder(2,False)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "HistoricallyValidSettingsRemainValid(1,1,0)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "RegistrationFailureReleasesWorldWithoutDestroyingUninitializedSystems(False)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "ColumnFactoryFailureReleasesPartialTableAndAcceptedResources",
+        "outcome": "Failed"
+      },
+      {
+        "name": "RejectedDuplicateResourceStaysWithCaller",
+        "outcome": "Failed"
+      },
+      {
+        "name": "InvalidSettingsFailBeforeAnyModuleAllocation(-1,3,4096)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "SuccessfulInitializationRetainsSortedOrderAndResourceLifetime",
+        "outcome": "Passed"
+      },
+      {
+        "name": "FailedInitializerRollsBackOnlyCompletedSystemsInReverseOrder(2,True)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "NormalCleanupFailureStillDisposesEveryOwnerExactlyOnce",
+        "outcome": "Failed"
+      },
+      {
+        "name": "InvalidSettingsFailBeforeAnyModuleAllocation(30,3,-1)",
+        "outcome": "Failed"
+      },
+      {
+        "name": "HistoricallyValidSettingsRemainValid(120,12,1)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "HistoricallyValidSettingsRemainValid(int.MaxValue,int.MaxValue,0)",
+        "outcome": "Passed"
+      }
+    ]
   },
-  "adversarial_red": {
+  "adversarial_sync_red": {
     "failed": 1,
     "passed": 29
   },
-  "final_focused": {
-    "failed": 0,
-    "passed": 35
+  "layout_reuse_red": {
+    "failed": 1,
+    "passed": 0
   },
-  "full_dotnet": "pending final revision",
-  "cold_compositions": 19,
-  "cold_output_sha256": "a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30",
+  "real_initializer_red": {
+    "failed": 2,
+    "passed": 0
+  },
+  "focused_final": {
+    "composition_passed": 36,
+    "real_initializer_passed": 2,
+    "failed": 0
+  },
+  "full_dotnet": {
+    "total": 1090,
+    "executed": 1088,
+    "passed": 1088,
+    "failed": 0,
+    "existing_explicit_cases": [
+      {
+        "name": "SearchShots",
+        "outcome": "NotExecuted"
+      },
+      {
+        "name": "ExportFrames",
+        "outcome": "NotExecuted"
+      }
+    ],
+    "generated_projects": 76,
+    "build_errors": 0,
+    "build_warnings": 0,
+    "result_files": [
+      {
+        "file": "_5e9498f43725_2026-10-07_16_43_32.trx",
+        "sha256": "3e9ecf474bd5cf3ed86de65e276feac75efa094ab48471abc2fc61ac47567ab3",
+        "executed": 103,
+        "passed": 103,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_44_00.trx",
+        "sha256": "d003e13ffe94c7baeee82293e2715a79d6667abfcc318bbe0200bbbad84dc18b",
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_44_01.trx",
+        "sha256": "05e970f9f60b897d1d3fc7ad2ac5831e118a94cb371be43af49312bc487ece2b",
+        "executed": 8,
+        "passed": 8,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_44_02.trx",
+        "sha256": "a18aa181694403e92ce8981f9ad183f71735135a07ec432bc67dd294447fddc1",
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_44_03.trx",
+        "sha256": "ebffdae0f74b78dd1ecb30eb1f762d2ad2f453a45094604de1ffa01933d9db5d",
+        "executed": 10,
+        "passed": 10,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_44_04.trx",
+        "sha256": "0f31a00a12c0dd040c9841837ff862ab2faa02e3014335ed112be91f08f5e4b0",
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_44_04[1].trx",
+        "sha256": "cdd96c56c2acd6b0dd3d972bf727a7030ee59878a8178d84ac84a40ce7386724",
+        "executed": 7,
+        "passed": 7,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_44_05.trx",
+        "sha256": "7479c02cf05144606a3bafb2e6ea68f88b35984b7a168c13145b7604547dedb3",
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_44_07.trx",
+        "sha256": "46ed4a35d2fd754085c3a9949b7678f3433f92834191b6aa8c3094d8761f5732",
+        "executed": 63,
+        "passed": 63,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_44_35.trx",
+        "sha256": "ac079ab58adec609d944d65b7ea89ea641a14282382d7fbf0d568ac5830b10ea",
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_44_36.trx",
+        "sha256": "9494c1e9f24ea69fd3c36dd9035f6931c97f75390a3c8244703ee4d3359a6571",
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_44_37.trx",
+        "sha256": "5f221fe3913803b4a9df5fbacd75d991150629d5ab49bff0b54389625c6b7d04",
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_44_37[1].trx",
+        "sha256": "41a8e9186d59046ec1ea79cb38f9b010d7d91fc0f65c6d2e4d7ae3c8803a63ee",
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_44_38.trx",
+        "sha256": "bcd7bd0445e0e41a94982e6e9302ed1d13f8e79dda4bd534cdae8521100030a6",
+        "executed": 730,
+        "passed": 730,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_48_09.trx",
+        "sha256": "c7571cc325514fd4ec7fa92ade350720fdc2a58dab48ce3661f1fea6f575ef9c",
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_48_10.trx",
+        "sha256": "fc445ecdaf8059534dcb58b74560d4e300b27a35e51f6b326081671d06a0d72b",
+        "executed": 16,
+        "passed": 16,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_48_11.trx",
+        "sha256": "9f32c92875f349f3323e74581d235a6b2b6e6ead6aa2b1cbe3b4d721ccedb69a",
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_48_12.trx",
+        "sha256": "d9ee5d1112c2d8151632fd641b48eee1e8e93cad56ec70d1d8a6c31f0ba8322e",
+        "executed": 4,
+        "passed": 4,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_48_13.trx",
+        "sha256": "2093791ed22b1b1f787b7ee1e9caa7f5fdf7b273bf8b827036f516fa3dd1cd72",
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_48_13[1].trx",
+        "sha256": "671c1d174357fb03e126b81f2782dde1f491f99f9f3110b6279c444cec507a95",
+        "executed": 40,
+        "passed": 40,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_48_44.trx",
+        "sha256": "9dc19c4ad6fa5c3ea8ec71e377dab5bb8e1cce69b3af11ecd24440dd5f8b0280",
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_48_45.trx",
+        "sha256": "491538573abae7e522e03850c37e6bd66ccd92b8fa3a51858fbdd6bf2a7b9492",
+        "executed": 5,
+        "passed": 5,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_48_46.trx",
+        "sha256": "4457fd3853904ad5706cbadc5475bfa4256ee916d36f2f623561bfd29cebad79",
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_48_47.trx",
+        "sha256": "68cd9c8b73d7e8a21b247a4496b69da89664e0166ed0f39d76a5176c42f1f614",
+        "executed": 102,
+        "passed": 102,
+        "failed": 0
+      },
+      {
+        "file": "_5e9498f43725_2026-10-07_16_49_28.trx",
+        "sha256": "c4dd8168364e33c6d4d063cb0b7a5cc625829a2c0cdda9fe1d3085f226df52ca",
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      }
+    ]
+  },
+  "cold_probe": {
+    "compositions": 19,
+    "runs": 2,
+    "semantic_comparison": "matches retained baseline",
+    "output_sha256": "a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30",
+    "fixture_methods_checked": 65,
+    "baseline_source_files": 154,
+    "unchanged_baseline_source_files": 140
+  },
   "real_api_compile": {
-    "sources": 213,
-    "references": 96,
+    "all_production_sources": 328,
+    "new_test_files": 2,
+    "total_sources": 330,
+    "references": 95,
     "errors": 0,
-    "warnings": 4
+    "existing_warnings": 7,
+    "language_version": "9.0",
+    "target": "net8.0 compile-only against real Unity 2022.3.62f2/package DLLs; no native execution",
+    "generator": "Docs/validation/GenerateCompositionApiCompile.py"
   },
   "reviewed_baseline_source_changes": [
+    {
+      "path": "Assets/BrawlerFoundation/Runtime/Systems/BwBeltSystems.cs",
+      "baseline_sha256": "0d6b880da4ba4c954940c9cf15abcf47ae4510d18a8ba8c321876e79cef65182",
+      "current_sha256": "7fedede7d5e4ed730187dd70490f3b0c793166dfbfb48fe40840507dab967fd2"
+    },
+    {
+      "path": "Assets/RpgFoundation/Runtime/Systems/ActorSystems.cs",
+      "baseline_sha256": "7da2ffee2912b21c3989abc487b2b78125ea5df62468d2ed7cbd29954411fed9",
+      "current_sha256": "decaab11093fd307da873d36d65b1ffd81bb8d5550cfe2da75e9490f2e992963"
+    },
     {
       "path": "Assets/SinglePlayerFoundation/Runtime/Composition/IGameplayModule.cs",
       "baseline_sha256": "392f9cdf1b20a5309a0d9aa8803b3f0e72eb9edd570782d56b9ce37224a82d85",
@@ -67,7 +384,92 @@
     {
       "path": "Assets/SinglePlayerFoundation/Runtime/World/WorldLayout.cs",
       "baseline_sha256": "c51cfc47e7f8d704f7c29183d894b08ef72c05dffa907c77ca31f592f1c740bb",
-      "current_sha256": "0eff213d71b86925d4060c1bd70440d8dbf7f1d4750f31361a370a7233c3eedc"
+      "current_sha256": "cf8c5aff08842bdff438965fe8a27ac09a317ed7dc2a990c21d5c671870f58c8"
+    },
+    {
+      "path": "Assets/SnakeFoundation/Runtime/Systems/GridSystems.cs",
+      "baseline_sha256": "4e2ef09f143d2e840755a9f0c151be279eee1c40e8b3efdd7f59d813f11dbfd8",
+      "current_sha256": "1635e39842f442f1965aca81fd6a46d277d17260834583a69392e695ea1915e4"
+    },
+    {
+      "path": "Assets/SnakeFoundation/Runtime/Systems/PopulationSystem.cs",
+      "baseline_sha256": "d1133d461aad13235be00cec535322b4a1719995db89331431cee4967dc2c217",
+      "current_sha256": "c224f3f47499846e833d874475518dd7b9b64f00a4c75a003d844127f3c702aa"
+    },
+    {
+      "path": "Assets/SnakeFoundation/Runtime/Systems/ResolveSystem.cs",
+      "baseline_sha256": "1e62a34690bf55295ca6a6dcb09ee2b7592caa2dfe775210fe195b0a60358984",
+      "current_sha256": "33fbae5fa20f7b1c79cd3a8c7167f509df053be20a679f1375aa1831efee1e76"
+    }
+  ],
+  "modified_production_files": [
+    {
+      "path": "Assets/BrawlerFoundation/Runtime/Systems/BwBeltSystems.cs",
+      "sha256": "7fedede7d5e4ed730187dd70490f3b0c793166dfbfb48fe40840507dab967fd2"
+    },
+    {
+      "path": "Assets/RpgFoundation/Runtime/Systems/ActorSystems.cs",
+      "sha256": "decaab11093fd307da873d36d65b1ffd81bb8d5550cfe2da75e9490f2e992963"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Contracts/Collections/ParallelQueue.cs",
+      "sha256": "2a67f78f27c20c087ec748edb1a9dce5233e82486b0a40c8b4cbee09afda6c6d"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/Composition/IGameplayModule.cs",
+      "sha256": "de4c0d1681ef846a63a82c86d9feaceb4128e41c08c7241071475df0439cd4be"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/Composition/ModeDefinition.cs",
+      "sha256": "f09c3fbe593bb0414b95c037f66920278463541d8447c60c89bf1dcd76b3dae3"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/Composition/WorldComposer.cs",
+      "sha256": "911c8ad68d3ee4160b523af50caf3040087924eea8377d041fa9a75eef376529"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/Scheduling/ISimSystem.cs",
+      "sha256": "c02663c17979b22df0a3b63129fdb585447dee4ef6b089ca01acd1039772baf2"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/Scheduling/TickPipeline.cs",
+      "sha256": "17c9b0c9541405f253155c700421f0d60bdd9a07e792dd12c1dea40e2080ef8b"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/Session/SimSession.cs",
+      "sha256": "531842b1786d2bb06e678b2a735c415d15ec3e7c5761cf0cd53ac572cbffae07"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/World/CleanupErrors.cs",
+      "sha256": "f1568e4d9e922e958d659c619d40b91df9cf33e3b1540f1a7e2ca549846f587b"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/World/EntityRegistry.cs",
+      "sha256": "dced172286a260fe42e770df6cf5b9fea8d50782d3c2635e314eaf23f78bdd18"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/World/SimTable.cs",
+      "sha256": "261906dd3b8f797e0b9da72ec7bd11e23e89c0cc14079e8421fcde129d685914"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/World/SimWorld.cs",
+      "sha256": "fb100ef9e1acf718848b54deaaf031043f05062f5e56ec32c410162954649f99"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/World/WorldLayout.cs",
+      "sha256": "cf8c5aff08842bdff438965fe8a27ac09a317ed7dc2a990c21d5c671870f58c8"
+    },
+    {
+      "path": "Assets/SnakeFoundation/Runtime/Systems/GridSystems.cs",
+      "sha256": "1635e39842f442f1965aca81fd6a46d277d17260834583a69392e695ea1915e4"
+    },
+    {
+      "path": "Assets/SnakeFoundation/Runtime/Systems/PopulationSystem.cs",
+      "sha256": "c224f3f47499846e833d874475518dd7b9b64f00a4c75a003d844127f3c702aa"
+    },
+    {
+      "path": "Assets/SnakeFoundation/Runtime/Systems/ResolveSystem.cs",
+      "sha256": "33fbae5fa20f7b1c79cd3a8c7167f509df053be20a679f1375aa1831efee1e76"
     }
   ],
   "evidence_hashes": {
@@ -80,11 +482,31 @@
     "composition-reviewed-green.trx": {
       "sha256": "bb652d3a943c42f9502aec4a4b56eaaba61d579977b42d10d602ebe7b99ad76d"
     },
-    "native-api.log": {
-      "sha256": "c2ca2b0215f55c6b8535a7ba8ec5fa00be348fcf42eb1ef113a3516a0f2b1710"
+    "layout-reuse-red.trx": {
+      "sha256": "0cbd8ea9c16ac4ea1226d8379bab7a731c1aa78630b25b5806b88031f937f8e6"
     },
-    "full-build.log": {
-      "sha256": "4f565f9487337cc280e650d0597af6f66515346e2c56a9ca0b63d132208bedca"
+    "composition-final-focused.trx": {
+      "sha256": "a7344bab337192916c797d45b5ecb7f08a6f92b1271e9161fe82af4733371a8a"
+    },
+    "initializer-red.trx": {
+      "sha256": "8bf4d2c6876239f11e61ed1b5392937dd0a276cc508834a9eb4f78cd6173f6c5"
+    },
+    "initializer-green.trx": {
+      "sha256": "e5cabaad29ed85068d429ce47b661a56f46dc4c6faba6e7c519b780188f1c795"
+    },
+    "verified-final-build.log": {
+      "sha256": "14fe464249f6195b0939e58560db2853ad31e031416686293d49394ee49c5301"
+    },
+    "verified-final-test.log": {
+      "sha256": "f68098faf6b4a4a23daa7d75a9e37e103dbed9af3b0428bdb3a6ed6bfdc272fc"
+    },
+    "native-api-final.log": {
+      "sha256": "88225000005eec68dadb591f1c19f00a064b6e3228a04d843ca1e89d15cc379f"
+    },
+    "probe-final-build.log": {
+      "sha256": "4c84beb1bd43bf29d37d235d824444e80b6bc13d53fa8a2d2b1571c8f49504a6"
     }
-  }
+  },
+  "native_unity": "pending authorized normal CI publication",
+  "physical_mobile": "not run"
 }

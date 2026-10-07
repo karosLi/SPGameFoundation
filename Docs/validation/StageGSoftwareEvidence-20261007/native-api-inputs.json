@@ -1,0 +1,2569 @@
+{
+  "code_commit": "0ffa2ee356bdda740bbcf8f2b91c63c4eb7fae9f",
+  "code_tree": "b15d04e4fae26242060b5c245ed32e4a8c5ba767",
+  "scope": "Compile compatibility against real Unity managed/package APIs only; no Unity execution. Monolithic API compile is complemented by asmdef-separated harness builds.",
+  "unity_reference_editor": "2022.3.62f2",
+  "frameworks": [
+    "net8.0",
+    "netstandard2.1"
+  ],
+  "language_version": "9.0",
+  "defines": "UNITY_2022_3_OR_NEWER;ENABLE_LEGACY_INPUT_MANAGER;UNITY_INCLUDE_TESTS;UNITY_EDITOR",
+  "source_count": 515,
+  "reference_count": 95,
+  "sources": [
+    {
+      "file": "Assets/BrawlerFoundation/Game/BwGameBootstrap.cs",
+      "sha256": "6b92ac1139e06643aafedcb17f0350ca80bc88ce6fdc56c549e862c8d35671e8"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Presentation/BwArt.cs",
+      "sha256": "78a43f02642a00265a7caf6a5c5d224de502efbe1d7f78092e4b633e2ba65e34"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Presentation/BwCollisionDebugOverlay.cs",
+      "sha256": "d8cdcb4526b083c9a9b0ec9979c4762a1f7a779abfc0a3577a987d27a127ec4a"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Presentation/BwRenderer.cs",
+      "sha256": "0541f6d267f850a663293a738b5917631992051f984db393098c4d0367963659"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Runtime/BwBeltDecisions.cs",
+      "sha256": "b464f75d41d19f0315fd464289b810080a8dfcd95a8487f4afa6047fb7acbc69"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Runtime/BwBeltScroller.cs",
+      "sha256": "4d10fce5a56b9a3a662f3fa2419eed4cde25f1217c0f82116f8e2257cb5f60a5"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Runtime/BwData.cs",
+      "sha256": "1794a4d60794de713248cee7d24afded358cc3abb29c35f21c5011bf1bb273fe"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Runtime/BwMobileSkills.cs",
+      "sha256": "4f7c8bcb60af94a49aeac913f2e74fa4024c3884cfe89d783518d627dfd813d5"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Runtime/BwModule.cs",
+      "sha256": "030355e5fbbbbb6ee265d16d307db0f068b9e457f522304aeeab505fc0920e8d"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Runtime/BwSharedCombat.cs",
+      "sha256": "18e592d5ed75fd06d872f2d2ddbff049d8badf6ee28342b73d8dadfcdb1afccf"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Runtime/BwWeapons.cs",
+      "sha256": "2b9aa80c78f2886f48ec390befe2c460f861a871741250dc2bebf430dc75912c"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Runtime/Systems/BwBeltSystems.cs",
+      "sha256": "7fedede7d5e4ed730187dd70490f3b0c793166dfbfb48fe40840507dab967fd2"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Runtime/Systems/BwSystems.cs",
+      "sha256": "1108317b64ba1253df695f11137324618552455c28daf912de93b54384977183"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/EditMode/BwBeltAiReference.cs",
+      "sha256": "a330204d06d58e24dd94614cac53758f4862a903a7ab1cff47d89c0eae982f7e"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/EditMode/BwBeltAiTests.cs",
+      "sha256": "7778f78d7fc86e77faca298bde75eade5ebac27b1d1f9a7f135fb587eab02575"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/EditMode/BwBeltScrollerTests.cs",
+      "sha256": "98d4d4b1519c61d14ff128bca0294a360c41a33105fae864a5dd0a9832f79f2e"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/EditMode/BwBeltSeparationArithmetic.cs",
+      "sha256": "3ca38dc837af55d9ae813a3f4c8721e46d717a21e3ffe0ad95f1efe3c0e14d24"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/EditMode/BwBeltSeparationCandidateTests.cs",
+      "sha256": "b15426b15c3357c3fa977da37ce99e201750fec153c53ec6ef56e46b1a696643"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/EditMode/BwBeltWorkloadTests.cs",
+      "sha256": "ecfa05e25b44f763c3832c8e9594eeef7d2d9742a33c2aa5dc7d031da425a7be"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/EditMode/BwCompositionManifestTests.cs",
+      "sha256": "4361dc38f1685a5bcae7c04b35c6d12d803f63bf268f98e2a7631ddba456ebb6"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/EditMode/BwMobileSkillTests.cs",
+      "sha256": "610ea1d2359f4742dfc3f4baf1c270f9d36946ef9b240bf82129fc3945eee1fc"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/EditMode/BwNaturalAdapterTests.cs",
+      "sha256": "00034f4297d52c3a1c32d64addf3a54f3678058cdda6434296fec52d0f24239c"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/EditMode/BwProjectileArtTests.cs",
+      "sha256": "0a4c992e4b11159c9f37613e31dca3044726378844ae4bdb0979c4f4bb9eed77"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/EditMode/BwProjectilePolicyTests.cs",
+      "sha256": "0201daffb97504cebeda49dca2646316401c244fae625c51554cb9fc25133084"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/EditMode/BwSharedCombatTests.cs",
+      "sha256": "c72c167c3dcb464375402da8e1b1426a4ad178e53963d71cf37e7ab95601f722"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/EditMode/BwTests.cs",
+      "sha256": "a143c5648ce0969c28f05bc0c79fb709c69336afb7a92685f65306f1dc614f8d"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/EditMode/BwViewLifecycleTests.cs",
+      "sha256": "14ad0d2b959ceb0b4173e48e308c0f4ee0dd01ff89703661f3fc9f47f9a58314"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/EditMode/BwWeaponTests.cs",
+      "sha256": "a2fc9bb6c8483590d7771c4a84d162d499d3b4ab45dd4fc0734a671b41e66fce"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/PlayMode/BwBeltScrollerPlayTests.cs",
+      "sha256": "a4b5200bc6b099d86ebf47a5483d542a5165b97d97be3c3461192793d5f1d6fa"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/PlayMode/BwCollisionDebugTests.cs",
+      "sha256": "c015719aeab28c6d407e9aedf2e9c329fbbae884d1c3811453a2476a2d190df3"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/PlayMode/BwMobileHudCaptureTests.cs",
+      "sha256": "69c347ab83d1a0e22bde8314df98edf800a5d93f0c3712ae25b83f3ec000f685"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/PlayMode/BwMobileHudPlayTests.cs",
+      "sha256": "a4223b842c181cd2ab33987b8eb552164dcbe3f913d39edc045487f742871250"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/PlayMode/BwNaturalGameplayTests.cs",
+      "sha256": "3c4a2d970eb99a1430c6303a767c39ec4ee07560335b7b6a7a8c0708460e6507"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/PlayMode/BwPlayTests.cs",
+      "sha256": "1ba99a545557d6e30b1a383d4e1c31974055e6cb9eced90d8ae687e7ccd700a3"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/PlayMode/BwSharedCombatPlayTests.cs",
+      "sha256": "a3c00e69fcbb716812c3a4e17b61bfb043f7c351f0e19b69bcc0b9a78ae98c1c"
+    },
+    {
+      "file": "Assets/BrawlerFoundation/Tests/PlayMode/BwWeaponGameplayTests.cs",
+      "sha256": "6e501a1ba8d07cfb989dbbe0b5721d3a211c150bb0b92644ae1ab4615de9eb09"
+    },
+    {
+      "file": "Assets/DefenseFoundation/Game/TdGameBootstrap.cs",
+      "sha256": "7be952f70a938a262c4fd7e1b6100d15ad2b9c367336ee3a9c74450782cfe8fa"
+    },
+    {
+      "file": "Assets/DefenseFoundation/Game/TdHud.cs",
+      "sha256": "ab164bee359df6c42a53fb2859b09acd93b41b1b555740c83dc2a8fa608aaeff"
+    },
+    {
+      "file": "Assets/DefenseFoundation/Presentation/TdArt.cs",
+      "sha256": "61252b2a09d332e4814f71c61a54d9162b698ff376f6e46f58bff2797ecfad2e"
+    },
+    {
+      "file": "Assets/DefenseFoundation/Presentation/TdRenderer.cs",
+      "sha256": "ef8a920d4c1d3258a54b8f4b09d4018606b0183be416f67325dd63a689a6a227"
+    },
+    {
+      "file": "Assets/DefenseFoundation/Runtime/Systems/TdSystems.cs",
+      "sha256": "5ca304c75e0f94b8146284514ad861f260fca6afee14effee320bc8bffc77e4e"
+    },
+    {
+      "file": "Assets/DefenseFoundation/Runtime/TdData.cs",
+      "sha256": "fe2c3aa2fdc688e0c1b55b6492450fe36f40402aad9847922b8efd46e14646fa"
+    },
+    {
+      "file": "Assets/DefenseFoundation/Runtime/TdModule.cs",
+      "sha256": "45c27a2ee02308a0a226c7fc1812e4d269fec9e51827295fe2a7cdf0f270379e"
+    },
+    {
+      "file": "Assets/DefenseFoundation/Tests/EditMode/TdTests.cs",
+      "sha256": "1a3da87b79dd60913e1d411a19bc948d0c75ec1562e93d1ff97952730819632c"
+    },
+    {
+      "file": "Assets/DefenseFoundation/Tests/PlayMode/TdHudTests.cs",
+      "sha256": "a67250a50ee016df14f448a94155a494ca4185a599e6d7724502fc72479a74cd"
+    },
+    {
+      "file": "Assets/DefenseFoundation/Tests/PlayMode/TdPlayTests.cs",
+      "sha256": "fc877e8aa43a5693993bb302b94c02fd631e3679aec44052a2440cf05907bc60"
+    },
+    {
+      "file": "Assets/PlatformerFoundation/Editor/PlLevelExport.cs",
+      "sha256": "47a128294b575baa50f86299e26a7dd0dd1fc94429730f486f9b98d3543b2fa0"
+    },
+    {
+      "file": "Assets/PlatformerFoundation/Game/PlGameBootstrap.cs",
+      "sha256": "5a20b2112975b17a163f800a1a70a3b79623d3971eda7543a395c3f0849c933a"
+    },
+    {
+      "file": "Assets/PlatformerFoundation/Game/PlHud.cs",
+      "sha256": "8223277e521bebb1ccf2e09e830402fefb65b35b7f646fe2969b1af969281d6e"
+    },
+    {
+      "file": "Assets/PlatformerFoundation/Presentation/PlArt.cs",
+      "sha256": "94461c55fe50ae9ece35333a0ee70744a4c1e1df42774a051e454ca6a55fcdae"
+    },
+    {
+      "file": "Assets/PlatformerFoundation/Presentation/PlRenderer.cs",
+      "sha256": "453454032efa480b29249227b7cda17c4bf8eff830e5896ba759430e86a19147"
+    },
+    {
+      "file": "Assets/PlatformerFoundation/Runtime/PlData.cs",
+      "sha256": "5db3079fa8e3357bbd1ab0465bf062bb2ee258478c1c64fa304481fb2659bd41"
+    },
+    {
+      "file": "Assets/PlatformerFoundation/Runtime/PlLevels.cs",
+      "sha256": "041655b9b0b8bc930c495951c06b3cc9217398ba85d00cb30252339601d9eed3"
+    },
+    {
+      "file": "Assets/PlatformerFoundation/Runtime/PlModule.cs",
+      "sha256": "4d6542d2b5493b72388b88c0a567790e227fdbd4eef58a29c1682b5dca441e49"
+    },
+    {
+      "file": "Assets/PlatformerFoundation/Runtime/Systems/PlSystems.cs",
+      "sha256": "e06fb5b68809687e100064d9dbd2452b46253167954f9da953f441c1fb7115e0"
+    },
+    {
+      "file": "Assets/PlatformerFoundation/Tests/EditMode/PlSpriteStateTests.cs",
+      "sha256": "49b3075c04c2c52096bd0d210ef9577c54c9f52fc65c3ddb9ef2bc5c1946c0ff"
+    },
+    {
+      "file": "Assets/PlatformerFoundation/Tests/EditMode/PlTests.cs",
+      "sha256": "96b1e74326b6f5ed145239c9e003c54f41a711609e94939868ce5cb93efd25e7"
+    },
+    {
+      "file": "Assets/PlatformerFoundation/Tests/PlayMode/PlPlayTests.cs",
+      "sha256": "323375caf81fc23567bb9fe17fbb002577f52adb8e4f88f2c760eb6045fc1c09"
+    },
+    {
+      "file": "Assets/PuzzleFoundation/Game/M3GameBootstrap.cs",
+      "sha256": "6e3d6e435a8a3161ad4f220a0abb0d8c9290fedfe316cb14c6dfcf50e8ddc0f2"
+    },
+    {
+      "file": "Assets/PuzzleFoundation/Presentation/M3Renderer.cs",
+      "sha256": "1251261c87174c3eea81698315f258d9b4e355946344da9f174585fd8093331f"
+    },
+    {
+      "file": "Assets/PuzzleFoundation/Runtime/M3Board.cs",
+      "sha256": "aea7935ccfaa6acfe71bd6c003f39c28a7cd4d71f37e57411e6c0d7662c0c483"
+    },
+    {
+      "file": "Assets/PuzzleFoundation/Runtime/M3Module.cs",
+      "sha256": "7fa0c43a7d35921ef78652aee86473cb4d39784bb9f79cfb2b2a3b309ec7eeea"
+    },
+    {
+      "file": "Assets/PuzzleFoundation/Runtime/M3Rules.cs",
+      "sha256": "2adc2cc266097590c190f82fa62feb68f0652dd7d361cc7b798b80b28896c6d0"
+    },
+    {
+      "file": "Assets/PuzzleFoundation/Tests/EditMode/M3Tests.cs",
+      "sha256": "27bf8ef3122cbe183b70d5372d19205bd132f9a3c6d35e46192e36bed946f18b"
+    },
+    {
+      "file": "Assets/PuzzleFoundation/Tests/PlayMode/M3PlayTests.cs",
+      "sha256": "7ff03c8ac937ef0386c659c45a3e9e0699b13541d283e13fdd6af00f9b706ff7"
+    },
+    {
+      "file": "Assets/RpgFoundation/Editor/RpgProjectSetup.cs",
+      "sha256": "83a6820e38355ef45aa422753a607d05fbb07f684adf60f1e7f25dc2b1059981"
+    },
+    {
+      "file": "Assets/RpgFoundation/Game/AssemblyInfo.cs",
+      "sha256": "cb6f587b1cd2d7696bb6efd3e8935ac8c56b8260d37d66377d23e35cde11316a"
+    },
+    {
+      "file": "Assets/RpgFoundation/Game/RpgGameBootstrap.cs",
+      "sha256": "6fe14ef098ad41f597c97103895886f742a485f0ac4bd6ce76ed91de197a2e3c"
+    },
+    {
+      "file": "Assets/RpgFoundation/Game/RpgHud.cs",
+      "sha256": "0d5d6b95dcef2db8e7ed2349e26e6373d9cf17cdf3a36c767459b59518a2fe21"
+    },
+    {
+      "file": "Assets/RpgFoundation/Game/RpgMinimap.cs",
+      "sha256": "5150c6686877f1e61bd5952c49cfcc5ce42839e7464875d8581d014cb610a6f7"
+    },
+    {
+      "file": "Assets/RpgFoundation/Game/RpgOptions.cs",
+      "sha256": "21c556e3258b19544dccfde381c7967235050a8dffea9cd338f01c357e4a7991"
+    },
+    {
+      "file": "Assets/RpgFoundation/Presentation/AssemblyInfo.cs",
+      "sha256": "0f585099d87f375b09d5e2ae89314edbaccd320d7b7101217ae13e415b9c7d6a"
+    },
+    {
+      "file": "Assets/RpgFoundation/Presentation/RpgActorAnimation.cs",
+      "sha256": "54ba98113a17686375363d3a9223b88a9319d638eb6f1dca9e718bd07a57047f"
+    },
+    {
+      "file": "Assets/RpgFoundation/Presentation/RpgArt.cs",
+      "sha256": "51a3e3fc15f4269cb59f1f7d504d47112bd82748162eafe4c013a356f1fbbff1"
+    },
+    {
+      "file": "Assets/RpgFoundation/Presentation/RpgAudio.cs",
+      "sha256": "551f237921c50c79e9e4184452e76937c0d48fc3acfa0b0e14aa94630e399b2a"
+    },
+    {
+      "file": "Assets/RpgFoundation/Presentation/RpgWorldRenderer.cs",
+      "sha256": "d7e1a8abc260ea52dd6e2b86f55016c415865cfebdd24ee731abe7be53f8e5b3"
+    },
+    {
+      "file": "Assets/RpgFoundation/Runtime/AssemblyInfo.cs",
+      "sha256": "52638876c582a912a541e5564e02bb9f51660a5dd27ef79d9004bca261a3c4f3"
+    },
+    {
+      "file": "Assets/RpgFoundation/Runtime/DungeonGenerator.cs",
+      "sha256": "9af52f1b39e8d028ab82fdaaeb82243515c3b47941708e133188734349f0c56c"
+    },
+    {
+      "file": "Assets/RpgFoundation/Runtime/RpgBot.cs",
+      "sha256": "8b8113fcdcca67bfa98bf9de8c50760ad20ac9908836482df7ef0edf678ea8c8"
+    },
+    {
+      "file": "Assets/RpgFoundation/Runtime/RpgConfig.cs",
+      "sha256": "19a040de54c1ebb554655a53c0ebcd411179ff244c4ce42ddf18710febd7abd1"
+    },
+    {
+      "file": "Assets/RpgFoundation/Runtime/RpgData.cs",
+      "sha256": "3e0ce218a2f35e1d517751c389ad06437181c13c223a2accdb80517345e74124"
+    },
+    {
+      "file": "Assets/RpgFoundation/Runtime/RpgDecisions.cs",
+      "sha256": "eb7e644c1c2ba4cdedd6e320130527e7f7521f4d3f264af6dc8061bca06a0807"
+    },
+    {
+      "file": "Assets/RpgFoundation/Runtime/RpgGameState.cs",
+      "sha256": "531d8045ec6bb5c67e6fe20b423980c9e0abe08601d9f4ad034a948d919c7c13"
+    },
+    {
+      "file": "Assets/RpgFoundation/Runtime/RpgKeys.cs",
+      "sha256": "03a7e161640fb28a871101d0639711c332fd5021a75663f819fa945fa2e37d09"
+    },
+    {
+      "file": "Assets/RpgFoundation/Runtime/RpgModules.cs",
+      "sha256": "3c2ab5c57bba229ad8749e6f96a48d552ee5e8c3a89f024faff50048db2822ca"
+    },
+    {
+      "file": "Assets/RpgFoundation/Runtime/RpgProjectileRequests.cs",
+      "sha256": "4b5f440f7a26537f615e7be9f7fe419cfe47014c70c958a4710347f1051ed9b3"
+    },
+    {
+      "file": "Assets/RpgFoundation/Runtime/RpgRuntimeConfig.cs",
+      "sha256": "ce2c5bb328ebea06a5ee074eceb94d8602fee892c5bba636032b152cdc583234"
+    },
+    {
+      "file": "Assets/RpgFoundation/Runtime/RpgShop.cs",
+      "sha256": "d06594f7a9cbfb76832751d895a43190592221e8ef4d252857200800a61eac15"
+    },
+    {
+      "file": "Assets/RpgFoundation/Runtime/RpgSpawner.cs",
+      "sha256": "6c00596cc85ca488959cb7d214b72c3de4f78e60e1f0c699575cf67dda9788a3"
+    },
+    {
+      "file": "Assets/RpgFoundation/Runtime/Systems/ActorSystems.cs",
+      "sha256": "decaab11093fd307da873d36d65b1ffd81bb8d5550cfe2da75e9490f2e992963"
+    },
+    {
+      "file": "Assets/RpgFoundation/Runtime/Systems/FloorSystem.cs",
+      "sha256": "36ff4dc9607315b39a8dc3a6f6aa8eb0a6b60eb5cebab8e194772981abab83ff"
+    },
+    {
+      "file": "Assets/RpgFoundation/Runtime/Systems/PropSystem.cs",
+      "sha256": "d489c452beb84ad62e33755d1ba5bb36ea30aca7f9efd35cacc3346d99eb36a0"
+    },
+    {
+      "file": "Assets/RpgFoundation/Runtime/Systems/RuleSystems.cs",
+      "sha256": "98498e9cb150113b19a2722d90bd36fae43e3f39de2ba674fffe49828128e85c"
+    },
+    {
+      "file": "Assets/RpgFoundation/Runtime/Systems/StatusSystem.cs",
+      "sha256": "001b692d6d09f0cced50df139a69b42ddfad5fb74af0c2dfbafd19cc1e0eec23"
+    },
+    {
+      "file": "Assets/RpgFoundation/Tests/EditMode/RpgAiDecisionTests.cs",
+      "sha256": "caec4987e1e86180a1dbb4eaf085dd86fb2cc0796a74b3c90d5c356209a51887"
+    },
+    {
+      "file": "Assets/RpgFoundation/Tests/EditMode/RpgAiReference.cs",
+      "sha256": "25cb3000aa4aa796538018bd5c8036deca6b7a8bfffc29595757594424733a57"
+    },
+    {
+      "file": "Assets/RpgFoundation/Tests/EditMode/RpgAiWorkloadTests.cs",
+      "sha256": "8eedc7bdac6614761cda3d09563adfe51aa1d4e22afd5a8e78e7b2310b5c7cbc"
+    },
+    {
+      "file": "Assets/RpgFoundation/Tests/EditMode/RpgCombatTests.cs",
+      "sha256": "9d02a2f0a0f21f450b218253a4499ffebfcab5b65724dba28acb04788f613f61"
+    },
+    {
+      "file": "Assets/RpgFoundation/Tests/EditMode/RpgGameTests.cs",
+      "sha256": "9fbde3acadc8b2efaa6fa6ed4182fce6abc265664f9b407938efada23097eacc"
+    },
+    {
+      "file": "Assets/RpgFoundation/Tests/EditMode/RpgPerformanceTests.cs",
+      "sha256": "4641de83e1468356107e2c22a7665110053e576d22af803414dd8a0650344ed7"
+    },
+    {
+      "file": "Assets/RpgFoundation/Tests/EditMode/RpgProjectileOrderingTests.cs",
+      "sha256": "605c8315489f77fcec7ff816784f0bf989d43987e6e0b59cf1a0a5e55742ae05"
+    },
+    {
+      "file": "Assets/RpgFoundation/Tests/EditMode/RpgSnapshotTests.cs",
+      "sha256": "5e092ea75e78b19bf5518443e86091bc17c8af8545d7a5fc21d9ec4611b6a0d0"
+    },
+    {
+      "file": "Assets/RpgFoundation/Tests/EditMode/RpgSpriteStateTests.cs",
+      "sha256": "d7328da602af8cbd0259bcffcf0a7c77a9c8438e1ccd2a21b4b49607c3e82af7"
+    },
+    {
+      "file": "Assets/RpgFoundation/Tests/EditMode/RpgTestWorld.cs",
+      "sha256": "4bd719a812e235f5da37b88881f299fb971d947885ca8a1ff02c292b6e8cceb2"
+    },
+    {
+      "file": "Assets/RpgFoundation/Tests/PlayMode/RpgUITests.cs",
+      "sha256": "9a059ac52d24e477d6e36c08e6e36c91eeac7e07f8f4a7b0479e961b01a91cf0"
+    },
+    {
+      "file": "Assets/RpgFoundation/Tests/PlayMode/SpriteTierTests.cs",
+      "sha256": "842667fed786ee52919c517320770e6511be5298b8478e9223e916687855eb8f"
+    },
+    {
+      "file": "Assets/ShooterFoundation/Editor/ShooterProjectSetup.cs",
+      "sha256": "dac911c19dbea8d789b96037ea551d050b8eaa106d641e2241923f5851ffd1c5"
+    },
+    {
+      "file": "Assets/ShooterFoundation/Game/ShooterDragPad.cs",
+      "sha256": "69059e7d0bec6ec39bed453c8a5e131845f1a1dce263b5ed405e3481914aab01"
+    },
+    {
+      "file": "Assets/ShooterFoundation/Game/ShooterGameBootstrap.cs",
+      "sha256": "6b6da5aaed028080e83104c298ae4e83347aa48510858157e1650b8fd83ec1a8"
+    },
+    {
+      "file": "Assets/ShooterFoundation/Game/ShooterHud.cs",
+      "sha256": "7b18e7753bd07ee4b034ea1ca668c845b7dd4f201ac79dfdf793d9077a6f68b7"
+    },
+    {
+      "file": "Assets/ShooterFoundation/Presentation/ShooterArt.cs",
+      "sha256": "2f03c2eb89ff476f880c038e40d952ae786ac3712142dd2bc5366cb1f4f91da4"
+    },
+    {
+      "file": "Assets/ShooterFoundation/Presentation/ShooterRenderer.cs",
+      "sha256": "b567d963f69a6e744333920002dbfa1f1b9256bf47e288912afc7f120a3addca"
+    },
+    {
+      "file": "Assets/ShooterFoundation/Runtime/ShooterConfig.cs",
+      "sha256": "53602a23dd9e152d2b38b3f125cda395a20ac007dac6ffdce133415d0a9e99c4"
+    },
+    {
+      "file": "Assets/ShooterFoundation/Runtime/ShooterData.cs",
+      "sha256": "72a1732d1e7fa09921d968803af46d2d9e9ce403dced3145132027624197cdf8"
+    },
+    {
+      "file": "Assets/ShooterFoundation/Runtime/ShooterModule.cs",
+      "sha256": "d0c369ace5c9e2a38422b72e66fabd471af9dfe56d5589a41c13c835576ce9b3"
+    },
+    {
+      "file": "Assets/ShooterFoundation/Runtime/ShooterTickSystem.cs",
+      "sha256": "50e69f099dea054b2adf836c22983023a61b98560451dbed59ca286f6b0b6c68"
+    },
+    {
+      "file": "Assets/ShooterFoundation/Tests/EditMode/ShooterCollisionBenchmark.cs",
+      "sha256": "1c7cfa3ea3dbf44d9283faa0a81b49c56bc16649f77e8d20be63cfa84034034f"
+    },
+    {
+      "file": "Assets/ShooterFoundation/Tests/EditMode/ShooterConfigAssetTests.cs",
+      "sha256": "768107213f56f6a1a8da9da2aae37c580b7699778f3c84b872d519b7c56d03aa"
+    },
+    {
+      "file": "Assets/ShooterFoundation/Tests/EditMode/ShooterTests.cs",
+      "sha256": "0457613e713844ff5067769da6b686adb60936778d3acc00955f188544236cb6"
+    },
+    {
+      "file": "Assets/ShooterFoundation/Tests/EditMode/ShooterVfxIsolationTests.cs",
+      "sha256": "5d91fc244786e00d62fe1b8f0c999d428efb68a597a7107760cde803124f1be5"
+    },
+    {
+      "file": "Assets/ShooterFoundation/Tests/PlayMode/CombatVfxVisualTests.cs",
+      "sha256": "46a0313277e21b1753e1a723846dab613a9093a27583eb1d42631b060a10f5b6"
+    },
+    {
+      "file": "Assets/ShooterFoundation/Tests/PlayMode/ShooterPlayTests.cs",
+      "sha256": "513798925f97391239ed653e5829952ab84bad8c760681652310e22eb5234837"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/CharacterValidation/Editor/BatCharacterScene.cs",
+      "sha256": "fab407779fd69ffacade12cf9c3968ce637f7a932f347891c04e2b3f82fd1637"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Contracts/AccessKey.cs",
+      "sha256": "7854a510e5b2c427ea078b8313a3cc7288d7bee12ad014f1a9469be9ba1e76c4"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Contracts/AssemblyInfo.cs",
+      "sha256": "5860a04867594e123d476d03a0a9c7381a639248450f7a1f3607eb871496958a"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Contracts/Collections/ParallelQueue.cs",
+      "sha256": "2a67f78f27c20c087ec748edb1a9dce5233e82486b0a40c8b4cbee09afda6c6d"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Contracts/Combat/CombatDebugShape.cs",
+      "sha256": "f4b4d3820e6e0164b079791d9324278ab53dea7f0cc154a25debf36e218d4b8c"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Contracts/EntityHandle.cs",
+      "sha256": "74a0b9b20ad66c6e59bd2bda9036000caf6302e6f15035dd59ebf3f071609e50"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Contracts/InputFrame.cs",
+      "sha256": "3f969d00c856dc3844b0eff0dcbe8a749cc6acc1fe6715334208407f595cf8ca"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Contracts/NativeArrayExtensions.cs",
+      "sha256": "8502d60ee8421c1fa673ec38857e69ba7f69b733a0c8a4af8f7e6f9c791f7384"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Contracts/Pooling/ObjectPool.cs",
+      "sha256": "76e0c51955557215d060c69fe26c63fe031aac8c61b93424b78b293999834d32"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Contracts/Pooling/TextBuilder.cs",
+      "sha256": "1ae6490f77567b66adba909ff15a6ff63bf159d7509897dded9c91f894d2e5d0"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Contracts/ResourceHooks.cs",
+      "sha256": "89c6e3109139cc8facb85d8c2f5bf2fd875f77089062ec182e15c54bfa4f20f7"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Contracts/SimPhase.cs",
+      "sha256": "cba39bc7921713a16e60559c8cd9d39cd95b2f8080ed1a10b3a84cd47941ceb4"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Contracts/SimRandom.cs",
+      "sha256": "4d0f7261d588434d6835ea2c0ccff845ad9555548f5647fe2c4c53a3c459f5a9"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Contracts/SkillSlot.cs",
+      "sha256": "d98668bb2d4029ed0f49f8880d1b2b0b7bc0451d6ae4b5f8cc24f90fd2040bf6"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Contracts/Snapshot.cs",
+      "sha256": "45fd9837a4d176828589906bfaa6fbb37b568d5ca719931d38f7879a84ef292e"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Contracts/TickTime.cs",
+      "sha256": "1c01369e598e9f91acffa5f1f4dc7f299436f591751b6f9d9b7f4217cc6195d3"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Contracts/Weapons/WeaponViewState.cs",
+      "sha256": "7d428eda91a9879444abf9013e7f8bc71cb39fc33bebad51aaffd0df2afd8fd0"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Editor/TileLevelEditorWindow.cs",
+      "sha256": "58a9e6d09094c23fd82828ae9449f52dcff1d4f3d2c84ec4986ca170a45f0b4a"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L1Simulation/AssemblyInfo.cs",
+      "sha256": "3b91750c424935d53c7a90c73a3bfd48dbf0390453b638b72b28d102c92aa703"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L1Simulation/Body/BodyStore.cs",
+      "sha256": "551854531bb7bc90fe459fd3de22bc606420d2944c7843e0043fbfb2e3dde905"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L1Simulation/Body/TrailBounds.cs",
+      "sha256": "06b440d5fa7d49403c8806872fd60c29d387c0e0ab560805e87bff396052bee2"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L1Simulation/Body/TrailState.cs",
+      "sha256": "6fde54da07b55bbf01749eb9ae42fc5973d5ea87e0d17f7347df7317f481d187"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L1Simulation/Geometry/GeoMath.cs",
+      "sha256": "5fddf6c11e6c05e7557abadc1972635b90b9d2b4ab0619101c6057c94b5285b1"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L1Simulation/Movement/Steering.cs",
+      "sha256": "4456cc884eb44ef1efc2a0940bbb1f216d50fc857b996ed35ca0e99844050944"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L1Simulation/Navigation/FlowField.cs",
+      "sha256": "64f7a9a8a04b5e763ddf0bc32edef1bfbd77499230273c639d0d460010734dcb"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L1Simulation/Navigation/GridAStar.cs",
+      "sha256": "e4767301b0122df82f92ca8266a0b5627b3a599f8b823eea2d8f4caef65d8a4e"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L1Simulation/Physics/PhysicsCollide.cs",
+      "sha256": "7f84caccb47831df2bf5a6b02482b8a1ba8a42ba7efb09d292afe5a4b6470b1a"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L1Simulation/Physics/PhysicsStepJob.cs",
+      "sha256": "48fec996dd356d904cb3d7f0a5704ee105215fbefc502c57cbd31613f2a6d59b"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L1Simulation/Physics/PhysicsTypes.cs",
+      "sha256": "1b19b48fb632c572f4ab444fc556680c0535b005e4739f908ac278c5085bda03"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L1Simulation/Physics/PhysicsWorld2D.cs",
+      "sha256": "76dbf66e7c6795929dbcd164194729b40562b47a95d2343c53169857abbbbfb2"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L1Simulation/Skeleton/BonePaletteMath.cs",
+      "sha256": "4ddfb50c44d5d3adaecf9f37e6ff7d541460c989ce5bce582a7e6d25ff0feeea"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L1Simulation/Skeleton/Skeleton2D.cs",
+      "sha256": "21b2df78648844868daf4101900212fd481471da965a1d4e038160a3226f40f1"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L1Simulation/Skeleton/SkeletonPoseJob.cs",
+      "sha256": "a115397a1eb4a88c2d81cda033ed66dafa50b7ce80a5839b7633c0d33506fbf8"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L1Simulation/Spatial/CellListGrid.cs",
+      "sha256": "f8f1dedbf08b3fd1dbd536a4e1b48e6c327abcad4014869f7d22998e390929dd"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L1Simulation/Spatial/ChunkMath.cs",
+      "sha256": "f6854cc57ac874cca81761c71347e87f610e3a46d85fd01473d80ccf225d1912"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L1Simulation/Spatial/Morton.cs",
+      "sha256": "408bce8ba589e758f627c1987292a9bbcb1f18bf7002cf8b98ecab432dba3155"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L1Simulation/Spatial/SpatialGrid.cs",
+      "sha256": "3f52c22efce2f271d8f3b7a029fe5ef3fffa574c13ff8bc75db4a3e490685e58"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L1Simulation/Spatial/TileLevel.cs",
+      "sha256": "c6e28f663fb42b6f2423daca01b3921b7fa2006428e62df05ce61ee2660bbd08"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L1Simulation/Spatial/TileMap.cs",
+      "sha256": "290ad2f134d8faae9d21c07b8d63652cfd8db37d37ef01fa6f57f80c3851ddf0"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/AI/DecisionTree.cs",
+      "sha256": "9bda273a5fa4d0e46911834c774231983e7d469b1d201f3a048ca94574c722a0"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/AssemblyInfo.cs",
+      "sha256": "3b91750c424935d53c7a90c73a3bfd48dbf0390453b638b72b28d102c92aa703"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Buffs/BuffSet.cs",
+      "sha256": "61382f3b71b3f0f276e6ae32f618562f85a9734a976d8d2daee5751931f051ca"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Collision/HeadOnRule.cs",
+      "sha256": "8fb97a705580e2d4c1d0630bc7598f0a34850b5287a829ef10cfe00cb62d554b"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Combat/ActionTimeline.cs",
+      "sha256": "d9718c8182220484ebb1bd1fac4472b53774abccec46f78ee31d5b1c64916816"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Combat/CombatCollisionPolicy.cs",
+      "sha256": "440e455506327f0da83ea11e14c22660b141b9c044009e826023b9a7e13aac04"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Combat/CombatMath.cs",
+      "sha256": "76c049ea88e6c02be43a4d279ff6ca92b42e1e18a70c72b586c7b62aeaf4938a"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Combat/CombatShapes.cs",
+      "sha256": "117686d67cd70b6ca1b2bae30cc31ffa785bb6b9a7bcbf9ef358ea96ae28e02f"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Combat/CombatSweep.cs",
+      "sha256": "0054245722ff3505096c749237c010e19ac11f6923cf90005e24762d4bcafb95"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Combat/GroundCombatQueries.cs",
+      "sha256": "73ce1ea011fb85d175fff1754c233f7fa2ee7c4bda8158cfe631316446533a13"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Combat/HitHistory.cs",
+      "sha256": "593d9a3e4d168b1251e00bc2ff0fcc53a0f8e30fc500a40701ef66e424e24b3e"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Combat/PatternEmitter.cs",
+      "sha256": "a05de64ef3cdb784bbe1371e89a037cda35347ac5f637e9500b1176a7b0cba24"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Elements/ChunkPopulation.cs",
+      "sha256": "1d55b259332f657eb2c9f8bb8ea1cf021df419675f200f4e039ec79ab7e44465"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Growth/GrowthCurve.cs",
+      "sha256": "577abb0b409854746de8a70ac3089fe89d8a0ddd71c76f8aa1578a59d5044738"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Movement/PlatformerMotor.cs",
+      "sha256": "85491872611e3232ab11f780d3b888e4100e600c254007be38896972094e8d90"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Narrative/Dialogue.cs",
+      "sha256": "01bef37d0431d7986ae1d7c95eb75145ffc242d6404f2d5beeb42db152c7018a"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Narrative/Localization.cs",
+      "sha256": "8aa3ccc9204c89346fdf6b8e230fda41568c0d6ebe39d0545e9c89cab1169535"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Progression/Progression.cs",
+      "sha256": "507a74b9ea2cefdab9cd9a9e9ff602b7ed59e8258db2600d19f1e0768d6350b5"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Progression/WaveSchedule.cs",
+      "sha256": "f4303968e83688a62629a15abbe79fdbfe3c9c566acf8d4f6b8d70efab692ba8"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Props/PropDefinition.cs",
+      "sha256": "0d4ed066ed811beb09fc7474036db6e9751cfc6e78a8c0130fe9c7b9af746cfc"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Skills/ActionPoseClock.cs",
+      "sha256": "5ac70e648bc8d3cfbbf46e1087e5fc63486bfcbd69dfa48acc2f190bdabd1174"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Skills/SkillDefinition.cs",
+      "sha256": "f537bdd0cf6290eefeab7ca0198267adc984a522090a3fc884f3549aade9d348"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Skills/SkillSlots.cs",
+      "sha256": "e78e9dc8c8d3825b2c5556a9f73fabdc472bab6a401e839678db0ec85da3d2d8"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Stats/StatSheet.cs",
+      "sha256": "dc1c33d3e62962622629eafc99750128c6b0209a62aa90c2fef4a38e32f20e9d"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Weapons/WeaponProfile.cs",
+      "sha256": "ef57d2467547696e34cbac44ca4a7491ab5702abe0afc3addd4ebbd41e94dd20"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/L2Gameplay/Weapons/WeaponRuntime.cs",
+      "sha256": "6be3872d1d64beb23e3541e2c8eaecfbefacb8d830f5c7564b52f100cfffb44d"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/MobileExamples/Editor/BeltScrollerSceneTools.cs",
+      "sha256": "1e351fb73390345e7a6a671a9bad378a718f93d81955f1314c2ff0d675b7face"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/MobileExamples/Editor/MobileSkillSceneTools.cs",
+      "sha256": "29aa1d95bd59ca2f4845c3df3f95fd534e98101f308aa055f027e170347f61bc"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/MobileExamples/Editor/WeaponCombatSceneTools.cs",
+      "sha256": "8ada0ce539b741ed5857530918d72faa9d1b8ece89ee2ab4b014995e1a7ff79e"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/MotionValidation/Editor/NaturalMotionScene.cs",
+      "sha256": "c3162dea44ff30c2f0068771628f013df70330144e3ece1b02ca478970b594f9"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/MotionValidation/NaturalMotionDemo.cs",
+      "sha256": "9e029d2670e1f9c154521035330a6cfe69410c45c4805472748967a5131c2e36"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Animation/GameplayCharacterMotion.cs",
+      "sha256": "c5349375b9e16ad824c94667e4fa501519f5db99de9848baab6a74accbed8277"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Animation/GameplayCharacterPresenter.cs",
+      "sha256": "2479736c7eddba75f8430f68e796a5838117232a9be56b45d116e63d2c9802cb"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Animation/GameplayCharacterSelection.cs",
+      "sha256": "3d908db11b17f0a25d6cc0a3966fdba6299aeb90c209a75016ac8ea12916cdb9"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Animation/GameplayLocomotionClassifier.cs",
+      "sha256": "85a4f17eb86d15851e748db71a95bfe54c66d821295f8b1344fa2a106fe0d6a7"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Animation/GameplayMotionProfiles.cs",
+      "sha256": "05ea95b6b549cc9c09c9cf38f963516874f6f4fd02f3dab692246614c31120f0"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Animation/NaturalCharacterArt.cs",
+      "sha256": "047454d065c6b2525bfb93999257a297d818de64bea8041fe4048081fe83db28"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Animation/NaturalCharacterRig.cs",
+      "sha256": "34f09e87087b1837a0c817612c1a4a4105a06db08808080f0edb6a177bb7c762"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Animation/NaturalMotion.cs",
+      "sha256": "41124eb8724cdd417e686cbae705d9b63509835dfc032722b7e4c883d4252591"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Animation/NaturalPoseJob.cs",
+      "sha256": "7f9c54081d1781ee7fa9d670d6ca797092a21b7d41bcfa8bafa471bbbb3737f5"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Animation/PoseSilhouetteShadow.cs",
+      "sha256": "da318483a9d582a6b3db6d164ac6372bb97352b663be352e5cff680e537916fb"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Animation/SkeletonSprites.cs",
+      "sha256": "73cda3273b54f897f5891ec6e1b5508063107622105208f5db20c544f2d4dabe"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Animation/Tweens.cs",
+      "sha256": "97115c81121ad59bfe41b7d816173e433e13b163dbba433b552c051f106b39ec"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Animation/WeaponArt.cs",
+      "sha256": "0f5ddfe6d7be7ff62771faf4c5f102121b373f863c15a4798198294d66b88953"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Animation/WeaponMotion.cs",
+      "sha256": "d4407c9df6494d2aadf9688f37e95106155341bf229e8389d8142d19932f3a09"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/ArtDirection/SanctuaryBackdrop.cs",
+      "sha256": "45e22cd47f3279bdcf504dd0e4f00cc04bf6f612df84d76b25e8887696e49f8a"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/AssemblyInfo.cs",
+      "sha256": "3b91750c424935d53c7a90c73a3bfd48dbf0390453b638b72b28d102c92aa703"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Audio/SfxSynth.cs",
+      "sha256": "d83d40e9eb3444fbbe88c0fdd525245e22536c26e07a767da66f76c0c766ed73"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Audio/SoundPlayer.cs",
+      "sha256": "919b920b072897665d8a126d8d581d896df93806732187cf1f75f2d3ebfa6316"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Audio/VoicePool.cs",
+      "sha256": "b0bfd43bbdacc49c3c79723118e804f7b72b64dd348683bb7562c670c4cc20a2"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Characters/BatBaker.cs",
+      "sha256": "b5ef6d195a0f9da0fd639d36ab67ad9ee58ee70f1e0e818de18a702ba9554b26"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Characters/BatCharacterAsset.cs",
+      "sha256": "31b804b227471de956e17026f746973c0e445cd7f812e370623859d1f834d2b7"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Characters/BatCharacterBatch.cs",
+      "sha256": "b311651c92b8b096c33f2e4c2424bfdee6805ce1c74421f3a2bafce0a6d17ed3"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Characters/BatCharacterDemo.cs",
+      "sha256": "2e062cfe62b359556533ad577449c4e8ba7bf59926fe49b82025380e95655686"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Characters/BatClipSet.cs",
+      "sha256": "73df67c2fda64a3730516ab168f732a8ce1c10985aa25583631eb4417810d9dd"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Characters/BatGraphics.cs",
+      "sha256": "706e366608c927a2f4ef2dec63257a80961d5e9fbb22907579d0ccf5bdbbd619"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Characters/BatTypes.cs",
+      "sha256": "81131bc8529ceb6883fb81a1948f84d0ec75bc49343fbbac48155d3bd4bbdc1c"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Combat/CombatDebugOverlay.cs",
+      "sha256": "edd9be6ce47fc5dc2651ea29f7591938838a92eae0ce10e8aae2f604500c5218"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Combat/CombatVfxArt.cs",
+      "sha256": "25045f01487af9d5085db1728e2cffba120ee880e67e046dd49014f678d253d4"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Combat/CombatVfxPool.cs",
+      "sha256": "99ff04ce2944596078e7c56aa038922f35b283902b50dabb7d919eb961096c77"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Combat/VfxProfile.cs",
+      "sha256": "25ba9902f258623df496393a8b6a81f812c49eec17ba2d38068d12cd7a87df0f"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Combat/WeaponProjectileArt.cs",
+      "sha256": "8477adb6732a722134e27f1336b3b53a811202ccea280f947ed033946a34dff5"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Particles/ParticlePool.cs",
+      "sha256": "0ad2d5c18ca71ddfc338fff355b1d1efb0ae3a583539bd9946d47fffc64ed55a"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Particles/ParticleRenderer.cs",
+      "sha256": "c2e3d2c9dc2a943b0af428c7d7f5452534f344c57b0bbcf319b34a51750ccad8"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Particles/ParticleTypes.cs",
+      "sha256": "913f402d9e526a069b68b246c897707a576ad0cdccc7411d96355688c0108a1c"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Particles/WeaponParticlePresenter.cs",
+      "sha256": "f74c6425f035f626b9b92185b2936b0b273d8f497e145e6c501d437df4edb85f"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Rendering/ChainMath.cs",
+      "sha256": "4137d407053a3030ac451c3af14717950ea7a3baf88cf850e611ba0ff1ffc75e"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Rendering/ChainRenderer.cs",
+      "sha256": "a113cbdadf017282e60439648495cebc11c8343c4b976584585ccf76264be7ef"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Rendering/CircleBatch.cs",
+      "sha256": "9feec649e1a4723ff8ca2a816c02ce994982bdedd8e2bc6d0e7ab22dbc2d1f2f"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Rendering/DiscMesh.cs",
+      "sha256": "6ad309bfe39db37df2bb8ed792eb544a0ef8db97c404b34a39ca585e70da4537"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Rendering/MonotonicInterpolation.cs",
+      "sha256": "3bf297c462ae6985f487994837c5093734a3718a6465dd62f64996b3aed7d9ee"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Rendering/PointCloudRenderer.cs",
+      "sha256": "5fc68a5ec9d54d323e1643a7f67fedc420660bce2d950b87b8663aa859283f85"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Rendering/QuadBatch.cs",
+      "sha256": "a2cd7af61bf4470d6a1534c656e2884d5b089661570ff9b634c49513e9b14ee4"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Rendering/RenderAssets.cs",
+      "sha256": "51f342d94b657b8595be80f5bfc011ac95bfe84c75264c0d4faf80179faeed35"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Rendering/RenderCapabilities.cs",
+      "sha256": "f4aaa89fcf957266ead05a1249709d7bbf33a31faae04a94e0d14d7db52e7492"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Rendering/RenderData.cs",
+      "sha256": "c5a1e4dcbf61d61db78e3894a89fd3439e99eefa7f57e0da5c9be5156bfb8db1"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Rendering/RenderObjects.cs",
+      "sha256": "9058161117e78370cb7111e3a93c87b3945f5c17fbcd17cd1afd7f63adbf5cfe"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Rendering/ViewTimelineStamp.cs",
+      "sha256": "e0cd8c3ce27f75f92a08eaca0674c837a8e5c80ce22ebe95da1cfba8cc4de752"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Sprites/BlobShadow.cs",
+      "sha256": "18bc5bf45c98c96f932b4d716f78889e2448fcc8f6fd38bb698b138c5c9709d8"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Sprites/NormalMapBaker.cs",
+      "sha256": "79b847715e8183aa0501dc0ee98ad07ec0ae5d02889076150be32411721e7d90"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Sprites/PackedSprite.cs",
+      "sha256": "9445edfbe58c8ee82613e38c5149f35fa2edb992a5acecae90daaf6fe63224a4"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Sprites/PixelCanvas.cs",
+      "sha256": "9c0307245a54bb5d67d3ab2b0ef195d1e7aa4b12a526e72a4c4dc38fb6afc5ea"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Sprites/SmoothSpriteArt.cs",
+      "sha256": "fbb653ae866c2e6c95ae93484ba6314d1aab850a60ca3bfe6841edca84a9ba31"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Sprites/SpriteAnimation.cs",
+      "sha256": "7df7988dc0219bde95120ae26dda39a4e6ccf144ccb43f09de7cba83d56a5e5c"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Sprites/SpriteAtlas.cs",
+      "sha256": "58ba1311a8ab41e7ddf55908312808b4113c1384d40f2e23346f90a2e85b3b50"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Sprites/SpriteBatch.cs",
+      "sha256": "3d3baa5fa4dc59751c37e2b538469337ce9bb198c0b94653223199cd9be5f8f8"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Sprites/SpriteEffects.cs",
+      "sha256": "a90ddf0e6f0b3124d7280aa4a1fb2de828b23927cf5266e9e9640c4924661234"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Sprites/SpriteFont.cs",
+      "sha256": "a2ba466a4a3c15396ef285154fe1fca47c0dff942c37644cee12166b03ae5db5"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Sprites/SpriteLighting.cs",
+      "sha256": "6887cd0425744f9629fb04272543ae995d5086a8be9b4d26a339604148a64a5f"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Presentation/Sprites/SpriteLocomotionClock.cs",
+      "sha256": "688563a3610e898770e7db5af9c6d725187de6c5263abe5945115bef02490e59"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/AssemblyInfo.cs",
+      "sha256": "5860a04867594e123d476d03a0a9c7381a639248450f7a1f3607eb871496958a"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/Composition/CompositionPreflight.cs",
+      "sha256": "cb468f16db2f87a8a873696a07bfda26380919327eba05a60cd7eee7b73bd705"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/Composition/CompositionReport.cs",
+      "sha256": "1b958b4506743b89c010ae738e476120b09d8cd09ae6d7c119279339a597c658"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/Composition/IGameplayModule.cs",
+      "sha256": "de4c0d1681ef846a63a82c86d9feaceb4128e41c08c7241071475df0439cd4be"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/Composition/ModeDefinition.cs",
+      "sha256": "f09c3fbe593bb0414b95c037f66920278463541d8447c60c89bf1dcd76b3dae3"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/Composition/ModuleManifest.cs",
+      "sha256": "a9f5432c4d3e01c92377aab2da5f3f76976eb731c2249c8a0ee8fb865ef5ff40"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/Composition/WorldComposer.cs",
+      "sha256": "b5b7d979e71d8305735056f63fc3c565eabd3137bba905bc00d2109d0db21707"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/Diagnostics/GpuFrameTimer.cs",
+      "sha256": "f4d9569f9191e19901b0163e83a28e7514ee2dac7d81bef085b0f43719fdb99e"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/Diagnostics/PerfHud.cs",
+      "sha256": "08737484c12e03b71419f587ac3fde3e7c3cad2f342886016714b1c6870cb3ce"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/Persistence/ProfileStore.cs",
+      "sha256": "b931670cd5b883e0197d8cf93dc98235d885b47252786f30fbb5dfc2caf823b5"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/Persistence/SessionSnapshotSave.cs",
+      "sha256": "63dd253d49c26383676fb0ed4f0b23f1d6e37d468b99d0310ce37a80bb80cf9c"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/Scheduling/AccessDeclaration.cs",
+      "sha256": "6c1fae01228f712a54e2c663970fbffb16c2d149e3bb6386a4743506eaeebefc"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/Scheduling/DependencyTracker.cs",
+      "sha256": "7f87a945028054ba0889050206fef91ed0b3b98afb35ab7c6432a7bc00bf8792"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/Scheduling/FixedStepClock.cs",
+      "sha256": "af6ae0fe4738c714092e1b543e23d6a671b5af5655b2819d81f65283b585d4f7"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/Scheduling/ISimSystem.cs",
+      "sha256": "c02663c17979b22df0a3b63129fdb585447dee4ef6b089ca01acd1039772baf2"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/Scheduling/PipelineStats.cs",
+      "sha256": "e55b3cde54991aba6913594547073b147490c51e83c2ee2ac5a7c3c3df33d626"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/Scheduling/TickPipeline.cs",
+      "sha256": "30bf30543c7c1d1a1df45bace461c267e637af74828edbe2b10c053d2bdb5ac4"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/Session/SessionHost.cs",
+      "sha256": "2acfecea895b8eb0fc26d931ee18452eea353538b3e42fc991c9c576aab343d9"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/Session/SessionTickLauncher.cs",
+      "sha256": "509a8316834cbe080772b8a42cb61e8840e338db1d0cec61a67e3a41222ca8a8"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/Session/SimSession.cs",
+      "sha256": "9601f3ec9a0f0e95e86ac0928fc07cf0ef37580975cf8870e1ce03e478fa1667"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/Session/SnapshotHistory.cs",
+      "sha256": "5df9b00bca9c1fb4d184dc4fae15c238b27c82fc2c2316d471a3f4526c57ea1a"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/World/AccessGuard.cs",
+      "sha256": "90d5a52939ae091c3b51b059268fcabdcd0b7059337e8e762f74c59d2e76779c"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/World/AssemblyInfo.cs",
+      "sha256": "6c24e9839554cb1001a0804e169b368be6d971279b6b2796a7a4e8dd805972e1"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/World/CleanupErrors.cs",
+      "sha256": "f1568e4d9e922e958d659c619d40b91df9cf33e3b1540f1a7e2ca549846f587b"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/World/Column.cs",
+      "sha256": "84ad7f23fc2de2bd9223707da6d33925d16083bbf28926ee77ecd086303ee5e7"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/World/EntityRegistry.cs",
+      "sha256": "dced172286a260fe42e770df6cf5b9fea8d50782d3c2635e314eaf23f78bdd18"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/World/EventQueue.cs",
+      "sha256": "cfe9d326763c324b3676c7411d59900a1c8b597bc98b609c3c73f75ef2580b84"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/World/SimTable.cs",
+      "sha256": "261906dd3b8f797e0b9da72ec7bd11e23e89c0cc14079e8421fcde129d685914"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/World/SimWorld.cs",
+      "sha256": "fb100ef9e1acf718848b54deaaf031043f05062f5e56ec32c410162954649f99"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/World/SnapshotBuffer.cs",
+      "sha256": "89852cea2bbc513e02497085500b4ec4b2baae7f8efc69938b5d0980a7b4d69d"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/World/TableOps.cs",
+      "sha256": "3c050339ba5511068f11c7c3dd96997c6303c9de5a9d4b145ade7c93caf823ad"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Runtime/World/WorldLayout.cs",
+      "sha256": "cf8c5aff08842bdff438965fe8a27ac09a317ed7dc2a990c21d5c671870f58c8"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Samples/DriftSmoke/DriftGizmoView.cs",
+      "sha256": "c249dd12872161ed2bcf80d0bdcd5f4cba9b1b777fc77feeda6afa557dceedfe"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Samples/DriftSmoke/DriftSmokeModule.cs",
+      "sha256": "fabf5024771ac7fbec0600529665142465f48b9f4d442ed484c83ec8834f1a8b"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Shell/Camera/FollowCamera2D.cs",
+      "sha256": "0d3e9eff65325f3b6112661b8594135ea092e9296fff5e1fa4dfdfe103c03ada"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Shell/Input/Gestures.cs",
+      "sha256": "cbdfa81e3f1bd393ae051ffb727153755fab4943620502ef3e1e4ba793948c94"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Shell/Input/InputFrame.cs",
+      "sha256": "2719e31885d7bb4561585f99912ee0317e9d0bcf9cff2c3f886dc60a8c41e46d"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Shell/Performance/FrameGovernor.cs",
+      "sha256": "4dd9938fe5526a0b3bfbe89d1e393d8a5a766106c2c9b9e5f02d1790c365fb9e"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Shell/Performance/ThermalMonitor.cs",
+      "sha256": "c608c42ccbcf21308d51139b3aa1cd2f0250b2a1dc02ff4a24cbc5a8eb1448ff"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Shell/Pooling/ComponentPool.cs",
+      "sha256": "e6bcd005c09bfcb753afebaf002e986cd1ac665b00f8c73996fd3a5bba26cacb"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Shell/UI/BufferText.cs",
+      "sha256": "a30d173e8e80af82864c855337f14d5e47769c6402c8ea73de27f591a74d0c62"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Shell/UI/CachedText.cs",
+      "sha256": "d8506c0d6248d052a412baf14f64d0f76f4323ff304ce2273a78b1be19c78090"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Shell/UI/CombatControlGraphic.cs",
+      "sha256": "10ad09b634d4b174b66f4656cb739a977f861d0c274149e71a5853b1c479b63c"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Shell/UI/DialogueBox.cs",
+      "sha256": "a9ed5de9fc073cbb096681d0ead061bc8b19bd6189d7d6a9fe1f54ffe6f11c5b"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Shell/UI/FloatingTextPool.cs",
+      "sha256": "6f3f97f891c63c83bfcb5edd25c35e66e0d4f7b289993135baac7e8907e791f1"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Shell/UI/HoldButton.cs",
+      "sha256": "fedab042f0559f1ca2eac0f88ca983e4a186deeb2b84578d37f398a2f387bcf0"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Shell/UI/MobileCombatHud.cs",
+      "sha256": "b3a1d5c558436feb719ae7acd7e228bb0180b99b29ef3733424a15411eeef0ce"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Shell/UI/MobileSafeArea.cs",
+      "sha256": "85465d3a1c8e0c00a852d5d6fcbe39c43b49da37f74c08a02f2e771204cde1d9"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Shell/UI/SanctuaryPanelGraphic.cs",
+      "sha256": "1d52c2e0e7584537416cf1884622a8719016cbd79231fb28982dbc7112189c54"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Shell/UI/SanctuaryUiTheme.cs",
+      "sha256": "118493be3b57328cb920d6ff62ddf576a36b0ed130b065b7b4d0b53f4bdf8d2d"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Shell/UI/SkillControl.cs",
+      "sha256": "61a440623e955c0cf33d4972844c2b0da0e79ef07a955e36bc88c905cb05ebcd"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Shell/UI/TapButton.cs",
+      "sha256": "f075e0b4473b4b908f454e7c8685dbb657ac936934fe800b6d5f14c1e5713363"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Shell/UI/UIFactory.cs",
+      "sha256": "8587038c341cbfcd1423ef24df6e5b3beeb9c05c5ac6f33730ad0e62cd288619"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Shell/UI/VirtualJoystick.cs",
+      "sha256": "817e4419ff2bd37802dce5b86a92c56f66b60523c7e026204d1f8a86f9b849fb"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Testing/BufferedFrameCapture.cs",
+      "sha256": "bbfef532ed6603c0ba595eb4d99509e28b4e1399951e5dc8b42e3ffa9d56dc87"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Testing/CanvasCapture.cs",
+      "sha256": "759ca111bd564572a3a1333aa56c41db2a19aabeeb1bd47b2c3c52c2413e042f"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Testing/GcReport.cs",
+      "sha256": "cab5c4e840cf67cbcdb329770419619eb7fb85a0bc0e83cbd180dd4511fe16e1"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Testing/ManagedAllocationProbe.cs",
+      "sha256": "d7935efd0f07f1a2446efa0ea0ea7ad92ab6f39d5f97dee68be8f3b5a23e3e72"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Testing/UIDriver.cs",
+      "sha256": "efa7c3e91ae71e3766cb745061be79193989af7a556e0ddc119a2c44409f642d"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/AccessGuardTests.cs",
+      "sha256": "9f3a4ab4250a014ac9a6dfc61103bc5b204a400f78a0a37b0334ffab447dfa07"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/AnnulusBoundaryTests.cs",
+      "sha256": "0261f568f7603f7d706f885adc2d8b29e042b43c9bb519be1dfabc60f0c83c0c"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/AudioTests.cs",
+      "sha256": "04165d0c467b93145469eae0e9fda89e9a2454bf11be8a1c5efe3f9850b2956d"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/BonePaletteMathTests.cs",
+      "sha256": "59907b9c605566685eaf6f437c94e14819cee24686c5b6a3c60627c1db647753"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/BoundedQuadtreeReference.cs",
+      "sha256": "468449567016e3d93667f30507ad96d12ae724c37e4c8d561c9528988666abad"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/BoundedQuadtreeTests.cs",
+      "sha256": "c6a4850929e22e872676dd9c796548f594ad8379d4f6a951210fa6acba3d0699"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/BufferTextAllocationProbeTests.cs",
+      "sha256": "536493a879ea87e0dff5e941a3ce54edfc36be441d62b2ccd662b636476dc647"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/Characters/BatCharacterTests.cs",
+      "sha256": "071c2a6da6b15267d52447bf1c33f0a1da17f402dad5b82c34d58b1a479d24e4"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/Characters/BatComputeTests.cs",
+      "sha256": "647c7e32856305c6d3fa5424663c2c38f6fe88bbb6c633aed592a8d86f9f95f2"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/CombatCollisionPolicyTests.cs",
+      "sha256": "42fe9e90f6d4bfce1348bdb59070eb429556623fe707b3cb08b8a63482b1ef94"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/CombatControlGraphicTests.cs",
+      "sha256": "977eb93f7c6ded8b6b4c68e04446aebdc375aa0997cb1da5352f7525bbf8d5d0"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/CombatShapesTests.cs",
+      "sha256": "98c1bc86ad4bea43b47f8b1e86b215c0a86247acdc61dd01b9e2f521384b6250"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/CombatVfxTests.cs",
+      "sha256": "1aa480b0bf61913e7cce3f952bb091332a67c1166bc76abb88c4bb0a9291a2f1"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/CompositionContractTests.cs",
+      "sha256": "bd21f382148a1f3c7983fb3805f243bb10408e01e790c10546ec3564bb2bac9d"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/CompositionRollbackTests.cs",
+      "sha256": "5168b87fcabba3ff8ddfcedc96a4e002b00523c7eba8ad92b7f290b87bbbafb7"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/DecisionTreeTests.cs",
+      "sha256": "f250089d411b910532a9cbbccd6b8decbe1e0f899b4181ab2ecd49722bb6bb88"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/DestroyQueueSnapshotTests.cs",
+      "sha256": "bad741c71a0cd82da768b11447657e8ec06202ca0a6c90e7bcb1ac27fc248a14"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/EntityRegistryTests.cs",
+      "sha256": "66dd12dee43c5e7773546272b2ab7559f2786b2167964ab78b682c4b451cb869"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/FixedStepClockTests.cs",
+      "sha256": "d4c83849bceb3d4c0b346fdb77ea52c245f0297ade5ea0fa11859580005aede8"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/FoundationRulesTests.cs",
+      "sha256": "a6f3094e318e5f1f7712d0d360d40e19d9fef0a13f5b8120b42d89c486539a62"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/FrameGovernorTests.cs",
+      "sha256": "e66f420747b77b5208c6c5aa83d267a94d5c5160b6c6693d332ec40a46755142"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/GameplayCharacterStreamTests.cs",
+      "sha256": "4d4a8ba620a02f3d1ca45da375751b005c299dfd6519586f1b78785b3a1f8a95"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/GameplayCharacterTests.cs",
+      "sha256": "cffaa5aed2fd5720998bdead228083f89906f18c9e8c9e8c7bdae91d086bf306"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/GameplayMotionProfileTests.cs",
+      "sha256": "969b2b0821b00a80cd7b6080d310ed3a69a673f1527df54b115ec7e815c80f7d"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/GroundProjectileSweepTests.cs",
+      "sha256": "d9e8db96fcfe0414eb9ae32c247ce5df4aaab16399efc9a11ade624993f25311"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/GroundedGaitInterruptionTests.cs",
+      "sha256": "efbc3b81b0655e8b8845eb88b73837bd2e69eb76dbfad587ed0883c7fe3811aa"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/GroundedGaitTests.cs",
+      "sha256": "caf085ac03ba59874ddeeb5fe70598a2add8f55273db0e86173180aa53e5a6e5"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/L1BodyTests.cs",
+      "sha256": "3265a15617d6e06ca6fdd426c058b565c462bebfa10b93f209aec47a792086d7"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/L1GridTests.cs",
+      "sha256": "9920fc7d6bc2d547af2e06395a6bf9ff98cab842f5bb3e4e3ed956eb1ebbcfee"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/LevelScopeTests.cs",
+      "sha256": "e95bcf57a329f459a4e0ef8419c2c44a5ad78328ddbc6e593014f92114edbf62"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/LightingTests.cs",
+      "sha256": "c31d0d659bea90a779c999a2fa064006c05ac6c1d8e243854dbec2d2d28e30df"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/ManagedAllocationProbeTests.cs",
+      "sha256": "7702227beea0c864af16db90d4488af9847717ad5fbbeeed4cc1b12e3e8ee8d5"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/MobileActionCoordinationTests.cs",
+      "sha256": "0a816ac3270f85b09cb56656c7f0aaf90be6ff7857d8602538f40a2155058617"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/MobileInputTests.cs",
+      "sha256": "25f9728f7932ffde35a45a5c73d75bad39d8008e860ac38ef9b02771f2221cf2"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/MobileSkillControlTests.cs",
+      "sha256": "3b3d69d95dd39ad2b8b319f614cd3455897cb56653dba1758e430b8f1a7ae3a9"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/MobileSpriteArtTests.cs",
+      "sha256": "ab402cd4d5dd93ff6f7241f263b2dddbaee8d3546e228c07533c0443e42d1564"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/MonotonicInterpolationTests.cs",
+      "sha256": "599fa975160cea26c609ecc3886fde29bde648c8df79ba96eef507bd96a8582f"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/NarrativeTests.cs",
+      "sha256": "018f1b8e539e88f80aa9b0939f15c59bed527ea97db86eaad0fba9de85abf7eb"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/NaturalMotionTests.cs",
+      "sha256": "dfe9ba5b7fc4dca786ccf942c50fcbd7f1acb286abd9484ae7e024ec322719b6"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/ParallelQueueTests.cs",
+      "sha256": "10fe5d518252316460092ba9e33bd2f7e6086065777a451d1320edec07aeec81"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/PatternEmitterTests.cs",
+      "sha256": "d6fee35cca1c0eb17b5fd9a07702ba2b7423308dbbac4729993d10d8950a51dc"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/PhysicsTests.cs",
+      "sha256": "0fc502d1bb9e4845786bdc96129113fb3e625dd1b002d4b4a79d5464ada1a3ba"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/PipelineTests.cs",
+      "sha256": "1fd8b20e1b39fd96ec3a355f120e341c8aec5ed1ef076a449fc9feb53c32f215"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/PlatformerTests.cs",
+      "sha256": "d7a1ad9e22ad29148087df99bf831ffcf317d24d3fda7e592afcbcc80b2653c8"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/PooledTableTests.cs",
+      "sha256": "dfbc0931af92328a2c42520592bfb995370cebe7963e7b1703699f1ab87b88bc"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/PoolingTests.cs",
+      "sha256": "38b48f127420d0c086b12424a2241f738c0a18f790dacdb2db7120134e877962"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/PresentationMathTests.cs",
+      "sha256": "f24fddd1220684fb5049b8a37316812166ba972d4a89f015e0d9bb6d93ad3613"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/SanctuaryArtDirectionTests.cs",
+      "sha256": "4387caf9d18f068750133e9586966ccb5dd89830f73b24e0bef5927b1a526b02"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/SessionHostRetirementTests.cs",
+      "sha256": "09aabeca0d50625a17e9d7ec295a761b4142f1836431d42ca9fd4878edc3d9c4"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/SessionHostTests.cs",
+      "sha256": "4cdcc9ebfd70c5d2791ef8596000dd0541b12ffd0880d1e8871a0ccd6554e828"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/SessionTests.cs",
+      "sha256": "6a034602ffb49cb91eb5cab8ab0d1acf47f76691401c8ed5444405673dec7b09"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/SharedCombatTests.cs",
+      "sha256": "80bf560240b2c24d0adb8cd6655b85dd7878429d65468c4550057f0bab983c3a"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/SimWorldTests.cs",
+      "sha256": "c2d67091b88f83ed11d5c61a554cdc170de241fa1723a8a046c8e90660ddf855"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/SkeletonTests.cs",
+      "sha256": "9a0497ad15bb67a3c3a264ca0c4252af683562653366ed89e6a9887cfca97921"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/SkillSlotTests.cs",
+      "sha256": "314abfd610fd3cff7434d2c253400b23cdcc0a9ca0dcacf43673a28e0d0e46b9"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/SpatialBroadphaseComparisonTests.cs",
+      "sha256": "a42bfe7976174229d7becdc8703f17334d3b997d692a042cf2af7737a3db0de4"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/SpatialSweepParityTests.cs",
+      "sha256": "871a981fdfb849010a7de4ef922befd95110cb249f056333869952ae9ed7657d"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/SpriteLocomotionTests.cs",
+      "sha256": "7401ee65973fe1d66a30261baef27e8163c54d39c9b15f7d1cf0268cb89227db"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/SpriteTests.cs",
+      "sha256": "5c6b632e9c39278d3de32c133534b9d7d7f078354ba55a1841f8239902537f83"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/StrategyToolsTests.cs",
+      "sha256": "8f19a75b7e758192aa4c80fcb62e8601d5a376cebc3a790048f493af7aa4d413"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/TestKeys.cs",
+      "sha256": "eccbbbada33aec08cfe771b1595f5afd243f08cf5eb2d2207a83813a8d1548e2"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/TestProgressLog.cs",
+      "sha256": "a94266ee8b7b9c2659489feb4e1f463d45ff26e1e1d6f41dfbc4134def9079f9"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/TickFailureOwnershipTests.cs",
+      "sha256": "31e87a63ccd3deb5bb50c3947f75153e3edb5fc1728c689be995d708cdf0eda5"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/TileLevelTests.cs",
+      "sha256": "253b3f446ca035406c42beb8e67e65f78c61b2aae6ead63edd722612454f8587"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/TurnToolsTests.cs",
+      "sha256": "b2466a75a2b225464730b5419b38e022fc102a4c9c7a197f4502f309df92ba93"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/WeaponMotionTests.cs",
+      "sha256": "910325d4051d5fcc25f2b9dbbf97ecf762e8688dd7ad8eadea42e3f9ef7e8507"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/WeaponParticleTests.cs",
+      "sha256": "f028480b3ecfdda1043b151847ee564e4d6325042ea682015f03a59c471c2c5e"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/WeaponParticleTransitionTests.cs",
+      "sha256": "ccd19506ca6660cbe74628dea618dafa9c088542d9f7d4a4ec165be3f7364f70"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/WeaponProjectileArtTests.cs",
+      "sha256": "7b14b455f3cf46eaeb6f4b93d10bfb79858d3498646900b5367675bbf734728a"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/WeaponRuntimeTests.cs",
+      "sha256": "d289b6b6798dc288bd37a2f65085eaa9357ddc98541a78b98f1392d8e4f24dfa"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/EditMode/WorldSnapshotTests.cs",
+      "sha256": "36551b6ec93d83726555c706f04fb01252caf676a5da144a3adec17ddff15363"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/PlayMode/BufferedFrameCaptureTests.cs",
+      "sha256": "843930959d39d5676870269ca4d81e2d70660c037b783603cfe44b4594998da4"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/PlayMode/Characters/BatComputeGraphicsTests.cs",
+      "sha256": "8d437470dc558aab79e3c0442088e74800554b449d020d0986786e9f1c04988a"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/PlayMode/Characters/BatDemoGraphicsTests.cs",
+      "sha256": "ff17c6d0dbb6c41c7f31f3d870c33b0c411814071d86819675769324774060f5"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/PlayMode/Characters/BatGraphicsTests.cs",
+      "sha256": "381abe6966f905772eb39d200336fe14be356ae1858a109c984cc23bba7ec36a"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/PlayMode/Characters/SpriteUploadAccountingGraphicsTests.cs",
+      "sha256": "a00a735206eb6cdab8a313473bbacea78f85f113eea31eb5e5008851df1f98c8"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/PlayMode/Characters/WeaponCharacterGraphicsTests.cs",
+      "sha256": "a3d5f554b036f3a1c2d31c659c4fcbf6e2b5fbd124984dff0ac2a00ca89d1a12"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/PlayMode/Motion/NaturalMotionGraphicsTests.cs",
+      "sha256": "dd06181e94a03319c0dc6dca5e307ac8b6dc9817636815e0c743048adc555d15"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/PlayMode/Particles/WeaponParticleBacklogGraphicsTests.cs",
+      "sha256": "c07ce484e4a7d4109b807d8c38f6471735e944800161a78515b0012e5e251d82"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/PlayMode/Particles/WeaponParticleGraphicsTests.cs",
+      "sha256": "882dc9015c9c58b931a631ea43ae75ceb806969b2daa5683c492025da4980d81"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/PlayMode/Particles/WeaponProjectileGraphicsTests.cs",
+      "sha256": "a08e32fc272a65b8930f22e5aabb5034538cdb5875937e747f1cf2874152e5fa"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Tests/PlayMode/SessionHostPlayTests.cs",
+      "sha256": "7880e307c2cfeb831994006b7e719e782f20bb7515017a5280b364c3a5dc7635"
+    },
+    {
+      "file": "Assets/SlingFoundation/Game/SlGameBootstrap.cs",
+      "sha256": "016b7b4b5eafa730243a9ce67f525de10cd0bec18b2394eb180954ab98f2ffd6"
+    },
+    {
+      "file": "Assets/SlingFoundation/Presentation/SlArt.cs",
+      "sha256": "ce1df30afbd5282cb5825a18d37dd65b109e723db356ade95be0765d55ec1abc"
+    },
+    {
+      "file": "Assets/SlingFoundation/Presentation/SlRenderer.cs",
+      "sha256": "c063072defe4cfadeead5e4a151165a1e4826251ae2239479b1662a31e01d678"
+    },
+    {
+      "file": "Assets/SlingFoundation/Runtime/SlData.cs",
+      "sha256": "c9cf2fc9cd7a9b65ec67f87eb674b2a08d9160902e510cf7109b8ad5796ccc56"
+    },
+    {
+      "file": "Assets/SlingFoundation/Runtime/SlLevels.cs",
+      "sha256": "c8224e1cdeb76325f61d26e4f5e23949c36e64cc95709a19541115e79ebeebfa"
+    },
+    {
+      "file": "Assets/SlingFoundation/Runtime/SlModule.cs",
+      "sha256": "9439039d35802729aeeef5eec6323fd950efa604d56ee9b2c66e0c8bdf0fa7cd"
+    },
+    {
+      "file": "Assets/SlingFoundation/Runtime/Systems/SlSystems.cs",
+      "sha256": "9715c4ce7fb206e8857effe599cd8a8851c466aff574d03a0d4fb537236e8a0f"
+    },
+    {
+      "file": "Assets/SlingFoundation/Tests/EditMode/SlTests.cs",
+      "sha256": "7d159c78f037eb52a93e44e19c055889859adeb985795585a8e3cdbca4a7a01c"
+    },
+    {
+      "file": "Assets/SlingFoundation/Tests/PlayMode/SlPlayTests.cs",
+      "sha256": "e99a1c118bb3ab374b94f1e9eca8e31cb2d97aabac02672630cce7b99b12c7c9"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Editor/GpuBenchmarkBuild.cs",
+      "sha256": "39146122f349fee373497add761fafb8db8d97852aa6839bc8930862acfcb0ed"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Editor/SnakeProjectSetup.cs",
+      "sha256": "2e8e1a1bb6b715e8367a7f42ff562534be150152b63826e394a26ae659445ba3"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Game/AdaptiveQualityController.cs",
+      "sha256": "90815bca0305f6790ebbdf6a8839433e428061aa90183642c35dbe2def9ae068"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Game/AssemblyInfo.cs",
+      "sha256": "d1ae2149a7b68ccc92b639ea83945ef5006457a548eb7f21bca9656483a04d66"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Game/GpuBenchmarkRunner.cs",
+      "sha256": "2b3e147b8b0ff15b3fae123cdd35bd0810edeb76170f0fe8aebfd8097f767b89"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Game/Input/InputRouter.cs",
+      "sha256": "498919156abff2b4a98a0c824620e3666032a01d83494092c43932a6fb030379"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Game/Input/PlayerInput.cs",
+      "sha256": "20ff2c4572bab8db0cea9f45bf99f6483e9e214e7e46e7009a3187cf8c39c6d6"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Game/Input/SnakeTouchInput.cs",
+      "sha256": "c0c037925a25df47f15e200ef903e8cd99826897ed40a023e39e87b4b7099d00"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Game/SnakeGameBootstrap.cs",
+      "sha256": "7660f6853dcc642be840b040e8b0060f81c800690c3d220298290dca95e56152"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Game/UI/SnakeHud.cs",
+      "sha256": "e929b701823d8999dddc8323890bc668b3511805f01294d829f00425ae3d5b8c"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Presentation/AssemblyInfo.cs",
+      "sha256": "b9a16bc06261f22dbf8807eaff9061fd0c2f74104c03370206fd14b2c657648d"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Presentation/SnakeCameraRig.cs",
+      "sha256": "4f33b644c7ac032a08348edc4535c8c431c554e7317b8b7c1e2aa53b53a42db6"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Presentation/SnakeWorldRenderer.cs",
+      "sha256": "ea0d602849204e04b1bce49ceb627358375c4baeac85af3ab7057165a810d4cf"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/AssemblyInfo.cs",
+      "sha256": "431956aa9eb3b2f3081237cc817db1e8946dd97c154ab1d401a4f8ecab424921"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/Replay.cs",
+      "sha256": "a9728a46c1265d692c8ec11d08d7e863dc31cdaa170f5fd523efefc17063519b"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/SnakeConfig.cs",
+      "sha256": "84b7534e98407d664006ace78a994000ca94c68783c961ec1eb6553cf71d1296"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/SnakeData.cs",
+      "sha256": "58b0d884b84bbc519539f294957ad4fb72de48b8d6e17627e56e8318feb1a89c"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/SnakeGameModule.cs",
+      "sha256": "b7abfbf9cd090cc795787eea66a8eb8fa43515707fbfc03d5789f91a349f2f46"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/SnakeGameState.cs",
+      "sha256": "b1bdc9388cc5314b4f6fef35e5dd0b5283418b74a787d2d9f55971176d666fd8"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/SnakeKeys.cs",
+      "sha256": "2dc7162bff80383b132cf2b429b6a6e0e549b83c476e90b0eee48ea63c86862d"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/SnakeQuality.cs",
+      "sha256": "948f5249216412a5d17e02c7ffed618063d96edc747190d0cdb8df219a34ad73"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/SnakeRuntimeConfig.cs",
+      "sha256": "98f24da005b10cab3023f1890e964cd389db29b7c31ef1af431783358b012d39"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/SnakeSpawner.cs",
+      "sha256": "790a207b9e8fa60bf54d542719c3e9ff75a3edbf4e97065013433862008f4385"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/Systems/AISystem.cs",
+      "sha256": "4f218df34b3029c39500fbb343636b8c18afde5aeb51aa6e687efae3ea30e182"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/Systems/BodySystem.cs",
+      "sha256": "a016c6050c3ec637254d2fc900a2d569d81108eaa86d4cd5315462a6ed99409a"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/Systems/ContactSystem.cs",
+      "sha256": "f8674b6ea2ebbaefa9c17d7762d39ebd4a1a791e580102c7f1dfed5add8a18f1"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/Systems/GridSystems.cs",
+      "sha256": "1635e39842f442f1965aca81fd6a46d277d17260834583a69392e695ea1915e4"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/Systems/ItemSpawnSystem.cs",
+      "sha256": "b55c93849f8514465c67b41346e9b3440223aaa2f28fcce35229fcb471611a47"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/Systems/LifecycleSystem.cs",
+      "sha256": "753728066bf0e754240198275b37fd169a9eb1c006ad7369f06480a84caddafb"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/Systems/MovementSystem.cs",
+      "sha256": "9a8b28125d903734bb360ab6a2336a099ee1831bae78df0b6380221ac39db117"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/Systems/PlayerControlSystem.cs",
+      "sha256": "22c7f8de13c5c6ff2694eaf1a10a0b40df45e456a4a219136e4483c06c7a26ad"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/Systems/PopulationSystem.cs",
+      "sha256": "c224f3f47499846e833d874475518dd7b9b64f00a4c75a003d844127f3c702aa"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/Systems/RegionSystem.cs",
+      "sha256": "6a934149e50b82e57b14b43a67ac2a3c7e0606f19a7cbbc98b25353fdfe4ccc4"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/Systems/ResolveSystem.cs",
+      "sha256": "33fbae5fa20f7b1c79cd3a8c7167f509df053be20a679f1375aa1831efee1e76"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/Systems/StatsSystem.cs",
+      "sha256": "b5eced5969d8df3fe9316e57c897b138dee4de057833247f86cfa0e8b4f47003"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Runtime/Systems/WindowSystem.cs",
+      "sha256": "a96a39eaf1b9d6310a3841b0106fd53dc7858752d6839f66780495426443fd04"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Tests/EditMode/LinkedCellGridReference.cs",
+      "sha256": "08b46ca61d199d3008e10c67e4b3d74ba22f8b71fa83d5c282103b9da10d8ed0"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Tests/EditMode/SnakeGameplayTests.cs",
+      "sha256": "b6999b1aad0ddc8561d9201e0e1409737a005c3d8f3268a101c501bd3b9b79a6"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Tests/EditMode/SnakePerformanceTests.cs",
+      "sha256": "47973d158a643b4879f3b5d3ad73ac1c4dfca061403a684bc18ca400b6e25d49"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Tests/EditMode/SnakePreviewExport.cs",
+      "sha256": "9fca9bf7a4a66625217b4f182b36d179fa5c1cfe2c0a834c8c58bc9aaaece503"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Tests/EditMode/SnakeReplayTests.cs",
+      "sha256": "876939397d6796fd1184f8231a3adec5be61e411412424195b0ccbc604956957"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Tests/EditMode/SnakeTestWorld.cs",
+      "sha256": "cc9c2c87f695658fd8efb02eed96a09a6609b339b8a610d4fd88ea6a345bb996"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Tests/EditMode/SnakeWorldTests.cs",
+      "sha256": "fbe719852a7397e5a69d8ca15d204aa6e3b796bb74649a343761044b6ec3ae97"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Tests/EditMode/SystemCreationRollbackTests.cs",
+      "sha256": "49bf2f6cdcef7c8850d0cbde9a51c07ac46022927e7894288704db81e81bcc2c"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Tests/EditMode/TestProgressLog.cs",
+      "sha256": "040656517e9019947ffa2c8899eb9c025a8e7dd9c29445b56e2380a5df1d31f8"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Tests/PlayMode/GpuBenchmarkTests.cs",
+      "sha256": "f9ef21aa54841d9a1366f7641d66176dfe0acef0501798962d2c3c99bf1cd5b0"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Tests/PlayMode/RenderPerformanceTests.cs",
+      "sha256": "560ec42473be706f2e5eaf30b0445d84f86f471eeab2c0552bc9a649414e7225"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Tests/PlayMode/RenderTierTests.cs",
+      "sha256": "5d9db0aa0de211d1443a7530b5baf41816f7a161a8361a5342c09319c7307e90"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Tests/PlayMode/SnakeUITests.cs",
+      "sha256": "778622351e339d49eaf53556ef7ec899d0342cba01858b157a2e47a84887849d"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Tests/PlayMode/TestProgressLog.cs",
+      "sha256": "4e8d4535e1e8d326ae07d6bf14624a7e1ed5c05321ea3146c0dff6f0cdcd74b6"
+    },
+    {
+      "file": "Assets/SnakeFoundation/Tests/PlayMode/VisualRegressionTests.cs",
+      "sha256": "537b08c9c1c3b0cae7d55d315321b55d92a23c212f8aaff4ea83308cbc50dd8b"
+    },
+    {
+      "file": "Assets/StoryFoundation/Game/StGameBootstrap.cs",
+      "sha256": "0c9ab43f694bb5aca55fe0ced86ec98510ff0d9fad39a001a36400f29e04c081"
+    },
+    {
+      "file": "Assets/StoryFoundation/Presentation/StRenderer.cs",
+      "sha256": "795fe4f462c09e0f1f24955fc131d4ff21737428bcc7ae886282a854ec7bc5d5"
+    },
+    {
+      "file": "Assets/StoryFoundation/Runtime/StContent.cs",
+      "sha256": "a538a20879647d8a57e04b34a181b737fcccac6f21f38413e0f2a0074a712c2a"
+    },
+    {
+      "file": "Assets/StoryFoundation/Runtime/StModule.cs",
+      "sha256": "c7774a2899734c3b1cd30ba16e5fb6a422d8da523740d6746c59ca3f2026d330"
+    },
+    {
+      "file": "Assets/StoryFoundation/Tests/EditMode/StTests.cs",
+      "sha256": "0f1b39e9f74bb63ad73fb226f504f99d4e9262638ab7ff930a28b9f8558cabf4"
+    },
+    {
+      "file": "Assets/StoryFoundation/Tests/PlayMode/StAllocationCapture.cs",
+      "sha256": "a12cd4ee8eb72807e12f6a73b0e5c445a2699fb9d63d6b733f70d5d6f729ed17"
+    },
+    {
+      "file": "Assets/StoryFoundation/Tests/PlayMode/StPlayTests.cs",
+      "sha256": "90d19c0f517e4b2e6a0dd80ef0f525c023217a5df05586f48482ac29dc89fa80"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Editor/SvFlyingSwordSceneTools.cs",
+      "sha256": "1d7e59fc983966da1a2b79ce64adeac08a88c83621beb49c545fb29427bab220"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Editor/SvGuardSceneTools.cs",
+      "sha256": "26389d79fbff1b231919ea6df022411103d7093bdf828208ec4c80da8226c2ea"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Game/SvGameBootstrap.cs",
+      "sha256": "9fd7d98df53d1eddb5df1cd4eb869304a8e710d7b90e47a9ea6aafabea71911f"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Game/SvHud.cs",
+      "sha256": "9d2898bd1dac53a34afb1b6923bf53abb602c4be857425b527fffbe824357bb7"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Presentation/SvArt.cs",
+      "sha256": "0ccafdc6d01f5b85148105a98f3b14a2d540e08541ba2cfa3235eb8b2e6c3776"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Presentation/SvAudio.cs",
+      "sha256": "fce233d1fc856b87682415609a08520ea828f32a164212b751fdfbaac17a49a7"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Presentation/SvCollisionDebugOverlay.cs",
+      "sha256": "c61959cac6e3d2689c9ceeb2098a499fe038bbc5abcabadc484ba604c0313a35"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Presentation/SvRenderer.cs",
+      "sha256": "5db5dbab2c4747ffa71681a370cc5eb366958e2168d6df2629e01a39ca35667c"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Presentation/SvSmoothArt.cs",
+      "sha256": "e938a24a30edca98eb1c04d5ba7e008289059549f7dfd56b8a197941281d86eb"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Presentation/SvSpriteOrder.cs",
+      "sha256": "c7932c32bcc1ba5fb5556787dd1d5c97f5b971de958f4865e5b2b8dd6da247e5"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Presentation/SvSwordPresentation.cs",
+      "sha256": "bc5bdf28d71fc097d3790df3a14103f621a3ca1ba6e78764ccefa902b3af6fd6"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Presentation/SvVisualMotion.cs",
+      "sha256": "df84e464a2b26b1126fed7dd34350ea637ca8c77013a9705dd01d56b3482f8ad"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Runtime/SvAnnularSkill.cs",
+      "sha256": "c9bbf66cee3de5b7cdd77b6d87900ff10c1631dcd19ce24e4f7057cc6a4a1778"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Runtime/SvBot.cs",
+      "sha256": "b77be1bdedad6d5568acf57613e2fd3fcc595d73d6a9841c739dfa089c712f1e"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Runtime/SvConfig.cs",
+      "sha256": "86fc3ca4be048abe99dcc9b4e7009a47768b767fadd2b2aeb4796764a0ccf150"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Runtime/SvCrossedBlades.cs",
+      "sha256": "3ed79160da682bac3baab3c550953b670a865c196b91c9f7b2625a4172b0f197"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Runtime/SvData.cs",
+      "sha256": "6777713b68c51a11c397033de0a58ca3223c16be47a69767cf54e27479dd4666"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Runtime/SvFlyingSwords.cs",
+      "sha256": "4d307f4696ee1967141d3a2296e65057b6e9a128f1c036aad7b9b09064053a18"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Runtime/SvGameState.cs",
+      "sha256": "69a57f0c2defe24d2ad40c07b5731453dba5a0b4499583eb2f5cbaf4c0011893"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Runtime/SvKeys.cs",
+      "sha256": "72b81b2a8f6a98f3c70514351fade6751bc2acd29437d4ed71e91ccd37144f3b"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Runtime/SvMobileSkills.cs",
+      "sha256": "a7088e20e1635db5f5865b461f764897ad23912895fba8fef987c3e5df038753"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Runtime/SvModule.cs",
+      "sha256": "642d315d012e2432744bbb8abe8a0209bcf522cf4d5646b1554fccf0e38fc968"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Runtime/SvWeapons.cs",
+      "sha256": "8ccac6aba66550a0cfeaf0ed91c73f07c3a87d458fd4b829cfd0ae24c369069e"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Runtime/Systems/SvSystems.cs",
+      "sha256": "a8f294fe41ea1b680790fa3eb51c4c47e3a471176d4ed368996b218ed044792c"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/EditMode/SvCompositionManifestTests.cs",
+      "sha256": "48dd19c686f6bda454999eb2467954b05c90528dbced34586d12bce5add4ef65"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/EditMode/SvCrossedBladeTests.cs",
+      "sha256": "a7bda4578a649347f71ead60376b5ef50b18979d65b23f33ecd8445c93650cea"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/EditMode/SvFlyingSwordTests.cs",
+      "sha256": "3af8feb5726ecdb830e56205b133e927071ac2d366ea689da51550057cdcbdf5"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/EditMode/SvGameTests.cs",
+      "sha256": "5dc58fcc2b20f91ad36273bc6faf119607b339aca4d41c0ab1e1b321dd1726c7"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/EditMode/SvGroundedGaitCaptureScheduleTests.cs",
+      "sha256": "357c36079fbdcc49ac5c15a03938a4dccbdf195f71f3f71cd4cbcd4413caa147"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/EditMode/SvGroundedGaitFixtureTests.cs",
+      "sha256": "627fc2f822ab358d66530f6af7d93fc091dbf9164d26114bd973cb7d5717c7ae"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/EditMode/SvGuardTests.cs",
+      "sha256": "80666044664fb16de7d97cb82860227173a2664739912789142835cb4d43e85a"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/EditMode/SvLegacySnapshotFixtures.cs",
+      "sha256": "89ae29a00e076e684d2de52100fb864df50b31a01ac3da041c94455c297c3133"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/EditMode/SvMobileSkillTests.cs",
+      "sha256": "e3a38122ce396484f0b06583f6240e14e17d307c6333b24e21bd837e0fd88d13"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/EditMode/SvNaturalAdapterTests.cs",
+      "sha256": "bad58e4a06f1e9de5054383a1b5a2720dda7e5adb956ee3ffdbe32df1bd2ccbd"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/EditMode/SvPerformanceTests.cs",
+      "sha256": "39b8b7d4f2a3fe1c175bdb5184471f679fa45dc3da0a594f231c42e7a5231d92"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/EditMode/SvProjectileArtTests.cs",
+      "sha256": "7d52093912363648ff5dd44923b016eb1a0396bbdd3d32f692cd8def1b27f6d3"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/EditMode/SvProjectilePolicyTests.cs",
+      "sha256": "5d86e6fb09ebc2ede55ac032231de9a5a1a28cdc095cf3679389844e94f5ee0c"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/EditMode/SvTestWorld.cs",
+      "sha256": "9d7b5660f56ff3dda25aa6965953228d32350169e0c95923799e2fd833f8ade5"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/EditMode/SvViewLifecycleTests.cs",
+      "sha256": "f7adb42e3c52b7cc4384c8eeda6f4c262e00ec1d2b30db97bc99b2dfc934c340"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/EditMode/SvVisualMotionTests.cs",
+      "sha256": "6893e25e12558c37a70da6a9c960866fe9067d614086aae5c8fb5252da3e3dff"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/EditMode/SvWeaponTests.cs",
+      "sha256": "c05fdbf7a776ee968d916f0e0ac4958edd35092034b22efb88cb77197898474e"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/PlayMode/SvAllocationCaptureTests.cs",
+      "sha256": "7ff1b1224604227eb5b3d7b4207d491a9d7660ee504fd7689966370e0cf6fdc8"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/PlayMode/SvCollisionDebugTests.cs",
+      "sha256": "2a90ddd1697e584499cfe4a735801fd21ad9167c062b3baa34fa1b0a5970a77a"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/PlayMode/SvCrossedBladePlayTests.cs",
+      "sha256": "6f9f93de479f50ed71d191c315a99e688e0235a7d5e45c62e66d1abc144cf54b"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/PlayMode/SvFlyingSwordPlayTests.cs",
+      "sha256": "ec5f254c2739b86bda1dd0d19555aa2d37a4b7c1030fb97f8fc813913581da26"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/PlayMode/SvGuardPlayTests.cs",
+      "sha256": "84415033620fa2b991c001cf50f836b25b8282fec2c4a4ec6ee2366ce6fced35"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/PlayMode/SvMobileHudCaptureTests.cs",
+      "sha256": "ec0a49e98afd5803422c64bcb457160e89d4ef230a3c97d266758065c4f58ed7"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/PlayMode/SvMobileHudPlayTests.cs",
+      "sha256": "41c60a14a980cbee1db2241ea110a943f85c279995d412acf383803b43debefb"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/PlayMode/SvNaturalGameplayTests.cs",
+      "sha256": "18b4abc3b706ef0c47f20ecd77a848b6a434ab5e7417cf2d2855c07f7ae60dfd"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/PlayMode/SvPlayTests.cs",
+      "sha256": "9351b33138dfd42246f7f1762663a62faf06bdc87178ea47178a1d2aa32c28f8"
+    },
+    {
+      "file": "Assets/SurvivorFoundation/Tests/PlayMode/SvWeaponGameplayTests.cs",
+      "sha256": "abbc79e18032c3a282fda7e2d798a789fbfd922218afb92d9789ce712ebd35f5"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Testing/GameplayAcceptance.cs",
+      "sha256": "3011a5cdb41817972257b9449aa725aca91c998202b9f7292f7f1f29f7c60df4"
+    },
+    {
+      "file": "Assets/SinglePlayerFoundation/Testing/AcceptanceEvidence.cs",
+      "sha256": "e427ea2249ab75dd3d3bc00debb8a8d7942780c221f7b4baf98ac6fcb38ee315"
+    },
+    {
+      "file": "Assets/ShooterFoundation/Tests/EditMode/ShooterAcceptanceTests.cs",
+      "sha256": "f899a4343db392e18e237a74fc717178710351978506bc33e90cf5c9abce55ed"
+    },
+    {
+      "file": "Assets/FoundationAcceptance/Tests/EditMode/ExternalCourierAcceptanceTests.cs",
+      "sha256": "87d6743d88bd143bfa8edf2db5ef6c1dcd6c0a1d97413c774a35c17ecc5c7b03"
+    },
+    {
+      "file": "Assets/PlatformerFoundation/Tests/EditMode/PlAcceptanceTests.cs",
+      "sha256": "474e4cbe9d3a8815968cf454ec3cb5c4f32d34fb4ca548c9e6ba44b4bae1ae56"
+    }
+  ],
+  "references": [
+    {
+      "name": "UnityEngine.TilemapModule",
+      "file": "UnityEngine.TilemapModule.dll",
+      "sha256": "48aba8ac64e4f4a8d93f16767f8c8042e036946c3a3ccfcee052df9b20563104"
+    },
+    {
+      "name": "Unity.Cecil.Pdb",
+      "file": "Unity.Cecil.Pdb.dll",
+      "sha256": "3b882407fa066e4a89289a216721be3ecc1c8f6706ce371df7485d1b39cd67af"
+    },
+    {
+      "name": "UnityEngine.AnimationModule",
+      "file": "UnityEngine.AnimationModule.dll",
+      "sha256": "284d41f8b2a9b13c35afc84d9bf0482829295c915c2883a10b33dbfd35bbd0bd"
+    },
+    {
+      "name": "UnityEngine.UIModule",
+      "file": "UnityEngine.UIModule.dll",
+      "sha256": "da63464b69a8a8d53ac06e8957a96774f75dc6d5f7760699ee113e885d6af21e"
+    },
+    {
+      "name": "UnityEngine.ClothModule",
+      "file": "UnityEngine.ClothModule.dll",
+      "sha256": "35651c8dc3b1a5c840cc7a4839b353b639c872210b614f8eee013b1333a45a6d"
+    },
+    {
+      "name": "UnityEngine.XRModule",
+      "file": "UnityEngine.XRModule.dll",
+      "sha256": "83afbf17128f4c18e37e7d273571e974079fac7b9be4f1eeacc81d3281870cda"
+    },
+    {
+      "name": "UnityEngine.TextRenderingModule",
+      "file": "UnityEngine.TextRenderingModule.dll",
+      "sha256": "9ef1128a15230b8fb178c70ca4600924093870d8c06214142b09bdcc57e9e0bb"
+    },
+    {
+      "name": "UnityEngine.TextCoreFontEngineModule",
+      "file": "UnityEngine.TextCoreFontEngineModule.dll",
+      "sha256": "6a84a8e87e676a5f46e42147bf3456cc764dc7b19fab1dc2ccc8677c5984e456"
+    },
+    {
+      "name": "UnityEngine.DirectorModule",
+      "file": "UnityEngine.DirectorModule.dll",
+      "sha256": "d589d9e26b8368ed50ec3f3e091da4332c9e44fcaed70b1a80534f9e93e5df5d"
+    },
+    {
+      "name": "UnityEngine.UnityWebRequestAudioModule",
+      "file": "UnityEngine.UnityWebRequestAudioModule.dll",
+      "sha256": "d1f0166ee20d1ba438c0f2b34e3bf70491be0dbc68fb96cc54d40c9113cfb1c6"
+    },
+    {
+      "name": "UnityEditor.QuickSearchModule",
+      "file": "UnityEditor.QuickSearchModule.dll",
+      "sha256": "61ecd23f9ea7b9c6aa37e29ccee5f040c44e6c6cb2d6255a62371b73a567361c"
+    },
+    {
+      "name": "UnityEngine.AccessibilityModule",
+      "file": "UnityEngine.AccessibilityModule.dll",
+      "sha256": "4fe233f227301f62ea5ec95e0cb1e88f984f2d4ad45cac5e97c160e6399f01df"
+    },
+    {
+      "name": "UnityEngine.ScreenCaptureModule",
+      "file": "UnityEngine.ScreenCaptureModule.dll",
+      "sha256": "79c87873b301219ad1b4fa106538e33fe6ca4a699c65cb4d479aa3d71c241bd2"
+    },
+    {
+      "name": "UnityEditor",
+      "file": "UnityEditor.dll",
+      "sha256": "12f00a61cab20de9774435886d0c897b825ad582e3ced407b279d4a8e9a9150e"
+    },
+    {
+      "name": "UnityEngine.SpriteShapeModule",
+      "file": "UnityEngine.SpriteShapeModule.dll",
+      "sha256": "0eabbb09533dad2dade63287cf622696e0515d676b2c3929be9851c987d1616e"
+    },
+    {
+      "name": "UnityEngine.UnityTestProtocolModule",
+      "file": "UnityEngine.UnityTestProtocolModule.dll",
+      "sha256": "fbd2c3fae11cf006cc6d96acb491bda20dc89d23cb51253feee23e6c0a62ae33"
+    },
+    {
+      "name": "UnityEngine.VFXModule",
+      "file": "UnityEngine.VFXModule.dll",
+      "sha256": "f90d5229cd748f823633124baae599674da47a85b789f8262e2872b7a2af54dd"
+    },
+    {
+      "name": "UnityEngine.SpriteMaskModule",
+      "file": "UnityEngine.SpriteMaskModule.dll",
+      "sha256": "6af81804c5ac2bcfbf9374465b14909e90543a0e539efe8268244b2d65290e06"
+    },
+    {
+      "name": "UnityEngine.TerrainModule",
+      "file": "UnityEngine.TerrainModule.dll",
+      "sha256": "daef1388d45600e72e3efa960ed954c143e393c294cf7551d7c3d70933912750"
+    },
+    {
+      "name": "UnityEngine.VRModule",
+      "file": "UnityEngine.VRModule.dll",
+      "sha256": "2ec76770faf1d40c6dcf71448b9a155f2c83f9beb6eb2ff2f384a3dd019fb3df"
+    },
+    {
+      "name": "Unity.Cecil",
+      "file": "Unity.Cecil.dll",
+      "sha256": "98ae4d35b3f91f017b1babab876d2bf4594af3d65e7e777fbd37fd1e4124f95e"
+    },
+    {
+      "name": "UnityEngine.GridModule",
+      "file": "UnityEngine.GridModule.dll",
+      "sha256": "5aa15c5f5df47265958c137de4e0ccbe3f24b1d84206457b416e06488f5f1a9b"
+    },
+    {
+      "name": "UnityEngine.VideoModule",
+      "file": "UnityEngine.VideoModule.dll",
+      "sha256": "d61e99dc9bc22c2486d6905fce0694b06e0cb9e3530143140b1b651f0d7c62a3"
+    },
+    {
+      "name": "UnityEngine.ClusterRendererModule",
+      "file": "UnityEngine.ClusterRendererModule.dll",
+      "sha256": "188eda6fa88571d1ad99ee5d89ea4ca0c02991d43c5be92512461729ac908030"
+    },
+    {
+      "name": "UnityEngine.StreamingModule",
+      "file": "UnityEngine.StreamingModule.dll",
+      "sha256": "68bc02e1b2567f0b7b1a07349a2b19256089f7afd3fa94ea85239eb9d462980a"
+    },
+    {
+      "name": "UnityEditor.SceneViewModule",
+      "file": "UnityEditor.SceneViewModule.dll",
+      "sha256": "f864dd4e5b5eb997884f23bce9649f06456d52e50d8325d9ee13000c25f67ae4"
+    },
+    {
+      "name": "UnityEngine.CrashReportingModule",
+      "file": "UnityEngine.CrashReportingModule.dll",
+      "sha256": "990a09af1d408416ce957a722078ac054db670a48f646263fd724f63de362e7b"
+    },
+    {
+      "name": "UnityEngine.ContentLoadModule",
+      "file": "UnityEngine.ContentLoadModule.dll",
+      "sha256": "9a682ba47ba512f0899480a1ce478d6a93b19edc1ecd2be48144126b1de014fc"
+    },
+    {
+      "name": "UnityEngine.UnityAnalyticsModule",
+      "file": "UnityEngine.UnityAnalyticsModule.dll",
+      "sha256": "f459094aa3053eccb2668b43ca8dc0980efd1d1ee2ec6bcb333a683e4d918505"
+    },
+    {
+      "name": "UnityEditor.TextCoreFontEngineModule",
+      "file": "UnityEditor.TextCoreFontEngineModule.dll",
+      "sha256": "f780f4c168dec60c3d1087371b9f26f958122d1323d67c4d7a39de1f4c9ab103"
+    },
+    {
+      "name": "UnityEngine.Physics2DModule",
+      "file": "UnityEngine.Physics2DModule.dll",
+      "sha256": "03b7663d8683a19980e63fdca2cd4b775c24721cb2611b6c629d00745ef228c1"
+    },
+    {
+      "name": "UnityEngine.ARModule",
+      "file": "UnityEngine.ARModule.dll",
+      "sha256": "9f89e9f27f9781fae1f4599a6efb5ab441ac87e28e11be7792bdda2c0d663da9"
+    },
+    {
+      "name": "UnityEngine.JSONSerializeModule",
+      "file": "UnityEngine.JSONSerializeModule.dll",
+      "sha256": "8bbb6c4549f28599a8252d3e2fcc2e36a7ed40eb955ad95f77d2e34a3aac2c7d"
+    },
+    {
+      "name": "UnityEngine.ProfilerModule",
+      "file": "UnityEngine.ProfilerModule.dll",
+      "sha256": "eac2375503fe051b51844a250f4565ed3c24b2264628412f4e58c03a69e71354"
+    },
+    {
+      "name": "UnityEngine.CoreModule",
+      "file": "UnityEngine.CoreModule.dll",
+      "sha256": "3d1d329de2e0b8f71f2872553031578c1a77b85f651cfe2195cb31a6e05c325b"
+    },
+    {
+      "name": "UnityEditor.UIElementsSamplesModule",
+      "file": "UnityEditor.UIElementsSamplesModule.dll",
+      "sha256": "1658bbd486603fbef00284c7d959f3a848a667f5936462f45f75a42ff6e35d65"
+    },
+    {
+      "name": "UnityEngine.UnityConnectModule",
+      "file": "UnityEngine.UnityConnectModule.dll",
+      "sha256": "d7efb4509784e8b82c348023701e2bde39e7b169c048762567fe456c38c17ce0"
+    },
+    {
+      "name": "UnityEngine.UnityWebRequestWWWModule",
+      "file": "UnityEngine.UnityWebRequestWWWModule.dll",
+      "sha256": "493f94433ed65fcf85bbc3b9f3d35793b4b24139229da14514267bcb58cee60a"
+    },
+    {
+      "name": "UnityEngine.AssetBundleModule",
+      "file": "UnityEngine.AssetBundleModule.dll",
+      "sha256": "14a4b8e4f96bf38993f1e6eac6f916948877627c41f74d4ed2405e7032878eaa"
+    },
+    {
+      "name": "UnityEngine.NVIDIAModule",
+      "file": "UnityEngine.NVIDIAModule.dll",
+      "sha256": "5a975719983116bb5cac15ff36c064dacf0449719a6ca3d42495bb95116b1c77"
+    },
+    {
+      "name": "UnityEngine.GameCenterModule",
+      "file": "UnityEngine.GameCenterModule.dll",
+      "sha256": "f4fd08e91bc5d78b5d2c7f181d0e13d2b0982ce8b7b9231c6e3a9ac174532ca1"
+    },
+    {
+      "name": "UnityEngine.SubsystemsModule",
+      "file": "UnityEngine.SubsystemsModule.dll",
+      "sha256": "6333840b1bb0d537a3fe2d57d150d9ae802633ab049cfc4a28393b72de7d7b6e"
+    },
+    {
+      "name": "UnityEditor.DeviceSimulatorModule",
+      "file": "UnityEditor.DeviceSimulatorModule.dll",
+      "sha256": "a7709d02cc48c000dfdde8e7d620b9bc768250911e7b99c62202e8c95e6e13af"
+    },
+    {
+      "name": "UnityEngine.TerrainPhysicsModule",
+      "file": "UnityEngine.TerrainPhysicsModule.dll",
+      "sha256": "8177ab2595638854a8dc45baec57a2c6993a2fb332fefa0019429e4a1f65f639"
+    },
+    {
+      "name": "UnityEngine.GIModule",
+      "file": "UnityEngine.GIModule.dll",
+      "sha256": "e4fdf7add2e352cbef198434ec19066b8d8cae3b2778ed69d69639ac1beacb7e"
+    },
+    {
+      "name": "UnityEngine.ImageConversionModule",
+      "file": "UnityEngine.ImageConversionModule.dll",
+      "sha256": "8c119e2da06cad7cb981bcbf9827deac8d96c1070389b9a01d5ba2a560177c84"
+    },
+    {
+      "name": "UnityEngine.UnityWebRequestTextureModule",
+      "file": "UnityEngine.UnityWebRequestTextureModule.dll",
+      "sha256": "d2ddf4296e8475b92706180d526ae72fa2179c3c6606760f349fbf9895ad2d00"
+    },
+    {
+      "name": "UnityEngine.AndroidJNIModule",
+      "file": "UnityEngine.AndroidJNIModule.dll",
+      "sha256": "529373cef5d275e538291ab4aa0be210265f525ba07a22fd9c01ab0856f73465"
+    },
+    {
+      "name": "UnityEditor.GraphViewModule",
+      "file": "UnityEditor.GraphViewModule.dll",
+      "sha256": "ae67abc2c80c9ad729b639326790c46a054441042788a61fc3b575664dd75d3c"
+    },
+    {
+      "name": "UnityEditor.CoreModule",
+      "file": "UnityEditor.CoreModule.dll",
+      "sha256": "c86e325d7119f03557993d95393e46c2f4f94aaf59fb7f0bba45704023b4a8d7"
+    },
+    {
+      "name": "UnityEngine.PhysicsModule",
+      "file": "UnityEngine.PhysicsModule.dll",
+      "sha256": "782f4d60579c6f9d2d0de412b12b500e98cc71edfe818f687a498df4df37ef88"
+    },
+    {
+      "name": "UnityEngine.LocalizationModule",
+      "file": "UnityEngine.LocalizationModule.dll",
+      "sha256": "a9f65076871f7ff1479dd1a3e2689996a1f5155a88ca7050b60035421c9f6c03"
+    },
+    {
+      "name": "UnityEngine.ParticleSystemModule",
+      "file": "UnityEngine.ParticleSystemModule.dll",
+      "sha256": "d286eda00c6f22f9b4118b1fe06e678b6c3b27e74d14aef02ec2342137568790"
+    },
+    {
+      "name": "UnityEditor.SceneTemplateModule",
+      "file": "UnityEditor.SceneTemplateModule.dll",
+      "sha256": "7779d7451ab146f5e7a83194b0db6b8d851ad4d98f79a5bdeb00061b77e5e976"
+    },
+    {
+      "name": "UnityEditor.TextCoreTextEngineModule",
+      "file": "UnityEditor.TextCoreTextEngineModule.dll",
+      "sha256": "b565b70424730fda6b4a656067517a51208507e0dc481d58b5b3d3321009a1ff"
+    },
+    {
+      "name": "UnityEngine.UmbraModule",
+      "file": "UnityEngine.UmbraModule.dll",
+      "sha256": "d01108f57d08e307c75a438b08da13714187324f1194febc8f10ea64efd5d63c"
+    },
+    {
+      "name": "UnityEngine.UnityCurlModule",
+      "file": "UnityEngine.UnityCurlModule.dll",
+      "sha256": "a13d17d273c66aa8b8112e84f4338835c7aefe47ba85085e13dbe26160000c82"
+    },
+    {
+      "name": "UnityEngine.ClusterInputModule",
+      "file": "UnityEngine.ClusterInputModule.dll",
+      "sha256": "cabfdf76f759662d03c6dfb121cafe196abb190b8684c8c8d8cff0ce5083a35d"
+    },
+    {
+      "name": "UnityEngine.UnityAnalyticsCommonModule",
+      "file": "UnityEngine.UnityAnalyticsCommonModule.dll",
+      "sha256": "e54bb8c5c146da12d79cb8a83ec517c23bd2ff3f67ac80f9502c662f026b139b"
+    },
+    {
+      "name": "UnityEditor.EditorToolbarModule",
+      "file": "UnityEditor.EditorToolbarModule.dll",
+      "sha256": "8feb354a046465dafa98894e292112b56ea7b463c20eedfb594c12eab65d71c2"
+    },
+    {
+      "name": "UnityEngine.WindModule",
+      "file": "UnityEngine.WindModule.dll",
+      "sha256": "b86b799d81efac8c2e255aa3c2ecc6538c6e6429b8234c557ded67b851fe5b0f"
+    },
+    {
+      "name": "UnityEngine.IMGUIModule",
+      "file": "UnityEngine.IMGUIModule.dll",
+      "sha256": "451bc6ee101a12d75620975fd28ce9b62144b35258c42273dd498b3139123c0c"
+    },
+    {
+      "name": "UnityEngine",
+      "file": "UnityEngine.dll",
+      "sha256": "74e6b25f665207973932767e6bef619c2d9a139ef78a32bcdd02c211f18215c2"
+    },
+    {
+      "name": "UnityEngine.HotReloadModule",
+      "file": "UnityEngine.HotReloadModule.dll",
+      "sha256": "3852d5a4f29af1e3fd6d9db01b8c6d9cee3d134da14d3d8e9119c030914ede89"
+    },
+    {
+      "name": "UnityEngine.AudioModule",
+      "file": "UnityEngine.AudioModule.dll",
+      "sha256": "25ecbaec31e9cfe92f71c8b7930f1066d5653fe2a8d393ff075bce19c947ac28"
+    },
+    {
+      "name": "UnityEditor.UIBuilderModule",
+      "file": "UnityEditor.UIBuilderModule.dll",
+      "sha256": "75f1926e746d65fa1baaa5d16eee445f7871d4a449f4e5bc963255e02fb32975"
+    },
+    {
+      "name": "UnityEditor.PresetsUIModule",
+      "file": "UnityEditor.PresetsUIModule.dll",
+      "sha256": "d60e8b9b884af14d8aab328faa951f9ba1ee0f7358f07fadbe19041bec4b4d7a"
+    },
+    {
+      "name": "UnityEngine.InputLegacyModule",
+      "file": "UnityEngine.InputLegacyModule.dll",
+      "sha256": "ed3421c38bcfefc81eb050052adfa1b572fd4ddcc6295bb66054c46daab19bdf"
+    },
+    {
+      "name": "UnityEngine.UnityWebRequestAssetBundleModule",
+      "file": "UnityEngine.UnityWebRequestAssetBundleModule.dll",
+      "sha256": "fc8a18536681794b7b7ce42453bc57d5c70aeb11de468bed680f591c5b6bd79c"
+    },
+    {
+      "name": "UnityEngine.SharedInternalsModule",
+      "file": "UnityEngine.SharedInternalsModule.dll",
+      "sha256": "7a31400bbe3d1b131c59396f9f3d6dac6e11312c71226c2ccd3461241556d6c3"
+    },
+    {
+      "name": "UnityEngine.UIElementsModule",
+      "file": "UnityEngine.UIElementsModule.dll",
+      "sha256": "be31553f4ace6a167370d86d652b0b78ae493623217e97922f4d65356698c784"
+    },
+    {
+      "name": "UnityEngine.InputModule",
+      "file": "UnityEngine.InputModule.dll",
+      "sha256": "0b4a7373df84c55fee8f64a8d07be3415d646e809019e0398a2b8bbd8e57c67f"
+    },
+    {
+      "name": "UnityEngine.VehiclesModule",
+      "file": "UnityEngine.VehiclesModule.dll",
+      "sha256": "0f42beb75e9b2686616495ff396f7bb123c311e528f01306944f727750491135"
+    },
+    {
+      "name": "UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule",
+      "file": "UnityEngine.RuntimeInitializeOnLoadManagerInitializerModule.dll",
+      "sha256": "26a0fd3672757871c85f19b97fdad8712f4cab16ee33f274f7ffd50805813aa1"
+    },
+    {
+      "name": "UnityEngine.UnityWebRequestModule",
+      "file": "UnityEngine.UnityWebRequestModule.dll",
+      "sha256": "835f7540ae4a55f1cb9155fd74b98ff554f1689bddc0940b6d8525aac231b3d3"
+    },
+    {
+      "name": "UnityEditor.UnityConnectModule",
+      "file": "UnityEditor.UnityConnectModule.dll",
+      "sha256": "110e8d64bc6dc7d8b23629f8e7304df21b15348d17f323d3896cc32636b595a9"
+    },
+    {
+      "name": "UnityEngine.PropertiesModule",
+      "file": "UnityEngine.PropertiesModule.dll",
+      "sha256": "ac7842086014e0d830ed2a05146d4ebdacc0af61ca142d87b03c6c2bd6b32208"
+    },
+    {
+      "name": "UnityEditor.DiagnosticsModule",
+      "file": "UnityEditor.DiagnosticsModule.dll",
+      "sha256": "a98f72c8ab2f8460c74a37e9d488f5337596679ecc6a395507f9267cde1a1790"
+    },
+    {
+      "name": "UnityEngine.PerformanceReportingModule",
+      "file": "UnityEngine.PerformanceReportingModule.dll",
+      "sha256": "cd1932b2c8ddcd49908199ae6831ba0fcfc83428971a5ef4e14d9be9fa324211"
+    },
+    {
+      "name": "UnityEngine.DSPGraphModule",
+      "file": "UnityEngine.DSPGraphModule.dll",
+      "sha256": "4851650b4fff21e9684d5c9b37a79926597d9546ec34e577153b2a74ea18e9a6"
+    },
+    {
+      "name": "UnityEngine.AIModule",
+      "file": "UnityEngine.AIModule.dll",
+      "sha256": "5c6585ae35ed997dc7fdac0062951396e9a9e9e75bf9452a1f53e736d17142aa"
+    },
+    {
+      "name": "UnityEditor.UIElementsModule",
+      "file": "UnityEditor.UIElementsModule.dll",
+      "sha256": "daeaec85bfa9c2ceb739a85bc042dc53ba4b6a7f4304e3302ea0204f54057d01"
+    },
+    {
+      "name": "UnityEngine.TLSModule",
+      "file": "UnityEngine.TLSModule.dll",
+      "sha256": "e64448633715bce8106be271c69c73afc3b90b5935a45f67f986a657b858f300"
+    },
+    {
+      "name": "UnityEngine.VirtualTexturingModule",
+      "file": "UnityEngine.VirtualTexturingModule.dll",
+      "sha256": "4fb46434a0a99bbfc8241e50112ac123c2b8d1a4a9dd0d806cc0bccb07cbf37f"
+    },
+    {
+      "name": "Unity.Cecil.Mdb",
+      "file": "Unity.Cecil.Mdb.dll",
+      "sha256": "9321b8813bbe23978527089d27fa066315148180f52c8944c5c13457fb2bea2e"
+    },
+    {
+      "name": "UnityEngine.TextCoreTextEngineModule",
+      "file": "UnityEngine.TextCoreTextEngineModule.dll",
+      "sha256": "a47926529abfaaee7824e1c048f04f6085cade90af9c5d2ae230055f07cfafa4"
+    },
+    {
+      "name": "UnityEngine.SubstanceModule",
+      "file": "UnityEngine.SubstanceModule.dll",
+      "sha256": "153889712f0303ce36fa8b10942015cf9da2d54316f8d30f172fd706fe3b7a00"
+    },
+    {
+      "name": "UnityEditor.Graphs",
+      "file": "UnityEditor.Graphs.dll",
+      "sha256": "dc77ff4f64f356a7fa740589f00222b1c4a2cfe8333e51f6971181c876ccc0fa"
+    },
+    {
+      "name": "Unity.Mathematics",
+      "file": "Unity.Mathematics.dll",
+      "sha256": "dccd3f9292d7235bcf5debe11db9acac92198c96596edfcffd560eb797edb3e2"
+    },
+    {
+      "name": "Unity.Collections",
+      "file": "Unity.Collections.dll",
+      "sha256": "5b062e17e5792371be768eb50be4ef4f1840d35d2a4bdf824fb212ff8e3c5ca0"
+    },
+    {
+      "name": "Unity.Burst",
+      "file": "Unity.Burst.dll",
+      "sha256": "3a59a434efdc48c980e0372907ce33a135c554120f7b89f1f2670a2b694720d3"
+    },
+    {
+      "name": "UnityEngine.UI",
+      "file": "UnityEngine.UI.dll",
+      "sha256": "61550d838b2afa95a3f12183da1c2698a026870c5998b7d24ec19fa74c2b4ea9"
+    },
+    {
+      "name": "UnityEngine.TestRunner",
+      "file": "UnityEngine.TestRunner.dll",
+      "sha256": "fbd56d0022140f88832aea9e65c09537b0a98ccf8d755bbd654780ea96b314b7"
+    },
+    {
+      "name": "UnityEditor.TestRunner",
+      "file": "UnityEditor.TestRunner.dll",
+      "sha256": "f40a2b253f312c26f0604eccd9b56499526b67aeeb1e24bc0184393858d910b2"
+    },
+    {
+      "name": "nunit.framework",
+      "file": "nunit.framework.dll",
+      "sha256": "8209dde828b2fd6bb89afff760916208fb8c0c3d91732676c3213e46c94aade0"
+    }
+  ],
+  "logs": [
+    {
+      "file": "native-api-final-net8.log",
+      "bytes": 4769,
+      "sha256": "853ff4d1ba00cc29b1feae085e6ced6b53ee6e704ba388fb2b483feb5eeafae4",
+      "errors": 0,
+      "warnings": 7
+    },
+    {
+      "file": "native-api-final-netstandard.log",
+      "bytes": 4755,
+      "sha256": "4fd71553e0ea8890bd5c4963bfb4e037f8810da0a80bff478c50d0fddf31fac2",
+      "errors": 0,
+      "warnings": 7
+    }
+  ]
+}

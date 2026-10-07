@@ -1,0 +1,850 @@
+{
+  "code_commit": "0ffa2ee356bdda740bbcf8f2b91c63c4eb7fae9f",
+  "code_tree": "b15d04e4fae26242060b5c245ed32e4a8c5ba767",
+  "base_commit": "3a09484",
+  "full_harness_counters": {
+    "total": 1223,
+    "executed": 1221,
+    "passed": 1221,
+    "failed": 0,
+    "error": 0,
+    "timeout": 0,
+    "aborted": 0,
+    "inconclusive": 0,
+    "passedButRunAborted": 0,
+    "notRunnable": 0,
+    "notExecuted": 0,
+    "disconnected": 0,
+    "warning": 0,
+    "completed": 0,
+    "inProgress": 0,
+    "pending": 0
+  },
+  "actual_result_outcomes": {
+    "Passed": 1221,
+    "NotExecuted": 2
+  },
+  "trx_count": 26,
+  "empty_playmode_trx_records": 14,
+  "scope": "All ordinary EditMode logic tests against Unity stubs. Empty PlayMode records are not graphics evidence. No native Unity execution or physical device acceptance.",
+  "new_case_count": 25,
+  "new_cases": [
+    {
+      "test": "ExternalAcceptance.Tests.ExternalCourierAcceptanceTests.ExternalSaveReplayAndDoubleSession",
+      "outcome": "Passed"
+    },
+    {
+      "test": "ExternalAcceptance.Tests.ExternalCourierAcceptanceTests.ExternalCapacityIdentityAndStructure",
+      "outcome": "Passed"
+    },
+    {
+      "test": "ExternalAcceptance.Tests.ExternalCourierAcceptanceTests.MissingOptionalCapabilitiesFailWithExplicitReasons",
+      "outcome": "Passed"
+    },
+    {
+      "test": "ExternalAcceptance.Tests.ExternalCourierAcceptanceTests.ExternalFactoryLifecycle",
+      "outcome": "Passed"
+    },
+    {
+      "test": "ExternalAcceptance.Tests.ExternalCourierAcceptanceTests.ExternalPooledStorageIsNotApplicable",
+      "outcome": "Passed"
+    },
+    {
+      "test": "ExternalAcceptance.Tests.ExternalCourierAcceptanceTests.ExternalInputInterruption",
+      "outcome": "Passed"
+    },
+    {
+      "test": "ExternalAcceptance.Tests.ExternalCourierAcceptanceTests.SharedQueuedArrivalOrder",
+      "outcome": "Passed"
+    },
+    {
+      "test": "ExternalAcceptance.Tests.ExternalCourierAcceptanceTests.ExternalEvidenceExport",
+      "outcome": "Passed"
+    },
+    {
+      "test": "ExternalAcceptance.Tests.ExternalCourierAcceptanceTests.ExternalUnsupportedPresentationIsExplicit",
+      "outcome": "Passed"
+    },
+    {
+      "test": "PlatformerFoundation.Tests.PlAcceptanceTests.SharedPooledCapacityAndCompaction",
+      "outcome": "Passed"
+    },
+    {
+      "test": "PlatformerFoundation.Tests.PlAcceptanceTests.SharedEvidenceExport",
+      "outcome": "Passed"
+    },
+    {
+      "test": "PlatformerFoundation.Tests.PlAcceptanceTests.SharedFactoryLifecycle",
+      "outcome": "Passed"
+    },
+    {
+      "test": "PlatformerFoundation.Tests.PlAcceptanceTests.SharedSaveReplayAndDoubleSession",
+      "outcome": "Passed"
+    },
+    {
+      "test": "PlatformerFoundation.Tests.PlAcceptanceTests.SharedCapacityIdentityAndStructure",
+      "outcome": "Passed"
+    },
+    {
+      "test": "PlatformerFoundation.Tests.PlAcceptanceTests.SharedQueuedArrivalOrder",
+      "outcome": "Passed"
+    },
+    {
+      "test": "PlatformerFoundation.Tests.PlAcceptanceTests.QualityAndViewsHaveExplicitUnsupportedReasons",
+      "outcome": "Passed"
+    },
+    {
+      "test": "PlatformerFoundation.Tests.PlAcceptanceTests.SharedInputInterruption",
+      "outcome": "Passed"
+    },
+    {
+      "test": "ShooterFoundation.Tests.ShooterAcceptanceTests.SharedPooledCapacityAndCompaction",
+      "outcome": "Passed"
+    },
+    {
+      "test": "ShooterFoundation.Tests.ShooterAcceptanceTests.SharedEvidenceExport",
+      "outcome": "Passed"
+    },
+    {
+      "test": "ShooterFoundation.Tests.ShooterAcceptanceTests.SharedCapacityIdentityAndStructure",
+      "outcome": "Passed"
+    },
+    {
+      "test": "ShooterFoundation.Tests.ShooterAcceptanceTests.HandleDestroyQueueIsExplicitlyNotApplicable",
+      "outcome": "Passed"
+    },
+    {
+      "test": "ShooterFoundation.Tests.ShooterAcceptanceTests.SharedSaveReplayAndDoubleSession",
+      "outcome": "Passed"
+    },
+    {
+      "test": "ShooterFoundation.Tests.ShooterAcceptanceTests.SharedFactoryLifecycle",
+      "outcome": "Passed"
+    },
+    {
+      "test": "ShooterFoundation.Tests.ShooterAcceptanceTests.SharedQualityIsolation",
+      "outcome": "Passed"
+    },
+    {
+      "test": "ShooterFoundation.Tests.ShooterAcceptanceTests.SharedInputInterruption",
+      "outcome": "Passed"
+    }
+  ],
+  "preexisting_unexecuted": [
+    {
+      "test": "SlingFoundation.Tests.SlTests.SearchShots",
+      "outcome": "NotExecuted",
+      "message": "tuning aid"
+    },
+    {
+      "test": "SnakeFoundation.Tests.SnakePreviewExport.ExportFrames",
+      "outcome": "NotExecuted",
+      "message": "Writes preview files; run on demand"
+    }
+  ],
+  "python_tests": {
+    "passed": 24,
+    "failed": 0
+  },
+  "native_api_compatibility": {
+    "frameworks": [
+      "net8.0",
+      "netstandard2.1"
+    ],
+    "sources": 515,
+    "references": 95,
+    "errors_per_build": 0,
+    "existing_warnings_per_build": 7,
+    "native_execution": false
+  },
+  "cold_compositions": {
+    "count": 19,
+    "byte_identical_across_two_runs_and_stage_a_baseline": true,
+    "sha256": "a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30"
+  },
+  "device_acceptance": {
+    "Android": "Pending",
+    "iOS": "Pending"
+  },
+  "review": {
+    "code": "No remaining blocker after four P2 corrections: distinct destroy order/reuse, pooled stable-ID collision guard, fixed v1 windows, pinned ignored dependency provenance.",
+    "output": "Independent read of focused TRX25, Python24, three raw probes/hashes, before/after toolchain, exact deterministic re-render, default-vs-custom capacities and Unknown/Pending semantics passed."
+  },
+  "logs": [
+    {
+      "file": "committed-full-harness.log",
+      "bytes": 422187,
+      "sha256": "71821e2e7be63f29a8f866840dcca98a184a0e8735035ccf2994a30e0d085738"
+    },
+    {
+      "file": "native-api-final-net8.log",
+      "bytes": 4769,
+      "sha256": "853ff4d1ba00cc29b1feae085e6ced6b53ee6e704ba388fb2b483feb5eeafae4"
+    },
+    {
+      "file": "native-api-final-netstandard.log",
+      "bytes": 4755,
+      "sha256": "4fd71553e0ea8890bd5c4963bfb4e037f8810da0a80bff478c50d0fddf31fac2"
+    },
+    {
+      "file": "committed-0ffa2ee/build.log",
+      "bytes": 60,
+      "sha256": "3d52621a8b042d1e5a500710d04103f55fbe6fdf94eda25551886aacfc0f0a59"
+    },
+    {
+      "file": "committed-0ffa2ee/schema-tests.log",
+      "bytes": 3791,
+      "sha256": "3922add277064fda198bba33ce3ee0d3870bcb130e4c3c228f27b8d4e1130887"
+    }
+  ],
+  "trx_files": [
+    {
+      "file": "_5e9498f43725_2026-10-07_18_34_30.trx",
+      "assemblies": [
+        "BrawlerFoundation.Tests.EditMode.dll"
+      ],
+      "sha256": "b3d92443ece5c6a89b8179cdd560e2a0402f06dbc58a9fa3dc5597ccaf2caf3b",
+      "bytes": 211359,
+      "counters": {
+        "total": 120,
+        "executed": 120,
+        "passed": 120,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_35_22.trx",
+      "assemblies": [],
+      "sha256": "a23e8e75859e90ea98f2f87fe4be9fff5d7bce212c5df4e0502ba9f6656cb3df",
+      "bytes": 2125,
+      "counters": {
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_35_23.trx",
+      "assemblies": [
+        "DefenseFoundation.Tests.EditMode.dll"
+      ],
+      "sha256": "66625c43fac414b5262bb303d9aa94014a521836a31c3ec5b4a80237b17044cf",
+      "bytes": 12501,
+      "counters": {
+        "total": 8,
+        "executed": 8,
+        "passed": 8,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_35_24.trx",
+      "assemblies": [],
+      "sha256": "910ac29ae1edf4ba75ec183b98464a7ba3e1025aada377042467a65213202a76",
+      "bytes": 2125,
+      "counters": {
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_35_25.trx",
+      "assemblies": [
+        "FoundationAcceptance.Tests.EditMode.dll"
+      ],
+      "sha256": "422fcb3abab6281e012570e8342ae0ad7d4dae82763878be3282e5564cc0b099",
+      "bytes": 14205,
+      "counters": {
+        "total": 9,
+        "executed": 9,
+        "passed": 9,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_35_26.trx",
+      "assemblies": [
+        "PlatformerFoundation.Tests.EditMode.dll"
+      ],
+      "sha256": "10cc2e85c5751bb13ab5fd5fa7e4dac6b3351a13ffa36cf29416870d467f5734",
+      "bytes": 26732,
+      "counters": {
+        "total": 18,
+        "executed": 18,
+        "passed": 18,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_35_26[1].trx",
+      "assemblies": [],
+      "sha256": "441d48dcaaf012d11cc4b6c571f4470dbd38b86f4a9ac8d90ec875fa8321e4a3",
+      "bytes": 2143,
+      "counters": {
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_35_27.trx",
+      "assemblies": [
+        "PuzzleFoundation.Tests.EditMode.dll"
+      ],
+      "sha256": "f23e38103539a5972645624a3b1c8a785204f3b88086d30fc0070c6007e383c2",
+      "bytes": 11087,
+      "counters": {
+        "total": 7,
+        "executed": 7,
+        "passed": 7,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_35_28.trx",
+      "assemblies": [],
+      "sha256": "e6d7ab3f547c44efc8eeb800d9045153e46be5fc6984fe5af73e5e3921094420",
+      "bytes": 2119,
+      "counters": {
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_35_30.trx",
+      "assemblies": [
+        "RpgFoundation.Tests.EditMode.dll"
+      ],
+      "sha256": "09b1b0e6ec8787fc664b95a538a498ee53fe28cb353e138d99ac801eb6316bc2",
+      "bytes": 102151,
+      "counters": {
+        "total": 63,
+        "executed": 63,
+        "passed": 63,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_35_58.trx",
+      "assemblies": [],
+      "sha256": "c5686917bfa1c174217c94a328893aa79e6f4733862127e0ff070463db99cb75",
+      "bytes": 2101,
+      "counters": {
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_35_59.trx",
+      "assemblies": [],
+      "sha256": "e072714d25c4d81718a5dead2bf63affe106f0c0f59ac4e598f3f3324a5b7343",
+      "bytes": 2010,
+      "counters": {
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_35_59[1].trx",
+      "assemblies": [],
+      "sha256": "5872b50a1092c2504abaaa654076be544403719d1f3611d87e047e382015e966",
+      "bytes": 1994,
+      "counters": {
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_36_00.trx",
+      "assemblies": [],
+      "sha256": "e97c365e1eb6df898b45d0ef98efacb458c1450a3f9b4929f02c50a090af2ff4",
+      "bytes": 2006,
+      "counters": {
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_36_01.trx",
+      "assemblies": [
+        "SPF.Tests.EditMode.dll"
+      ],
+      "sha256": "e66ebe80c5c1a0b0d238ed54ea8ec3e8a74ec178ecb684dbd872c08f115504b2",
+      "bytes": 1794237,
+      "counters": {
+        "total": 803,
+        "executed": 803,
+        "passed": 803,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_39_36.trx",
+      "assemblies": [],
+      "sha256": "30734913f6587704baa0ce52327d84974b3dbcb1757b79f3d0abf46c56721892",
+      "bytes": 2041,
+      "counters": {
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_39_37.trx",
+      "assemblies": [
+        "ShooterFoundation.Tests.EditMode.dll"
+      ],
+      "sha256": "a5a2c507cbf965fd4004972f4347d995f119c84a0dc389b96eb53c80332a4238",
+      "bytes": 36862,
+      "counters": {
+        "total": 24,
+        "executed": 24,
+        "passed": 24,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_39_38.trx",
+      "assemblies": [],
+      "sha256": "983d1b0b90b0d047e5f78805042ed95c7a2f9ba29e48120a8c33207c3aebbb5c",
+      "bytes": 2125,
+      "counters": {
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_39_39.trx",
+      "assemblies": [
+        "SlingFoundation.Tests.EditMode.dll"
+      ],
+      "sha256": "70d33fae91f165133035a366d0bbeee616688e5d0f8f4b18bb979c3721851b3a",
+      "bytes": 8803,
+      "counters": {
+        "total": 5,
+        "executed": 4,
+        "passed": 4,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_39_40.trx",
+      "assemblies": [],
+      "sha256": "0a59a749254e578c9e2e3539cacac94399e7734cfb3b10da0e7552111e10ffe4",
+      "bytes": 2113,
+      "counters": {
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_39_41.trx",
+      "assemblies": [
+        "SnakeFoundation.Tests.EditMode.dll"
+      ],
+      "sha256": "ec94161e8739b95bbb2fe5d43cd7a650272d8f012f96ad6eb5acb1ea579480a2",
+      "bytes": 115089,
+      "counters": {
+        "total": 41,
+        "executed": 40,
+        "passed": 40,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_40_12.trx",
+      "assemblies": [],
+      "sha256": "9c69080c882febbd0a9c3c791af609fbb86588cbaf53e5ae088c825cb16bea56",
+      "bytes": 2113,
+      "counters": {
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_40_13.trx",
+      "assemblies": [
+        "StoryFoundation.Tests.EditMode.dll"
+      ],
+      "sha256": "26f72ce40eef160cfc91dd5ae0101a88c98241b6395741502469c5c45374d25f",
+      "bytes": 8265,
+      "counters": {
+        "total": 5,
+        "executed": 5,
+        "passed": 5,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_40_14.trx",
+      "assemblies": [],
+      "sha256": "0fcedbf05933553aae053b685e9eb29d86e74722c1ec8414a133b8de3bf237ed",
+      "bytes": 2113,
+      "counters": {
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_40_15.trx",
+      "assemblies": [
+        "SurvivorFoundation.Tests.EditMode.dll"
+      ],
+      "sha256": "a12ddaef2ac0794ab4db62624a6cb674deb6f186b677eaf8bb7d39cc1b1898ea",
+      "bytes": 196457,
+      "counters": {
+        "total": 120,
+        "executed": 120,
+        "passed": 120,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    },
+    {
+      "file": "_5e9498f43725_2026-10-07_18_41_21.trx",
+      "assemblies": [],
+      "sha256": "e320a9918fa0a79c0ae9fcdbf44d4bef27d02eca05f729a6282c02a88eb5a769",
+      "bytes": 2131,
+      "counters": {
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0,
+        "error": 0,
+        "timeout": 0,
+        "aborted": 0,
+        "inconclusive": 0,
+        "passedButRunAborted": 0,
+        "notRunnable": 0,
+        "notExecuted": 0,
+        "disconnected": 0,
+        "warning": 0,
+        "completed": 0,
+        "inProgress": 0,
+        "pending": 0
+      }
+    }
+  ]
+}

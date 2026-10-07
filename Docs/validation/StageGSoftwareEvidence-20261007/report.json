@@ -1,0 +1,1853 @@
+{
+  "schema_version": 1,
+  "kind": "mobile-acceptance-report",
+  "code_commit": "0ffa2ee356bdda740bbcf8f2b91c63c4eb7fae9f",
+  "code_tree": "b15d04e4fae26242060b5c245ed32e4a8c5ba767",
+  "device_acceptance": {
+    "Android": "Pending",
+    "iOS": "Pending"
+  },
+  "profile_goals": {
+    "schema_version": 1,
+    "status": "provisional-goals-not-measurements",
+    "inventory_source": "Docs/validation/FoundationCompatibilityInventory-20261007.json (Stage A source tree 04435658d8b1c2e95e286b093405141b5fd6040b; cold-19 comparison must remain unchanged)",
+    "platform_targets": {
+      "Android": {
+        "device_model": null,
+        "os_version": null,
+        "graphics_api_candidates": [
+          "Vulkan",
+          "OpenGLES3"
+        ],
+        "status": "Pending"
+      },
+      "iOS": {
+        "device_model": null,
+        "os_version": null,
+        "graphics_api_candidates": [
+          "Metal"
+        ],
+        "status": "Pending"
+      }
+    },
+    "quality_tiers": [
+      {
+        "level": 0,
+        "name": "high",
+        "render_scale_goal": 1.0,
+        "core_feedback": "Preserve core hit/danger readability and authoritative capacity. Reduce decorative work only; validate actual game consumer mapping.",
+        "source": "Assets/SinglePlayerFoundation/Shell/Performance/FrameGovernor.cs RenderScales; URP applies scale only when integrated. Goals do not install a governor."
+      },
+      {
+        "level": 1,
+        "name": "balanced",
+        "render_scale_goal": 0.9,
+        "core_feedback": "Preserve core hit/danger readability and authoritative capacity. Reduce decorative work only; validate actual game consumer mapping.",
+        "source": "Assets/SinglePlayerFoundation/Shell/Performance/FrameGovernor.cs RenderScales; URP applies scale only when integrated. Goals do not install a governor."
+      },
+      {
+        "level": 2,
+        "name": "low",
+        "render_scale_goal": 0.8,
+        "core_feedback": "Preserve core hit/danger readability and authoritative capacity. Reduce decorative work only; validate actual game consumer mapping.",
+        "source": "Assets/SinglePlayerFoundation/Shell/Performance/FrameGovernor.cs RenderScales; URP applies scale only when integrated. Goals do not install a governor."
+      },
+      {
+        "level": 3,
+        "name": "minimum",
+        "render_scale_goal": 0.7,
+        "core_feedback": "Preserve core hit/danger readability and authoritative capacity. Reduce decorative work only; validate actual game consumer mapping.",
+        "source": "Assets/SinglePlayerFoundation/Shell/Performance/FrameGovernor.cs RenderScales; URP applies scale only when integrated. Goals do not install a governor."
+      }
+    ],
+    "modes": [
+      {
+        "mode": "snake.classic",
+        "factory": "SnakeGameModule.Create(SnakeConfig.CreateDefault()) + ModeDefinition.Create(..., SessionSettings.Default)",
+        "factory_source": "Assets/SnakeFoundation/Runtime/SnakeGameModule.cs",
+        "orientation_goal": "landscape",
+        "safe_area_goal": "Fit current safe area; test narrow/wide viewport, notch and home inset, multi-touch and rotate/interruption. No global orientation settings change.",
+        "active_fps_goal": 60,
+        "fps_source": "Assets/SnakeFoundation/Game/SnakeGameBootstrap.cs (target frame rate default; target is not sustained measured throughput)",
+        "table_capacities": {
+          "Snake": 320,
+          "Food": 24000,
+          "Prop": 512,
+          "Projectile": 512
+        },
+        "capacity_source": "Docs/validation/FoundationCompatibilityInventory-20261007.json (Stage A source tree 04435658d8b1c2e95e286b093405141b5fd6040b; cold-19 comparison must remain unchanged)",
+        "targets": {
+          "cpu_main_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "cpu_worker_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "gpu_ms": {
+            "value": 13.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 80% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "managed_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "native_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "gpu_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "upload_api_bytes": {
+            "value": null,
+            "unit": "bytes/frame",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "overdraw": {
+            "value": null,
+            "unit": "ratio",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          }
+        },
+        "quality_scope": "FrameGovernor render-scale goals only. This mode has no common per-game decoration-quality contract; validate actual renderer mapping separately.",
+        "simulation_quality_exception": "Classic Snake AI quality throttling is recorded replay input; this legacy mode cannot claim pure presentation-only quality."
+      },
+      {
+        "mode": "rpg.classic",
+        "factory": "RpgMode.Create(RpgConfig.CreateDefault(), out modules)",
+        "factory_source": "Assets/RpgFoundation/Runtime/RpgModules.cs",
+        "orientation_goal": "landscape",
+        "safe_area_goal": "Fit current safe area; test narrow/wide viewport, notch and home inset, multi-touch and rotate/interruption. No global orientation settings change.",
+        "active_fps_goal": 60,
+        "fps_source": "Assets/RpgFoundation/Game/RpgGameBootstrap.cs (target frame rate default; target is not sustained measured throughput)",
+        "table_capacities": {
+          "Rpg.Prop": 256,
+          "Rpg.Actor": 512,
+          "Rpg.Projectile": 256,
+          "Rpg.Item": 512
+        },
+        "capacity_source": "Docs/validation/FoundationCompatibilityInventory-20261007.json (Stage A source tree 04435658d8b1c2e95e286b093405141b5fd6040b; cold-19 comparison must remain unchanged)",
+        "targets": {
+          "cpu_main_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "cpu_worker_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "gpu_ms": {
+            "value": 13.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 80% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "managed_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "native_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "gpu_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "upload_api_bytes": {
+            "value": null,
+            "unit": "bytes/frame",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "overdraw": {
+            "value": null,
+            "unit": "ratio",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          }
+        },
+        "quality_scope": "FrameGovernor render-scale goals only. This mode has no common per-game decoration-quality contract; validate actual renderer mapping separately.",
+        "simulation_quality_exception": null
+      },
+      {
+        "mode": "survivor.classic",
+        "factory": "SvMode.Create(SvConfig.CreateDefault(), out module)",
+        "factory_source": "Assets/SurvivorFoundation/Runtime/SvModule.cs",
+        "orientation_goal": "portrait",
+        "safe_area_goal": "Fit current safe area; test narrow/wide viewport, notch and home inset, multi-touch and rotate/interruption. No global orientation settings change.",
+        "active_fps_goal": 60,
+        "fps_source": "Assets/SurvivorFoundation/Game/SvGameBootstrap.cs (target frame rate default; target is not sustained measured throughput)",
+        "table_capacities": {
+          "Sv.Enemy": 4096,
+          "Sv.Bullet": 32768,
+          "Sv.Gem": 8192
+        },
+        "capacity_source": "Docs/validation/FoundationCompatibilityInventory-20261007.json (Stage A source tree 04435658d8b1c2e95e286b093405141b5fd6040b; cold-19 comparison must remain unchanged)",
+        "targets": {
+          "cpu_main_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "cpu_worker_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "gpu_ms": {
+            "value": 13.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 80% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "managed_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "native_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "gpu_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "upload_api_bytes": {
+            "value": null,
+            "unit": "bytes/frame",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "overdraw": {
+            "value": null,
+            "unit": "ratio",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          }
+        },
+        "quality_scope": "Actual game renderer quality hooks and optional CombatVfxPool use bounded presentation budgets. Four tiers preserve authoritative table capacities; input/hit/danger readability needs graphics and device evidence.",
+        "simulation_quality_exception": null
+      },
+      {
+        "mode": "platformer.classic",
+        "factory": "PlMode.Create(out module)",
+        "factory_source": "Assets/PlatformerFoundation/Runtime/PlModule.cs",
+        "orientation_goal": "landscape",
+        "safe_area_goal": "Fit current safe area; test narrow/wide viewport, notch and home inset, multi-touch and rotate/interruption. No global orientation settings change.",
+        "active_fps_goal": 60,
+        "fps_source": "Assets/PlatformerFoundation/Game/PlGameBootstrap.cs (target frame rate default; target is not sustained measured throughput)",
+        "table_capacities": {
+          "Pl.Walker": 128,
+          "Pl.Platform": 64,
+          "Pl.Coin": 512
+        },
+        "capacity_source": "Docs/validation/FoundationCompatibilityInventory-20261007.json (Stage A source tree 04435658d8b1c2e95e286b093405141b5fd6040b; cold-19 comparison must remain unchanged)",
+        "targets": {
+          "cpu_main_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "cpu_worker_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "gpu_ms": {
+            "value": 13.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 80% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "managed_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "native_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "gpu_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "upload_api_bytes": {
+            "value": null,
+            "unit": "bytes/frame",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "overdraw": {
+            "value": null,
+            "unit": "ratio",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          }
+        },
+        "quality_scope": "FrameGovernor render-scale goals only. This mode has no common per-game decoration-quality contract; validate actual renderer mapping separately.",
+        "simulation_quality_exception": null
+      },
+      {
+        "mode": "defense.classic",
+        "factory": "TdMode.Create(out module)",
+        "factory_source": "Assets/DefenseFoundation/Runtime/TdModule.cs",
+        "orientation_goal": "landscape",
+        "safe_area_goal": "Fit current safe area; test narrow/wide viewport, notch and home inset, multi-touch and rotate/interruption. No global orientation settings change.",
+        "active_fps_goal": 60,
+        "fps_source": "Assets/DefenseFoundation/Game/TdGameBootstrap.cs (target frame rate default; target is not sustained measured throughput)",
+        "table_capacities": {
+          "Td.Enemy": 1024,
+          "Td.Tower": 256,
+          "Td.Shot": 2048
+        },
+        "capacity_source": "Docs/validation/FoundationCompatibilityInventory-20261007.json (Stage A source tree 04435658d8b1c2e95e286b093405141b5fd6040b; cold-19 comparison must remain unchanged)",
+        "targets": {
+          "cpu_main_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "cpu_worker_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "gpu_ms": {
+            "value": 13.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 80% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "managed_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "native_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "gpu_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "upload_api_bytes": {
+            "value": null,
+            "unit": "bytes/frame",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "overdraw": {
+            "value": null,
+            "unit": "ratio",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          }
+        },
+        "quality_scope": "FrameGovernor render-scale goals only. This mode has no common per-game decoration-quality contract; validate actual renderer mapping separately.",
+        "simulation_quality_exception": null
+      },
+      {
+        "mode": "puzzle.classic",
+        "factory": "M3Mode.Create(out module)",
+        "factory_source": "Assets/PuzzleFoundation/Runtime/M3Module.cs",
+        "orientation_goal": "portrait",
+        "safe_area_goal": "Fit current safe area; test narrow/wide viewport, notch and home inset, multi-touch and rotate/interruption. No global orientation settings change.",
+        "active_fps_goal": 60,
+        "fps_source": "Assets/PuzzleFoundation/Game/M3GameBootstrap.cs (target frame rate default; target is not sustained measured throughput)",
+        "table_capacities": {},
+        "capacity_source": "Docs/validation/FoundationCompatibilityInventory-20261007.json (Stage A source tree 04435658d8b1c2e95e286b093405141b5fd6040b; cold-19 comparison must remain unchanged)",
+        "targets": {
+          "cpu_main_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "cpu_worker_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "gpu_ms": {
+            "value": 13.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 80% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "managed_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "native_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "gpu_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "upload_api_bytes": {
+            "value": null,
+            "unit": "bytes/frame",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "overdraw": {
+            "value": null,
+            "unit": "ratio",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          }
+        },
+        "quality_scope": "FrameGovernor render-scale goals only. This mode has no common per-game decoration-quality contract; validate actual renderer mapping separately.",
+        "simulation_quality_exception": null
+      },
+      {
+        "mode": "sling.classic",
+        "factory": "SlMode.Create(out module)",
+        "factory_source": "Assets/SlingFoundation/Runtime/SlModule.cs",
+        "orientation_goal": "landscape",
+        "safe_area_goal": "Fit current safe area; test narrow/wide viewport, notch and home inset, multi-touch and rotate/interruption. No global orientation settings change.",
+        "active_fps_goal": 60,
+        "fps_source": "Assets/SlingFoundation/Game/SlGameBootstrap.cs (target frame rate default; target is not sustained measured throughput)",
+        "table_capacities": {},
+        "capacity_source": "Docs/validation/FoundationCompatibilityInventory-20261007.json (Stage A source tree 04435658d8b1c2e95e286b093405141b5fd6040b; cold-19 comparison must remain unchanged)",
+        "targets": {
+          "cpu_main_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "cpu_worker_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "gpu_ms": {
+            "value": 13.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 80% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "managed_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "native_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "gpu_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "upload_api_bytes": {
+            "value": null,
+            "unit": "bytes/frame",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "overdraw": {
+            "value": null,
+            "unit": "ratio",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          }
+        },
+        "quality_scope": "FrameGovernor render-scale goals only. This mode has no common per-game decoration-quality contract; validate actual renderer mapping separately.",
+        "simulation_quality_exception": null
+      },
+      {
+        "mode": "brawler.classic",
+        "factory": "BwMode.Create(out module)",
+        "factory_source": "Assets/BrawlerFoundation/Runtime/BwModule.cs",
+        "orientation_goal": "landscape",
+        "safe_area_goal": "Fit current safe area; test narrow/wide viewport, notch and home inset, multi-touch and rotate/interruption. No global orientation settings change.",
+        "active_fps_goal": 60,
+        "fps_source": "Assets/BrawlerFoundation/Game/BwGameBootstrap.cs (target frame rate default; target is not sustained measured throughput)",
+        "table_capacities": {
+          "Bw.Fighter": 64
+        },
+        "capacity_source": "Docs/validation/FoundationCompatibilityInventory-20261007.json (Stage A source tree 04435658d8b1c2e95e286b093405141b5fd6040b; cold-19 comparison must remain unchanged)",
+        "targets": {
+          "cpu_main_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "cpu_worker_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "gpu_ms": {
+            "value": 13.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 80% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "managed_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "native_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "gpu_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "upload_api_bytes": {
+            "value": null,
+            "unit": "bytes/frame",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "overdraw": {
+            "value": null,
+            "unit": "ratio",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          }
+        },
+        "quality_scope": "Actual game renderer quality hooks and optional CombatVfxPool use bounded presentation budgets. Four tiers preserve authoritative table capacities; input/hit/danger readability needs graphics and device evidence.",
+        "simulation_quality_exception": null
+      },
+      {
+        "mode": "story.classic",
+        "factory": "StMode.Create(out module)",
+        "factory_source": "Assets/StoryFoundation/Runtime/StModule.cs",
+        "orientation_goal": "landscape",
+        "safe_area_goal": "Fit current safe area; test narrow/wide viewport, notch and home inset, multi-touch and rotate/interruption. No global orientation settings change.",
+        "active_fps_goal": 60,
+        "fps_source": "Assets/StoryFoundation/Game/StGameBootstrap.cs (target frame rate default; target is not sustained measured throughput)",
+        "table_capacities": {},
+        "capacity_source": "Docs/validation/FoundationCompatibilityInventory-20261007.json (Stage A source tree 04435658d8b1c2e95e286b093405141b5fd6040b; cold-19 comparison must remain unchanged)",
+        "targets": {
+          "cpu_main_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "cpu_worker_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "gpu_ms": {
+            "value": 13.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 80% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "managed_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "native_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "gpu_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "upload_api_bytes": {
+            "value": null,
+            "unit": "bytes/frame",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "overdraw": {
+            "value": null,
+            "unit": "ratio",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          }
+        },
+        "quality_scope": "FrameGovernor render-scale goals only. This mode has no common per-game decoration-quality contract; validate actual renderer mapping separately.",
+        "simulation_quality_exception": null
+      },
+      {
+        "mode": "shooter.default",
+        "factory": "ShooterMode.Create(ShooterConfig.CreateDefault(), out module)",
+        "factory_source": "Assets/ShooterFoundation/Runtime/ShooterModule.cs",
+        "orientation_goal": "portrait",
+        "safe_area_goal": "Fit current safe area; test narrow/wide viewport, notch and home inset, multi-touch and rotate/interruption. No global orientation settings change.",
+        "active_fps_goal": 60,
+        "fps_source": "Assets/ShooterFoundation/Game/ShooterGameBootstrap.cs (target frame rate default; target is not sustained measured throughput)",
+        "table_capacities": {
+          "Shooter.Enemy": 512,
+          "Shooter.Bullet": 4096,
+          "Shooter.Pickup": 512
+        },
+        "capacity_source": "Docs/validation/FoundationCompatibilityInventory-20261007.json (Stage A source tree 04435658d8b1c2e95e286b093405141b5fd6040b; cold-19 comparison must remain unchanged)",
+        "targets": {
+          "cpu_main_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "cpu_worker_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "gpu_ms": {
+            "value": 13.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 80% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "managed_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "native_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "gpu_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "upload_api_bytes": {
+            "value": null,
+            "unit": "bytes/frame",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "overdraw": {
+            "value": null,
+            "unit": "ratio",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          }
+        },
+        "quality_scope": "Actual game renderer quality hooks and optional CombatVfxPool use bounded presentation budgets. Four tiers preserve authoritative table capacities; input/hit/danger readability needs graphics and device evidence.",
+        "simulation_quality_exception": null
+      },
+      {
+        "mode": "survivor.guard",
+        "factory": "SvMode.Create(SvConfig.CreateGuardExample(), out module)",
+        "factory_source": "Assets/SurvivorFoundation/Runtime/SvModule.cs",
+        "orientation_goal": "portrait",
+        "safe_area_goal": "Fit current safe area; test narrow/wide viewport, notch and home inset, multi-touch and rotate/interruption. No global orientation settings change.",
+        "active_fps_goal": 60,
+        "fps_source": "Assets/SurvivorFoundation/Game/SvGameBootstrap.cs (target frame rate default; target is not sustained measured throughput)",
+        "table_capacities": {
+          "Sv.Enemy": 1024,
+          "Sv.Bullet": 4096,
+          "Sv.Gem": 2048
+        },
+        "capacity_source": "Docs/validation/FoundationCompatibilityInventory-20261007.json (Stage A source tree 04435658d8b1c2e95e286b093405141b5fd6040b; cold-19 comparison must remain unchanged)",
+        "targets": {
+          "cpu_main_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "cpu_worker_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "gpu_ms": {
+            "value": 13.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 80% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "managed_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "native_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "gpu_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "upload_api_bytes": {
+            "value": null,
+            "unit": "bytes/frame",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "overdraw": {
+            "value": null,
+            "unit": "ratio",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          }
+        },
+        "quality_scope": "Actual game renderer quality hooks and optional CombatVfxPool use bounded presentation budgets. Four tiers preserve authoritative table capacities; input/hit/danger readability needs graphics and device evidence.",
+        "simulation_quality_exception": null
+      },
+      {
+        "mode": "survivor.flying_sword",
+        "factory": "SvMode.Create(SvConfig.CreateFlyingSwordExample(), out module)",
+        "factory_source": "Assets/SurvivorFoundation/Runtime/SvModule.cs",
+        "orientation_goal": "portrait",
+        "safe_area_goal": "Fit current safe area; test narrow/wide viewport, notch and home inset, multi-touch and rotate/interruption. No global orientation settings change.",
+        "active_fps_goal": 60,
+        "fps_source": "Assets/SurvivorFoundation/Game/SvGameBootstrap.cs (target frame rate default; target is not sustained measured throughput)",
+        "table_capacities": {
+          "Sv.Enemy": 1024,
+          "Sv.Bullet": 1024,
+          "Sv.Gem": 2048
+        },
+        "capacity_source": "Docs/validation/FoundationCompatibilityInventory-20261007.json (Stage A source tree 04435658d8b1c2e95e286b093405141b5fd6040b; cold-19 comparison must remain unchanged)",
+        "targets": {
+          "cpu_main_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "cpu_worker_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "gpu_ms": {
+            "value": 13.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 80% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "managed_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "native_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "gpu_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "upload_api_bytes": {
+            "value": null,
+            "unit": "bytes/frame",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "overdraw": {
+            "value": null,
+            "unit": "ratio",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          }
+        },
+        "quality_scope": "Actual game renderer quality hooks and optional CombatVfxPool use bounded presentation budgets. Four tiers preserve authoritative table capacities; input/hit/danger readability needs graphics and device evidence.",
+        "simulation_quality_exception": null
+      },
+      {
+        "mode": "brawler.belt",
+        "factory": "BwMode.CreateBeltScroller(BwBeltConfig.Default, out module)",
+        "factory_source": "Assets/BrawlerFoundation/Runtime/BwModule.cs",
+        "orientation_goal": "landscape",
+        "safe_area_goal": "Fit current safe area; test narrow/wide viewport, notch and home inset, multi-touch and rotate/interruption. No global orientation settings change.",
+        "active_fps_goal": 60,
+        "fps_source": "Assets/BrawlerFoundation/Game/BwGameBootstrap.cs (target frame rate default; target is not sustained measured throughput)",
+        "table_capacities": {
+          "Bw.Fighter": 64
+        },
+        "capacity_source": "Docs/validation/FoundationCompatibilityInventory-20261007.json (Stage A source tree 04435658d8b1c2e95e286b093405141b5fd6040b; cold-19 comparison must remain unchanged)",
+        "targets": {
+          "cpu_main_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "cpu_worker_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "gpu_ms": {
+            "value": 13.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 80% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "managed_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "native_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "gpu_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "upload_api_bytes": {
+            "value": null,
+            "unit": "bytes/frame",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "overdraw": {
+            "value": null,
+            "unit": "ratio",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          }
+        },
+        "quality_scope": "Actual game renderer quality hooks and optional CombatVfxPool use bounded presentation budgets. Four tiers preserve authoritative table capacities; input/hit/danger readability needs graphics and device evidence.",
+        "simulation_quality_exception": null
+      },
+      {
+        "mode": "survivor.crossed_blades",
+        "factory": "SvMode.Create(SvConfig.CreateCrossedBladeExample(), out module)",
+        "factory_source": "Assets/SurvivorFoundation/Runtime/SvModule.cs",
+        "orientation_goal": "portrait",
+        "safe_area_goal": "Fit current safe area; test narrow/wide viewport, notch and home inset, multi-touch and rotate/interruption. No global orientation settings change.",
+        "active_fps_goal": 60,
+        "fps_source": "Assets/SurvivorFoundation/Game/SvGameBootstrap.cs (target frame rate default; target is not sustained measured throughput)",
+        "table_capacities": {
+          "Sv.Enemy": 4096,
+          "Sv.Bullet": 32768,
+          "Sv.Gem": 8192
+        },
+        "capacity_source": "Docs/validation/FoundationCompatibilityInventory-20261007.json (Stage A source tree 04435658d8b1c2e95e286b093405141b5fd6040b; cold-19 comparison must remain unchanged)",
+        "targets": {
+          "cpu_main_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "cpu_worker_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "gpu_ms": {
+            "value": 13.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 80% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "managed_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "native_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "gpu_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "upload_api_bytes": {
+            "value": null,
+            "unit": "bytes/frame",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "overdraw": {
+            "value": null,
+            "unit": "ratio",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          }
+        },
+        "quality_scope": "Actual game renderer quality hooks and optional CombatVfxPool use bounded presentation budgets. Four tiers preserve authoritative table capacities; input/hit/danger readability needs graphics and device evidence.",
+        "simulation_quality_exception": null
+      },
+      {
+        "mode": "survivor.mobile",
+        "factory": "SvMode.Create(SvConfig.CreateMobileCombatExample(), out module)",
+        "factory_source": "Assets/SurvivorFoundation/Runtime/SvModule.cs",
+        "orientation_goal": "portrait",
+        "safe_area_goal": "Fit current safe area; test narrow/wide viewport, notch and home inset, multi-touch and rotate/interruption. No global orientation settings change.",
+        "active_fps_goal": 60,
+        "fps_source": "Assets/SurvivorFoundation/Game/SvGameBootstrap.cs (target frame rate default; target is not sustained measured throughput)",
+        "table_capacities": {
+          "Sv.Enemy": 1024,
+          "Sv.Bullet": 4096,
+          "Sv.Gem": 2048
+        },
+        "capacity_source": "Docs/validation/FoundationCompatibilityInventory-20261007.json (Stage A source tree 04435658d8b1c2e95e286b093405141b5fd6040b; cold-19 comparison must remain unchanged)",
+        "targets": {
+          "cpu_main_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "cpu_worker_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "gpu_ms": {
+            "value": 13.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 80% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "managed_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "native_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "gpu_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "upload_api_bytes": {
+            "value": null,
+            "unit": "bytes/frame",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "overdraw": {
+            "value": null,
+            "unit": "ratio",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          }
+        },
+        "quality_scope": "Actual game renderer quality hooks and optional CombatVfxPool use bounded presentation budgets. Four tiers preserve authoritative table capacities; input/hit/danger readability needs graphics and device evidence.",
+        "simulation_quality_exception": null
+      },
+      {
+        "mode": "survivor.weapons",
+        "factory": "SvMode.Create(SvConfig.CreateWeaponCombatExample(), out module)",
+        "factory_source": "Assets/SurvivorFoundation/Runtime/SvModule.cs",
+        "orientation_goal": "portrait",
+        "safe_area_goal": "Fit current safe area; test narrow/wide viewport, notch and home inset, multi-touch and rotate/interruption. No global orientation settings change.",
+        "active_fps_goal": 60,
+        "fps_source": "Assets/SurvivorFoundation/Game/SvGameBootstrap.cs (target frame rate default; target is not sustained measured throughput)",
+        "table_capacities": {
+          "Sv.Enemy": 1024,
+          "Sv.Bullet": 4096,
+          "Sv.Gem": 2048
+        },
+        "capacity_source": "Docs/validation/FoundationCompatibilityInventory-20261007.json (Stage A source tree 04435658d8b1c2e95e286b093405141b5fd6040b; cold-19 comparison must remain unchanged)",
+        "targets": {
+          "cpu_main_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "cpu_worker_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "gpu_ms": {
+            "value": 13.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 80% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "managed_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "native_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "gpu_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "upload_api_bytes": {
+            "value": null,
+            "unit": "bytes/frame",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "overdraw": {
+            "value": null,
+            "unit": "ratio",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          }
+        },
+        "quality_scope": "Actual game renderer quality hooks and optional CombatVfxPool use bounded presentation budgets. Four tiers preserve authoritative table capacities; input/hit/danger readability needs graphics and device evidence.",
+        "simulation_quality_exception": null
+      },
+      {
+        "mode": "brawler.shared_combat",
+        "factory": "BwMode.CreateSharedCombat(BwSharedCombatConfig.Default, out module)",
+        "factory_source": "Assets/BrawlerFoundation/Runtime/BwModule.cs",
+        "orientation_goal": "landscape",
+        "safe_area_goal": "Fit current safe area; test narrow/wide viewport, notch and home inset, multi-touch and rotate/interruption. No global orientation settings change.",
+        "active_fps_goal": 60,
+        "fps_source": "Assets/BrawlerFoundation/Game/BwGameBootstrap.cs (target frame rate default; target is not sustained measured throughput)",
+        "table_capacities": {
+          "Bw.Fighter": 64
+        },
+        "capacity_source": "Docs/validation/FoundationCompatibilityInventory-20261007.json (Stage A source tree 04435658d8b1c2e95e286b093405141b5fd6040b; cold-19 comparison must remain unchanged)",
+        "targets": {
+          "cpu_main_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "cpu_worker_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "gpu_ms": {
+            "value": 13.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 80% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "managed_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "native_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "gpu_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "upload_api_bytes": {
+            "value": null,
+            "unit": "bytes/frame",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "overdraw": {
+            "value": null,
+            "unit": "ratio",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          }
+        },
+        "quality_scope": "Actual game renderer quality hooks and optional CombatVfxPool use bounded presentation budgets. Four tiers preserve authoritative table capacities; input/hit/danger readability needs graphics and device evidence.",
+        "simulation_quality_exception": null
+      },
+      {
+        "mode": "brawler.mobile",
+        "factory": "BwMode.CreateMobileCombat(out module)",
+        "factory_source": "Assets/BrawlerFoundation/Runtime/BwModule.cs",
+        "orientation_goal": "landscape",
+        "safe_area_goal": "Fit current safe area; test narrow/wide viewport, notch and home inset, multi-touch and rotate/interruption. No global orientation settings change.",
+        "active_fps_goal": 60,
+        "fps_source": "Assets/BrawlerFoundation/Game/BwGameBootstrap.cs (target frame rate default; target is not sustained measured throughput)",
+        "table_capacities": {
+          "Bw.Fighter": 64
+        },
+        "capacity_source": "Docs/validation/FoundationCompatibilityInventory-20261007.json (Stage A source tree 04435658d8b1c2e95e286b093405141b5fd6040b; cold-19 comparison must remain unchanged)",
+        "targets": {
+          "cpu_main_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "cpu_worker_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "gpu_ms": {
+            "value": 13.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 80% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "managed_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "native_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "gpu_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "upload_api_bytes": {
+            "value": null,
+            "unit": "bytes/frame",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "overdraw": {
+            "value": null,
+            "unit": "ratio",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          }
+        },
+        "quality_scope": "Actual game renderer quality hooks and optional CombatVfxPool use bounded presentation budgets. Four tiers preserve authoritative table capacities; input/hit/danger readability needs graphics and device evidence.",
+        "simulation_quality_exception": null
+      },
+      {
+        "mode": "brawler.weapon_belt",
+        "factory": "BwMode.CreateWeaponBelt(BwBeltConfig.Default, out module)",
+        "factory_source": "Assets/BrawlerFoundation/Runtime/BwModule.cs",
+        "orientation_goal": "landscape",
+        "safe_area_goal": "Fit current safe area; test narrow/wide viewport, notch and home inset, multi-touch and rotate/interruption. No global orientation settings change.",
+        "active_fps_goal": 60,
+        "fps_source": "Assets/BrawlerFoundation/Game/BwGameBootstrap.cs (target frame rate default; target is not sustained measured throughput)",
+        "table_capacities": {
+          "Bw.Fighter": 64
+        },
+        "capacity_source": "Docs/validation/FoundationCompatibilityInventory-20261007.json (Stage A source tree 04435658d8b1c2e95e286b093405141b5fd6040b; cold-19 comparison must remain unchanged)",
+        "targets": {
+          "cpu_main_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "cpu_worker_ms": {
+            "value": 8.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 50% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "gpu_ms": {
+            "value": 13.333333333333334,
+            "unit": "ms",
+            "basis": "Provisional engineering goal: 80% of a 60 FPS frame. Main/worker/GPU overlap; do not sum. Not an existing threshold or measured result."
+          },
+          "managed_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "native_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "gpu_live_bytes": {
+            "value": null,
+            "unit": "bytes",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "upload_api_bytes": {
+            "value": null,
+            "unit": "bytes/frame",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          },
+          "overdraw": {
+            "value": null,
+            "unit": "ratio",
+            "basis": "Unspecified until actual device, content and profiler scope are selected. Unknown is not zero; existing gates remain unchanged."
+          }
+        },
+        "quality_scope": "Actual game renderer quality hooks and optional CombatVfxPool use bounded presentation budgets. Four tiers preserve authoritative table capacities; input/hit/danger readability needs graphics and device evidence.",
+        "simulation_quality_exception": null
+      }
+    ]
+  },
+  "measured_software_probes": [
+    {
+      "schema_version": 1,
+      "kind": "simulation-probe",
+      "mode": "external.courier-test-only",
+      "configuration": "parcel8-rule-only",
+      "orientation_intent": "none",
+      "session": "external.courier-test-only/seed-123",
+      "backend": "simulation-only/no-renderer",
+      "runtime": "dotnet-unity-stubs",
+      "platform": "Unix 6.18.44.0",
+      "started_utc": "2026-10-07T10:34:14.7674458Z",
+      "code_commit": "0ffa2ee356bdda740bbcf8f2b91c63c4eb7fae9f",
+      "code_tree": "b15d04e4fae26242060b5c245ed32e4a8c5ba767",
+      "seed": 123,
+      "tick_rate": 30,
+      "warmup_ticks": 16,
+      "first_tick": 16,
+      "end_tick_exclusive": 80,
+      "timing_source": "Stopwatch around fixed input + SimSession.Step; input and sync included; no render or frame pacing",
+      "tick_ms": [
+        0.001573,
+        0.000801,
+        0.000681,
+        0.000671,
+        0.000681,
+        0.000671,
+        0.000731,
+        0.000731,
+        0.000651,
+        0.000681,
+        0.00063,
+        0.000691,
+        0.000701,
+        0.000651,
+        0.000651,
+        0.000681,
+        0.000691,
+        0.000651,
+        0.000681,
+        0.000661,
+        0.000691,
+        0.000651,
+        0.000721,
+        0.000681,
+        0.000671,
+        0.000631,
+        0.000651,
+        0.000661,
+        0.000681,
+        0.000651,
+        0.000711,
+        0.000741,
+        0.000661,
+        0.000681,
+        0.000681,
+        0.000651,
+        0.000681,
+        0.000661,
+        0.000651,
+        0.000691,
+        0.000691,
+        0.000661,
+        0.000651,
+        0.000681,
+        0.000681,
+        0.000661,
+        0.000691,
+        0.000661,
+        0.000742,
+        0.000701,
+        0.000671,
+        0.000661,
+        0.000661,
+        0.000711,
+        0.000651,
+        0.000701,
+        0.000651,
+        0.000651,
+        0.000681,
+        0.000671,
+        0.000651,
+        0.000641,
+        0.000661,
+        0.000681
+      ],
+      "pipeline": {
+        "source": "PipelineStats, EMA alpha 0.1 since construction; ordinary pipelined execution, not worker CPU time",
+        "completed_ticks": 80,
+        "schedule_ema_ms": 0.0003769588947761804,
+        "sync_wait_ema_ms": 2.8147285775048658e-05,
+        "tick_wall_ema_ms": 0.0005633565015159547
+      },
+      "allocation": {
+        "source": "ManagedAllocationProbe; current creating thread; synchronous fixed input + Step window; controls outside measured window",
+        "metric": "ManagedBytes",
+        "thread_id": 14,
+        "first_tick": 80,
+        "end_tick_exclusive": 144,
+        "value": 0,
+        "gen0_process_collections": 0,
+        "before_retained": 33536,
+        "before_empty": 0,
+        "after_retained": 33536,
+        "after_empty": 0
+      },
+      "tables": [
+        {
+          "name": "ExternalCourier.Parcel",
+          "capacity": 8,
+          "peak_after_tick": 1,
+          "final_count": 1
+        }
+      ],
+      "world_create_failures": 0,
+      "destroy_queue_overflow": 0,
+      "counter_window": "Cumulative since factory construction, read after timing and allocation windows; peak_after_tick is timing window only, not sub-tick pool high-water",
+      "presentation_scope": "Unsupported: test-only rule module has no renderer or quality controls; it is not a polished playable demo.",
+      "unsupported_views": "Unsupported: no views or asynchronous assets are created by this test-only module.",
+      "tick_statistics": {
+        "samples": 64,
+        "p50_ms": 0.000671,
+        "p95_ms": 0.000741,
+        "worst_ms": 0.001573,
+        "method": "nearest-rank"
+      },
+      "unknown_measurements": {
+        "cpu_worker_ms": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "PipelineStats main-thread schedule/wait is not worker CPU time."
+        },
+        "gpu_ms": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No renderer/GPU profiler is active in this simulation-only fixture."
+        },
+        "managed_live_bytes": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "Allocation deltas are not live managed memory."
+        },
+        "native_live_bytes": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No native-memory counter sampled."
+        },
+        "gpu_live_bytes": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No GPU memory counter sampled."
+        },
+        "upload_payload_bytes": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No presentation submission in this fixture. PackedPayloadBytes may be supplied by separate graphics evidence."
+        },
+        "upload_api_bytes": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No draw/upload occurs in this fixture. SpriteBatch/ParticleRenderer/BatCharacterBatch.BytesUploaded are separate API accounting."
+        },
+        "physical_gpu_traffic_bytes": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "API payload/upload counts never measure physical bus/GPU traffic."
+        },
+        "pool_subtick_high_water": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "Completed-tick table maxima do not capture transient sub-tick peaks."
+        },
+        "input_rejection_count": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No common input rejection counter; game-specific input regressions are separate."
+        },
+        "allocation_frame_count": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "Synchronous tick allocation probe has no rendered-frame sample."
+        },
+        "overdraw": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "VfxBudget.ScreenArea is a transparent-quad coverage budget, not measured GPU overdraw."
+        },
+        "thermal": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No physical Android/iOS device capture."
+        },
+        "battery": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No physical Android/iOS battery measurement."
+        }
+      },
+      "device_acceptance": {
+        "Android": "Pending",
+        "iOS": "Pending"
+      },
+      "performance_verdict": "Not evaluated: simulation-only software evidence cannot sign a device budget.",
+      "matches_default_factory_capacities": null
+    },
+    {
+      "schema_version": 1,
+      "kind": "simulation-probe",
+      "mode": "platformer.classic",
+      "configuration": "PlMode-default",
+      "orientation_intent": "landscape",
+      "session": "platformer.classic/seed-123",
+      "backend": "simulation-only/no-renderer",
+      "runtime": "dotnet-unity-stubs",
+      "platform": "Unix 6.18.44.0",
+      "started_utc": "2026-10-07T10:34:17.3932030Z",
+      "code_commit": "0ffa2ee356bdda740bbcf8f2b91c63c4eb7fae9f",
+      "code_tree": "b15d04e4fae26242060b5c245ed32e4a8c5ba767",
+      "seed": 123,
+      "tick_rate": 60,
+      "warmup_ticks": 16,
+      "first_tick": 17,
+      "end_tick_exclusive": 81,
+      "timing_source": "Stopwatch around fixed input + SimSession.Step; input and sync included; no render or frame pacing",
+      "tick_ms": [
+        0.012419,
+        0.00693,
+        0.006179,
+        0.00651,
+        0.006599,
+        0.00621,
+        0.006269,
+        0.006159,
+        0.006219,
+        0.00645,
+        0.006309,
+        0.006279,
+        0.007621,
+        0.01314,
+        0.006099,
+        0.006339,
+        0.007251,
+        0.009264,
+        0.00663,
+        0.00659,
+        0.006199,
+        0.006029,
+        0.006039,
+        0.005899,
+        0.006269,
+        0.005949,
+        0.006019,
+        0.005959,
+        0.005989,
+        0.005908,
+        0.005949,
+        0.006009,
+        0.006109,
+        0.00635,
+        0.006219,
+        0.006169,
+        0.00619,
+        0.006029,
+        0.006339,
+        0.006109,
+        0.00643,
+        0.006149,
+        0.006419,
+        0.005959,
+        0.00646,
+        0.0065,
+        0.006559,
+        0.00654,
+        0.0064,
+        0.006239,
+        0.00639,
+        0.006249,
+        0.006169,
+        0.006209,
+        0.0065,
+        0.006339,
+        0.00628,
+        0.006219,
+        0.006029,
+        0.006329,
+        0.006209,
+        0.006349,
+        0.00628,
+        0.005958
+      ],
+      "pipeline": {
+        "source": "PipelineStats, EMA alpha 0.1 since construction; ordinary pipelined execution, not worker CPU time",
+        "completed_ticks": 81,
+        "schedule_ema_ms": 0.00807115901261568,
+        "sync_wait_ema_ms": 2.8101818315917626e-05,
+        "tick_wall_ema_ms": 0.008275406435132027
+      },
+      "allocation": {
+        "source": "ManagedAllocationProbe; current creating thread; synchronous fixed input + Step window; controls outside measured window",
+        "metric": "ManagedBytes",
+        "thread_id": 14,
+        "first_tick": 81,
+        "end_tick_exclusive": 145,
+        "value": 0,
+        "gen0_process_collections": 0,
+        "before_retained": 33536,
+        "before_empty": 0,
+        "after_retained": 33536,
+        "after_empty": 0
+      },
+      "tables": [
+        {
+          "name": "Pl.Walker",
+          "capacity": 128,
+          "peak_after_tick": 2,
+          "final_count": 2
+        },
+        {
+          "name": "Pl.Platform",
+          "capacity": 64,
+          "peak_after_tick": 1,
+          "final_count": 1
+        },
+        {
+          "name": "Pl.Coin",
+          "capacity": 512,
+          "peak_after_tick": 11,
+          "final_count": 11
+        }
+      ],
+      "world_create_failures": 0,
+      "destroy_queue_overflow": 0,
+      "counter_window": "Cumulative since factory construction, read after timing and allocation windows; peak_after_tick is timing window only, not sub-tick pool high-water",
+      "presentation_scope": "Unsupported: PlRenderer has no per-mode quality setter; renderer/backend and locomotion rebind are separate existing graphics PlayMode tests.",
+      "unsupported_views": "This EditMode adapter creates no views; PlPlayTests.LocomotionTransitionsPauseAndRebind owns real view rebind coverage.",
+      "tick_statistics": {
+        "samples": 64,
+        "p50_ms": 0.006249,
+        "p95_ms": 0.007621,
+        "worst_ms": 0.01314,
+        "method": "nearest-rank"
+      },
+      "unknown_measurements": {
+        "cpu_worker_ms": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "PipelineStats main-thread schedule/wait is not worker CPU time."
+        },
+        "gpu_ms": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No renderer/GPU profiler is active in this simulation-only fixture."
+        },
+        "managed_live_bytes": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "Allocation deltas are not live managed memory."
+        },
+        "native_live_bytes": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No native-memory counter sampled."
+        },
+        "gpu_live_bytes": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No GPU memory counter sampled."
+        },
+        "upload_payload_bytes": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No presentation submission in this fixture. PackedPayloadBytes may be supplied by separate graphics evidence."
+        },
+        "upload_api_bytes": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No draw/upload occurs in this fixture. SpriteBatch/ParticleRenderer/BatCharacterBatch.BytesUploaded are separate API accounting."
+        },
+        "physical_gpu_traffic_bytes": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "API payload/upload counts never measure physical bus/GPU traffic."
+        },
+        "pool_subtick_high_water": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "Completed-tick table maxima do not capture transient sub-tick peaks."
+        },
+        "input_rejection_count": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No common input rejection counter; game-specific input regressions are separate."
+        },
+        "allocation_frame_count": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "Synchronous tick allocation probe has no rendered-frame sample."
+        },
+        "overdraw": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "VfxBudget.ScreenArea is a transparent-quad coverage budget, not measured GPU overdraw."
+        },
+        "thermal": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No physical Android/iOS device capture."
+        },
+        "battery": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No physical Android/iOS battery measurement."
+        }
+      },
+      "device_acceptance": {
+        "Android": "Pending",
+        "iOS": "Pending"
+      },
+      "performance_verdict": "Not evaluated: simulation-only software evidence cannot sign a device budget.",
+      "matches_default_factory_capacities": true
+    },
+    {
+      "schema_version": 1,
+      "kind": "simulation-probe",
+      "mode": "shooter.default",
+      "configuration": "enemy8-bullet32-pickup8-no-waves",
+      "orientation_intent": "portrait",
+      "session": "shooter.default/seed-123",
+      "backend": "simulation-only/no-renderer",
+      "runtime": "dotnet-unity-stubs",
+      "platform": "Unix 6.18.44.0",
+      "started_utc": "2026-10-07T10:34:16.0814558Z",
+      "code_commit": "0ffa2ee356bdda740bbcf8f2b91c63c4eb7fae9f",
+      "code_tree": "b15d04e4fae26242060b5c245ed32e4a8c5ba767",
+      "seed": 123,
+      "tick_rate": 30,
+      "warmup_ticks": 16,
+      "first_tick": 18,
+      "end_tick_exclusive": 82,
+      "timing_source": "Stopwatch around fixed input + SimSession.Step; input and sync included; no render or frame pacing",
+      "tick_ms": [
+        0.030865,
+        0.028542,
+        0.028422,
+        0.028512,
+        0.029414,
+        0.030375,
+        0.030596,
+        0.030064,
+        0.029144,
+        0.030825,
+        0.029124,
+        0.030435,
+        0.031156,
+        0.031006,
+        0.030355,
+        0.028862,
+        0.028743,
+        0.028442,
+        0.029544,
+        0.031196,
+        0.030965,
+        0.030415,
+        0.058256,
+        0.028643,
+        0.028562,
+        0.029744,
+        0.030676,
+        0.030495,
+        0.029474,
+        0.029143,
+        0.028653,
+        0.028312,
+        0.029404,
+        0.03403,
+        0.035403,
+        0.029263,
+        0.028693,
+        0.057004,
+        0.029184,
+        0.030024,
+        0.030796,
+        0.030726,
+        0.029323,
+        0.029133,
+        0.028692,
+        0.028983,
+        0.029895,
+        0.031276,
+        0.030976,
+        0.029434,
+        0.028903,
+        0.028692,
+        0.028863,
+        0.029734,
+        0.052068,
+        0.029203,
+        0.029233,
+        0.028712,
+        0.028763,
+        0.028632,
+        0.029925,
+        0.030615,
+        0.029634,
+        0.028573
+      ],
+      "pipeline": {
+        "source": "PipelineStats, EMA alpha 0.1 since construction; ordinary pipelined execution, not worker CPU time",
+        "completed_ticks": 82,
+        "schedule_ema_ms": 0.030147910118103027,
+        "sync_wait_ema_ms": 3.716540231835097e-05,
+        "tick_wall_ema_ms": 0.030522866174578667
+      },
+      "allocation": {
+        "source": "ManagedAllocationProbe; current creating thread; synchronous fixed input + Step window; controls outside measured window",
+        "metric": "ManagedBytes",
+        "thread_id": 14,
+        "first_tick": 82,
+        "end_tick_exclusive": 146,
+        "value": 0,
+        "gen0_process_collections": 0,
+        "before_retained": 33536,
+        "before_empty": 0,
+        "after_retained": 33536,
+        "after_empty": 0
+      },
+      "tables": [
+        {
+          "name": "Shooter.Enemy",
+          "capacity": 8,
+          "peak_after_tick": 0,
+          "final_count": 0
+        },
+        {
+          "name": "Shooter.Bullet",
+          "capacity": 32,
+          "peak_after_tick": 12,
+          "final_count": 9
+        },
+        {
+          "name": "Shooter.Pickup",
+          "capacity": 8,
+          "peak_after_tick": 0,
+          "final_count": 0
+        }
+      ],
+      "world_create_failures": 0,
+      "destroy_queue_overflow": 0,
+      "counter_window": "Cumulative since factory construction, read after timing and allocation windows; peak_after_tick is timing window only, not sub-tick pool high-water",
+      "presentation_scope": "Actual CombatVfxPool admission/overflow under qualities 0 and 3; no renderer pixels or GPU execution.",
+      "unsupported_views": "This EditMode adapter creates no views. Real multi-view/host retirement is covered by SessionHostRetirementTests and graphics PlayMode suites.",
+      "tick_statistics": {
+        "samples": 64,
+        "p50_ms": 0.029434,
+        "p95_ms": 0.035403,
+        "worst_ms": 0.058256,
+        "method": "nearest-rank"
+      },
+      "unknown_measurements": {
+        "cpu_worker_ms": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "PipelineStats main-thread schedule/wait is not worker CPU time."
+        },
+        "gpu_ms": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No renderer/GPU profiler is active in this simulation-only fixture."
+        },
+        "managed_live_bytes": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "Allocation deltas are not live managed memory."
+        },
+        "native_live_bytes": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No native-memory counter sampled."
+        },
+        "gpu_live_bytes": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No GPU memory counter sampled."
+        },
+        "upload_payload_bytes": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No presentation submission in this fixture. PackedPayloadBytes may be supplied by separate graphics evidence."
+        },
+        "upload_api_bytes": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No draw/upload occurs in this fixture. SpriteBatch/ParticleRenderer/BatCharacterBatch.BytesUploaded are separate API accounting."
+        },
+        "physical_gpu_traffic_bytes": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "API payload/upload counts never measure physical bus/GPU traffic."
+        },
+        "pool_subtick_high_water": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "Completed-tick table maxima do not capture transient sub-tick peaks."
+        },
+        "input_rejection_count": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No common input rejection counter; game-specific input regressions are separate."
+        },
+        "allocation_frame_count": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "Synchronous tick allocation probe has no rendered-frame sample."
+        },
+        "overdraw": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "VfxBudget.ScreenArea is a transparent-quad coverage budget, not measured GPU overdraw."
+        },
+        "thermal": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No physical Android/iOS device capture."
+        },
+        "battery": {
+          "value": null,
+          "status": "Unknown",
+          "reason": "No physical Android/iOS battery measurement."
+        }
+      },
+      "device_acceptance": {
+        "Android": "Pending",
+        "iOS": "Pending"
+      },
+      "performance_verdict": "Not evaluated: simulation-only software evidence cannot sign a device budget.",
+      "matches_default_factory_capacities": false
+    }
+  ],
+  "unmeasured_modes": [
+    "snake.classic",
+    "rpg.classic",
+    "survivor.classic",
+    "defense.classic",
+    "puzzle.classic",
+    "sling.classic",
+    "brawler.classic",
+    "story.classic",
+    "survivor.guard",
+    "survivor.flying_sword",
+    "brawler.belt",
+    "survivor.crossed_blades",
+    "survivor.mobile",
+    "survivor.weapons",
+    "brawler.shared_combat",
+    "brawler.mobile",
+    "brawler.weapon_belt"
+  ],
+  "limits": [
+    "Not a full game regression summary. Existing NUnit/Unity results remain separately required.",
+    "No Android/iOS touch, IL2CPP/Burst build, fallback, thermal, battery or sustained frame acceptance.",
+    "No physical GPU traffic can be inferred from payload, API upload or allocation counts.",
+    "Goals do not override runtime capacities, GC gates, fixture windows or existing thresholds."
+  ],
+  "toolchain": {
+    "schema_version": 1,
+    "code_commit": "0ffa2ee356bdda740bbcf8f2b91c63c4eb7fae9f",
+    "code_tree": "b15d04e4fae26242060b5c245ed32e4a8c5ba767",
+    "unity_mathematics_commit": "f110c8c230d253654afed153569030a587cc7557",
+    "unity_mathematics_source_sha256": "6f57c93d503b28c940ecad8d8a9b2cf0496ae3a23ea4a7176ffcbc8fdc610b9e",
+    "unity_mathematics_clean": true,
+    "dotnet_info": ".NET SDK:\n Version:           8.0.425\n Commit:            4a98f641c7\n Workload version:  8.0.400-manifests.ac071bc2\n MSBuild version:   17.11.48+02bf66295\n\nRuntime Environment:\n OS Name:     debian\n OS Version:  13\n OS Platform: Linux\n RID:         linux-x64\n Base Path:   /workspace/scratch/dc59b980bb73/toolchain/dotnet/sdk/8.0.425/\n\n.NET workloads installed:\nConfigured to use loose manifests when installing new manifests.\nThere are no installed workloads to display.\n\nHost:\n  Version:      8.0.31\n  Architecture: x64\n  Commit:       1219a42122\n\n.NET SDKs installed:\n  8.0.425 [/workspace/scratch/dc59b980bb73/toolchain/dotnet/sdk]\n\n.NET runtimes installed:\n  Microsoft.AspNetCore.App 8.0.31 [/workspace/scratch/dc59b980bb73/toolchain/dotnet/shared/Microsoft.AspNetCore.App]\n  Microsoft.NETCore.App 8.0.31 [/workspace/scratch/dc59b980bb73/toolchain/dotnet/shared/Microsoft.NETCore.App]\n\nOther architectures found:\n  None\n\nEnvironment variables:\n  Not set\n\nglobal.json file:\n  Not found\n\nLearn more:\n  https://aka.ms/dotnet/info\n\nDownload .NET:\n  https://aka.ms/dotnet/download"
+  },
+  "evidence_files": [
+    {
+      "name": "external.courier-test-only.json",
+      "sha256": "3a8436f38408167c9b5def5759d47b8b18517a6c470c65e3c2f00b677aaf97a0"
+    },
+    {
+      "name": "platformer.classic.json",
+      "sha256": "436e9d85cf02f6e069afee63b8f5ab529abe601c3fb5fab308ec088293ac6756"
+    },
+    {
+      "name": "shooter.default.json",
+      "sha256": "d45d3a0ada51e9b878601b5c44b42c20c526e079542dfa0e3e2fa43c58112b89"
+    }
+  ]
+}

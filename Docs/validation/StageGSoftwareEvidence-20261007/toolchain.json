@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "code_commit": "0ffa2ee356bdda740bbcf8f2b91c63c4eb7fae9f",
+  "code_tree": "b15d04e4fae26242060b5c245ed32e4a8c5ba767",
+  "unity_mathematics_commit": "f110c8c230d253654afed153569030a587cc7557",
+  "unity_mathematics_source_sha256": "6f57c93d503b28c940ecad8d8a9b2cf0496ae3a23ea4a7176ffcbc8fdc610b9e",
+  "unity_mathematics_clean": true,
+  "dotnet_info": ".NET SDK:\n Version:           8.0.425\n Commit:            4a98f641c7\n Workload version:  8.0.400-manifests.ac071bc2\n MSBuild version:   17.11.48+02bf66295\n\nRuntime Environment:\n OS Name:     debian\n OS Version:  13\n OS Platform: Linux\n RID:         linux-x64\n Base Path:   /workspace/scratch/dc59b980bb73/toolchain/dotnet/sdk/8.0.425/\n\n.NET workloads installed:\nConfigured to use loose manifests when installing new manifests.\nThere are no installed workloads to display.\n\nHost:\n  Version:      8.0.31\n  Architecture: x64\n  Commit:       1219a42122\n\n.NET SDKs installed:\n  8.0.425 [/workspace/scratch/dc59b980bb73/toolchain/dotnet/sdk]\n\n.NET runtimes installed:\n  Microsoft.AspNetCore.App 8.0.31 [/workspace/scratch/dc59b980bb73/toolchain/dotnet/shared/Microsoft.AspNetCore.App]\n  Microsoft.NETCore.App 8.0.31 [/workspace/scratch/dc59b980bb73/toolchain/dotnet/shared/Microsoft.NETCore.App]\n\nOther architectures found:\n  None\n\nEnvironment variables:\n  Not set\n\nglobal.json file:\n  Not found\n\nLearn more:\n  https://aka.ms/dotnet/info\n\nDownload .NET:\n  https://aka.ms/dotnet/download"
+}

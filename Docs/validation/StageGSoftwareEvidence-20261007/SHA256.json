@@ -1,0 +1,45 @@
+{
+  "scope": "Retained committed0ffa2ee desktop software-only evidence; not phone data",
+  "files": [
+    {
+      "file": "native-api-inputs.json",
+      "bytes": 108669,
+      "sha256": "1750d6fe82a64e0d14734bc829bdb7c5d08fdfef8993d7d4cb1d38448c817c90"
+    },
+    {
+      "file": "raw/external.courier-test-only.json",
+      "bytes": 2402,
+      "sha256": "3a8436f38408167c9b5def5759d47b8b18517a6c470c65e3c2f00b677aaf97a0"
+    },
+    {
+      "file": "raw/platformer.classic.json",
+      "bytes": 2570,
+      "sha256": "436e9d85cf02f6e069afee63b8f5ab529abe601c3fb5fab308ec088293ac6756"
+    },
+    {
+      "file": "raw/shooter.default.json",
+      "bytes": 2593,
+      "sha256": "d45d3a0ada51e9b878601b5c44b42c20c526e079542dfa0e3e2fa43c58112b89"
+    },
+    {
+      "file": "report.json",
+      "bytes": 87404,
+      "sha256": "2484041391b049cb15e21f3dd9022ef07710b4da1c423c9c4d13c0823c648903"
+    },
+    {
+      "file": "report.md",
+      "bytes": 12654,
+      "sha256": "c917397dfd2936e83042fae7c8d8bf5728fe9a27e8d3f87ae4895aa19d6fe187"
+    },
+    {
+      "file": "toolchain.json",
+      "bytes": 1503,
+      "sha256": "7d4b2dd9ad026377cd678ef337e89258507f36ced60eb8022973ea85a73cb44c"
+    },
+    {
+      "file": "verification.json",
+      "bytes": 22894,
+      "sha256": "2cd88508ee55c6351815c59b2b4bff46c4d175dcda0b3483080833d87c6fe3e7"
+    }
+  ]
+}

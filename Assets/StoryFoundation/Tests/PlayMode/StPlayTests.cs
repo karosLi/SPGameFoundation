@@ -19,6 +19,9 @@ namespace StoryFoundation.Tests.PlayMode
             if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null) Assert.Ignore("No graphics device");
             string saves = Path.Combine(Application.temporaryCachePath, "story-test");
             if (Directory.Exists(saves)) Directory.Delete(saves, true);
+#if UNITY_EDITOR && !SPF_DOTNET_HARNESS
+            using var capture = StAllocationCapture.CreateIfRequested();
+#endif
             var game = StGameBootstrap.Create(saves);
             try
             {
@@ -28,6 +31,9 @@ namespace StoryFoundation.Tests.PlayMode
                 var run = game.State.Runner;
                 Assert.AreEqual(DialogueRunner.Mode.Line, run.State);
 
+#if UNITY_EDITOR && !SPF_DOTNET_HARNESS
+                capture?.Warm(game);
+#endif
                 // The first line warms up UGUI's shared mesh buffers (they grow with the longest text once).
                 yield return null;
                 Assert.IsTrue(game.Dialogue.Typing, "text is revealed over several frames");
@@ -39,11 +45,30 @@ namespace StoryFoundation.Tests.PlayMode
                 yield return null;
                 yield return null;
                 game.Governor.ResetGcStats();
-                for (int f = 0; f < 30 && game.Dialogue.Typing; f++) yield return null;
-                if (game.Governor.GcCounterValid)
+                for (int f = 0; f < 30 && game.Dialogue.Typing; f++)
                 {
-                    GcReport.Write("story typewriter (second line)", game.Governor.FramesSinceReset, game.Governor.GcFramesSinceReset, game.Governor.GcBytesSinceReset);
-                    Assert.LessOrEqual(game.Governor.GcFramesSinceReset, 1, "revealing text allocates nothing");
+#if UNITY_EDITOR && !SPF_DOTNET_HARNESS
+                    capture?.Frame(game);
+#endif
+                    yield return null;
+                }
+                // Save the original result before any diagnostic drain frames or export work.
+                bool gcCounterValid = game.Governor.GcCounterValid;
+                int measuredFrames = game.Governor.FramesSinceReset;
+                int allocatingFrames = game.Governor.GcFramesSinceReset;
+                long allocatedBytes = game.Governor.GcBytesSinceReset;
+#if UNITY_EDITOR && !SPF_DOTNET_HARNESS
+                if (capture != null)
+                {
+                    capture.End(game);
+                    for (int f = 0; f < 3; f++) yield return null;
+                    capture.Export();
+                }
+#endif
+                if (gcCounterValid)
+                {
+                    GcReport.Write("story typewriter (second line)", measuredFrames, allocatingFrames, allocatedBytes);
+                    Assert.LessOrEqual(allocatingFrames, 1, "revealing text allocates nothing");
                 }
                 game.Dialogue.Finish();
                 yield return UIDriver.WaitUntil(() => game.Dialogue.ChoicesShown == 3, 2f);

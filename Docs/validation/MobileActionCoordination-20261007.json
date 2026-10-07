@@ -1,0 +1,133 @@
+{
+  "date_utc": "2026-10-07",
+  "source_commit": "f17758e8ced0bf64eb8fce2c1b1a174ba8319615",
+  "source_tree": "92c82a916d7f9917717c501a6bea2dd494d45649",
+  "execution": "Linux .NET 8 harness with Unity stubs; native API compile only",
+  "build": {
+    "projects": 76,
+    "errors": 0,
+    "warnings": 0
+  },
+  "tests": {
+    "passed": 867,
+    "failed": 0,
+    "skipped": 0,
+    "assemblies": [
+      {
+        "failed": 0,
+        "passed": 77,
+        "skipped": 0,
+        "total": 77,
+        "assembly": "BrawlerFoundation.Tests.EditMode"
+      },
+      {
+        "failed": 0,
+        "passed": 8,
+        "skipped": 0,
+        "total": 8,
+        "assembly": "DefenseFoundation.Tests.EditMode"
+      },
+      {
+        "failed": 0,
+        "passed": 10,
+        "skipped": 0,
+        "total": 10,
+        "assembly": "PlatformerFoundation.Tests.EditMode"
+      },
+      {
+        "failed": 0,
+        "passed": 7,
+        "skipped": 0,
+        "total": 7,
+        "assembly": "PuzzleFoundation.Tests.EditMode"
+      },
+      {
+        "failed": 0,
+        "passed": 45,
+        "skipped": 0,
+        "total": 45,
+        "assembly": "RpgFoundation.Tests.EditMode"
+      },
+      {
+        "failed": 0,
+        "passed": 568,
+        "skipped": 0,
+        "total": 568,
+        "assembly": "SPF.Tests.EditMode"
+      },
+      {
+        "failed": 0,
+        "passed": 16,
+        "skipped": 0,
+        "total": 16,
+        "assembly": "ShooterFoundation.Tests.EditMode"
+      },
+      {
+        "failed": 0,
+        "passed": 4,
+        "skipped": 0,
+        "total": 4,
+        "assembly": "SlingFoundation.Tests.EditMode"
+      },
+      {
+        "failed": 0,
+        "passed": 38,
+        "skipped": 0,
+        "total": 38,
+        "assembly": "SnakeFoundation.Tests.EditMode"
+      },
+      {
+        "failed": 0,
+        "passed": 5,
+        "skipped": 0,
+        "total": 5,
+        "assembly": "StoryFoundation.Tests.EditMode"
+      },
+      {
+        "failed": 0,
+        "passed": 89,
+        "skipped": 0,
+        "total": 89,
+        "assembly": "SurvivorFoundation.Tests.EditMode"
+      }
+    ]
+  },
+  "native_api_compile": {
+    "unity": "2022.3.62f2",
+    "errors": 0,
+    "warnings": 4,
+    "warning_scope": "existing SvGameBootstrap serialized fields"
+  },
+  "native_graphics_tests": {
+    "new_cases": 4,
+    "executed": false
+  },
+  "before_fix_reproductions": {
+    "source": "c345f2a",
+    "passed": 0,
+    "failed": 4
+  },
+  "gait_integration": {
+    "combined_commit": "1c33fde",
+    "includes": "b504c05",
+    "executed": false,
+    "blocker": "Two launches failed before dotnet startup: synthetic bubblewrap /root/.codex mount target was not a directory; exit 101."
+  },
+  "log_sha256": {
+    "action-audit-full-tests.log": "b113c1b1bc0cf8299574a8c35d1126f93049b2fb1f1fbffc4c899a22c9519bc1",
+    "action-audit-build-final.log": "f2d8655bfb6cebc0d90c84c137ae101e1012edbe7c9930ea211e2f2d183aa3fb",
+    "action-audit-native-api-final.log": "3d43104f7b27c4848701887a0f2356c4141ec60da408080c42ca9b77688f7e7e",
+    "action-audit-before.log": "e631face58304e3c9e4cf7d093616e6882f61253dbb649ca250c9399ef0b1f12"
+  },
+  "source_sha256": {
+    "Assets/SinglePlayerFoundation/Presentation/Particles/WeaponParticlePresenter.cs": "f74c6425f035f626b9b92185b2936b0b273d8f497e145e6c501d437df4edb85f",
+    "Assets/SinglePlayerFoundation/Presentation/Combat/WeaponProjectileArt.cs": "30adef9734885e5e61a76180295c48f6d5f84d8c99aeec244e6489831d791e9b",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/MobileActionCoordinationTests.cs": "0a816ac3270f85b09cb56656c7f0aaf90be6ff7857d8602538f40a2155058617",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/WeaponParticleTransitionTests.cs": "ccd19506ca6660cbe74628dea618dafa9c088542d9f7d4a4ec165be3f7364f70",
+    "Assets/SinglePlayerFoundation/Tests/PlayMode/Particles/WeaponParticleBacklogGraphicsTests.cs": "c07ce484e4a7d4109b807d8c38f6471735e944800161a78515b0012e5e251d82",
+    "Assets/SinglePlayerFoundation/Tests/PlayMode/Particles/WeaponProjectileGraphicsTests.cs": "365a7348fee20aed80854362a98eb5c0ad36be71d22c9bd3714dbe990c917195",
+    "Assets/BrawlerFoundation/Presentation/BwRenderer.cs": "33772d3397b96e249cfdfda76744a673352e48c8375ea2d50ad925f6cf116563",
+    "Assets/SurvivorFoundation/Presentation/SvRenderer.cs": "fab78687d51340c29359089f0d957152d883a4bf274535a66c6201a16f88f151"
+  },
+  "physical_android_ios_evidence": false
+}

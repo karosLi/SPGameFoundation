@@ -57,7 +57,17 @@ namespace SurvivorFoundation
                     S(typeof(AnnularSkillSystem),"survivor.annular"),S(typeof(MobileSkillPulseSystem),"survivor.skill-pulse"),
                     S(typeof(WeaponCombatSystem),"survivor.weapon"),S(typeof(ResolveSystem),"survivor.resolve"));
             });
-            byte[] content=SaveCompatibilityDescriptor.Encode(w=>{
+            byte[] content = SaveCompatibilityDescriptor.Encode(w => WriteContent(w, session));
+            byte[] visual = SaveCompatibilityDescriptor.Encode(w => WriteVisuals(w, session));
+            return new SaveCompatibilityDescriptor("survivor.weapon-combat","spf.weapon-save-contract.v1",runtimeId,schema,content,visual,
+                SaveCompatibilityDescriptor.Encode(w => WriteRawCompatibility(w, session)));
+        }
+        // Cold canonical writers shared by distinct, complete game-local recipes. These helpers do
+        // not describe/relax layout coverage; the original recipe remains strict about extra state.
+        internal static void WriteContent(BinaryWriter w, SimSession session)
+        {
+            var world = session.World; var runtime = world.Resource(SvKeys.Config); var settings = runtime.Settings;
+            var weapons = world.Resource(SvWeapons.Key); var slots = world.Resource(SvMobileSkills.Key);
                 WeaponSaveContent.WriteSession(w,session);w.Write("survivor.rules");w.Write(1);WriteSettings(w,settings);w.Write(runtime.MobileSkills);
                 w.Write(SvWeapons.ActorScale);WeaponSaveContent.WriteRules(w,weapons,slots);w.Write(runtime.Enemies.Length);w.Write(runtime.EnemyKinds);
                 for(int i=0;i<runtime.Enemies.Length;i++){
@@ -67,14 +77,19 @@ namespace SurvivorFoundation
                 var grid=world.Resource(SvKeys.EnemyGrid);w.Write(grid.Dimensions.x);w.Write(grid.Dimensions.y);w.Write(grid.CellSize);w.Write(grid.Capacity);w.Write(grid.LargeRadius);w.Write(grid.LargeCellScale);
                 w.Write(world.Resource(SvKeys.Hits).Capacity);w.Write(world.Resource(SvKeys.Deaths).Capacity);w.Write(world.Resource(SvKeys.BulletSpawns).Capacity);
                 w.Write(world.Resource(SvKeys.HeroDamage).Capacity);w.Write(world.Resource(SvKeys.Collected).Capacity);w.Write(world.Resource(SvKeys.Feedback).Capacity);
-            });
-            byte[] visual=SaveCompatibilityDescriptor.Encode(w=>{
+        }
+        internal static void WriteVisuals(BinaryWriter w, SimSession session)
+        {
+            var world = session.World; var runtime = world.Resource(SvKeys.Config);
+            var weapons = world.Resource(SvWeapons.Key); var slots = world.Resource(SvMobileSkills.Key);
                 WeaponSaveContent.WriteVisuals(w,weapons,slots);w.Write(runtime.Enemies.Length);
                 for(int i=0;i<runtime.Enemies.Length;i++){var c=runtime.Enemies[i].Color;w.Write(c.x);w.Write(c.y);w.Write(c.z);w.Write(c.w);}
                 w.Write(runtime.EnemyNames.Length);foreach(var name in runtime.EnemyNames)w.Write(name??"");
-            });
-            return new SaveCompatibilityDescriptor("survivor.weapon-combat","spf.weapon-save-contract.v1",runtimeId,schema,content,visual,
-                SaveCompatibilityDescriptor.Encode(w=>WeaponSaveContent.WriteRawCompatibility(w,weapons,slots)));
+        }
+        internal static void WriteRawCompatibility(BinaryWriter w, SimSession session)
+        {
+            var world = session.World;
+            WeaponSaveContent.WriteRawCompatibility(w, world.Resource(SvWeapons.Key), world.Resource(SvMobileSkills.Key));
         }
         static void WriteSettings(BinaryWriter w,SvSettings s)
         {

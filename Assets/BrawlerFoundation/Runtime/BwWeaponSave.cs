@@ -46,7 +46,17 @@ namespace BrawlerFoundation
                     S(typeof(BeltFlowSystem),"belt.flow"), S(typeof(BeltFighterSystem),"belt.fighter"),
                     S(typeof(BeltWeaponSystem),"belt.weapon"), S(typeof(BeltCombatSystem),"belt.combat"));
             });
-            byte[] content = SaveCompatibilityDescriptor.Encode(w => {
+            byte[] content = SaveCompatibilityDescriptor.Encode(w => WriteContent(w, session));
+            return new SaveCompatibilityDescriptor("brawler.weapon-belt", "spf.weapon-save-contract.v1", runtimeId, schema, content,
+                SaveCompatibilityDescriptor.Encode(w => WriteVisuals(w, session)),
+                SaveCompatibilityDescriptor.Encode(w => WriteRawCompatibility(w, session)));
+        }
+        // Cold canonical writers shared by distinct, complete game-local recipes. These helpers do
+        // not describe/relax layout coverage; the original recipe remains strict about extra state.
+        internal static void WriteContent(BinaryWriter w, SimSession session)
+        {
+            var world = session.World; var belt = world.Resource(BwBeltKeys.State); var c = belt.Config;
+            var weapons = world.Resource(BwWeapons.Key); var slots = world.Resource(BwMobileSkills.Key); var rig = world.Resource(BwKeys.Rig);
                 WeaponSaveContent.WriteSession(w,session); w.Write("brawler.rules"); w.Write(1);
                 w.Write(c.Fighters); w.Write(c.TargetsPerAttack); w.Write(c.Drops); w.Write(c.Waves); w.Write(c.FirstWaveEnemies); w.Write(c.UseDecisionTree);
                 w.Write(BwWeapons.ActorScale); w.Write(BwRules.ArenaHalf); w.Write(BwRules.PlayerSpeed); w.Write(BwRules.EnemySpeed);
@@ -65,10 +75,16 @@ namespace BrawlerFoundation
                 w.Write(a.Channels.Length);for(int i=0;i<a.Channels.Length;i++){w.Write(a.Channels[i].x);w.Write(a.Channels[i].y);}
                 w.Write(a.Clips.Length);for(int i=0;i<a.Clips.Length;i++){w.Write(a.Clips[i].Duration);w.Write(a.Clips[i].Loop);}
                 for(int i=0;i<4;i++){var d=rig.Attack((AttackKind)i);w.Write(d.Duration);w.Write(d.ActiveFrom);w.Write(d.ActiveTo);w.Write(d.Damage);w.Write(d.Knockback);w.Write(d.Bone);}
-            });
-            return new SaveCompatibilityDescriptor("brawler.weapon-belt", "spf.weapon-save-contract.v1", runtimeId, schema, content,
-                SaveCompatibilityDescriptor.Encode(w=>WeaponSaveContent.WriteVisuals(w,weapons,slots)),
-                SaveCompatibilityDescriptor.Encode(w=>WeaponSaveContent.WriteRawCompatibility(w,weapons,slots)));
+        }
+        internal static void WriteVisuals(BinaryWriter w, SimSession session)
+        {
+            var world = session.World; var weapons = world.Resource(BwWeapons.Key); var slots = world.Resource(BwMobileSkills.Key);
+                WeaponSaveContent.WriteVisuals(w, weapons, slots);
+        }
+        internal static void WriteRawCompatibility(BinaryWriter w, SimSession session)
+        {
+            var world = session.World;
+            WeaponSaveContent.WriteRawCompatibility(w, world.Resource(BwWeapons.Key), world.Resource(BwMobileSkills.Key));
         }
         static SnapshotMemberSchema C(AccessKey key,string meaning)=>new SnapshotMemberSchema(key,meaning);
         static SnapshotResourceSchema R(AccessKey key,string meaning,SnapshotResourcePolicy policy,bool level=false)=>new SnapshotResourceSchema(key,meaning,policy,level);

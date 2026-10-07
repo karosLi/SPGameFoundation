@@ -1,0 +1,81 @@
+{
+  "verifiedRuntimeLocal": "c3509e538f234deee74d404d884434bc01655441",
+  "verifiedRuntimeTree": "431ba0f8b4b72aea4a86a614ba83e9eda2ee93e3",
+  "dotnet": {
+    "passed": 1259,
+    "failed": 0,
+    "projects": 76,
+    "assemblies": [
+      {
+        "name": "BrawlerFoundation.Tests.EditMode.dll",
+        "passed": 124
+      },
+      {
+        "name": "DefenseFoundation.Tests.EditMode.dll",
+        "passed": 8
+      },
+      {
+        "name": "PlatformerFoundation.Tests.EditMode.dll",
+        "passed": 10
+      },
+      {
+        "name": "PuzzleFoundation.Tests.EditMode.dll",
+        "passed": 7
+      },
+      {
+        "name": "RpgFoundation.Tests.EditMode.dll",
+        "passed": 63
+      },
+      {
+        "name": "SPF.Tests.EditMode.dll",
+        "passed": 855
+      },
+      {
+        "name": "ShooterFoundation.Tests.EditMode.dll",
+        "passed": 16
+      },
+      {
+        "name": "SlingFoundation.Tests.EditMode.dll",
+        "passed": 4
+      },
+      {
+        "name": "SnakeFoundation.Tests.EditMode.dll",
+        "passed": 40
+      },
+      {
+        "name": "StoryFoundation.Tests.EditMode.dll",
+        "passed": 5
+      },
+      {
+        "name": "SurvivorFoundation.Tests.EditMode.dll",
+        "passed": 127
+      }
+    ]
+  },
+  "apiCompiles": {
+    "frameworks": [
+      "net8.0",
+      "netstandard2.1"
+    ],
+    "sources": 522,
+    "references": 95,
+    "errorsEach": 0,
+    "existingWarningsEach": 7,
+    "nativeExecution": false
+  },
+  "coldCompositions": {
+    "count": 19,
+    "twoRunsByteIdentical": true,
+    "outputSha256": "a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30",
+    "baselineRewritten": false
+  },
+  "logSha256": {
+    "build-final.log": "75e62c522e9b05ac45e4668acc1f9731a424e7bee820f805c928cc8c366161ee",
+    "tests-final.log": "a0c383226c08f1ed60e560e15d00dfc5e47e9b2373e63cb8bcab75e1558f35d6",
+    "api-build.log": "38a13e31e055778923d57be6b9402ab4063d85a1426e078b38c3859cbe4ba06d",
+    "netstandard-api-build.log": "cad854a3fadedfcbec54629f4836859960d28c3f27364889846c9848207852ae",
+    "probe-build.log": "f7243ff9743c07e70ad5755716a417704ce89c2c9e588f24c3308fe91f613762"
+  },
+  "native": "pending; self-hosted prior checkpoints queued without assigned runner, no new result claimed",
+  "physicalAndroidIos": "pending"
+}

@@ -173,6 +173,8 @@ SPF 当前没有提交 `packages-lock.json`；manifest 不是已解析环境的�
 
 最小反例：Read 声明取写入口失败、Write 可读写、漏声明失败、在途结构变更失败、同步后通过、异常恢复后窗口正确、双 Session 不串上下文。原生 Jobs safety 是并发验收，.NET harness 只验证检查逻辑。旧入口可保留兼容，但注明早先缓存的 NativeArray/unsafe 指针仍可能绕过检查；这不是一个完整的内存安全证明。
 
+**A2 实施进度（2026-10-07）：** 已增加 ReadColumn/WriteColumn、按 World 交接 Job 所有权检查结构窗口及两个局部试点；[实现、红/绿证据和限制](AccessAndStructuralWindows.md)。旧入口仍保留上述兼容旁路，完整回归及当前源原生 safety 由集成门槛另行确认。
+
 ### 6.3 运行配置的来源隔离
 
 先处理已知别名：Snake 的 Capacity；RPG 的 Dungeon/Loot/Capacity 与 HeroSkillSlots。它们已有大量值拷贝和 Bake，缺的是部分运行读取仍引用 authoring 对象。[SnakeRuntimeConfig](../Assets/SnakeFoundation/Runtime/SnakeRuntimeConfig.cs)、[RpgRuntimeConfig](../Assets/RpgFoundation/Runtime/RpgRuntimeConfig.cs)

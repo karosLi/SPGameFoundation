@@ -1,0 +1,466 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="61e7bea2-9cf8-4171-8653-7ef5f42188d4" name="@5e9498f43725 2026-10-07 23:13:24" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-07T23:13:24.1501331+08:00" queuing="2026-10-07T23:13:24.1501331+08:00" start="2026-10-07T23:13:23.2796155+08:00" finish="2026-10-07T23:13:24.2073796+08:00" />
+  <TestSettings name="default" id="5c9e38ee-da73-47b2-9d25-3a716a149cd5">
+    <Deployment runDeploymentRoot="_5e9498f43725_2026-10-07_23_13_24" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="b7fbb840-6dff-4c77-b847-cf8c39e969dc" testId="e06c255d-f415-8cd7-e2f6-6ed56888692e" testName="UndeclaredExplicitWriteIsRejectedButLegacyReadDeclarationRemainsCompatible" computerName="5e9498f43725" duration="00:00:00.0012150" startTime="2026-10-07T23:13:24.0477182+08:00" endTime="2026-10-07T23:13:24.0489336+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b7fbb840-6dff-4c77-b847-cf8c39e969dc">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.UndeclaredExplicitWriteIsRejectedButLegacyReadDeclarationRemainsCompatible managedMB=11
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.UndeclaredExplicitWriteIsRejectedButLegacyReadDeclarationRemainsCompatible managedMB=11</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="708675d5-ecb2-4627-9a81-057125e6e8ef" testId="78a687e6-45b7-73ec-bcce-dfc865e13e1d" testName="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;reset&quot;)" computerName="5e9498f43725" duration="00:00:00.0008330" startTime="2026-10-07T23:13:24.0376991+08:00" endTime="2026-10-07T23:13:24.0385315+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="708675d5-ecb2-4627-9a81-057125e6e8ef">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("reset") managedMB=10
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("reset") managedMB=10</StdOut>
+        <ErrorInfo>
+          <Message>  Expected: &lt;System.InvalidOperationException&gt;
+  But was:  null
+</Message>
+          <StackTrace>   at SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(String operation) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 85
+   at InvokeStub_AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(Object, Span`1)
+
+1)    at SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(String operation) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 85
+   at InvokeStub_AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(Object, Span`1)
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="7368fbc3-29af-4c07-bec2-b95fc2de0e3c" testId="60965e2f-9303-0e02-3126-7d2e294f1d37" testName="PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(Resolve)" computerName="5e9498f43725" duration="00:00:00.0012669" startTime="2026-10-07T23:13:24.0190003+08:00" endTime="2026-10-07T23:13:24.0202678+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="7368fbc3-29af-4c07-bec2-b95fc2de0e3c">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(Resolve) managedMB=9
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(Resolve) managedMB=9</StdOut>
+        <ErrorInfo>
+          <Message>  Expected: &lt;System.InvalidOperationException&gt;
+  But was:  null
+</Message>
+          <StackTrace>   at SPF.Tests.EditMode.AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(SimPhase phase) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 96
+   at InvokeStub_AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(Object, Span`1)
+
+1)    at SPF.Tests.EditMode.AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(SimPhase phase) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 96
+   at InvokeStub_AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(Object, Span`1)
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="7dad0df5-5d94-4f6b-80fb-63f5b269b5b5" testId="079d30ab-e4d0-2018-5204-3b1c824f2f9d" testName="SynchronousDeclaredSystemDoesNotCloseStructuralWindow" computerName="5e9498f43725" duration="00:00:00.0026630" startTime="2026-10-07T23:13:24.0434371+08:00" endTime="2026-10-07T23:13:24.0460999+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="7dad0df5-5d94-4f6b-80fb-63f5b269b5b5">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SynchronousDeclaredSystemDoesNotCloseStructuralWindow managedMB=11
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SynchronousDeclaredSystemDoesNotCloseStructuralWindow managedMB=11</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="f182b96a-a7f2-43a8-9771-8b2469ba065a" testId="b4ad01b4-d95a-ef3d-7ffd-e1dab69c1092" testName="TwoWorldsDoNotShareAccessOrOutstandingOwnership" computerName="5e9498f43725" duration="00:00:00.0012570" startTime="2026-10-07T23:13:24.0461427+08:00" endTime="2026-10-07T23:13:24.0473997+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f182b96a-a7f2-43a8-9771-8b2469ba065a">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.TwoWorldsDoNotShareAccessOrOutstandingOwnership managedMB=11
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.TwoWorldsDoNotShareAccessOrOutstandingOwnership managedMB=11</StdOut>
+        <ErrorInfo>
+          <Message>  Expected: &lt;System.InvalidOperationException&gt;
+  But was:  null
+</Message>
+          <StackTrace>   at SPF.Tests.EditMode.AccessStructureWindowTests.TwoWorldsDoNotShareAccessOrOutstandingOwnership() in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 139
+
+1)    at SPF.Tests.EditMode.AccessStructureWindowTests.TwoWorldsDoNotShareAccessOrOutstandingOwnership() in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 139
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="1081110d-aecb-49ac-9b7e-cbc828672182" testId="f2aa575d-1c7c-9082-4ba9-b43c7970e407" testName="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;destroy&quot;)" computerName="5e9498f43725" duration="00:00:00.0021800" startTime="2026-10-07T23:13:24.0301491+08:00" endTime="2026-10-07T23:13:24.0323290+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1081110d-aecb-49ac-9b7e-cbc828672182">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("destroy") managedMB=9
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("destroy") managedMB=9</StdOut>
+        <ErrorInfo>
+          <Message>  Expected: &lt;System.InvalidOperationException&gt;
+  But was:  null
+</Message>
+          <StackTrace>   at SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(String operation) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 85
+   at InvokeStub_AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(Object, Span`1)
+
+1)    at SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(String operation) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 85
+   at InvokeStub_AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(Object, Span`1)
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="ef5d2216-1880-4c21-b6ae-c5e389bbe15e" testId="355e63d5-c363-0541-843b-4b1be3344ad7" testName="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;sort&quot;)" computerName="5e9498f43725" duration="00:00:00.0027430" startTime="2026-10-07T23:13:24.0340987+08:00" endTime="2026-10-07T23:13:24.0368416+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ef5d2216-1880-4c21-b6ae-c5e389bbe15e">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("sort") managedMB=10
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("sort") managedMB=10</StdOut>
+        <ErrorInfo>
+          <Message>  Expected: &lt;System.InvalidOperationException&gt;
+  But was:  null
+</Message>
+          <StackTrace>   at SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(String operation) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 85
+   at InvokeStub_AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(Object, Span`1)
+
+1)    at SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(String operation) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 85
+   at InvokeStub_AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(Object, Span`1)
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="5b41dfbf-4058-4904-8d96-a32a2bcbb827" testId="217f343c-145b-c7f8-27c1-95d7a00bafbf" testName="PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(ApplyCommands)" computerName="5e9498f43725" duration="00:00:00.0230369" startTime="2026-10-07T23:13:23.9933129+08:00" endTime="2026-10-07T23:13:24.0163493+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5b41dfbf-4058-4904-8d96-a32a2bcbb827">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(ApplyCommands) managedMB=8
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(ApplyCommands) managedMB=9</StdOut>
+        <ErrorInfo>
+          <Message>  Expected: &lt;System.InvalidOperationException&gt;
+  But was:  null
+</Message>
+          <StackTrace>   at SPF.Tests.EditMode.AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(SimPhase phase) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 96
+
+1)    at SPF.Tests.EditMode.AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(SimPhase phase) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 96
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="06c444c8-fbd8-4ba2-a4c4-893f74234f4f" testId="4ade8258-29c4-5e44-8582-295b22850c7d" testName="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;clear-level&quot;)" computerName="5e9498f43725" duration="00:00:00.0008110" startTime="2026-10-07T23:13:24.0368751+08:00" endTime="2026-10-07T23:13:24.0376862+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="06c444c8-fbd8-4ba2-a4c4-893f74234f4f">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("clear-level") managedMB=10
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("clear-level") managedMB=10</StdOut>
+        <ErrorInfo>
+          <Message>  Expected: &lt;System.InvalidOperationException&gt;
+  But was:  null
+</Message>
+          <StackTrace>   at SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(String operation) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 85
+   at InvokeStub_AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(Object, Span`1)
+
+1)    at SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(String operation) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 85
+   at InvokeStub_AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(Object, Span`1)
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="2ed4a2e5-7b3e-445f-b9d4-d24a72b92c6b" testId="1c41b440-072f-c120-d644-76fd93c21651" testName="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;spawn&quot;)" computerName="5e9498f43725" duration="00:00:00.0004900" startTime="2026-10-07T23:13:24.0323417+08:00" endTime="2026-10-07T23:13:24.0328319+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="2ed4a2e5-7b3e-445f-b9d4-d24a72b92c6b">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("spawn") managedMB=9
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("spawn") managedMB=9</StdOut>
+        <ErrorInfo>
+          <Message>  Expected: &lt;System.InvalidOperationException&gt;
+  But was:  null
+</Message>
+          <StackTrace>   at SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(String operation) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 85
+   at InvokeStub_AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(Object, Span`1)
+
+1)    at SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(String operation) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 85
+   at InvokeStub_AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(Object, Span`1)
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="589491c5-22cc-4b16-9e70-2c2431c276a4" testId="9fe9bd18-405a-b102-164c-412803452d70" testName="ReadDeclarationCannotAcquireExplicitWrite" computerName="5e9498f43725" duration="00:00:00.0020350" startTime="2026-10-07T23:13:24.0263007+08:00" endTime="2026-10-07T23:13:24.0283377+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="589491c5-22cc-4b16-9e70-2c2431c276a4">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReadDeclarationCannotAcquireExplicitWrite managedMB=9
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReadDeclarationCannotAcquireExplicitWrite managedMB=9</StdOut>
+        <ErrorInfo>
+          <Message>  Expected: &lt;System.InvalidOperationException&gt;
+  But was:  null
+</Message>
+          <StackTrace>   at SPF.Tests.EditMode.AccessStructureWindowTests.ReadDeclarationCannotAcquireExplicitWrite() in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 46
+
+1)    at SPF.Tests.EditMode.AccessStructureWindowTests.ReadDeclarationCannotAcquireExplicitWrite() in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 46
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="589ef4cf-36c0-4a4b-9b94-9e19441d1277" testId="a7ea8151-3f03-f6d0-a57d-e5e033ae80ef" testName="OnCreateBetweenTicksCompletedBarrierAndSerialCompletionAreLegal" computerName="5e9498f43725" duration="00:00:00.0204810" startTime="2026-10-07T23:13:23.9712918+08:00" endTime="2026-10-07T23:13:23.9917285+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="589ef4cf-36c0-4a4b-9b94-9e19441d1277">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.OnCreateBetweenTicksCompletedBarrierAndSerialCompletionAreLegal managedMB=8
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.OnCreateBetweenTicksCompletedBarrierAndSerialCompletionAreLegal managedMB=8</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="c9bbcca8-cfa1-43ec-9fcd-9f4fabc5dba8" testId="73e572ef-5794-10e5-bd2f-fb3e399a56e4" testName="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;spawn-range&quot;)" computerName="5e9498f43725" duration="00:00:00.0009120" startTime="2026-10-07T23:13:24.0328420+08:00" endTime="2026-10-07T23:13:24.0337538+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c9bbcca8-cfa1-43ec-9fcd-9f4fabc5dba8">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("spawn-range") managedMB=9
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("spawn-range") managedMB=10</StdOut>
+        <ErrorInfo>
+          <Message>  Expected: &lt;System.InvalidOperationException&gt;
+  But was:  null
+</Message>
+          <StackTrace>   at SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(String operation) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 85
+   at InvokeStub_AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(Object, Span`1)
+
+1)    at SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(String operation) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 85
+   at InvokeStub_AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(Object, Span`1)
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="9c336951-3197-4c24-90fd-154264f556f4" testId="8b1b6fc2-71f4-8839-cf49-36ecf70a390f" testName="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;create&quot;)" computerName="5e9498f43725" duration="00:00:00.0016980" startTime="2026-10-07T23:13:24.0284148+08:00" endTime="2026-10-07T23:13:24.0301124+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9c336951-3197-4c24-90fd-154264f556f4">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("create") managedMB=9
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("create") managedMB=9</StdOut>
+        <ErrorInfo>
+          <Message>  Expected: &lt;System.InvalidOperationException&gt;
+  But was:  null
+</Message>
+          <StackTrace>   at SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(String operation) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 85
+
+1)    at SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(String operation) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 85
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="be761f37-19f1-4278-a9af-3446cddf7989" testId="42f664d6-8dcd-0b87-8702-4350c266164e" testName="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;compact&quot;)" computerName="5e9498f43725" duration="00:00:00.0003240" startTime="2026-10-07T23:13:24.0337652+08:00" endTime="2026-10-07T23:13:24.0340890+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="be761f37-19f1-4278-a9af-3446cddf7989">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("compact") managedMB=10
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("compact") managedMB=10</StdOut>
+        <ErrorInfo>
+          <Message>  Expected: &lt;System.InvalidOperationException&gt;
+  But was:  null
+</Message>
+          <StackTrace>   at SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(String operation) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 85
+   at InvokeStub_AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(Object, Span`1)
+
+1)    at SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(String operation) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 85
+   at InvokeStub_AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync(Object, Span`1)
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="19e4394f-80f4-43b9-ac28-39ac34e5ebad" testId="94413f36-a2eb-7c24-d66d-f7fd42cf37d6" testName="WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter" computerName="5e9498f43725" duration="00:00:00.0088980" startTime="2026-10-07T23:13:24.0489548+08:00" endTime="2026-10-07T23:13:24.0578527+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="19e4394f-80f4-43b9-ac28-39ac34e5ebad">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter managedMB=11
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter managedMB=12</StdOut>
+        <ErrorInfo>
+          <Message>  new extensions need a genuinely read-only acquisition API
+  Expected: not null
+  But was:  null
+</Message>
+          <StackTrace>   at SPF.Tests.EditMode.AccessStructureWindowTests.&lt;&gt;c.&lt;WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter&gt;b__11_1(SimWorld w) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 59
+   at SPF.Tests.EditMode.AccessStructureWindowTests.Callback.OnTick(SimContext&amp; context, JobHandle dependency) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 200
+   at SPF.Runtime.Scheduling.TickPipeline.ScheduleSystems(SimContext&amp; context) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Runtime/Scheduling/TickPipeline.cs:line 170
+   at SPF.Runtime.Scheduling.TickPipeline.BeginTick(TickTime time) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Runtime/Scheduling/TickPipeline.cs:line 130
+   at SPF.Tests.EditMode.AccessStructureWindowTests.WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter() in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 65
+
+1)    at SPF.Tests.EditMode.AccessStructureWindowTests.&lt;&gt;c.&lt;WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter&gt;b__11_1(SimWorld w) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 59
+   at SPF.Tests.EditMode.AccessStructureWindowTests.Callback.OnTick(SimContext&amp; context, JobHandle dependency) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 200
+   at SPF.Runtime.Scheduling.TickPipeline.ScheduleSystems(SimContext&amp; context) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Runtime/Scheduling/TickPipeline.cs:line 170
+   at SPF.Runtime.Scheduling.TickPipeline.BeginTick(TickTime time) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Runtime/Scheduling/TickPipeline.cs:line 130
+   at SPF.Tests.EditMode.AccessStructureWindowTests.WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter() in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 65
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="8c2471d0-92d4-4f97-9ea5-cb0f73b335d5" testId="41e0ddb5-613c-9790-ebaf-2354a939d0bb" testName="SimulatedCompletionRejectionRetainsWindowUntilSuccessfulRetry" computerName="5e9498f43725" duration="00:00:00.0047290" startTime="2026-10-07T23:13:24.0386580+08:00" endTime="2026-10-07T23:13:24.0433867+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8c2471d0-92d4-4f97-9ea5-cb0f73b335d5">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SimulatedCompletionRejectionRetainsWindowUntilSuccessfulRetry managedMB=10
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SimulatedCompletionRejectionRetainsWindowUntilSuccessfulRetry managedMB=11</StdOut>
+        <ErrorInfo>
+          <Message>  Expected: &lt;System.InvalidOperationException&gt;
+  But was:  null
+</Message>
+          <StackTrace>   at SPF.Tests.EditMode.AccessStructureWindowTests.SimulatedCompletionRejectionRetainsWindowUntilSuccessfulRetry() in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 157
+
+1)    at SPF.Tests.EditMode.AccessStructureWindowTests.SimulatedCompletionRejectionRetainsWindowUntilSuccessfulRetry() in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 157
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="OnCreateBetweenTicksCompletedBarrierAndSerialCompletionAreLegal" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="a7ea8151-3f03-f6d0-a57d-e5e033ae80ef">
+      <Execution id="589ef4cf-36c0-4a4b-9b94-9e19441d1277" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="OnCreateBetweenTicksCompletedBarrierAndSerialCompletionAreLegal" />
+    </UnitTest>
+    <UnitTest name="WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="94413f36-a2eb-7c24-d66d-f7fd42cf37d6">
+      <Execution id="19e4394f-80f4-43b9-ac28-39ac34e5ebad" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter" />
+    </UnitTest>
+    <UnitTest name="TwoWorldsDoNotShareAccessOrOutstandingOwnership" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="b4ad01b4-d95a-ef3d-7ffd-e1dab69c1092">
+      <Execution id="f182b96a-a7f2-43a8-9771-8b2469ba065a" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="TwoWorldsDoNotShareAccessOrOutstandingOwnership" />
+    </UnitTest>
+    <UnitTest name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;destroy&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="f2aa575d-1c7c-9082-4ba9-b43c7970e407">
+      <Execution id="1081110d-aecb-49ac-9b7e-cbc828672182" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;destroy&quot;)" />
+    </UnitTest>
+    <UnitTest name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;clear-level&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="4ade8258-29c4-5e44-8582-295b22850c7d">
+      <Execution id="06c444c8-fbd8-4ba2-a4c4-893f74234f4f" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;clear-level&quot;)" />
+    </UnitTest>
+    <UnitTest name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;spawn&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="1c41b440-072f-c120-d644-76fd93c21651">
+      <Execution id="2ed4a2e5-7b3e-445f-b9d4-d24a72b92c6b" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;spawn&quot;)" />
+    </UnitTest>
+    <UnitTest name="PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(Resolve)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="60965e2f-9303-0e02-3126-7d2e294f1d37">
+      <Execution id="7368fbc3-29af-4c07-bec2-b95fc2de0e3c" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(Resolve)" />
+    </UnitTest>
+    <UnitTest name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;compact&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="42f664d6-8dcd-0b87-8702-4350c266164e">
+      <Execution id="be761f37-19f1-4278-a9af-3446cddf7989" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;compact&quot;)" />
+    </UnitTest>
+    <UnitTest name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;spawn-range&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="73e572ef-5794-10e5-bd2f-fb3e399a56e4">
+      <Execution id="c9bbcca8-cfa1-43ec-9fcd-9f4fabc5dba8" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;spawn-range&quot;)" />
+    </UnitTest>
+    <UnitTest name="ReadDeclarationCannotAcquireExplicitWrite" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="9fe9bd18-405a-b102-164c-412803452d70">
+      <Execution id="589491c5-22cc-4b16-9e70-2c2431c276a4" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="ReadDeclarationCannotAcquireExplicitWrite" />
+    </UnitTest>
+    <UnitTest name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;reset&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="78a687e6-45b7-73ec-bcce-dfc865e13e1d">
+      <Execution id="708675d5-ecb2-4627-9a81-057125e6e8ef" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;reset&quot;)" />
+    </UnitTest>
+    <UnitTest name="SimulatedCompletionRejectionRetainsWindowUntilSuccessfulRetry" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="41e0ddb5-613c-9790-ebaf-2354a939d0bb">
+      <Execution id="8c2471d0-92d4-4f97-9ea5-cb0f73b335d5" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="SimulatedCompletionRejectionRetainsWindowUntilSuccessfulRetry" />
+    </UnitTest>
+    <UnitTest name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;sort&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="355e63d5-c363-0541-843b-4b1be3344ad7">
+      <Execution id="ef5d2216-1880-4c21-b6ae-c5e389bbe15e" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;sort&quot;)" />
+    </UnitTest>
+    <UnitTest name="SynchronousDeclaredSystemDoesNotCloseStructuralWindow" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="079d30ab-e4d0-2018-5204-3b1c824f2f9d">
+      <Execution id="7dad0df5-5d94-4f6b-80fb-63f5b269b5b5" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="SynchronousDeclaredSystemDoesNotCloseStructuralWindow" />
+    </UnitTest>
+    <UnitTest name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;create&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="8b1b6fc2-71f4-8839-cf49-36ecf70a390f">
+      <Execution id="9c336951-3197-4c24-90fd-154264f556f4" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;create&quot;)" />
+    </UnitTest>
+    <UnitTest name="UndeclaredExplicitWriteIsRejectedButLegacyReadDeclarationRemainsCompatible" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="e06c255d-f415-8cd7-e2f6-6ed56888692e">
+      <Execution id="b7fbb840-6dff-4c77-b847-cf8c39e969dc" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="UndeclaredExplicitWriteIsRejectedButLegacyReadDeclarationRemainsCompatible" />
+    </UnitTest>
+    <UnitTest name="PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(ApplyCommands)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="217f343c-145b-c7f8-27c1-95d7a00bafbf">
+      <Execution id="5b41dfbf-4058-4904-8d96-a32a2bcbb827" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(ApplyCommands)" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="e06c255d-f415-8cd7-e2f6-6ed56888692e" executionId="b7fbb840-6dff-4c77-b847-cf8c39e969dc" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="78a687e6-45b7-73ec-bcce-dfc865e13e1d" executionId="708675d5-ecb2-4627-9a81-057125e6e8ef" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="60965e2f-9303-0e02-3126-7d2e294f1d37" executionId="7368fbc3-29af-4c07-bec2-b95fc2de0e3c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="079d30ab-e4d0-2018-5204-3b1c824f2f9d" executionId="7dad0df5-5d94-4f6b-80fb-63f5b269b5b5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b4ad01b4-d95a-ef3d-7ffd-e1dab69c1092" executionId="f182b96a-a7f2-43a8-9771-8b2469ba065a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f2aa575d-1c7c-9082-4ba9-b43c7970e407" executionId="1081110d-aecb-49ac-9b7e-cbc828672182" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="355e63d5-c363-0541-843b-4b1be3344ad7" executionId="ef5d2216-1880-4c21-b6ae-c5e389bbe15e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="217f343c-145b-c7f8-27c1-95d7a00bafbf" executionId="5b41dfbf-4058-4904-8d96-a32a2bcbb827" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="4ade8258-29c4-5e44-8582-295b22850c7d" executionId="06c444c8-fbd8-4ba2-a4c4-893f74234f4f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="1c41b440-072f-c120-d644-76fd93c21651" executionId="2ed4a2e5-7b3e-445f-b9d4-d24a72b92c6b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="9fe9bd18-405a-b102-164c-412803452d70" executionId="589491c5-22cc-4b16-9e70-2c2431c276a4" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a7ea8151-3f03-f6d0-a57d-e5e033ae80ef" executionId="589ef4cf-36c0-4a4b-9b94-9e19441d1277" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="73e572ef-5794-10e5-bd2f-fb3e399a56e4" executionId="c9bbcca8-cfa1-43ec-9fcd-9f4fabc5dba8" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="8b1b6fc2-71f4-8839-cf49-36ecf70a390f" executionId="9c336951-3197-4c24-90fd-154264f556f4" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="42f664d6-8dcd-0b87-8702-4350c266164e" executionId="be761f37-19f1-4278-a9af-3446cddf7989" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="94413f36-a2eb-7c24-d66d-f7fd42cf37d6" executionId="19e4394f-80f4-43b9-ac28-39ac34e5ebad" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="41e0ddb5-613c-9790-ebaf-2354a939d0bb" executionId="8c2471d0-92d4-4f97-9ea5-cb0f73b335d5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="17" executed="17" passed="3" failed="14" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 4.5.0.0: Test execution started
+Running selected tests in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll
+   NUnit3TestExecutor discovered 17 of 17 NUnit test cases using Current Discovery mode, Non-Explicit run
+NUnit Adapter 4.5.0.0: Test execution complete
+</StdOut>
+    </Output>
+    <RunInfos>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:13:24.0318822+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.OnCreateBetweenTicksCompletedBarrierAndSerialCompletionAreLegal managedMB=8
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.OnCreateBetweenTicksCompletedBarrierAndSerialCompletionAreLegal managedMB=8
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:13:24.0346629+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(ApplyCommands) managedMB=8
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(ApplyCommands) managedMB=9
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:13:24.0352137+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(Resolve) managedMB=9
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(Resolve) managedMB=9
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:13:24.0385196+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReadDeclarationCannotAcquireExplicitWrite managedMB=9
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReadDeclarationCannotAcquireExplicitWrite managedMB=9
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:13:24.0389443+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("create") managedMB=9
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("create") managedMB=9
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:13:24.0430353+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("destroy") managedMB=9
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("destroy") managedMB=9
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:13:24.0430485+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("spawn") managedMB=9
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("spawn") managedMB=9
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:13:24.0430510+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("spawn-range") managedMB=9
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("spawn-range") managedMB=10
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:13:24.0430532+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("compact") managedMB=10
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("compact") managedMB=10
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:13:24.1615469+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("sort") managedMB=10
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("sort") managedMB=10
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:13:24.1615506+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("clear-level") managedMB=10
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("clear-level") managedMB=10
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:13:24.1615560+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("reset") managedMB=10
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("reset") managedMB=10
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:13:24.1615590+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SimulatedCompletionRejectionRetainsWindowUntilSuccessfulRetry managedMB=10
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SimulatedCompletionRejectionRetainsWindowUntilSuccessfulRetry managedMB=11
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:13:24.1615628+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SynchronousDeclaredSystemDoesNotCloseStructuralWindow managedMB=11
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SynchronousDeclaredSystemDoesNotCloseStructuralWindow managedMB=11
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:13:24.1615657+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.TwoWorldsDoNotShareAccessOrOutstandingOwnership managedMB=11
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.TwoWorldsDoNotShareAccessOrOutstandingOwnership managedMB=11
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:13:24.1615687+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.UndeclaredExplicitWriteIsRejectedButLegacyReadDeclarationRemainsCompatible managedMB=11
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.UndeclaredExplicitWriteIsRejectedButLegacyReadDeclarationRemainsCompatible managedMB=11
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:13:24.1615715+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter managedMB=11
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter managedMB=12
+</Text>
+      </RunInfo>
+    </RunInfos>
+  </ResultSummary>
+</TestRun>

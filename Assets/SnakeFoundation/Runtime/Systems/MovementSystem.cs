@@ -30,16 +30,16 @@ namespace SnakeFoundation.Systems
             var grid = world.Resource(SnakeKeys.BodyGrid);
             return new MoveJob
             {
-                Control = context.Column(SnakeKeys.Control),
-                Radius = context.Column(SnakeKeys.Radius),
-                Head = context.Column(SnakeKeys.Head),
-                PrevHead = context.Column(SnakeKeys.PrevHead),
-                Heading = context.Column(SnakeKeys.Heading),
-                Speed = context.Column(SnakeKeys.Speed),
-                Mass = context.Column(SnakeKeys.Mass),
-                Info = context.Column(SnakeKeys.Info),
-                Buffs = context.Column(SnakeKeys.Buffs),
-                Stats = context.Column(SnakeKeys.Stats),
+                Control = context.ReadColumn(SnakeKeys.Control),
+                Radius = context.ReadColumn(SnakeKeys.Radius),
+                Head = context.WriteColumn(SnakeKeys.Head),
+                PrevHead = context.WriteColumn(SnakeKeys.PrevHead),
+                Heading = context.WriteColumn(SnakeKeys.Heading),
+                Speed = context.WriteColumn(SnakeKeys.Speed),
+                Mass = context.WriteColumn(SnakeKeys.Mass),
+                Info = context.WriteColumn(SnakeKeys.Info),
+                Buffs = context.WriteColumn(SnakeKeys.Buffs),
+                Stats = context.WriteColumn(SnakeKeys.Stats),
                 BuffTable = config.BuffTable,
                 Settings = config.Settings,
                 Region = config.Regions[game.ActiveRegion],
@@ -60,8 +60,8 @@ namespace SnakeFoundation.Systems
         [BurstCompile(FloatMode = FloatMode.Fast, CompileSynchronously = true)]
         struct MoveJob : IJobParallelFor
         {
-            [ReadOnly] public NativeArray<SnakeControl> Control;
-            [ReadOnly] public NativeArray<float> Radius;
+            [ReadOnly] public NativeArray<SnakeControl>.ReadOnly Control;
+            [ReadOnly] public NativeArray<float>.ReadOnly Radius;
             public NativeArray<float2> Head;
             public NativeArray<float2> PrevHead;
             public NativeArray<float2> Heading;

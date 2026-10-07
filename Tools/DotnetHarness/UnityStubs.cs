@@ -24,6 +24,15 @@ namespace Unity.Collections
         {
             for (int i = 0; i < array.Length; i++) this[i] = array[i];
         }
+        public ReadOnly AsReadOnly() => new ReadOnly(this);
+        public readonly struct ReadOnly
+        {
+            readonly NativeArray<T> m_Array;
+            internal ReadOnly(NativeArray<T> array) { m_Array = array; }
+            public int Length => m_Array.Length;
+            public bool IsCreated => m_Array.IsCreated;
+            public T this[int index] => m_Array[index];
+        }
         public int Length => len;
         public bool IsCreated => m_Ptr != null;
         public T this[int i]
@@ -99,18 +108,27 @@ namespace Unity.Collections.LowLevel.Unsafe
 }
 namespace Unity.Jobs
 {
-    public struct JobHandle
+    public struct JobHandle : IEquatable<JobHandle>
     {
-        public void Complete() { }
-        public static JobHandle CombineDependencies(JobHandle a, JobHandle b) => default;
-        public static JobHandle CombineDependencies(JobHandle a, JobHandle b, JobHandle c) => default;
+        // Opt-in ownership-only simulation. Jobs still execute eagerly; this is NOT native concurrency.
+        [ThreadStatic] public static bool TrackScheduledOwnershipForTesting;
+        static int s_NextId;
+        int m_Id;
+        internal static JobHandle Scheduled() => TrackScheduledOwnershipForTesting
+            ? new JobHandle { m_Id = ++s_NextId } : default;
+        public void Complete() { m_Id = 0; }
+        public bool Equals(JobHandle other) => m_Id == other.m_Id;
+        public override bool Equals(object other) => other is JobHandle handle && Equals(handle);
+        public override int GetHashCode() => m_Id;
+        public static JobHandle CombineDependencies(JobHandle a, JobHandle b) => b.m_Id != 0 ? b : a;
+        public static JobHandle CombineDependencies(JobHandle a, JobHandle b, JobHandle c) => CombineDependencies(CombineDependencies(a, b), c);
         public static void ScheduleBatchedJobs() { }
     }
     public interface IJob { void Execute(); }
     public interface IJobParallelFor { void Execute(int index); }
     public static class IJobExtensions
     {
-        public static JobHandle Schedule<T>(this T job, JobHandle dependsOn = default) where T : struct, IJob { job.Execute(); return default; }
+        public static JobHandle Schedule<T>(this T job, JobHandle dependsOn = default) where T : struct, IJob { job.Execute(); return JobHandle.Scheduled(); }
         public static void Run<T>(this T job) where T : struct, IJob => job.Execute();
     }
     public static class IJobParallelForExtensions
@@ -130,7 +148,7 @@ namespace Unity.Jobs
             uint b = (call * 40503u) % n;
             for (uint i = 0; i < n; i++)
                 job.Execute((int)(((ulong)a * i + b) % n));
-            return default;
+            return JobHandle.Scheduled();
         }
 
         static uint Gcd(uint x, uint y) { while (y != 0) { uint t = x % y; x = y; y = t; } return x; }

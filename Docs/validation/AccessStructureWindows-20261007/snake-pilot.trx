@@ -1,0 +1,226 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="1667f7ba-f5be-437e-a84d-f60e2b398502" name="@5e9498f43725 2026-10-07 23:26:10" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-07T23:26:10.3318586+08:00" queuing="2026-10-07T23:26:10.3318587+08:00" start="2026-10-07T23:26:08.4414032+08:00" finish="2026-10-07T23:26:11.2676778+08:00" />
+  <TestSettings name="default" id="05b1edd5-2726-4a62-8c36-93afa2588cf9">
+    <Deployment runDeploymentRoot="_5e9498f43725_2026-10-07_23_26_10" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="45b728a9-817d-49c5-bbdb-287cadc96e30" testId="be9c9b71-da3b-16e7-9dc4-f2ba952f5702" testName="SteadyStateSnakeTicksDoNotAllocate" computerName="5e9498f43725" duration="00:00:00.0619620" startTime="2026-10-07T23:26:10.1748979+08:00" endTime="2026-10-07T23:26:10.2368596+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="45b728a9-817d-49c5-bbdb-287cadc96e30">
+      <Output>
+        <StdOut>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.SteadyStateSnakeTicksDoNotAllocate managedMB=6
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.SteadyStateSnakeTicksDoNotAllocate managedMB=7</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="d247191d-84b0-41bc-a55b-349f4016724f" testId="cb5dbae5-d44a-23ef-8cb3-20ba58997fd3" testName="RegionsMatchTheDesign" computerName="5e9498f43725" duration="00:00:00.0033430" startTime="2026-10-07T23:26:09.9614152+08:00" endTime="2026-10-07T23:26:09.9647583+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d247191d-84b0-41bc-a55b-349f4016724f">
+      <Output>
+        <StdOut>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.RegionsMatchTheDesign managedMB=3
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.RegionsMatchTheDesign managedMB=4</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="93791343-9e2a-47f8-9e84-e63bd0a15921" testId="839e7820-f956-3c8c-6385-6bc1f008fafd" testName="TheWorldAroundThePlayerIsLively" computerName="5e9498f43725" duration="00:00:00.9018620" startTime="2026-10-07T23:26:10.2369440+08:00" endTime="2026-10-07T23:26:11.1388057+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="93791343-9e2a-47f8-9e84-e63bd0a15921">
+      <Output>
+        <StdOut>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.TheWorldAroundThePlayerIsLively managedMB=7
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.TheWorldAroundThePlayerIsLively managedMB=9</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="d34c7d8b-a972-4892-9694-74d1e92b0f91" testId="3eaaae1a-3ca3-8830-d653-fcad8a1f8830" testName="BodyGridHoldsExactlyTheAnchoredNodes" computerName="5e9498f43725" duration="00:00:00.4671310" startTime="2026-10-07T23:26:09.3934249+08:00" endTime="2026-10-07T23:26:09.8605552+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d34c7d8b-a972-4892-9694-74d1e92b0f91">
+      <Output>
+        <StdOut>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.BodyGridHoldsExactlyTheAnchoredNodes managedMB=2
+body grid: 1 full rebuilds; sampled ticks resynced 0 snakes, added 306 nodes
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.BodyGridHoldsExactlyTheAnchoredNodes managedMB=5</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="ce492bed-380c-4222-ad42-c8bb6e5142f9" testId="5ff565f1-bd7f-1b5c-b11b-9a64339a9873" testName="PortalMovesThePlayerToTheSmallMapAndFreezesTheBigOne" computerName="5e9498f43725" duration="00:00:00.0269460" startTime="2026-10-07T23:26:09.9344097+08:00" endTime="2026-10-07T23:26:09.9613554+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ce492bed-380c-4222-ad42-c8bb6e5142f9">
+      <Output>
+        <StdOut>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.PortalMovesThePlayerToTheSmallMapAndFreezesTheBigOne managedMB=6
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.PortalMovesThePlayerToTheSmallMapAndFreezesTheBigOne managedMB=3</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="5613acc1-efb1-4d3c-a4cf-44cf1b082949" testId="a5a25c54-290a-900e-a75a-264a179e81b8" testName="ARecordedRunReplaysExactly" computerName="5e9498f43725" duration="00:00:00.2525230" startTime="2026-10-07T23:26:08.9648958+08:00" endTime="2026-10-07T23:26:09.2173704+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5613acc1-efb1-4d3c-a4cf-44cf1b082949">
+      <Output>
+        <StdOut>[SPF-TEST] start SnakeFoundation.Tests.SnakeReplayTests.ARecordedRunReplaysExactly managedMB=3
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeReplayTests.ARecordedRunReplaysExactly managedMB=2</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="f9c50a52-6878-4be4-9ce1-08e2eae40686" testId="931f301f-3fbf-a2f1-f92d-2c54abb436f6" testName="WorldFillsWithAIAndStreamsFoodAroundTheFocus" computerName="5e9498f43725" duration="00:00:00.0451730" startTime="2026-10-07T23:26:11.1531327+08:00" endTime="2026-10-07T23:26:11.1983061+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f9c50a52-6878-4be4-9ce1-08e2eae40686">
+      <Output>
+        <StdOut>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.WorldFillsWithAIAndStreamsFoodAroundTheFocus managedMB=1
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.WorldFillsWithAIAndStreamsFoodAroundTheFocus managedMB=2</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="3cc49836-c6a7-4251-b669-b64c0c080d10" testId="43fc4036-e9bb-ad36-2b31-2b6a99bebc2b" testName="RestartResetsTheWorld" computerName="5e9498f43725" duration="00:00:00.0246830" startTime="2026-10-07T23:26:09.9648005+08:00" endTime="2026-10-07T23:26:09.9894834+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="3cc49836-c6a7-4251-b669-b64c0c080d10">
+      <Output>
+        <StdOut>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.RestartResetsTheWorld managedMB=4
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.RestartResetsTheWorld managedMB=5</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="5d3bf026-7a11-4cc1-8ee3-8ea81c7fb404" testId="044177f8-56dc-7b9e-e04e-e79743f177e6" testName="SameSeedAndInputsGiveTheSameWorld" computerName="5e9498f43725" duration="00:00:00.1852659" startTime="2026-10-07T23:26:09.9895580+08:00" endTime="2026-10-07T23:26:10.1748244+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5d3bf026-7a11-4cc1-8ee3-8ea81c7fb404">
+      <Output>
+        <StdOut>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.SameSeedAndInputsGiveTheSameWorld managedMB=5
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.SameSeedAndInputsGiveTheSameWorld managedMB=6</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="e09ac552-7ba1-4834-a395-34a2440d92aa" testId="d26eae1c-b0e8-ed3a-1486-0927c68591ad" testName="TrailSpacingGrowsWithRadius" computerName="5e9498f43725" duration="00:00:00.0142030" startTime="2026-10-07T23:26:11.1388649+08:00" endTime="2026-10-07T23:26:11.1530682+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e09ac552-7ba1-4834-a395-34a2440d92aa">
+      <Output>
+        <StdOut>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.TrailSpacingGrowsWithRadius managedMB=9
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.TrailSpacingGrowsWithRadius managedMB=1</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="6292da7b-fcf1-4732-806d-d48503955330" testId="cacfd5b6-869d-44dc-a1b2-19d313bb361a" testName="ItemGridStaysExactWithIncrementalUpdates" computerName="5e9498f43725" duration="00:00:00.0737000" startTime="2026-10-07T23:26:09.8606313+08:00" endTime="2026-10-07T23:26:09.9343312+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6292da7b-fcf1-4732-806d-d48503955330">
+      <Output>
+        <StdOut>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.ItemGridStaysExactWithIncrementalUpdates managedMB=5
+item grid: 1 full rebuilds, 19 incremental updates, 36 rows
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.ItemGridStaysExactWithIncrementalUpdates managedMB=6</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="7a23cad5-2e5e-48a4-87bb-3237a1e2cbca" testId="031ac32e-4cce-b7d6-25a2-4949a1c27604" testName="AISnakesMostlySurviveAndStayInsideTheRegion" computerName="5e9498f43725" duration="00:00:00.1725590" startTime="2026-10-07T23:26:09.2208019+08:00" endTime="2026-10-07T23:26:09.3933601+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="7a23cad5-2e5e-48a4-87bb-3237a1e2cbca">
+      <Output>
+        <StdOut>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.AISnakesMostlySurviveAndStayInsideTheRegion managedMB=2
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.AISnakesMostlySurviveAndStayInsideTheRegion managedMB=2</StdOut>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="PortalMovesThePlayerToTheSmallMapAndFreezesTheBigOne" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/snakefoundation.tests.editmode/bin/debug/net8.0/snakefoundation.tests.editmode.dll" id="5ff565f1-bd7f-1b5c-b11b-9a64339a9873">
+      <Execution id="ce492bed-380c-4222-ad42-c8bb6e5142f9" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SnakeFoundation.Tests.EditMode/bin/Debug/net8.0/SnakeFoundation.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SnakeFoundation.Tests.SnakeWorldTests" name="PortalMovesThePlayerToTheSmallMapAndFreezesTheBigOne" />
+    </UnitTest>
+    <UnitTest name="TrailSpacingGrowsWithRadius" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/snakefoundation.tests.editmode/bin/debug/net8.0/snakefoundation.tests.editmode.dll" id="d26eae1c-b0e8-ed3a-1486-0927c68591ad">
+      <Execution id="e09ac552-7ba1-4834-a395-34a2440d92aa" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SnakeFoundation.Tests.EditMode/bin/Debug/net8.0/SnakeFoundation.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SnakeFoundation.Tests.SnakeWorldTests" name="TrailSpacingGrowsWithRadius" />
+    </UnitTest>
+    <UnitTest name="SteadyStateSnakeTicksDoNotAllocate" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/snakefoundation.tests.editmode/bin/debug/net8.0/snakefoundation.tests.editmode.dll" id="be9c9b71-da3b-16e7-9dc4-f2ba952f5702">
+      <Execution id="45b728a9-817d-49c5-bbdb-287cadc96e30" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SnakeFoundation.Tests.EditMode/bin/Debug/net8.0/SnakeFoundation.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SnakeFoundation.Tests.SnakeWorldTests" name="SteadyStateSnakeTicksDoNotAllocate" />
+    </UnitTest>
+    <UnitTest name="RegionsMatchTheDesign" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/snakefoundation.tests.editmode/bin/debug/net8.0/snakefoundation.tests.editmode.dll" id="cb5dbae5-d44a-23ef-8cb3-20ba58997fd3">
+      <Execution id="d247191d-84b0-41bc-a55b-349f4016724f" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SnakeFoundation.Tests.EditMode/bin/Debug/net8.0/SnakeFoundation.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SnakeFoundation.Tests.SnakeWorldTests" name="RegionsMatchTheDesign" />
+    </UnitTest>
+    <UnitTest name="WorldFillsWithAIAndStreamsFoodAroundTheFocus" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/snakefoundation.tests.editmode/bin/debug/net8.0/snakefoundation.tests.editmode.dll" id="931f301f-3fbf-a2f1-f92d-2c54abb436f6">
+      <Execution id="f9c50a52-6878-4be4-9ce1-08e2eae40686" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SnakeFoundation.Tests.EditMode/bin/Debug/net8.0/SnakeFoundation.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SnakeFoundation.Tests.SnakeWorldTests" name="WorldFillsWithAIAndStreamsFoodAroundTheFocus" />
+    </UnitTest>
+    <UnitTest name="TheWorldAroundThePlayerIsLively" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/snakefoundation.tests.editmode/bin/debug/net8.0/snakefoundation.tests.editmode.dll" id="839e7820-f956-3c8c-6385-6bc1f008fafd">
+      <Execution id="93791343-9e2a-47f8-9e84-e63bd0a15921" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SnakeFoundation.Tests.EditMode/bin/Debug/net8.0/SnakeFoundation.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SnakeFoundation.Tests.SnakeWorldTests" name="TheWorldAroundThePlayerIsLively" />
+    </UnitTest>
+    <UnitTest name="RestartResetsTheWorld" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/snakefoundation.tests.editmode/bin/debug/net8.0/snakefoundation.tests.editmode.dll" id="43fc4036-e9bb-ad36-2b31-2b6a99bebc2b">
+      <Execution id="3cc49836-c6a7-4251-b669-b64c0c080d10" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SnakeFoundation.Tests.EditMode/bin/Debug/net8.0/SnakeFoundation.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SnakeFoundation.Tests.SnakeWorldTests" name="RestartResetsTheWorld" />
+    </UnitTest>
+    <UnitTest name="ARecordedRunReplaysExactly" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/snakefoundation.tests.editmode/bin/debug/net8.0/snakefoundation.tests.editmode.dll" id="a5a25c54-290a-900e-a75a-264a179e81b8">
+      <Execution id="5613acc1-efb1-4d3c-a4cf-44cf1b082949" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SnakeFoundation.Tests.EditMode/bin/Debug/net8.0/SnakeFoundation.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SnakeFoundation.Tests.SnakeReplayTests" name="ARecordedRunReplaysExactly" />
+    </UnitTest>
+    <UnitTest name="ItemGridStaysExactWithIncrementalUpdates" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/snakefoundation.tests.editmode/bin/debug/net8.0/snakefoundation.tests.editmode.dll" id="cacfd5b6-869d-44dc-a1b2-19d313bb361a">
+      <Execution id="6292da7b-fcf1-4732-806d-d48503955330" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SnakeFoundation.Tests.EditMode/bin/Debug/net8.0/SnakeFoundation.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SnakeFoundation.Tests.SnakeWorldTests" name="ItemGridStaysExactWithIncrementalUpdates" />
+    </UnitTest>
+    <UnitTest name="BodyGridHoldsExactlyTheAnchoredNodes" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/snakefoundation.tests.editmode/bin/debug/net8.0/snakefoundation.tests.editmode.dll" id="3eaaae1a-3ca3-8830-d653-fcad8a1f8830">
+      <Execution id="d34c7d8b-a972-4892-9694-74d1e92b0f91" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SnakeFoundation.Tests.EditMode/bin/Debug/net8.0/SnakeFoundation.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SnakeFoundation.Tests.SnakeWorldTests" name="BodyGridHoldsExactlyTheAnchoredNodes" />
+    </UnitTest>
+    <UnitTest name="AISnakesMostlySurviveAndStayInsideTheRegion" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/snakefoundation.tests.editmode/bin/debug/net8.0/snakefoundation.tests.editmode.dll" id="031ac32e-4cce-b7d6-25a2-4949a1c27604">
+      <Execution id="7a23cad5-2e5e-48a4-87bb-3237a1e2cbca" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SnakeFoundation.Tests.EditMode/bin/Debug/net8.0/SnakeFoundation.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SnakeFoundation.Tests.SnakeWorldTests" name="AISnakesMostlySurviveAndStayInsideTheRegion" />
+    </UnitTest>
+    <UnitTest name="SameSeedAndInputsGiveTheSameWorld" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/snakefoundation.tests.editmode/bin/debug/net8.0/snakefoundation.tests.editmode.dll" id="044177f8-56dc-7b9e-e04e-e79743f177e6">
+      <Execution id="5d3bf026-7a11-4cc1-8ee3-8ea81c7fb404" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SnakeFoundation.Tests.EditMode/bin/Debug/net8.0/SnakeFoundation.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SnakeFoundation.Tests.SnakeWorldTests" name="SameSeedAndInputsGiveTheSameWorld" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="be9c9b71-da3b-16e7-9dc4-f2ba952f5702" executionId="45b728a9-817d-49c5-bbdb-287cadc96e30" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="cb5dbae5-d44a-23ef-8cb3-20ba58997fd3" executionId="d247191d-84b0-41bc-a55b-349f4016724f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="839e7820-f956-3c8c-6385-6bc1f008fafd" executionId="93791343-9e2a-47f8-9e84-e63bd0a15921" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3eaaae1a-3ca3-8830-d653-fcad8a1f8830" executionId="d34c7d8b-a972-4892-9694-74d1e92b0f91" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="5ff565f1-bd7f-1b5c-b11b-9a64339a9873" executionId="ce492bed-380c-4222-ad42-c8bb6e5142f9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a5a25c54-290a-900e-a75a-264a179e81b8" executionId="5613acc1-efb1-4d3c-a4cf-44cf1b082949" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="931f301f-3fbf-a2f1-f92d-2c54abb436f6" executionId="f9c50a52-6878-4be4-9ce1-08e2eae40686" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="43fc4036-e9bb-ad36-2b31-2b6a99bebc2b" executionId="3cc49836-c6a7-4251-b669-b64c0c080d10" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="044177f8-56dc-7b9e-e04e-e79743f177e6" executionId="5d3bf026-7a11-4cc1-8ee3-8ea81c7fb404" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d26eae1c-b0e8-ed3a-1486-0927c68591ad" executionId="e09ac552-7ba1-4834-a395-34a2440d92aa" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="cacfd5b6-869d-44dc-a1b2-19d313bb361a" executionId="6292da7b-fcf1-4732-806d-d48503955330" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="031ac32e-4cce-b7d6-25a2-4949a1c27604" executionId="7a23cad5-2e5e-48a4-87bb-3237a1e2cbca" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="12" executed="12" passed="12" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 4.5.0.0: Test execution started
+Running selected tests in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SnakeFoundation.Tests.EditMode/bin/Debug/net8.0/SnakeFoundation.Tests.EditMode.dll
+   NUnit3TestExecutor discovered 12 of 12 NUnit test cases using Current Discovery mode, Non-Explicit run
+in window 55, respawned 2 in 20 s
+NUnit Adapter 4.5.0.0: Test execution complete
+</StdOut>
+    </Output>
+    <RunInfos>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:26:09.2429042+08:00">
+        <Text>[SPF-TEST] start SnakeFoundation.Tests.SnakeReplayTests.ARecordedRunReplaysExactly managedMB=3
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeReplayTests.ARecordedRunReplaysExactly managedMB=2
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:26:09.3951326+08:00">
+        <Text>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.AISnakesMostlySurviveAndStayInsideTheRegion managedMB=2
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.AISnakesMostlySurviveAndStayInsideTheRegion managedMB=2
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:26:09.8619630+08:00">
+        <Text>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.BodyGridHoldsExactlyTheAnchoredNodes managedMB=2
+body grid: 1 full rebuilds; sampled ticks resynced 0 snakes, added 306 nodes
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.BodyGridHoldsExactlyTheAnchoredNodes managedMB=5
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:26:09.9360374+08:00">
+        <Text>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.ItemGridStaysExactWithIncrementalUpdates managedMB=5
+item grid: 1 full rebuilds, 19 incremental updates, 36 rows
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.ItemGridStaysExactWithIncrementalUpdates managedMB=6
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:26:09.9625395+08:00">
+        <Text>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.PortalMovesThePlayerToTheSmallMapAndFreezesTheBigOne managedMB=6
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.PortalMovesThePlayerToTheSmallMapAndFreezesTheBigOne managedMB=3
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:26:09.9654923+08:00">
+        <Text>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.RegionsMatchTheDesign managedMB=3
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.RegionsMatchTheDesign managedMB=4
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:26:09.9908064+08:00">
+        <Text>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.RestartResetsTheWorld managedMB=4
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.RestartResetsTheWorld managedMB=5
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:26:10.1761044+08:00">
+        <Text>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.SameSeedAndInputsGiveTheSameWorld managedMB=5
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.SameSeedAndInputsGiveTheSameWorld managedMB=6
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:26:10.2428270+08:00">
+        <Text>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.SteadyStateSnakeTicksDoNotAllocate managedMB=6
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.SteadyStateSnakeTicksDoNotAllocate managedMB=7
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:26:11.1408072+08:00">
+        <Text>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.TheWorldAroundThePlayerIsLively managedMB=7
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.TheWorldAroundThePlayerIsLively managedMB=9
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:26:11.1541079+08:00">
+        <Text>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.TrailSpacingGrowsWithRadius managedMB=9
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.TrailSpacingGrowsWithRadius managedMB=1
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:26:11.2004851+08:00">
+        <Text>[SPF-TEST] start SnakeFoundation.Tests.SnakeWorldTests.WorldFillsWithAIAndStreamsFoodAroundTheFocus managedMB=1
+[SPF-TEST] end   SnakeFoundation.Tests.SnakeWorldTests.WorldFillsWithAIAndStreamsFoodAroundTheFocus managedMB=2
+</Text>
+      </RunInfo>
+    </RunInfos>
+  </ResultSummary>
+</TestRun>

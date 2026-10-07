@@ -99,10 +99,11 @@ namespace SPF.Runtime.World
         /// <summary>
         /// Ends the current level: destroys every entity of the level-scoped tables (their handles become
         /// stale) and resets the level-scoped resources. Session-scoped data (the hero, progress, config)
-        /// is untouched. Main thread, ApplyCommands phase or between ticks. Returns the entities removed.
+        /// is untouched. Main thread with all pipeline-owned work completed (including a completed barrier). Returns the entities removed.
         /// </summary>
         public int ClearLevel()
         {
+            Guard.CheckStructural("ClearLevel");
             int removed = 0;
             foreach (var table in m_LevelTables)
             {
@@ -136,7 +137,14 @@ namespace SPF.Runtime.World
 
         public bool HasTable(TableKey key) => m_TablesByKey.ContainsKey(key.Id);
 
+        /// <summary>Legacy writable alias; declaration-presence check only. Prefer ReadColumn/WriteColumn for new code.</summary>
         public NativeArray<T> Column<T>(ColumnKey<T> key) where T : unmanaged => Table(key.Table).Column(key);
+
+        /// <summary>Read-only native view, without copying or implicit job completion.</summary>
+        public NativeArray<T>.ReadOnly ReadColumn<T>(ColumnKey<T> key) where T : unmanaged => Table(key.Table).ReadColumn(key);
+
+        /// <summary>Explicit writable alias; requires Write in a declared system. Never completes jobs.</summary>
+        public NativeArray<T> WriteColumn<T>(ColumnKey<T> key) where T : unmanaged => Table(key.Table).WriteColumn(key);
 
         public T Resource<T>(ResourceKey<T> key) where T : class
         {
@@ -148,11 +156,12 @@ namespace SPF.Runtime.World
 
         public bool HasResource(AccessKey key) => m_Resources.ContainsKey(key.Id);
 
-        // ---- Structural changes: main thread, ApplyCommands phase only. ----
+        // ---- Structural changes: main thread, only while no pipeline-owned work remains. ----
 
         /// <summary>Creates an entity with a zeroed row. Returns Null (and counts a failure) when full.</summary>
         public EntityHandle CreateEntity(TableKey key, out int row)
         {
+            Guard.CheckStructural("CreateEntity");
             var table = Table(key);
             row = -1;
             if (table.IsPooled)
@@ -175,6 +184,7 @@ namespace SPF.Runtime.World
         /// <summary>Appends a zeroed row to a pooled table (no handle). Returns -1 (and counts a failure) when full.</summary>
         public int Spawn(TableKey key)
         {
+            Guard.CheckStructural("Spawn");
             var table = Table(key);
             if (!table.IsPooled)
                 throw new InvalidOperationException($"Table {key} is not pooled: use CreateEntity.");
@@ -190,6 +200,7 @@ namespace SPF.Runtime.World
         /// </summary>
         public int SpawnRange(TableKey key, int count, out int added)
         {
+            Guard.CheckStructural("SpawnRange");
             var table = Table(key);
             if (!table.IsPooled)
                 throw new InvalidOperationException($"Table {key} is not pooled: use CreateEntity.");
@@ -201,6 +212,7 @@ namespace SPF.Runtime.World
         /// <summary>Compacts every pooled table (start of the tick, before systems run).</summary>
         internal void CompactPools()
         {
+            Guard.CheckStructural("CompactPools");
             for (int i = 0; i < m_PooledTables.Count; i++)
                 m_PooledTables[i].Compact();
         }
@@ -209,10 +221,11 @@ namespace SPF.Runtime.World
         /// Reorders a table's rows by <paramref name="sortKeys"/> (one per row, ascending; ties keep the
         /// current order), keeping handles valid. Sorting by a spatial key (e.g. <c>Morton.Encode</c> of the
         /// grid cell) every few dozen ticks keeps neighbours close in memory, so the row lookups of spatial
-        /// queries and the per-row jobs stay cache friendly. Main thread, between ticks or in ApplyCommands.
+        /// queries and the per-row jobs stay cache friendly. Main thread, after all pipeline-owned work completes.
         /// </summary>
         public void SortRows(TableKey key, NativeArray<uint> sortKeys)
         {
+            Guard.CheckStructural("SortRows");
             var table = Table(key);
             int n = table.Count;
             if (n < 2) return;
@@ -242,6 +255,7 @@ namespace SPF.Runtime.World
 
         public bool DestroyEntity(EntityHandle handle)
         {
+            Guard.CheckStructural("DestroyEntity");
             if (!Registry.TryResolve(handle, out int tableIndex, out int row))
                 return false;
             var moved = m_Tables[tableIndex].RemoveAtSwapBack(row);
@@ -258,6 +272,7 @@ namespace SPF.Runtime.World
         /// </summary>
         internal void PlaybackDestroys()
         {
+            Guard.CheckStructural("PlaybackDestroys");
             var items = m_DestroyQueue.Queue.AsArray();
             items.Sort(new HandleOrder());
             for (int i = 0; i < items.Length; i++)
@@ -280,6 +295,7 @@ namespace SPF.Runtime.World
         /// <summary>Empties every table and invalidates all handles without releasing memory.</summary>
         public void Reset()
         {
+            Guard.CheckStructural("Reset");
             foreach (var table in m_Tables)
                 table.Clear();
             Registry.Clear();
@@ -313,6 +329,7 @@ namespace SPF.Runtime.World
         /// </summary>
         public void WriteSnapshot(System.IO.BinaryWriter writer)
         {
+            Guard.CheckStructural("WriteSnapshot");
             var gaps = SnapshotGaps();
             if (gaps.Count > 0)
                 throw new NotSupportedException("These resources do not support snapshots: " + string.Join(", ", gaps));
@@ -345,6 +362,7 @@ namespace SPF.Runtime.World
         /// </summary>
         public void ReadSnapshot(System.IO.BinaryReader reader)
         {
+            Guard.CheckStructural("ReadSnapshot");
             if (reader.ReadInt32() != SnapshotMagic || reader.ReadInt32() != SnapshotFormat)
                 throw new System.IO.InvalidDataException("Not a world snapshot (or an unsupported format).");
             if (reader.ReadUInt32() != Seed)
@@ -375,6 +393,7 @@ namespace SPF.Runtime.World
         public void Dispose()
         {
             if (m_Disposed) return;
+            Guard.CheckStructural("Dispose world");
             m_Disposed = true;
             Exception failure = null;
             // Retain classic registration-order disposal; aliases have one owner, not two.

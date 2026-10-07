@@ -67,7 +67,10 @@ namespace SPF.Runtime.Scheduling
 
         public uint Seed => World.Seed;
         public int Count(TableKey table) => World.Table(table).Count;
+        /// <summary>Legacy writable alias checked only for declaration presence. Prefer ReadColumn/WriteColumn.</summary>
         public NativeArray<T> Column<T>(ColumnKey<T> key) where T : unmanaged => World.Column(key);
+        public NativeArray<T>.ReadOnly ReadColumn<T>(ColumnKey<T> key) where T : unmanaged => World.ReadColumn(key);
+        public NativeArray<T> WriteColumn<T>(ColumnKey<T> key) where T : unmanaged => World.WriteColumn(key);
         public NativeArray<EntityHandle> Handles(TableKey table) => World.Table(table).Handles;
         public T Resource<T>(ResourceKey<T> key) where T : class => World.Resource(key);
     }

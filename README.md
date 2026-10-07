@@ -120,9 +120,9 @@ sealed class MoveThingsSystem : SimSystemBase
     public override SimPhase Phase => SimPhase.Move;
     public override void Declare(AccessDeclaration access) => access.Write(MyKeys.Position);
     public override JobHandle OnTick(in SimContext ctx, JobHandle dependency) =>
-        new MoveJob { Positions = ctx.Column(MyKeys.Position), Dt = ctx.Time.DeltaTime }
+        new MoveJob { Positions = ctx.WriteColumn(MyKeys.Position), Dt = ctx.Time.DeltaTime }
             .Schedule(ctx.Count(MyKeys.Thing), 256, dependency);
 }
 ```
 
-规则：在 `Declare` 中声明读写 → 调度器自动串联 / 并行 Job；结构变更（创建 / 销毁）只在 `ApplyCommands` 阶段；Job 中销毁用 `SimWorld.DestroyQueueKey` 的 Writer；主线程在 tick 进行中访问数据前先 `session.Sync()`。
+规则：在 `Declare` 中声明读写 → 调度器自动串联 / 并行 Job；结构变更（创建 / 销毁）须在所有已交接 Job 完成的主线程窗口（OnCreate、Tick 间或已完成 barrier），不能仅凭 `ApplyCommands` 阶段名判断安全；新代码使用 [ReadColumn / WriteColumn](Docs/AccessAndStructuralWindows.md)，旧 Column 保留兼容；Job 中销毁用 `SimWorld.DestroyQueueKey` 的 Writer；主线程在 tick 进行中访问数据前先 `session.Sync()`。

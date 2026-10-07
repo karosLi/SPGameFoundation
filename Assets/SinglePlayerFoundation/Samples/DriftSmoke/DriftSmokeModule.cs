@@ -117,8 +117,8 @@ namespace SPF.Samples.DriftSmoke
             int count = context.Count(DriftKeys.Drifter);
             return new MoveJob
             {
-                Positions = context.Column(DriftKeys.Position),
-                Velocities = context.Column(DriftKeys.Velocity),
+                Positions = context.WriteColumn(DriftKeys.Position),
+                Velocities = context.WriteColumn(DriftKeys.Velocity),
                 DeltaTime = context.Time.DeltaTime,
                 HalfSize = m_HalfSize,
             }.Schedule(count, 256, dependency);

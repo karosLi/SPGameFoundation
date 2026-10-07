@@ -133,12 +133,35 @@ namespace SPF.Runtime.World
 
         public bool HasColumn(AccessKey key) => m_Columns.ContainsKey(key.Id);
 
-        /// <summary>Full-capacity array of the column; only [0, Count) is meaningful.</summary>
         internal AccessGuard Guard;
 
+        /// <summary>
+        /// Legacy writable full-capacity alias; Read OR Write declarations permit acquisition for
+        /// compatibility. Cached arrays and unsafe pointers bypass permission checks. Prefer ReadColumn
+        /// or WriteColumn in new code. Only [0, Count) is meaningful; no getter completes jobs.
+        /// </summary>
         public NativeArray<T> Column<T>(ColumnKey<T> key) where T : unmanaged
         {
             Guard?.CheckColumn(key);
+            return GetColumn(key);
+        }
+
+        /// <summary>Read-only full-capacity native view. Read or Write declaration is required in a declared system.</summary>
+        public NativeArray<T>.ReadOnly ReadColumn<T>(ColumnKey<T> key) where T : unmanaged
+        {
+            Guard?.CheckColumn(key);
+            return GetColumn(key).AsReadOnly();
+        }
+
+        /// <summary>Writable full-capacity native alias. Requires Write in a declared system; does not complete jobs.</summary>
+        public NativeArray<T> WriteColumn<T>(ColumnKey<T> key) where T : unmanaged
+        {
+            Guard?.CheckWriteColumn(key);
+            return GetColumn(key);
+        }
+
+        NativeArray<T> GetColumn<T>(ColumnKey<T> key) where T : unmanaged
+        {
             if (!m_Columns.TryGetValue(key.Id, out var column))
                 throw new ArgumentException($"Table {Key} has no column {key}. Declare it in the module's DeclareData.");
             return ((Column<T>)column).Data;
@@ -147,6 +170,7 @@ namespace SPF.Runtime.World
         /// <summary>Appends a zero-initialised row. Returns -1 when the table is full.</summary>
         internal int Add(EntityHandle handle)
         {
+            Guard?.CheckStructural("CreateEntity");
             if (Count >= Capacity)
                 return -1;
             int row = Count++;
@@ -164,6 +188,7 @@ namespace SPF.Runtime.World
         /// </summary>
         internal EntityHandle RemoveAtSwapBack(int row)
         {
+            Guard?.CheckStructural("DestroyEntity");
             int last = Count - 1;
             Count = last;
             Version++;
@@ -179,6 +204,7 @@ namespace SPF.Runtime.World
 
         internal int AddPooled()
         {
+            Guard?.CheckStructural("Spawn");
             if (Count >= Capacity)
                 return -1;
             int row = Count++;
@@ -193,6 +219,7 @@ namespace SPF.Runtime.World
         /// <summary>Pooled tables: appends up to <paramref name="count"/> zeroed rows; returns the first row (rows [start, Count)).</summary>
         internal int AddPooledRange(int count, out int added)
         {
+            Guard?.CheckStructural("SpawnRange");
             int start = Count;
             added = Math.Max(0, Math.Min(count, Capacity - Count));
             if (added == 0) return start;
@@ -221,6 +248,7 @@ namespace SPF.Runtime.World
         /// <summary>Pooled tables: drops dead rows, keeping the survivors' order. Returns the rows removed.</summary>
         internal int Compact()
         {
+            Guard?.CheckStructural("CompactPools");
             if (m_Dead == null || Count == 0) return 0;
             var refs = ColumnRefs(Allocator.TempJob);
             var result = new NativeArray<int>(1, Allocator.TempJob);
@@ -240,6 +268,7 @@ namespace SPF.Runtime.World
         /// <summary>Reorders rows [0, Count): new row i holds old row order[i]. Returns the handle of each new row.</summary>
         internal void Permute(NativeArray<int> order)
         {
+            Guard?.CheckStructural("SortRows");
             int maxSize = sizeof(EntityHandle);
             for (int i = 0; i < m_ColumnList.Count; i++) maxSize = Math.Max(maxSize, m_ColumnList[i].ElementSize);
             var refs = ColumnRefs(Allocator.TempJob);
@@ -253,6 +282,7 @@ namespace SPF.Runtime.World
 
         internal void Clear()
         {
+            Guard?.CheckStructural("Clear table");
             Count = 0;
             Version++;
             MarkAll();
@@ -270,6 +300,7 @@ namespace SPF.Runtime.World
         /// <summary>Restores rows [0, Count); every change log reports "everything changed".</summary>
         internal void ReadSnapshot(System.IO.BinaryReader reader)
         {
+            Guard?.CheckStructural("ReadSnapshot");
             if (reader.ReadInt32() != Capacity || reader.ReadInt32() != m_ColumnList.Count)
                 throw new System.IO.InvalidDataException($"Snapshot of table {Key} has a different capacity or column set.");
             Count = NativeIO.Read(reader, m_Handles);
@@ -282,6 +313,7 @@ namespace SPF.Runtime.World
 
         public void Dispose()
         {
+            Guard?.CheckStructural("Dispose table");
             Exception failure = null;
             for (int i = 0; i < m_ColumnList.Count; i++)
                 CleanupErrors.Try(m_ColumnList[i].Dispose, ref failure);

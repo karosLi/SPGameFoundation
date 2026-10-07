@@ -1,0 +1,9 @@
+Test run for /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll (.NETCoreApp,Version=v8.0)
+VSTest version 17.11.1 (x64)
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+WARNING: Overwriting results file: /workspace/scratch/dc59b980bb73/access-windows-validation/final-focused.trx
+Results File: /workspace/scratch/dc59b980bb73/access-windows-validation/final-focused.trx
+
+Passed!  - Failed:     0, Passed:    65, Skipped:     0, Total:    65, Duration: 1 s - SPF.Tests.EditMode.dll (net8.0)

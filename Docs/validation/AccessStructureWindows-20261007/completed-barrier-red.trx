@@ -1,0 +1,66 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="4686e033-6087-42df-9cd3-fd0223513b69" name="@5e9498f43725 2026-10-07 23:24:20" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-07T23:24:20.2979837+08:00" queuing="2026-10-07T23:24:20.2979837+08:00" start="2026-10-07T23:24:19.5354223+08:00" finish="2026-10-07T23:24:20.3035282+08:00" />
+  <TestSettings name="default" id="b502c699-9f1c-4655-99ca-d2356ab604f9">
+    <Deployment runDeploymentRoot="_5e9498f43725_2026-10-07_23_24_20" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="495a6e94-ef06-4349-98f6-3701d9073b3e" testId="602fe94a-c009-486c-233b-a3fa39295f6e" testName="CompletedBarrierThenSynchronousDeclaredReaderDoesNotReborrowCompletedWork" computerName="5e9498f43725" duration="00:00:00.0410710" startTime="2026-10-07T23:24:20.0986048+08:00" endTime="2026-10-07T23:24:20.1396180+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="495a6e94-ef06-4349-98f6-3701d9073b3e">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.CompletedBarrierThenSynchronousDeclaredReaderDoesNotReborrowCompletedWork managedMB=5
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.CompletedBarrierThenSynchronousDeclaredReaderDoesNotReborrowCompletedWork managedMB=6</StdOut>
+        <ErrorInfo>
+          <Message>  an unchanged dependency after the completed barrier is already owned by the main thread
+  Expected: No Exception to be thrown
+  But was:  &lt;System.InvalidOperationException: CreateEntity cannot mutate world structure while pipeline-owned jobs are outstanding. Use a completed barrier or Sync before structural changes; a phase label is not a safety window.
+   at SPF.Runtime.World.AccessGuard.Report(String message, Boolean structural) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Runtime/World/AccessGuard.cs:line 86
+   at SPF.Runtime.World.AccessGuard.CheckStructural(String operation) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Runtime/World/AccessGuard.cs:line 57
+   at SPF.Runtime.World.SimWorld.CreateEntity(TableKey key, Int32&amp; row) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Runtime/World/SimWorld.cs:line 164
+   at SPF.Tests.EditMode.AccessStructureWindowTests.&lt;&gt;c__DisplayClass21_0.&lt;CompletedBarrierThenSynchronousDeclaredReaderDoesNotReborrowCompletedWork&gt;b__0() in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 243
+   at System.RuntimeMethodHandle.InvokeMethod(Object target, Void** arguments, Signature sig, Boolean isConstructor)
+   at System.Reflection.MethodBaseInvoker.InvokeWithNoArgs(Object obj, BindingFlags invokeAttr)
+--- End of stack trace from previous location ---
+   at NUnit.Framework.Internal.ExceptionHelper.Rethrow(Exception exception)
+   at NUnit.Framework.Internal.Reflect.DynamicInvokeWithTransparentExceptions(Delegate delegate)
+   at NUnit.Framework.Internal.ExceptionHelper.RecordException(Delegate parameterlessDelegate, String parameterName)&gt;
+</Message>
+          <StackTrace>   at SPF.Tests.EditMode.AccessStructureWindowTests.CompletedBarrierThenSynchronousDeclaredReaderDoesNotReborrowCompletedWork() in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 243
+
+1)    at SPF.Tests.EditMode.AccessStructureWindowTests.CompletedBarrierThenSynchronousDeclaredReaderDoesNotReborrowCompletedWork() in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 243
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="CompletedBarrierThenSynchronousDeclaredReaderDoesNotReborrowCompletedWork" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="602fe94a-c009-486c-233b-a3fa39295f6e">
+      <Execution id="495a6e94-ef06-4349-98f6-3701d9073b3e" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="CompletedBarrierThenSynchronousDeclaredReaderDoesNotReborrowCompletedWork" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="602fe94a-c009-486c-233b-a3fa39295f6e" executionId="495a6e94-ef06-4349-98f6-3701d9073b3e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="1" executed="1" passed="0" failed="1" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 4.5.0.0: Test execution started
+Running selected tests in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll
+   NUnit3TestExecutor discovered 1 of 1 NUnit test cases using Current Discovery mode, Non-Explicit run
+NUnit Adapter 4.5.0.0: Test execution complete
+</StdOut>
+    </Output>
+    <RunInfos>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:24:20.1632695+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.CompletedBarrierThenSynchronousDeclaredReaderDoesNotReborrowCompletedWork managedMB=5
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.CompletedBarrierThenSynchronousDeclaredReaderDoesNotReborrowCompletedWork managedMB=6
+</Text>
+      </RunInfo>
+    </RunInfos>
+  </ResultSummary>
+</TestRun>

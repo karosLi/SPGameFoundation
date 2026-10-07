@@ -179,14 +179,19 @@ namespace SPF.Runtime.Scheduling
                     var dependency = m_Tracker.GetDependency(entry.Access);
                     // Undeclared systems are main-thread barriers; finish earlier work first.
                     if (entry.Access.IsBarrier)
+                    {
                         Complete(ref dependency);
-                    m_World.Guard.Begin(entry.Allowed, entry.Name);
+                        m_World.Guard.CompleteAllWork();
+                    }
+                    bool returnedNewWork = false;
+                    m_World.Guard.Begin(entry.Allowed, entry.Writable, entry.Name);
                     try
                     {
                         // An OnTick that throws must complete its own unreturned private work.
                         // Once returned, ownership is ours before registration or profiling can fail.
                         m_Unrecorded = entry.System.OnTick(context, dependency);
                         m_HasUnrecorded = true;
+                        returnedNewWork = m_World.Guard.RecordReturnedWork(m_Unrecorded, dependency);
                     }
                     finally { m_World.Guard.End(); }
                     var handle = m_Unrecorded;
@@ -195,6 +200,7 @@ namespace SPF.Runtime.Scheduling
                         // m_Unrecorded keeps ownership if completion fails. On success, record the
                         // completed local value just as before (serial dependencies remain empty).
                         Complete(ref handle);
+                        if (returnedNewWork) m_World.Guard.CompleteReturnedWork(m_Unrecorded);
                         m_Stats.RecordExecute(i, Stopwatch.GetTimestamp() - start);
                     }
                     m_Tracker.Record(entry.Access, handle);
@@ -233,6 +239,7 @@ namespace SPF.Runtime.Scheduling
                 long waitEnd = Stopwatch.GetTimestamp();
                 m_Pending = default;
                 m_Tracker.Reset();
+                m_World.Guard.CompleteAllWork();
                 try
                 {
                     m_World.Sync();
@@ -341,7 +348,7 @@ namespace SPF.Runtime.Scheduling
             public readonly SystemRegistrationSource Source;
             public readonly string Name;
             public readonly bool[] Allowed;   // null for barriers (may touch anything)
-            public readonly bool[] Writable;  // explicit write declarations; null for barriers
+            public readonly bool[] Writable;  // Write implies Read; never grant Write from Read; null for barriers
             public ProfilerMarker Marker;
 
             public SystemEntry(ISimSystem system, AccessDeclaration access, int registrationIndex, SystemRegistrationSource source)

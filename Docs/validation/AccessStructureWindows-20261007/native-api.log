@@ -1,0 +1,9 @@
+/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Samples/DriftSmoke/DriftGizmoView.cs(9,38): warning CS0649: Field 'DriftGizmoView.m_Host' is never assigned to, and will always have its default value null [/workspace/scratch/dc59b980bb73/access-windows-validation/native-api/Compile.csproj]
+
+Build succeeded.
+
+/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Samples/DriftSmoke/DriftGizmoView.cs(9,38): warning CS0649: Field 'DriftGizmoView.m_Host' is never assigned to, and will always have its default value null [/workspace/scratch/dc59b980bb73/access-windows-validation/native-api/Compile.csproj]
+    1 Warning(s)
+    0 Error(s)
+
+Time Elapsed 00:00:03.79

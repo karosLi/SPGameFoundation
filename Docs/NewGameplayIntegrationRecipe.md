@@ -131,8 +131,8 @@ public override void RegisterSystems(SystemRegistry registry)
 
 1. 在 `Declare` 中声明实际读写的列、表和 Job 资源，Job 返回包含全部调度工作的 `JobHandle`，把收到的 dependency 传入 Schedule。Read 等最后 writer；Write 隐含 Read，等最后 writer 和之后的 readers。TableKey 不自动涵盖所有 ColumnKey。
 2. 访问声明建立依赖，不会自动使后续主线程读取安全。系统内同步读取先前 Job 所写 NativeArray 时，必须完成覆盖这些数据的 dependency；空声明系统会成为 barrier，等待之前全部工作。EndTick 统一汇合，但不是每 Tick 只允许/只发生一次 Complete。
-3. 结构性创建 / 销毁 / 排序统一放到安全的主线程结构变更窗口，通常为 ApplyCommands 或测试中的 tick 之间。Job 申请销毁用 `SimWorld.DestroyQueueKey` 的 writer。不要因为存在名为 Spawn 的阶段，就假设可与前面的所有 Job 无条件并发改表。
-4. 新增 Job 资源标记 `IJobData`，让开发期获取资源的检查覆盖它。AccessGuard 只检查声明存在，不区分 R/W，也不扫描所有字段/Job 指针；现有 SnapshotBuffer 未带此标记，写它仍必须声明 ResourceKey。配置和普通主线程 flow 不因此自动线程安全。
+3. 结构性创建 / 销毁 / 排序统一放到安全的主线程结构变更窗口，必须已完成这个 World 所有交接的 Job，包括 OnCreate、tick 之间及已完成前序 Job 的 barrier；ApplyCommands 本身不保证安全。Job 申请销毁用 `SimWorld.DestroyQueueKey` 的 writer。不要因为存在名为 Spawn 的阶段，就假设可与前面的所有 Job 无条件并发改表。
+4. 新增 Job 资源标记 `IJobData`，让开发期获取资源的检查覆盖它。新列入口 ReadColumn 返回原生只读 view，WriteColumn 在开发态要求 Write；旧 Column 和 Resource 仍只检查声明存在，不扫描所有字段/Job 指针，详见[读写/结构窗口](AccessAndStructuralWindows.md)；现有 SnapshotBuffer 未带此标记，写它仍必须声明 ResourceKey。配置和普通主线程 flow 不因此自动线程安全。
 5. 热路径不增加 LINQ、闭包、每对象 List、每击 Instantiate / Destroy 或无上限循环。先预分配，再明确满容量的行为。
 
 **组合失败合约：** 基座在分配前校验 SessionSettings/时钟，负责回收已成功交接到布局/World 的资源及已成功初始化的系统。新模块仍须清理尚未登记的构造中间值，失败的 OnCreate 自行完成私有工作并释放部分分配；不能假定会收到正常 OnDestroy。资源登记被拒绝时仍由调用者拥有。清理抛错不阻断其他 owner，保留原始异常与附加诊断；直接借用 World 建 Pipeline 不撤销任意状态写入。见[实际回滚与失败测试](CompositionRollbackValidation.md)。可选 ModuleManifest 已在两个武器模式接入，[预检记录](OptionalCompositionPreflightValidation.md)只描述实际声明的能力/布局切片，不是全量配置冻结或保存 schema。

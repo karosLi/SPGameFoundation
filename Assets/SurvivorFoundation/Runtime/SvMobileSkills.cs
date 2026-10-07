@@ -29,17 +29,32 @@ namespace SurvivorFoundation.Systems
     /// deliberately not a collision sweep or invulnerability grant. Aim zero uses authoritative facing.</summary>
     sealed class MobileSkillInputSystem : SimSystemBase
     {
+        readonly bool m_Composed;
+        public MobileSkillInputSystem(bool composed = false) { m_Composed = composed; }
         public override SimPhase Phase => SimPhase.Input;
         public override int Order => -10;
-        public override void Declare(AccessDeclaration access) => access.Write(SvMobileSkills.Key);
+        public override void Declare(AccessDeclaration access) { if (!m_Composed) access.Write(SvMobileSkills.Key); }
         public override JobHandle OnTick(in SimContext context, JobHandle dependency)
         {
+            if (m_Composed) dependency.Complete();
             var game = context.World.Resource(SvKeys.Game);
             var slots = context.World.Resource(SvMobileSkills.Key);
             bool playing = game.Flow == SvFlow.Playing && game.Hp > 0f;
             slots.AdvanceTick(playing);
+            SvComposedPulseState pulse = m_Composed ? context.World.Resource(SvComposedPulseState.Key) : null;
+            if (pulse != null)
+            {
+                var equipment = context.World.Resource(SvWeapons.Key).Equipment;
+                bool switching = game.Input.WasPressed(SvWeapons.SwitchButton) && slots.GetSnapshot(3).Charges > 0 || equipment.PendingId != 0 || equipment.EquipRemaining > 0;
+                bool blinking = game.Input.WasPressed(SvMobileSkills.Dash) && slots.GetSnapshot(SvMobileSkills.Dash).Charges > 0;
+                pulse.Advance(playing, game.Hp > 0, game.Hp, switching || blinking || !playing && game.Flow != SvFlow.LevelUp);
+                var admission = AbilityAdmission.Evaluate(playing, game.Hp > 0, !pulse.Timeline.Running && !switching && !blinking,
+                    game.Input.WasPressed(SvMobileSkills.Pulse), slots.GetSnapshot(SvMobileSkills.Pulse).Charges);
+                if (admission.Allowed && slots.TryActivate(SvMobileSkills.Pulse, true))
+                { pulse.Begin(game.Hp); context.World.Resource(SvWeapons.Key).CancelAll(); }
+            }
             if (!playing) { game.Input = default; return dependency; }
-            if (game.Input.WasPressed(SvMobileSkills.Pulse)) slots.TryActivate(SvMobileSkills.Pulse, true);
+            if (pulse == null && game.Input.WasPressed(SvMobileSkills.Pulse)) slots.TryActivate(SvMobileSkills.Pulse, true);
             if (game.Input.WasPressed(SvMobileSkills.Dash) && slots.TryActivate(SvMobileSkills.Dash, true))
             {
                 var aim = game.Input.Aim;

@@ -87,14 +87,22 @@ namespace BrawlerFoundation.Systems
 
     sealed class BeltFighterSystem : SimSystemBase
     {
+        readonly bool m_ComposedAbilities;
+        public BeltFighterSystem(bool composedAbilities = false) { m_ComposedAbilities = composedAbilities; }
         public override SimPhase Phase => SimPhase.Move;
-        public override void Declare(AccessDeclaration access) => access.Read(BwKeys.Fighter).Write(BwKeys.Info).Write(BwKeys.Anim)
-            .Write(BwKeys.Position).Write(BwKeys.Prev).Write(BwBeltKeys.Ground).Write(BwBeltKeys.PreviousGround).Write(BwBeltKeys.Motion)
-            .Write(BwMobileSkills.Key).Write(BwBeltKeys.State).Read(BwKeys.Rig);
+        public override void Declare(AccessDeclaration access)
+        {
+            access.Read(BwKeys.Fighter).Write(BwKeys.Info).Write(BwKeys.Anim)
+                .Write(BwKeys.Position).Write(BwKeys.Prev).Write(BwBeltKeys.Ground).Write(BwBeltKeys.PreviousGround).Write(BwBeltKeys.Motion)
+                .Write(BwMobileSkills.Key).Write(BwBeltKeys.State).Read(BwKeys.Rig);
+            if (m_ComposedAbilities) access.Write(BwComposedAbilityState.Key).Write(BwWeapons.PoseKey).Write(BwWeapons.Key).Write(BwKeys.Game);
+        }
         public override JobHandle OnTick(in SimContext context, JobHandle dependency)
         {
             dependency.Complete();
             var world = context.World; var game = world.Resource(BwKeys.Game);
+            var abilities = world.HasResource(BwComposedAbilityState.Key) ? world.Resource(BwComposedAbilityState.Key) : null;
+            abilities?.BeforeTick(world, game.Input);
             if (game.Flow != BwFlow.Fighting && game.Flow != BwFlow.WaveClear) { game.Input = default; if (world.HasResource(BwWeapons.Key)) world.Resource(BwWeapons.Key).CancelAll(); if (world.HasResource(BwWeapons.PoseKey)) world.Resource(BwWeapons.PoseKey).Cancel(); return dependency; }
             bool fighting = game.Flow == BwFlow.Fighting;
             bool weapons = world.HasResource(BwWeapons.Key);
@@ -123,6 +131,18 @@ namespace BrawlerFoundation.Systems
                 { f.State = FighterState.Idle; f.StateTime = 0; f.Attack = AttackKind.None; }
                 float2 move = float2.zero;
                 bool free = f.State == FighterState.Idle || f.State == FighterState.Walk;
+                bool acceptedKick = false, acceptedHeal = false;
+                if (isPlayer && abilities != null)
+                {
+                    var equipment = world.Resource(BwWeapons.Key);
+                    bool abilityFree = free && !equipment.Busy && equipment.Equipment.PendingId == 0 &&
+                        !input.WasPressed(BwWeapons.SwitchButton) && !BwComposedAbilityState.IsHealing(world);
+                    acceptedKick = abilities.Admit(slots, BwButton.Kick, fighting, f.Hp > 0 && f.State != FighterState.KO,
+                        abilityFree, input.WasPressed(BwButton.Kick));
+                    acceptedHeal = abilities.Admit(slots, BwBeltRules.HealButton, fighting, f.Hp > 0 && f.State != FighterState.KO,
+                        abilityFree && !acceptedKick && m.Height <= .001f && f.Hp < f.MaxHp && !input.WasPressed(BwBeltRules.JumpButton), input.WasPressed(BwBeltRules.HealButton));
+                    free &= !BwComposedAbilityState.IsHealing(world);
+                }
                 if (free)
                 {
                     if (isPlayer)
@@ -132,7 +152,7 @@ namespace BrawlerFoundation.Systems
                         if (fighting)
                         {
                             bool punch = !weapons && (input.IsHeld(BwButton.Punch) || m.BufferedAttack.Pending);
-                            if (input.WasPressed(BwButton.Kick) && slots.TryActivate(1, true))
+                            if (abilities != null ? acceptedKick : input.WasPressed(BwButton.Kick) && slots.TryActivate(1, true))
                             { BeginAttack(ref f, ref a, rig, AttackKind.Kick); m.BufferedAttack.Clear(); }
                             else if (punch && slots.GetSnapshot(0).Charges > 0)
                             {
@@ -145,8 +165,8 @@ namespace BrawlerFoundation.Systems
                                 }
                             }
                             else if (input.WasPressed(BwBeltRules.JumpButton) && m.Height <= .001f && slots.TryActivate(2, true)) m.HeightVelocity = 6f;
-                            else if (input.WasPressed(BwBeltRules.HealButton) && m.Height <= .001f && slots.TryActivate(3, f.Hp < f.MaxHp))
-                            { f.Hp = math.min(f.MaxHp, f.Hp + 24f); game.Version++; }
+                            else if (abilities != null ? acceptedHeal : input.WasPressed(BwBeltRules.HealButton) && m.Height <= .001f && slots.TryActivate(3, f.Hp < f.MaxHp))
+                            { if (abilities == null) { f.Hp = math.min(f.MaxHp, f.Hp + 24f); game.Version++; } }
                         }
                     }
                     else if (fighting && f.Variant != 0 && playerAlive)
@@ -190,6 +210,7 @@ namespace BrawlerFoundation.Systems
             for (int i = 0; i < count; i++) { ground[i] = belt.SeparatedGround[i]; position[i] = BwBeltRules.Project(ground[i], motion[i].Height); }
             CollectDrops(world, game, belt, player, dt);
             BwWeapons.AdvancePose(world);
+            abilities?.BindAcceptedPose(world);
             if (weapons) BwWeapons.Advance(world, input);
             return dependency;
         }
@@ -269,11 +290,13 @@ namespace BrawlerFoundation.Systems
             {
                 var f = info[i]; if (f.State != FighterState.Attack || f.Attack == AttackKind.None) continue;
                 int scope = shared.Track(handles[i], f, context.Time.DeltaTime); var def = rig.Attack(f.Attack);
+                if (f.Team == 0 && f.Attack == AttackKind.Kick && world.HasResource(BwComposedAbilityState.Key))
+                    def.Damage = world.Resource(BwComposedAbilityState.Key).Config.KickDamage;
                 if (scope < 0 || !shared.CrossedActive(scope, def.ActiveFrom, def.ActiveTo, context.Time.DeltaTime)) continue;
                 float2 tip = BwProbe.Tip(rig, f, anim[i], new float2(ground[i].x, motion[i].Height), m_Pose, m_Bones);
                 var visitor = new HitVisitor { World = world, Game = game, Belt = belt, Shared = shared, Rig = rig,
                     Info = info, Anim = anim, Ground = ground, Motion = motion, Handles = handles,
-                    Attacker = f, Scope = scope, Tip = tip, Depth = ground[i].y, Definition = def };
+                    Attacker = f, Source = handles[i], Scope = scope, Tip = tip, Depth = ground[i].y, Definition = def };
                 // Broadphase covers every authored bone reach plus target body. Narrowphase separates
                 // ground depth from the vertical height interval; no projected-Y collisions are possible.
                 belt.Grid.AsReader().QueryCells(ground[i] - new float2(2.4f, 1f), ground[i] + new float2(2.4f, 1f), ref visitor);
@@ -286,7 +309,7 @@ namespace BrawlerFoundation.Systems
             public SimWorld World; public BwGameState Game; public BwBeltState Belt; public BwSharedCombatState Shared; public BwRig Rig;
             public NativeArray<FighterInfo> Info; public NativeArray<Animator2D> Anim; public NativeArray<float2> Ground;
             public NativeArray<BwBeltMotion> Motion; public NativeArray<EntityHandle> Handles;
-            public FighterInfo Attacker; public int Scope, Candidates; public float2 Tip; public float Depth; public BwRules.AttackDef Definition;
+            public FighterInfo Attacker; public EntityHandle Source; public int Scope, Candidates; public float2 Tip; public float Depth; public BwRules.AttackDef Definition;
             public bool Visit(in GridEntry entry)
             {
                 int row = entry.Owner; var target = Info[row];
@@ -297,6 +320,7 @@ namespace BrawlerFoundation.Systems
                     Bottom = m.Height + BwRules.HurtBottom, Top = m.Height + BwRules.HurtTop };
                 if (!GroundCombatQueries.ProbeOverlaps(Tip.x, Depth, Tip.y, BwRules.ProbeRadius, Attacker.Attack == AttackKind.Kick ? .5f : .32f, hurt)) return true;
                 if (Shared.Record(Scope, Handles[row]) != HitRecordResult.Added) return true;
+                float previousHp = target.Hp;
                 target.Hp = math.max(0, target.Hp - Definition.Damage); target.Flash = 1; target.VelocityX = Attacker.Facing * Definition.Knockback;
                 target.Facing = -Attacker.Facing; target.StateTime = 0; target.Attack = AttackKind.None;
                 m.BufferedAttack.Clear(); m.ComboGraceTicks = 0;
@@ -317,6 +341,8 @@ namespace BrawlerFoundation.Systems
                 if (Attacker.Team == 0) Game.Score += (int)Definition.Damage;
                 World.Resource(BwKeys.Feedback).TryAdd(new BwFeedback { Kind = BwFeedbackKind.Hit, Position = BwBeltRules.Project(new float2(Tip.x, Depth), Tip.y), Value = Definition.Damage });
                 Info[row] = target; Anim[row] = a; Motion[row] = m; Game.Version++;
+                if (Attacker.Team == 0 && Attacker.Attack == AttackKind.Kick && World.HasResource(BwComposedAbilityState.Key))
+                    World.Resource(BwComposedAbilityState.Key).RecordSettledKick(World, Source, previousHp - target.Hp);
                 if(target.Team==0){if(World.HasResource(BwWeapons.Key))World.Resource(BwWeapons.Key).CancelAll();if(World.HasResource(BwWeapons.PoseKey))World.Resource(BwWeapons.PoseKey).Cancel();}
                 return true;
             }

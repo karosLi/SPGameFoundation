@@ -10,5 +10,6 @@ mkdir -p Artifacts
 docker run --rm \
   -v "$PWD":/project -w /project \
   -e UNITY_LICENSE -e UNITY_SERIAL -e UNITY_EMAIL -e UNITY_PASSWORD \
+  -e SPF_ABILITY_GAMEPLAY_SEQUENCE \
   -e HOST_UID="$(id -u)" -e HOST_GID="$(id -g)" \
   "$IMAGE" bash /project/Tools/ci/in-container.sh

@@ -14,6 +14,7 @@ namespace SurvivorFoundation
         public SvSettings Settings = DefaultSettings();
         public bool MobileSkills;
         public bool WeaponCombat;
+        public SvPulseDefinition ComposedPulse;
         public SPF.L2.Weapons.WeaponProfile[] WeaponProfiles;
         public List<EnemyEntry> Enemies = EnemyEntry.Defaults();
         public CapacitySection Capacity = new CapacitySection();
@@ -138,6 +139,13 @@ namespace SurvivorFoundation
             var config = CreateMobileCombatExample(); config.WeaponCombat = true;
             config.WeaponProfiles = SPF.L2.Weapons.WeaponProfiles.CreateDefaults(30);
             var settings = config.Settings; settings.AnnularSkill.Enabled = false; settings.SpawnPerSecond = 3f; settings.SpawnGrowth = .045f; settings.HeroHp = 160; config.Settings = settings;
+            return config;
+        }
+
+        public static SvConfig CreateComposedPulseExample(bool repulse = true)
+        {
+            var config = CreateWeaponCombatExample();
+            config.ComposedPulse = repulse ? SvPulseDefinition.Repulse : SvPulseDefinition.Wide;
             return config;
         }
 

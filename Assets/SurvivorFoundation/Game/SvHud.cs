@@ -231,7 +231,13 @@ namespace SurvivorFoundation.Game
             {
                 m_Game.Session.Sync();
                 var world = m_Game.Session.World;
-                return world.Resource(SvMobileSkills.Key).GetSnapshot(slot, Playing && m_Game.State.Hp > 0);
+                bool ready = Playing && m_Game.State.Hp > 0;
+                if (world.HasResource(SvComposedPulseState.Key) && (slot == SvMobileSkills.Pulse || slot == SvWeapons.AttackButton))
+                {
+                    var equipment = world.Resource(SvWeapons.Key).Equipment;
+                    ready &= !world.Resource(SvComposedPulseState.Key).Timeline.Running && equipment.PendingId == 0 && equipment.EquipRemaining == 0;
+                }
+                return world.Resource(SvMobileSkills.Key).GetSnapshot(slot, ready);
             }
             public int ReadFallbackGlyph(int slot, in SkillSlotSnapshot snapshot)
             {

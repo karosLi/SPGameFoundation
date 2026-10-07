@@ -1,0 +1,295 @@
+{
+  "date_utc": "2026-10-07",
+  "status": "software-source-validated; native-and-device-acceptance-pending",
+  "base_gameplay_commit": "40a4323",
+  "d_dependency_original_commits": [
+    "15c10ff",
+    "56a13de"
+  ],
+  "d_adopted_equivalent_commits": [
+    "2b56e49",
+    "e1fdbaf"
+  ],
+  "changed_source_digest": "0c251673aa7b22f2400432cf143cc379c8e808bbe9146c92e8e7bac5182bd9f8",
+  "changed_source_files": [
+    {
+      "path": ".github/workflows/unity-self-hosted.yml",
+      "sha256": "163729a94109fbcc3de5c5976cfa3f49fa897ae2d525d39d736bfd4abb34ec9e"
+    },
+    {
+      "path": ".github/workflows/unity.yml",
+      "sha256": "ef7fa37ca3e25cb2c88847a747754e796f366857588d66320d4782af4008507f"
+    },
+    {
+      "path": "Assets/BrawlerFoundation/Game/BwGameBootstrap.cs",
+      "sha256": "f1f9b94bd2667f332c587f5bd55293d78801105c6acae206c66cee3d005fbc03"
+    },
+    {
+      "path": "Assets/BrawlerFoundation/Runtime/BwBeltScroller.cs",
+      "sha256": "6c02fecfc03af588d326f81b534f90a1899d414b7620805d76681f07b3a0f2aa"
+    },
+    {
+      "path": "Assets/BrawlerFoundation/Runtime/BwComposedAbilities.cs",
+      "sha256": "c64306cb60694e918b7405d6fe3f071a60025efe2350edbb4dfae117c2595eb4"
+    },
+    {
+      "path": "Assets/BrawlerFoundation/Runtime/BwComposedAbilitySave.cs",
+      "sha256": "9855d2faec39d4dfd102e19acba52b6c9bfab47527be5c4850217160b0881a85"
+    },
+    {
+      "path": "Assets/BrawlerFoundation/Runtime/BwModule.cs",
+      "sha256": "bc8e0fd1c630426e902e2aae111bf1e0ab8654bf3e97de334b86f1d4b722763d"
+    },
+    {
+      "path": "Assets/BrawlerFoundation/Runtime/BwWeaponSave.cs",
+      "sha256": "5d56e456ab29afcc41074ad6cede1f3c1c587a7abbf4c5d71e3fb1168a782bbb"
+    },
+    {
+      "path": "Assets/BrawlerFoundation/Runtime/BwWeapons.cs",
+      "sha256": "0b15053dc742039946b21e479e773ad0c07eab5149068bd471c9b16ec932ad99"
+    },
+    {
+      "path": "Assets/BrawlerFoundation/Runtime/Systems/BwBeltSystems.cs",
+      "sha256": "e3d189611eef597db78a38175334bded215b829aff2818e19a4240c810fa4bcb"
+    },
+    {
+      "path": "Assets/BrawlerFoundation/Tests/EditMode/BwComposedAbilitySaveTests.cs",
+      "sha256": "1ce6a921229522513b46b52262d86c1d9d4b884d2f9861b7d98cc4595751f46e"
+    },
+    {
+      "path": "Assets/BrawlerFoundation/Tests/EditMode/BwComposedAbilityTests.cs",
+      "sha256": "21bfd292dc0fd9f7ae6721f8f090cad67d72e26714d7a1150392dc372b817cc9"
+    },
+    {
+      "path": "Assets/BrawlerFoundation/Tests/EditMode/BwWeaponSaveWriterCompatibilityTests.cs",
+      "sha256": "86ecec34d51b0ddb9b576c86b93d2f03eba7a847b50d83933b18c3aa35b6da1d"
+    },
+    {
+      "path": "Assets/BrawlerFoundation/Tests/PlayMode/BwComposedAbilityGameplayTests.cs",
+      "sha256": "b333d116d1e6db5aee4aca24f14794cf24edd18ff82945393f8741787dec9472"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/L2Gameplay/Skills/AbilityAdmission.cs",
+      "sha256": "ccf76d71e1ad39d400914637e9b9bf4e6b3940bef982ecbe555ccf9295c26577"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Tests/EditMode/AbilityAdmissionTests.cs",
+      "sha256": "d387edf559e3278eb1bffde3edaad1fdfa36e7dbabf423d0cfdf1a80989bcabe"
+    },
+    {
+      "path": "Assets/SurvivorFoundation/Game/SvGameBootstrap.cs",
+      "sha256": "fbbd45ba774c2cd8a44382b1464a7f601361255b081d0f1f88c71b24167ff6bc"
+    },
+    {
+      "path": "Assets/SurvivorFoundation/Game/SvHud.cs",
+      "sha256": "04717378f2375c3c842ce91a6240a204769bb51a1f877151ea9d26d154c4bc77"
+    },
+    {
+      "path": "Assets/SurvivorFoundation/Runtime/SvComposedPulse.cs",
+      "sha256": "3312811946be70d12c514a7ecf8c3525809973c037fa5e28d95b2039b2bf4193"
+    },
+    {
+      "path": "Assets/SurvivorFoundation/Runtime/SvComposedPulseSave.cs",
+      "sha256": "e529af965146e7c38c0b986ecb34ce976cd10abb71bb2645922690cfae572e2d"
+    },
+    {
+      "path": "Assets/SurvivorFoundation/Runtime/SvConfig.cs",
+      "sha256": "9d743b292806ca7835303cca21c70faa8d0e178d2362eb780626a4db9befa376"
+    },
+    {
+      "path": "Assets/SurvivorFoundation/Runtime/SvMobileSkills.cs",
+      "sha256": "5bb13691c9acfcf1ae8a3adc5ddf1ff5e78e67af54e891d68ffe63f379ab91c5"
+    },
+    {
+      "path": "Assets/SurvivorFoundation/Runtime/SvModule.cs",
+      "sha256": "882e4be15fb3a085e3df29986cf8b658ff973a3aad0dab5a996167e739d21be0"
+    },
+    {
+      "path": "Assets/SurvivorFoundation/Runtime/SvWeaponSave.cs",
+      "sha256": "0e14f5736b5b2d76896e0c1084e78ce2de71b232a0ec05acef844669fb03508d"
+    },
+    {
+      "path": "Assets/SurvivorFoundation/Runtime/SvWeapons.cs",
+      "sha256": "25dab8fd1a03c91ef3778d4f3013404ef17fe7c8863f329ee723e9e4846b8037"
+    },
+    {
+      "path": "Assets/SurvivorFoundation/Runtime/Systems/SvSystems.cs",
+      "sha256": "b61c7e3af19ebb2d9a402000d62ed002882cbf2fad2faf130220cf5992ee1454"
+    },
+    {
+      "path": "Assets/SurvivorFoundation/Tests/EditMode/SvComposedPulseSaveTests.cs",
+      "sha256": "67fb30085fee9325f72b27922e702ef790cd0a1a033974e2112351bf3e5fc0e6"
+    },
+    {
+      "path": "Assets/SurvivorFoundation/Tests/EditMode/SvComposedPulseTests.cs",
+      "sha256": "59baf3e3f6ae6ea3c62665e4c1cf2343cc7dcbad1cf89cd4b245e9e93030ae3c"
+    },
+    {
+      "path": "Assets/SurvivorFoundation/Tests/EditMode/SvWeaponSaveWriterCompatibilityTests.cs",
+      "sha256": "4e85715e2e7476b61f18732c034109d3a34345eec75f326f7e0580c021c22f98"
+    },
+    {
+      "path": "Assets/SurvivorFoundation/Tests/PlayMode/SvComposedPulseGameplayTests.cs",
+      "sha256": "0b3b6573372681af7f8a1f56a36d215abef8103ca599f12a87ecab69d6fd1f99"
+    },
+    {
+      "path": "Tools/ci/unity-tests.sh",
+      "sha256": "a64bf044e766d72cdf5515f32c4ee6531dfedf4c4af80a235ebd2611de6b3ceb"
+    }
+  ],
+  "dotnet": {
+    "sdk": "8.0.425",
+    "target": "net8.0",
+    "build_errors": 0,
+    "build_warnings": 0,
+    "passed": 1304,
+    "failed": 0,
+    "explicit_skipped_in_executed_suites": 0,
+    "editmode_assemblies": 11,
+    "playmode_executed": false,
+    "suites": [
+      {
+        "assembly": "BrawlerFoundation.Tests.EditMode.dll",
+        "passed": 156,
+        "failed": 0
+      },
+      {
+        "assembly": "DefenseFoundation.Tests.EditMode.dll",
+        "passed": 8,
+        "failed": 0
+      },
+      {
+        "assembly": "PlatformerFoundation.Tests.EditMode.dll",
+        "passed": 10,
+        "failed": 0
+      },
+      {
+        "assembly": "PuzzleFoundation.Tests.EditMode.dll",
+        "passed": 7,
+        "failed": 0
+      },
+      {
+        "assembly": "RpgFoundation.Tests.EditMode.dll",
+        "passed": 63,
+        "failed": 0
+      },
+      {
+        "assembly": "SPF.Tests.EditMode.dll",
+        "passed": 847,
+        "failed": 0
+      },
+      {
+        "assembly": "ShooterFoundation.Tests.EditMode.dll",
+        "passed": 16,
+        "failed": 0
+      },
+      {
+        "assembly": "SlingFoundation.Tests.EditMode.dll",
+        "passed": 4,
+        "failed": 0
+      },
+      {
+        "assembly": "SnakeFoundation.Tests.EditMode.dll",
+        "passed": 40,
+        "failed": 0
+      },
+      {
+        "assembly": "StoryFoundation.Tests.EditMode.dll",
+        "passed": 5,
+        "failed": 0
+      },
+      {
+        "assembly": "SurvivorFoundation.Tests.EditMode.dll",
+        "passed": 148,
+        "failed": 0
+      }
+    ]
+  },
+  "real_unity_api_compile": {
+    "unity": "2022.3.62f2",
+    "all_assets": true,
+    "native_test_guards": true,
+    "targets": [
+      "net8.0",
+      "netstandard2.1"
+    ],
+    "errors_each": 0,
+    "existing_warnings_each": 7,
+    "execution_claim": false
+  },
+  "cold19": {
+    "entries": 19,
+    "inventory_unchanged": true,
+    "repeat_byte_identical": true,
+    "sha256": "a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30"
+  },
+  "legacy_writer_byte_controls": {
+    "independent_baseline": "56a13de before extraction",
+    "direct_binary_cmp": true,
+    "descriptor_text_cmp": true,
+    "same_runtime_only": true,
+    "brawler_sha256": "65e420610391875f34ed6fdeeb5d0df4204ad669aa804e816f5744dece759579",
+    "survivor_sha256": "11663a75e3a0f4e5081c5fab175ffe1b053a7aa349ebc4ebdb9b69c629050b77"
+  },
+  "ci_python_tests": {
+    "passed": 30,
+    "failed": 0,
+    "bash_syntax": true
+  },
+  "allocation": {
+    "scope": "warmed current-thread managed only; excludes native/render allocation",
+    "survivor_bytes": 0,
+    "brawler_bytes": 0,
+    "brawler_measured_ticks": 840,
+    "brawler_warmup_ticks": 840,
+    "survivor_measured_ticks": 240,
+    "positive_control_bytes": 33536,
+    "empty_control_bytes": 0,
+    "threshold_changed": false
+  },
+  "independent_reviews": {
+    "runtime_and_native_fixtures": "no blockers at source/API level",
+    "save": "one history capacity preflight finding fixed with two tests; no remaining blockers"
+  },
+  "native_execution": {
+    "status": "pending runner",
+    "new_graphics_parameter_cases": 8,
+    "expected_stills": 16,
+    "sequence_capture_flag": "SPF_ABILITY_GAMEPLAY_SEQUENCE=1",
+    "enabled_in_both_native_workflows": true,
+    "docker_forwarded": true,
+    "expected_sequences": 4,
+    "expected_frames": 420,
+    "actual_stored_bytes": null,
+    "actual_timestamps": null,
+    "one_x_frame_by_frame_review": "pending"
+  },
+  "evidence_budget": {
+    "raw_capture_peak_bytes": 110592000,
+    "existing_raw_buffer_limit_bytes": 134217728,
+    "planning_additional_stored_bytes": 67108864,
+    "existing_part_bytes": 16777216,
+    "existing_max_parts": 32,
+    "limits_weakened": false
+  },
+  "physical_android_ios": {
+    "status": "not run",
+    "remaining": [
+      "touch and safe area",
+      "actual mobile backend and visual fidelity",
+      "sustained CPU/GPU frame time",
+      "native/managed memory and uploads",
+      "thermal and battery"
+    ]
+  },
+  "verification_log_sha256": {
+    "build-final.log": "fbc94c4c3e8042f2b7256feaf6baf3817839dfa1cd233b86ff4b82b7232c47d5",
+    "tests-final.log": "54bdc8eca36cfc6e6e45932c22056a01d39ed8dda2855ff35d2c91c1025de1fb",
+    "api-build.log": "3f0c869623bc75c60c28b1a538495313c32c8890ae941c46df9e33fbcef4721c",
+    "netstandard-api-build.log": "8c0af3e6456a8aa773cf128af4be30dc0cf821a535454b6203f689240f796e8d",
+    "final-summary.log": "a89ae45b79256c91a9f22b9ee6889e9f1c3f13d720dabc8a2122257bc96973d2",
+    "ci-python-tests.log": "eb683bad1ace3edd92d4ca7d3d9e22f9aa4b30fd97dd76447288ab546abeebfc",
+    "legacy-before.log": "ff82e6266c2c8a2261d475041b6f8c8501200be2b4dd5e308d79470efc150e2d",
+    "legacy-after.log": "ff82e6266c2c8a2261d475041b6f8c8501200be2b4dd5e308d79470efc150e2d"
+  }
+}

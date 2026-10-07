@@ -30,7 +30,7 @@ namespace SurvivorFoundation
             // Do not invoke Config here: describing a default module must not create a ScriptableObject.
             if (m_Config == null || !m_Config.WeaponCombat) return null;
             var cap = m_Config.Capacity;
-            return new ModuleManifest("survivor.weapon-combat", 1, data: new[]
+            var data = new[]
             {
                 // Fixed tables also bound the grids/queues built by DeclareData; extensions cannot
                 // silently increase these opt-in budgets beyond the authored configuration.
@@ -47,13 +47,30 @@ namespace SurvivorFoundation
                     save: ResourceSaveRequirement.SnapshotHook, capacity: 32, capacitySource: "WeaponRuntime default projectile capacity"),
                 ModuleDataDeclaration.Resource(SvMobileSkills.Key, 1, levelScoped: true,
                     save: ResourceSaveRequirement.SnapshotHook, capacity: 4, capacitySource: "SvWeapons.CreateSkills authored slots")
-            });
+            };
+            if (m_Config.ComposedPulse.Enabled)
+            {
+                var extended = new ModuleDataDeclaration[data.Length + 1];
+                System.Array.Copy(data, extended, data.Length);
+                extended[data.Length - 1] = ModuleDataDeclaration.Resource(SvMobileSkills.Key, 1, levelScoped: true,
+                    save: ResourceSaveRequirement.SnapshotHook, capacity: 4, capacitySource: "SvComposedPulseState.CreateSkills authored slots");
+                extended[data.Length] = ModuleDataDeclaration.Resource(SvComposedPulseState.Key, 1, levelScoped: true,
+                    save: ResourceSaveRequirement.SnapshotHook, capacity: m_Config.ComposedPulse.Targets, capacitySource: "SvPulseDefinition.Targets stable history");
+                return new ModuleManifest("survivor.composed-pulse", 1, data: extended);
+            }
+            return new ModuleManifest("survivor.weapon-combat", 1, data: data);
         }
 
         public override void DeclareData(WorldLayout layout)
         {
             var cap = Config.Capacity;
             var s = Config.Settings;
+            if (Config.ComposedPulse.Enabled)
+            {
+                Config.ComposedPulse.Validate();
+                if (!Config.WeaponCombat || !Config.MobileSkills || Config.ComposedPulse.Targets > cap.Enemies)
+                    throw new System.ArgumentException("Composed pulse requires the weapon HUD and a history within the enemy capacity.");
+            }
             layout.Table(SvKeys.Enemy, cap.Enemies).LevelScoped().Column(SvKeys.Position).Column(SvKeys.PrevPosition).Column(SvKeys.Info);
             layout.Table(SvKeys.Bullet, cap.Bullets).LevelScoped().Pooled().Column(SvKeys.BulletPosition).Column(SvKeys.BulletInfo);
             layout.Table(SvKeys.Gem, cap.Gems).LevelScoped().Pooled().Column(SvKeys.GemPosition).Column(SvKeys.GemInfo);
@@ -74,7 +91,13 @@ namespace SurvivorFoundation
                 layout.Resource(SvFlyingSwordState.Key, new SvFlyingSwordState(s.FlyingSwords, cap.Enemies, s.Variant), levelScoped: true);
             if (Config.MobileSkills || Config.WeaponCombat) layout.Resource(SvWeapons.PoseKey, new SPF.L2.Skills.ActionPoseClock(), levelScoped: true);
             if (Config.WeaponCombat) layout.Resource(SvWeapons.Key, new SPF.L2.Weapons.WeaponRuntime(Config.WeaponProfiles ?? SPF.L2.Weapons.WeaponProfiles.CreateDefaults(30), 30), levelScoped: true);
-            if (Config.MobileSkills || Config.WeaponCombat) layout.Resource(SvMobileSkills.Key, Config.WeaponCombat ? SvWeapons.CreateSkills() : SvMobileSkills.Create(), levelScoped: true);
+            if (Config.ComposedPulse.Enabled)
+            {
+                var pulse = new SvComposedPulseState(Config.ComposedPulse);
+                layout.Resource(SvComposedPulseState.Key, pulse, levelScoped: true);
+                layout.Resource(SvMobileSkills.Key, pulse.CreateSkills(), levelScoped: true);
+            }
+            else if (Config.MobileSkills || Config.WeaponCombat) layout.Resource(SvMobileSkills.Key, Config.WeaponCombat ? SvWeapons.CreateSkills() : SvMobileSkills.Create(), levelScoped: true);
             layout.DestroyQueueCapacity = cap.Enemies;
         }
 
@@ -94,7 +117,12 @@ namespace SurvivorFoundation
             if (Config.Settings.FlyingSwords.Enabled) registry.Add(new FlyingSwordSystem());
             if (Config.Settings.CrossedBlades.Enabled) registry.Add(new CrossedBladeSystem());
             if (Config.WeaponCombat) registry.Add(new WeaponCombatSystem());
-            if (Config.MobileSkills || Config.WeaponCombat) registry.Add(new MobileSkillInputSystem()).Add(new MobileSkillPulseSystem());
+            if (Config.MobileSkills || Config.WeaponCombat)
+            {
+                registry.Add(new MobileSkillInputSystem(Config.ComposedPulse.Enabled));
+                if (Config.ComposedPulse.Enabled) registry.Add(new ComposedPulseSystem());
+                else registry.Add(new MobileSkillPulseSystem());
+            }
         }
     }
 

@@ -27,6 +27,7 @@ namespace SurvivorFoundation
             var game=world.Resource(SvKeys.Game);var pose=world.Resource(PoseKey);
             if(game.Flow!=SvFlow.Playing){if(game.Flow!=SvFlow.LevelUp)pose.Cancel();return;}
             pose.Advance(true,game.Hp>0);
+            if(world.HasResource(SvComposedPulseState.Key)&&!world.Resource(SvComposedPulseState.Key).Timeline.Running&&pose.ContentId==PulsePose)pose.Cancel();
             uint activated=world.Resource(SvMobileSkills.Key).Activated;
             if(game.Hp>0){if((activated&2u)!=0)pose.Begin(BlinkPose,7);else if((activated&1u)!=0)pose.Begin(PulsePose,9);}
         }
@@ -34,6 +35,7 @@ namespace SurvivorFoundation
         {
             var game=world.Resource(SvKeys.Game);var weapons=world.Resource(Key);var pose=world.Resource(PoseKey);
             if(game.Flow!=SvFlow.Playing){if(game.Flow!=SvFlow.LevelUp){weapons.CancelAll();pose.Cancel();}return;}
+            if(world.HasResource(SvComposedPulseState.Key)&&world.Resource(SvComposedPulseState.Key).Timeline.Running){weapons.CancelAll();return;}
             if(input.WasPressed(SwitchButton)&&world.Resource(SvMobileSkills.Key).TryActivate(3,game.Hp>0))weapons.Cycle();
             weapons.Owner=new EntityHandle(-1,1);
             var p=weapons.Current;

@@ -25,6 +25,8 @@ namespace BrawlerFoundation.Game
         [SerializeField] bool m_MobileCombat;
         [SerializeField] bool m_BeltScroller;
         [SerializeField] bool m_WeaponCombat;
+        bool m_ComposedAbilities;
+        BwComposedAbilityConfig m_AbilityConfig;
         [SerializeField] bool m_NaturalCharacters;
 
         ModeDefinition m_Mode;
@@ -85,13 +87,23 @@ namespace BrawlerFoundation.Game
 
         public static BwGameBootstrap CreateWeaponBelt(bool ui = true) => Create(ui, beltScroller: true, weaponCombat: true);
 
+        public static BwGameBootstrap CreateComposedAbilityBelt(bool ui = true, BwComposedAbilityConfig? abilities = null)
+        {
+            var config = abilities ?? BwComposedAbilityConfig.Default; config.Validate();
+            var go = new GameObject("ComposedAbilityBelt"); go.SetActive(false);
+            var game = go.AddComponent<BwGameBootstrap>(); game.m_CreateUI = ui;
+            game.m_ComposedAbilities = true; game.m_AbilityConfig = config;
+            game.m_WeaponCombat = game.m_BeltScroller = game.m_MobileCombat = game.m_SharedCombat = game.m_NaturalCharacters = true;
+            go.SetActive(true); return game;
+        }
+
         void Awake()
         {
             Governor = gameObject.AddComponent<FrameGovernor>();
             Governor.SetFrameRates(60, 30);
             if (m_WeaponCombat) m_BeltScroller = true;
             if (m_BeltScroller) { m_MobileCombat = true; m_NaturalCharacters = true; }
-            m_Mode = m_WeaponCombat ? BwMode.CreateWeaponBelt(BwBeltConfig.Default, out m_Module) : m_BeltScroller ? BwMode.CreateBeltScroller(BwBeltConfig.Default, out m_Module) : m_MobileCombat ? BwMode.CreateMobileCombat(out m_Module) : m_SharedCombat
+            m_Mode = m_ComposedAbilities ? BwMode.CreateComposedAbilityBelt(BwBeltConfig.Default, m_AbilityConfig, out m_Module) : m_WeaponCombat ? BwMode.CreateWeaponBelt(BwBeltConfig.Default, out m_Module) : m_BeltScroller ? BwMode.CreateBeltScroller(BwBeltConfig.Default, out m_Module) : m_MobileCombat ? BwMode.CreateMobileCombat(out m_Module) : m_SharedCombat
                 ? BwMode.CreateSharedCombat(BwSharedCombatConfig.Default, out m_Module)
                 : BwMode.Create(out m_Module);
             var sim = new GameObject("Simulation");
@@ -224,6 +236,7 @@ namespace BrawlerFoundation.Game
             {
                 var weapons = world.Resource(BwWeapons.Key); stats.Append("\nWEAPON ").Append(weapons.Current.Name);
                 if (weapons.Equipment.PendingId != 0) stats.Append(" > ").Append(weapons.Profile(weapons.Equipment.PendingId).Name);
+                if (m_ComposedAbilities) stats.Append("   HEAL +").Append(world.Resource(BwComposedAbilityState.Key).HealCredit);
                 SwitchWeaponButton.interactable = Session.State == SessionState.Running && state.Flow == BwFlow.Fighting && hp > 0;
             }
             StatsText.Commit();

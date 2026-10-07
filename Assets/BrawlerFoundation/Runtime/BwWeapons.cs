@@ -46,11 +46,12 @@ namespace BrawlerFoundation
             runtime.Owner=world.Table(BwKeys.Fighter).Handles[player];
             if(alive&&input.WasPressed(SwitchButton))runtime.Cycle();
             bool kick=f.State==FighterState.Attack&&f.Attack==AttackKind.Kick;
+            bool healing=world.HasResource(BwComposedAbilityState.Key)&&BwComposedAbilityState.IsHealing(world);
             uint previousPulse=runtime.Equipment.Timeline.PulseId;
-            runtime.Step(true,alive,f.State==FighterState.Hit||kick,input.WasPressed(BwButton.Punch),input.IsHeld(BwButton.Punch),
+            runtime.Step(true,alive,f.State==FighterState.Hit||kick||healing,input.WasPressed(BwButton.Punch),input.IsHeld(BwButton.Punch),
                 math.lengthsq(input.Aim)>.001f?input.Aim:new float2(f.Facing,0),world.Column(BwBeltKeys.Ground)[player],world.Column(BwBeltKeys.Motion)[player].Height,ActorScale);
             if(runtime.Equipment.Timeline.PulseId!=previousPulse)world.Resource(BwMobileSkills.Key).TryActivate(0,true);
-            if(alive&&f.State!=FighterState.Hit&&!kick)
+            if(alive&&f.State!=FighterState.Hit&&!kick&&!healing)
             {
                 if(runtime.Busy){f.State=FighterState.Attack;f.Attack=AttackKind.None;f.StateTime=(float)runtime.Equipment.Timeline.Tick/runtime.TickRate;f.Facing=runtime.Equipment.Aim.x<0?-1:1;}
                 else if(f.State==FighterState.Attack&&f.Attack==AttackKind.None){f.State=FighterState.Idle;f.StateTime=0;}

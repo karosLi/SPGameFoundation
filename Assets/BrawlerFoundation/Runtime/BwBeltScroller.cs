@@ -72,6 +72,12 @@ namespace BrawlerFoundation
             {
                 var f = info[i]; if (f.Team != 0) continue;
                 bool free = f.Hp > 0 && (f.State == FighterState.Idle || f.State == FighterState.Walk);
+                if (world.HasResource(BwComposedAbilityState.Key))
+                {
+                    if (BwComposedAbilityState.IsHealing(world)) return false;
+                    if (slot == 1 || slot == HealButton)
+                    { var weapon = world.Resource(BwWeapons.Key); free &= !weapon.Busy && weapon.Equipment.PendingId == 0; }
+                }
                 if (slot == 0) return f.Hp > 0 && f.State != FighterState.Hit && f.State != FighterState.KO;
                 return free && (slot < 2 || motion[i].Height <= .001f) && (slot != HealButton || f.Hp < f.MaxHp);
             }

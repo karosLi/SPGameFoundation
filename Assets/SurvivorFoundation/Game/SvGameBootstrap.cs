@@ -119,6 +119,13 @@ namespace SurvivorFoundation.Game
             var game = Create(config, seed, ui, artStyle: SvArtStyle.SmoothOutline, naturalCharacters: true); game.m_OwnsConfig = owns; return game;
         }
 
+        public static SvGameBootstrap CreateComposedPulseExample(SvConfig config = null, uint seed = 1, bool ui = true)
+        {
+            bool owns = config == null; if (owns) config = SvConfig.CreateComposedPulseExample();
+            if (!config.ComposedPulse.Enabled) throw new System.ArgumentException("Composed pulse content must be enabled.");
+            var game = CreateWeaponCombatExample(config, seed, ui); game.m_OwnsConfig = owns; return game;
+        }
+
         void Awake()
         {
             Governor = gameObject.AddComponent<FrameGovernor>();

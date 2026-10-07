@@ -13,6 +13,8 @@ namespace BrawlerFoundation
         bool m_MobileSkills;
         bool m_BeltScroller;
         bool m_Weapons;
+        bool m_ComposedAbilities;
+        BwComposedAbilityConfig m_AbilityConfig;
         SPF.L2.Weapons.WeaponProfile[] m_WeaponProfiles;
         BwBeltConfig m_BeltConfig;
         BwSharedCombatConfig m_CombatConfig;
@@ -51,13 +53,19 @@ namespace BrawlerFoundation
         public static BwModule CreateWeaponBelt(BwBeltConfig config, SPF.L2.Weapons.WeaponProfile[] profiles = null)
         { var module = CreateBeltScroller(config); module.m_Weapons = true; module.m_WeaponProfiles = profiles; return module; }
 
+        public static BwModule CreateComposedAbilityBelt(BwBeltConfig config, BwComposedAbilityConfig abilities)
+        {
+            abilities.Validate(); var module = CreateWeaponBelt(config);
+            module.m_ComposedAbilities = true; module.m_AbilityConfig = abilities; return module;
+        }
+
         /// <summary>Cold, partial metadata for the opt-in weapon belt: its fighter table and
         /// weapon/pose/skill resource slice only. Other resources and complete save coverage are not
         /// claimed; SnapshotHook checks the resource type's interface, not a full save contract.</summary>
         public ModuleManifest DescribeComposition()
         {
             if (!m_Weapons) return null;
-            return new ModuleManifest("brawler.weapon-belt", 1, data: new[]
+            var data = new System.Collections.Generic.List<ModuleDataDeclaration>
             {
                 // The belt's grids and scratch buffers use the same fixed fighter budget.
                 ModuleDataDeclaration.Table(BwKeys.Fighter, 1, m_CombatConfig.Fighters, "BwBeltConfig.Fighters",
@@ -69,7 +77,10 @@ namespace BrawlerFoundation
                     save: ResourceSaveRequirement.SnapshotHook, capacity: 32, capacitySource: "WeaponRuntime default projectile capacity"),
                 ModuleDataDeclaration.Resource(BwMobileSkills.Key, 1, levelScoped: true,
                     save: ResourceSaveRequirement.SnapshotHook, capacity: 4, capacitySource: "BwBeltRules.CreateSkills authored slots")
-            });
+            };
+            if (m_ComposedAbilities) data.Add(ModuleDataDeclaration.Resource(BwComposedAbilityState.Key, 1, levelScoped: true,
+                save: ResourceSaveRequirement.SnapshotHook, capacity: 1, capacitySource: "One bounded player heal-credit and pending action owner"));
+            return new ModuleManifest(m_ComposedAbilities ? "brawler.composed-ability-belt" : "brawler.weapon-belt", 1, data: data.ToArray());
         }
 
         public override void DeclareData(WorldLayout layout)
@@ -83,17 +94,18 @@ namespace BrawlerFoundation
             }
             if (m_BeltScroller) layout.Resource(BwWeapons.PoseKey, new SPF.L2.Skills.ActionPoseClock(), levelScoped: true);
             if (m_Weapons) layout.Resource(BwWeapons.Key, new SPF.L2.Weapons.WeaponRuntime(m_WeaponProfiles ?? SPF.L2.Weapons.WeaponProfiles.CreateDefaults(60), 60, targetsPerAttack: m_BeltConfig.TargetsPerAttack), levelScoped: true);
+            if (m_ComposedAbilities) layout.Resource(BwComposedAbilityState.Key, new BwComposedAbilityState(m_AbilityConfig), levelScoped: true);
             layout.Resource(BwKeys.Rig, new BwRig());
             layout.Resource(BwKeys.Game, new BwGameState());
             layout.Resource(BwKeys.Feedback, new EventQueue<BwFeedback>(128, saved: false));
-            if (m_MobileSkills) layout.Resource(BwMobileSkills.Key, m_BeltScroller ? BwBeltRules.CreateSkills() : BwMobileSkills.Create(), levelScoped: true);
+            if (m_MobileSkills) layout.Resource(BwMobileSkills.Key, m_ComposedAbilities ? m_AbilityConfig.CreateSkills() : m_BeltScroller ? BwBeltRules.CreateSkills() : BwMobileSkills.Create(), levelScoped: true);
             if (m_SharedCombat) layout.Resource(BwKeys.SharedCombat, new BwSharedCombatState(m_CombatConfig), levelScoped: true);
         }
 
         public override void RegisterSystems(SystemRegistry registry)
         {
             if (m_BeltScroller)
-            { registry.Add(new BeltFlowSystem()).Add(new BeltFighterSystem()).Add(new BeltCombatSystem()); if (m_Weapons) registry.Add(new BeltWeaponSystem()); return; }
+            { registry.Add(new BeltFlowSystem()).Add(new BeltFighterSystem(m_ComposedAbilities)).Add(new BeltCombatSystem()); if (m_Weapons) registry.Add(new BeltWeaponSystem()); if (m_ComposedAbilities) registry.Add(new BeltComposedAbilitySystem()); return; }
             registry.Add(new FlowSystem()).Add(new FighterSystem()).Add(new CombatSystem());
             if (m_MobileSkills) registry.Add(new MobileSkillSystem());
         }
@@ -101,6 +113,13 @@ namespace BrawlerFoundation
 
     public static class BwMode
     {
+        public static ModeDefinition CreateComposedAbilityBelt(BwBeltConfig config, BwComposedAbilityConfig abilities, out GameplayModuleAsset module)
+        {
+            module = BwModule.CreateComposedAbilityBelt(config, abilities);
+            var settings = SessionSettings.Default; settings.TickRate = 60; settings.MaxTicksPerFrame = 4;
+            return ModeDefinition.Create(new[] { module }, settings);
+        }
+
         public static ModeDefinition CreateWeaponBelt(BwBeltConfig config, out GameplayModuleAsset module)
         {
             module = BwModule.CreateWeaponBelt(config);

@@ -161,6 +161,9 @@ namespace SurvivorFoundation.Systems
                 if (worst > 0f && game.Invulnerable <= 0f)
                 {
                     game.Hp -= worst;
+                    // The opt-in action is interrupted by the authoritative damage acceptance, not
+                    // by an unsaved feedback cue or only by net HP (a level-up may have healed first).
+                    if (world.HasResource(SvComposedPulseState.Key)) world.Resource(SvComposedPulseState.Key).Cancel();
                     game.Invulnerable = s.HurtInvulnerable;
                     feedback.TryAdd(new SvFeedback { Kind = SvFeedbackKind.HeroHurt, Position = game.Hero, Value = worst });
                     if (game.Hp <= 0f) { game.Hp = 0f; game.Flow = SvFlow.Dead; game.LossReason = SvLossReason.HeroFell; }

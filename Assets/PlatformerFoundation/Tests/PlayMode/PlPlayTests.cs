@@ -4,6 +4,7 @@ using NUnit.Framework;
 using PlatformerFoundation.Game;
 using SPF.Contracts;
 using SPF.Presentation;
+using SPF.Presentation.Animation;
 using SPF.Testing;
 using Unity.Mathematics;
 using UnityEngine;
@@ -14,6 +15,80 @@ namespace PlatformerFoundation.Tests.PlayMode
 {
     public class PlPlayTests
     {
+        [UnityTest]
+        public IEnumerator LocomotionTransitionsPauseAndRebind([Values(RenderTier.GpuDriven, RenderTier.DataTexture)] RenderTier tier)
+        {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null) Assert.Ignore("No graphics device");
+            if (tier == RenderTier.GpuDriven && !SystemInfo.supportsComputeShaders) Assert.Ignore("No compute shader support");
+            RenderCapabilities.Override = tier;
+            var game = PlGameBootstrap.Create(ui: false);
+            var target = new RenderTexture(960, 540, 24, RenderTextureFormat.ARGB32);
+            var read = new Texture2D(960, 540, TextureFormat.RGBA32, false);
+            var replacement = PlMode.Create(out var module);
+            try
+            {
+                yield return null;
+                game.StartGame();
+                yield return UIDriver.WaitUntil(() => game.State.Flow == PlFlow.Playing && game.State.Motor.Grounded, 5f);
+                game.CameraRig.Camera.targetTexture = target;
+                yield return Capture("idle");
+                int uploads = game.Renderer.TileUploads;
+                game.Script = () => new InputFrame { Move = new float2(0.3f, 0f) };
+                yield return UIDriver.WaitUntil(() => game.Renderer.HeroLocomotion == GameplayLocomotionState.Walk, 3f);
+                yield return Capture("walk");
+                game.Script = () => new InputFrame { Move = new float2(1f, 0f) };
+                yield return UIDriver.WaitUntil(() => game.Renderer.HeroLocomotion == GameplayLocomotionState.Run, 3f);
+                yield return Capture("run");
+                game.Session.Pause();
+                yield return null;
+                float time = game.Renderer.AnimationTime, phase = game.Renderer.HeroStridePhase;
+                int frame = game.Renderer.HeroFrame;
+                var snapshot = game.Session.CaptureSnapshot();
+                yield return UIDriver.WaitSeconds(0.15f);
+                Assert.AreEqual(time, game.Renderer.AnimationTime);
+                Assert.AreEqual(phase, game.Renderer.HeroStridePhase);
+                Assert.AreEqual(frame, game.Renderer.HeroFrame);
+                CollectionAssert.AreEqual(snapshot, game.Session.CaptureSnapshot(), "paused rendering cannot alter gameplay/snapshot state");
+                game.Session.Resume();
+                game.Script = () => new InputFrame { Held = 1u << PlButton.Jump, Pressed = 1u << PlButton.Jump };
+                yield return UIDriver.WaitUntil(() => game.State.Motor.Velocity.y > 1f && !game.State.Motor.Grounded, 3f);
+                yield return Capture("jump");
+                game.Script = () => default;
+                yield return UIDriver.WaitUntil(() => game.State.Motor.Velocity.y < -1f && !game.State.Motor.Grounded, 3f);
+                yield return Capture("fall");
+                Assert.AreEqual(uploads, game.Renderer.TileUploads, "actor transitions preserve the static tile upload contract");
+                game.Host.Initialize(replacement, 1, start: false);
+                yield return null;
+                Assert.AreEqual(0f, game.Renderer.AnimationTime, "new session resets presentation time");
+                Assert.AreEqual(0f, game.Renderer.HeroStridePhase);
+                Assert.AreEqual(GameplayLocomotionState.Idle, game.Renderer.HeroLocomotion);
+            }
+            finally
+            {
+                RenderCapabilities.Override = null;
+                if (Camera.main != null) Object.Destroy(Camera.main.gameObject);
+                Object.Destroy(game.gameObject);
+                Object.Destroy(replacement); Object.Destroy(module);
+                target.Release(); Object.Destroy(target); Object.Destroy(read);
+            }
+
+            IEnumerator Capture(string state)
+            {
+                bool resume = game.Session.State == SPF.Runtime.Session.SessionState.Running;
+                game.Session.Pause(); // Freeze the actual simulated transition while the camera captures it.
+                yield return null;
+                yield return null;
+                var previous = RenderTexture.active;
+                RenderTexture.active = target;
+                read.ReadPixels(new Rect(0, 0, 960, 540), 0, 0); read.Apply(false);
+                RenderTexture.active = previous;
+                string dir = Path.Combine(Application.dataPath, "..", "Artifacts", "Screenshots");
+                Directory.CreateDirectory(dir);
+                File.WriteAllBytes(Path.Combine(dir, $"platformer-motion-{state}-{tier}.png"), read.EncodeToPNG());
+                if (resume) game.Session.Resume();
+            }
+        }
+
         [UnityTest]
         public IEnumerator PlayRunJumpAndStaticTiles([Values(RenderTier.GpuDriven, RenderTier.DataTexture)] RenderTier tier)
         {

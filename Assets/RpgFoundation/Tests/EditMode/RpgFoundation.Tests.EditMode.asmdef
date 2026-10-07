@@ -12,7 +12,9 @@
         "RpgFoundation.Runtime",
         "Unity.Collections",
         "Unity.Mathematics",
-        "Unity.Burst"
+        "Unity.Burst",
+        "SPF.Presentation",
+        "RpgFoundation.Presentation"
     ],
     "includePlatforms": [
         "Editor"

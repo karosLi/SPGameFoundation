@@ -1,4 +1,5 @@
 using SPF.Presentation;
+using SPF.Presentation.Animation;
 using SPF.Presentation.Sprites;
 using SPF.Runtime.Session;
 using SPF.Shell.CameraRig;
@@ -31,6 +32,8 @@ namespace PlatformerFoundation.Presentation
         SimSession m_Session;
         int m_Built = -1;
         float m_Look;
+        SpriteLocomotionClock m_HeroClock;
+        float m_Time;
 
         public RenderTier Tier => m_Assets?.Tier ?? RenderTier.DataTexture;
         public int TileSprites => m_Tiles?.Count ?? 0;
@@ -41,6 +44,10 @@ namespace PlatformerFoundation.Presentation
         public bool Night { get; private set; }
         public int LightsUsed { get; private set; }
         public int Torches => m_TorchCount;
+        public GameplayLocomotionState HeroLocomotion => m_HeroClock.State;
+        public float HeroStridePhase => m_HeroClock.Phase;
+        public float AnimationTime => m_Time;
+        public int HeroFrame { get; private set; }
 
         void OnDestroy() => Release();
 
@@ -73,6 +80,10 @@ namespace PlatformerFoundation.Presentation
             m_Effects.Warmup(m_Effects.Capacity);
             m_Fx = new SpriteEffects(128);
             m_Built = -1;
+            m_HeroClock = default;
+            HeroFrame = m_Art.HeroIdle.First;
+            m_Time = 0f;
+            m_Look = 0f;
         }
 
         void LateUpdate()
@@ -83,7 +94,9 @@ namespace PlatformerFoundation.Presentation
             var world = session.World;
             var game = world.Resource(PlKeys.Game);
             float alpha = session.InterpolationAlpha;
-            float time = Time.time;
+            float dt = session.State == SessionState.Running ? Time.deltaTime : 0f;
+            m_Time += dt;
+            float time = m_Time;
             var bounds = new Bounds(Vector3.zero, new Vector3(1e5f, 1e5f, 100f));
             if (Camera != null && Camera.UpdateTarget == null) Camera.UpdateTarget = AimCamera;
 
@@ -95,6 +108,7 @@ namespace PlatformerFoundation.Presentation
                 m_Built = game.LevelBuilds;
                 TileUploads++;
                 m_Fx.Clear();
+                m_HeroClock = default;
                 Camera?.Snap();
             }
 
@@ -129,17 +143,23 @@ namespace PlatformerFoundation.Presentation
 
                 m_Dynamic.Add(game.GoalPosition + new float2(0f, 0.5f), new float2(1f, 2f), m_Art.Sheet[m_Art.Flag.FrameAt(time)].Uv, PropDepth, new float4(1f));
 
+                var m = game.Motor;
+                m_HeroClock.Advance(dt, math.abs(m.Velocity.x), game.Tuning.RunSpeed,
+                    m.Grounded || game.Riding >= 0, game.Flow != PlFlow.Dying);
                 if (game.Flow != PlFlow.Dying || ((int)(time * 12f) & 1) == 0)
                 {
                     float2 hero = math.lerp(game.HeroPrev, game.Hero, alpha);
-                    var m = game.Motor;
-                    int frame = !m.Grounded && game.Riding < 0 ? (m.Velocity.y > 0f ? m_Art.HeroJump : m_Art.HeroFall)
-                        : math.abs(m.Velocity.x) > 0.5f ? m_Art.HeroRun.FrameAt(time) : m_Art.HeroIdle.FrameAt(time);
+                    int frame = !m.Grounded && game.Riding < 0
+                        ? (m.Velocity.y > 0f ? m_Art.HeroJump : m_Art.HeroFall)
+                        : m_HeroClock.State == GameplayLocomotionState.Run ? m_HeroClock.Frame(m_Art.HeroRun)
+                        : m_HeroClock.State == GameplayLocomotionState.Walk ? m_HeroClock.Frame(m_Art.HeroWalk)
+                        : m_Art.HeroIdle.FrameAt(m_HeroClock.Time);
+                    HeroFrame = frame;
                     m_Dynamic.Add(hero + new float2(0f, 0.12f), new float2(game.Facing, 1.125f), m_Art.Sheet[frame].Uv, ActorDepth - 0.1f, new float4(1f));
                 }
             }
             if (Night && game.Flow != PlFlow.Menu) Light(game, alpha, time);
-            m_Fx.UpdateAndDraw(Time.deltaTime, m_Effects, m_Art.Sheet, null);
+            m_Fx.UpdateAndDraw(dt, m_Effects, m_Art.Sheet, null);
 
             m_Tiles.Draw(bounds, dirty: rebuild);
             m_Dynamic.Draw(bounds);

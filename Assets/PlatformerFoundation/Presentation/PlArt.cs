@@ -10,7 +10,7 @@ namespace PlatformerFoundation.Presentation
     {
         public const float PixelsPerUnit = 16f;
         public SpriteSheet Sheet { get; private set; }
-        public SpriteClip HeroIdle, HeroRun, Coin, Walker, Flag, Sparkle, Torch;
+        public SpriteClip HeroIdle, HeroWalk, HeroRun, Coin, Walker, Flag, Sparkle, Torch;
         public int HeroJump, HeroFall, WalkerSquashed, Ground, GroundTop, Plank, Spikes, Platform, Sky, Glow;
 
         static Color32 C(byte r, byte g, byte b, byte a = 255) => new Color32(r, g, b, a);
@@ -20,19 +20,32 @@ namespace PlatformerFoundation.Presentation
         {
             var art = new PlArt();
             var atlas = new SpriteAtlasBuilder();
-            void Hero(PixelCanvas c, float legL, float legR, float bob, bool arms)
+            void Hero(PixelCanvas c, float legL, float legR, float bob, bool arms, float swing = 0f, float lean = 0f)
             {
-                c.Line(new float2(6, 1), new float2(6 + legL, 5), 2f, C(60, 60, 90));
-                c.Line(new float2(10, 1), new float2(10 + legR, 5), 2f, C(60, 60, 90));
-                c.Rect(4, 5 + (int)bob, 8, 6, C(220, 70, 60));                 // body
+                c.Line(new float2(6 + legL, 1), new float2(6, 5 + bob), 2f, C(60, 60, 90));
+                c.Line(new float2(10 + legR, 1), new float2(10, 5 + bob), 2f, C(60, 60, 90));
+                if (!arms) c.Line(new float2(5, 10 + bob), new float2(4 - swing, 6 + bob), 2f, C(195, 155, 125));
+                c.Rect(4 + (int)lean, 5 + (int)bob, 8, 6, C(220, 70, 60));                 // body
+                if (!arms) c.Line(new float2(11 + lean, 10 + bob), new float2(12 + swing, 6 + bob), 2f, C(240, 200, 160));
                 if (arms) { c.Rect(2, 8 + (int)bob, 2, 3, C(240, 200, 160)); c.Rect(12, 8 + (int)bob, 2, 3, C(240, 200, 160)); }
-                c.Ellipse(8, 13 + bob, 3.2f, 3f, C(240, 200, 160));             // head
-                c.Rect(5, 14 + (int)bob, 7, 2, C(60, 90, 200));                 // cap
-                c.Set(10, 13 + (int)bob, C(20, 20, 30));
+                c.Ellipse(8 + lean, 13 + bob, 3.2f, 3f, C(240, 200, 160));             // head
+                c.Rect(5 + (int)lean, 14 + (int)bob, 7, 2, C(60, 90, 200));                 // cap
+                c.Set(10 + (int)lean, 13 + (int)bob, C(20, 20, 30));
                 c.Outline(Outline);
             }
             art.HeroIdle = new SpriteClip(atlas.AddStrip(2, 16, 18, (c, f) => Hero(c, 0, 0, f * 0.6f, false)), 2, 3f, true);
-            art.HeroRun = new SpriteClip(atlas.AddStrip(4, 16, 18, (c, f) => Hero(c, f % 2 == 0 ? -2 : 2, f % 2 == 0 ? 2 : -2, f % 2, false)), 4, 12f, true);
+            // Contact, passing, opposite contact, opposite passing: four distinct poses.
+            art.HeroWalk = new SpriteClip(atlas.AddStrip(4, 16, 18, (c, f) =>
+            {
+                float stride = f == 0 ? -1.5f : f == 2 ? 1.5f : 0f;
+                Hero(c, stride, -stride, f == 1 ? 0.8f : f == 3 ? 0.2f : 0f, false, stride);
+            }), 4, 6f, true);
+            art.HeroRun = new SpriteClip(atlas.AddStrip(4, 16, 18, (c, f) =>
+            {
+                float stride = f == 0 ? -3f : f == 2 ? 3f : 0f;
+                Hero(c, stride, -stride + (f == 1 ? 1f : f == 3 ? -1f : 0f),
+                    f == 1 ? 1f : f == 3 ? 0.5f : 0f, false, stride * 0.8f, 1f);
+            }), 4, 12f, true);
             art.HeroJump = Single(atlas, 16, 18, c => Hero(c, -2, 1, 1, true));
             art.HeroFall = Single(atlas, 16, 18, c => Hero(c, 1, -1, 0, true));
             art.Coin = new SpriteClip(atlas.AddStrip(4, 10, 10, (c, f) =>
@@ -97,7 +110,7 @@ namespace PlatformerFoundation.Presentation
             {
                 for (int r = 8; r >= 1; r--) c.Ellipse(8, 8, r, r, C(255, 255, 255, (byte)(255 * (1f - r / 8.5f) * (1f - r / 8.5f))));
             });
-            art.Sheet = atlas.Build();
+            art.Sheet = atlas.Build(512); // Walk fits the existing 512 x 64 allocation on a second shelf.
             return art;
         }
 

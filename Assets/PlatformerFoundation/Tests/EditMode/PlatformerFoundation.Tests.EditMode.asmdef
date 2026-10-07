@@ -12,7 +12,9 @@
         "Unity.Collections",
         "Unity.Mathematics",
         "Unity.Burst",
-        "PlatformerFoundation.Runtime"
+        "PlatformerFoundation.Runtime",
+        "SPF.Presentation",
+        "PlatformerFoundation.Presentation"
     ],
     "includePlatforms": [
         "Editor"

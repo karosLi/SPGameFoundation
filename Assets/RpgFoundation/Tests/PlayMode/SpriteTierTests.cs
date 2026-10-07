@@ -2,6 +2,9 @@ using System.Collections;
 using System.IO;
 using NUnit.Framework;
 using RpgFoundation.Presentation;
+using RpgFoundation.Game;
+using SPF.Contracts;
+using SPF.Testing;
 using SPF.Presentation;
 using SPF.Presentation.Sprites;
 using Unity.Mathematics;
@@ -19,6 +22,94 @@ namespace RpgFoundation.Tests.PlayMode
     public class SpriteTierTests
     {
         const int Width = 640, Height = 360;
+
+        [UnityTest]
+        public IEnumerator GameplayWalkRunCastPauseAndRebind([Values(RenderTier.GpuDriven, RenderTier.DataTexture)] RenderTier tier)
+        {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null) Assert.Ignore("No graphics device");
+            if (tier == RenderTier.GpuDriven && !SystemInfo.supportsComputeShaders) Assert.Ignore("GPU tier unavailable");
+            RenderCapabilities.Override = tier;
+            string save = Path.Combine(Path.GetTempPath(), "rpg-sprite-motion-" + System.Guid.NewGuid().ToString("N"));
+            RpgGameBootstrap.SaveDirectoryOverride = save;
+            var config = RpgConfig.CreateDefault();
+            var game = RpgGameBootstrap.Create(config, seed: 21, ui: false);
+            var replacement = RpgMode.Create(config, out var modules);
+            var target = new RenderTexture(960, 540, 24, RenderTextureFormat.ARGB32);
+            var read = new Texture2D(960, 540, TextureFormat.RGBA32, false);
+            try
+            {
+                yield return null;
+                game.NewGame(21);
+                yield return UIDriver.WaitUntil(() => game.State.Flow == RpgFlow.Playing, 5f);
+                game.Session.Sync();
+                var world = game.Session.World;
+                var handles = world.Table(RpgKeys.Actor).Handles;
+                for (int i = world.Table(RpgKeys.Actor).Count - 1; i >= 0; i--)
+                    if (world.Column(RpgKeys.Info)[i].Team == Team.Monsters) world.DestroyEntity(handles[i]);
+                game.State.MonstersAlive = 0; game.State.BossAlive = false;
+                // An obstacle-free fixture lets real analog input demonstrate sustained velocity.
+                world.Resource(RpgKeys.Map).Fill(0);
+                float move = 0f; uint pressed = 0;
+                game.InputRouter.Sink = f => game.State.Input = InputFrame.Latch(game.State.Input,
+                    new InputFrame { Move = new float2(move, 0f), Pressed = pressed });
+                game.CameraRig.Camera.targetTexture = target;
+                yield return UIDriver.WaitUntil(() => CurrentClip() == CharacterClip.Idle, 3f);
+                yield return Capture("idle");
+                move = 0.35f;
+                yield return UIDriver.WaitUntil(() => CurrentClip() == CharacterClip.Walk, 3f);
+                yield return Capture("walk");
+                move = 1f;
+                yield return UIDriver.WaitUntil(() => CurrentClip() == CharacterClip.Run, 3f);
+                yield return Capture("run");
+                game.Session.Pause();
+                game.InputRouter.enabled = false;
+                yield return null;
+                Assert.IsTrue(game.WorldRenderer.TryGetAnimation(game.State.Hero, out var before));
+                float time = game.WorldRenderer.AnimationTime;
+                var snapshot = game.Session.CaptureSnapshot();
+                yield return UIDriver.WaitSeconds(0.15f);
+                Assert.IsTrue(game.WorldRenderer.TryGetAnimation(game.State.Hero, out var after));
+                Assert.AreEqual(time, game.WorldRenderer.AnimationTime);
+                Assert.AreEqual(before.StridePhase, after.StridePhase);
+                Assert.AreEqual(before.Frame, after.Frame);
+                CollectionAssert.AreEqual(snapshot, game.Session.CaptureSnapshot(), "rendering must not write gameplay snapshots");
+                move = 0f; pressed = 1u << RpgButton.Skill1;
+                game.InputRouter.enabled = true; game.Session.Resume();
+                yield return UIDriver.WaitUntil(() => CurrentClip() == CharacterClip.Cast, 3f);
+                pressed = 0;
+                yield return Capture("projectile-cast");
+                game.Host.Initialize(replacement, 21, start: false);
+                yield return null;
+                Assert.AreEqual(0f, game.WorldRenderer.AnimationTime);
+                Assert.IsFalse(game.WorldRenderer.TryGetAnimation(game.State.Hero, out _));
+            }
+            finally
+            {
+                RenderCapabilities.Override = null; RpgGameBootstrap.SaveDirectoryOverride = null;
+                if (Camera.main != null) Object.Destroy(Camera.main.gameObject);
+                Object.Destroy(game.gameObject); Object.Destroy(config); Object.Destroy(replacement);
+                foreach (var module in modules) Object.Destroy(module);
+                target.Release(); Object.Destroy(target); Object.Destroy(read);
+                if (Directory.Exists(save)) Directory.Delete(save, true);
+            }
+
+            CharacterClip CurrentClip() => game.WorldRenderer.TryGetAnimation(game.State.Hero, out var a) ? a.Clip : CharacterClip.Death;
+            IEnumerator Capture(string state)
+            {
+                bool resume = game.Session.State == SPF.Runtime.Session.SessionState.Running;
+                game.Session.Pause(); // Freeze the actual simulated transition while the camera captures it.
+                yield return null;
+                yield return null;
+                var previous = RenderTexture.active;
+                RenderTexture.active = target;
+                read.ReadPixels(new Rect(0, 0, 960, 540), 0, 0); read.Apply(false);
+                RenderTexture.active = previous;
+                string dir = Path.Combine(Application.dataPath, "..", "Artifacts", "Screenshots");
+                Directory.CreateDirectory(dir);
+                File.WriteAllBytes(Path.Combine(dir, $"rpg-motion-{state}-{tier}.png"), read.EncodeToPNG());
+                if (resume) game.Session.Resume();
+            }
+        }
 
         [UnityTest]
         public IEnumerator SpritesLookTheSameOnBothTiers()

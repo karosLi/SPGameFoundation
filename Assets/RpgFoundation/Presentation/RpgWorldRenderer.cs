@@ -13,7 +13,7 @@ namespace RpgFoundation.Presentation
     /// Draws the dungeon with sprites from the procedural atlas (<see cref="RpgArt"/>), on both render tiers:
     /// <list type="bullet">
     /// <item>tile map as a static sprite batch (re-uploaded only when the floor changes);</item>
-    /// <item>actors with state animations picked from the simulated action phase (idle, walk, wind-up /
+    /// <item>actors with state animations picked from the simulated action phase (idle, walk, run, wind-up /
     /// strike, cast, hit, death), mirrored by facing, hit flash, weapon overlays posed by the phase;</item>
     /// <item>items, projectiles, shadows; effects from feedback events: hit sparks, slashes, explosions,
     /// frost nova, whirlwind, the boss's slam warning and shockwave, dash afterimages, deaths, level-ups;</item>
@@ -37,11 +37,8 @@ namespace RpgFoundation.Presentation
         struct ActorView
         {
             public int Generation;
-            public SpriteAnimator Anim;
-            public float2 LastPosition;
-            public float Speed;
+            public RpgActorAnimation Animation;
             public float Ghost;
-            public float DeathTime;
         }
 
         RenderAssets m_Assets;
@@ -53,6 +50,7 @@ namespace RpgFoundation.Presentation
         int m_TileBuild = -1;
         uint m_TileVersion = uint.MaxValue;
         SimSession m_Session;
+        float m_Time;
         Unity.Mathematics.Random m_Random = new Unity.Mathematics.Random(17);
 
         public RenderTier Tier => m_Assets?.Tier ?? RenderTier.DataTexture;
@@ -61,6 +59,16 @@ namespace RpgFoundation.Presentation
         public int SpritesDrawn { get; private set; }
         public int EffectsActive => m_Fx?.Active ?? 0;
         public RpgArt Art => m_Art;
+        public float AnimationTime => m_Time;
+        public bool TryGetAnimation(EntityHandle actor, out RpgActorAnimation animation)
+        {
+            animation = default;
+            if (actor.IsNull || m_Views == null || actor.Index < 0 || actor.Index >= m_Views.Length
+                || m_Views[actor.Index].Generation != actor.Generation || m_Session == null
+                || !m_Session.World.Registry.TryResolve(actor, out _, out _)) return false;
+            animation = m_Views[actor.Index].Animation;
+            return true;
+        }
 
         void OnDestroy() => Release();
 
@@ -104,6 +112,7 @@ namespace RpgFoundation.Presentation
             m_Fx = new SpriteEffects(512);
             m_Views = new ActorView[world.Registry.Capacity];
             m_TileBuild = -1;
+            m_Time = 0f;
         }
 
         void LateUpdate()
@@ -116,7 +125,8 @@ namespace RpgFoundation.Presentation
             var map = world.Resource(RpgKeys.Map);
             var config = world.Resource(RpgKeys.Config);
             float alpha = session.InterpolationAlpha;
-            float dt = Time.deltaTime;
+            float dt = session.State == SessionState.Running ? Time.deltaTime : 0f;
+            m_Time += dt;
             var bounds = new Bounds(Vector3.zero, new Vector3(1e5f, 1e5f, 100f));
 
             if (Camera != null && Camera.UpdateTarget == null)
@@ -129,6 +139,7 @@ namespace RpgFoundation.Presentation
                 m_TileBuild = game.FloorBuilds;
                 m_TileVersion = map.Version;
                 m_Fx.Clear();
+                System.Array.Clear(m_Views, 0, m_Views.Length); // New floor or restored snapshot.
             }
 
             float4 view = Camera != null ? Camera.ViewRect : new float4(-1e5f, -1e5f, 1e5f, 1e5f);
@@ -178,10 +189,7 @@ namespace RpgFoundation.Presentation
                 var handle = handles[i];
                 ref var v = ref m_Views[handle.Index];
                 if (v.Generation != handle.Generation)
-                    v = new ActorView { Generation = handle.Generation, LastPosition = p, Anim = new SpriteAnimator { Clip = -1 } };
-                float2 moved = p - v.LastPosition;
-                v.LastPosition = p;
-                v.Speed = math.lerp(v.Speed, dt > 0f ? math.length(moved) / dt : 0f, 0.3f);
+                    v = new ActorView { Generation = handle.Generation };
 
                 bool hero = info.Has(ActorFlags.Hero);
                 var art = hero ? m_Art.Hero : m_Art.Monsters[info.Kind - 1];
@@ -189,47 +197,15 @@ namespace RpgFoundation.Presentation
                 float2 facing = c.Phase != ActionPhase.None && c.Phase != ActionPhase.Stagger && math.lengthsq(c.Aim) > 0f ? c.Aim : facings[i];
                 float side = facing.x < -0.05f ? -1f : 1f;
 
-                // Pick the animation from the simulated state.
-                int frame;
-                CharacterClip clip;
-                float progress = c.PhaseProgress;
-                if (info.Has(ActorFlags.Dead))
-                {
-                    clip = CharacterClip.Death;
-                    v.DeathTime += dt;
-                    frame = art.Clip(clip).FrameAt(v.DeathTime);
-                }
-                else if (c.Phase == ActionPhase.Stagger || c.HitFlash > 0.08f)
-                {
-                    clip = CharacterClip.Hit;
-                    frame = art.Clip(clip).FrameAtProgress(c.Phase == ActionPhase.Stagger ? progress : 1f - c.HitFlash / 0.15f);
-                }
-                else if (c.Phase == ActionPhase.Windup)
-                {
-                    clip = CharacterClip.Attack;
-                    frame = art.Clip(clip).FrameAtProgress(progress * 0.5f);
-                }
-                else if (c.Phase == ActionPhase.Recover && c.PhaseSkill == 0)
-                {
-                    clip = CharacterClip.Attack;
-                    frame = art.Clip(clip).FrameAtProgress(0.5f + progress * 0.5f);
-                }
-                else if (c.Phase == ActionPhase.Cast || c.Phase == ActionPhase.Channel)
-                {
-                    clip = CharacterClip.Cast;
-                    v.Anim.Play((int)clip);
-                    v.Anim.Advance(dt);
-                    frame = art.Clip(clip).FrameAt(v.Anim.Time);
-                }
-                else
-                {
-                    bool walking = v.Speed > 0.4f || c.Phase == ActionPhase.Dash;
-                    clip = walking ? CharacterClip.Walk : CharacterClip.Idle;
-                    v.Anim.Play((int)clip);
-                    v.Anim.Advance(dt * (walking ? math.clamp(v.Speed / 3f, 0.6f, 2.2f) : 1f));
-                    frame = art.Clip(clip).FrameAt(v.Anim.Time);
-                }
-                if (clip != CharacterClip.Cast && clip != CharacterClip.Walk && clip != CharacterClip.Idle) v.Anim.Clip = -1;
+                // Actual tick displacement includes collision, patrol/chase speed and analog intent.
+                // It remains stable between simulation ticks and does not depend on render FPS/culling.
+                float speed = math.length(positions[i] - prev[i]) / (float)m_Session.Clock.StepSeconds;
+                float runSpeed = hero ? config.HeroSpeed : config.Monsters[info.Kind - 1].Speed;
+                SkillKind skill = c.PhaseSkill > 0 && c.PhaseSkill <= config.Skills.Length
+                    ? config.Skills[c.PhaseSkill - 1].Kind : SkillKind.None;
+                v.Animation.Sample(handle.Generation, art, c, skill, info.Has(ActorFlags.Dead), speed, runSpeed, dt);
+                var clip = v.Animation.Clip;
+                int frame = v.Animation.Frame;
 
                 float depth = ActorDepth + p.y * DepthPerY;
                 float flash = math.saturate(c.HitFlash / 0.15f) * 0.85f;
@@ -239,7 +215,7 @@ namespace RpgFoundation.Presentation
                 var status = statuses[i];
                 if (status.Burning) tint *= new float4(1.25f, 0.8f, 0.6f, 1f);
                 if (status.Poisoned) tint *= new float4(0.75f, 1.2f, 0.6f, 1f);
-                if ((status.Burning || status.Poisoned) && m_Random.NextFloat() < 0.12f)
+                if (dt > 0f && (status.Burning || status.Poisoned) && m_Random.NextFloat() < 0.12f)
                     m_Fx.Spawn(new SpriteEffects.Effect
                     {
                         Clip = status.Burning ? m_Art.Spark : m_Art.Sparkle, Position = p + art.Center + m_Random.NextFloat2(-0.25f, 0.25f), Velocity = new float2(0f, 0.9f),
@@ -253,7 +229,7 @@ namespace RpgFoundation.Presentation
                 if (elite && !info.Has(ActorFlags.Dead))
                 {
                     // Pulsing aura coloured by the leading affix.
-                    float pulse = 0.35f + 0.15f * math.sin(Time.time * 4f + i);
+                    float pulse = 0.35f + 0.15f * math.sin(m_Time * 4f + i);
                     m_Additive.Add(p + new float2(0f, 0.05f), new float2(info.Radius * 3.2f, info.Radius * 1.6f), m_Art.Sheet[m_Art.Ring].Uv, depth + 0.4f, AffixColor(info.Affixes, pulse));
                 }
                 // Shadow under the feet.
@@ -262,8 +238,8 @@ namespace RpgFoundation.Presentation
 
                 if (!info.Has(ActorFlags.Dead))
                 {
-                    DrawWeapon(art, loadouts[i].Weapon, c, p, facing, side, depth, flash);
-                    if (c.Phase == ActionPhase.Dash)
+                    DrawWeapon(art, loadouts[i].Weapon, c, clip, frame, p, facing, side, depth, flash, elite ? 1.15f : 1f);
+                    if (c.Phase == ActionPhase.Dash && dt > 0f)
                     {
                         v.Ghost -= dt;
                         if (v.Ghost <= 0f)
@@ -291,7 +267,7 @@ namespace RpgFoundation.Presentation
         }
 
         /// <summary>Weapon overlay posed by the action phase: swings arc through the aim, spears thrust, bows and staves point.</summary>
-        void DrawWeapon(CharacterArt art, WeaponKind kind, in CombatState c, float2 p, float2 facing, float side, float depth, float flash)
+        void DrawWeapon(CharacterArt art, WeaponKind kind, in CombatState c, CharacterClip clip, int frame, float2 p, float2 facing, float side, float depth, float flash, float scale)
         {
             var weapon = m_Art.Weapons[(int)kind];
             if (weapon == null) return;
@@ -311,7 +287,7 @@ namespace RpgFoundation.Presentation
                     else angle = aim - side * math.lerp(1.3f, 0.6f, t);
                     break;
                 case ActionPhase.Cast:
-                    angle = side > 0f ? 1.2f : math.PI - 1.2f;
+                    angle = clip == CharacterClip.Cast ? aim : side > 0f ? 1.2f : math.PI - 1.2f;
                     break;
                 case ActionPhase.Channel:
                     angle = aim + c.PhaseTime * 18f;   // whirlwind spin
@@ -321,12 +297,13 @@ namespace RpgFoundation.Presentation
                     break;
             }
             float2 dir = new float2(math.cos(angle), math.sin(angle));
-            float2 hand = p + new float2(art.Hand.x * side, art.Hand.y);
-            float2 center = hand + dir * (weapon.Size.x * 0.5f - weapon.Grip + reach);
+            float2 anchor = art.HandAt(clip, frame) * scale;
+            float2 hand = p + new float2(anchor.x * side, anchor.y);
+            float2 center = hand + dir * ((weapon.Size.x * 0.5f - weapon.Grip + reach) * scale);
             // Keep the weapon's top side up whichever way it points.
             float flipY = math.cos(angle) < 0f ? -1f : 1f;
             bool behind = math.sin(angle) > 0.3f && c.Phase != ActionPhase.Channel;
-            m_Opaque.Add(center, new float2(weapon.Size.x, weapon.Size.y * flipY), m_Art.Sheet[weapon.Frame].Uv, depth + (behind ? 0.004f : -0.004f), new float4(1f), angle, flash);
+            m_Opaque.Add(center, new float2(weapon.Size.x, weapon.Size.y * flipY) * scale, m_Art.Sheet[weapon.Frame].Uv, depth + (behind ? 0.004f : -0.004f), new float4(1f), angle, flash);
         }
 
         // ---- Items, projectiles, stairs ----
@@ -363,7 +340,7 @@ namespace RpgFoundation.Presentation
             var positions = world.Column(RpgKeys.ItemPosition);
             var infos = world.Column(RpgKeys.ItemInfo);
             var config = world.Resource(RpgKeys.Config);
-            float time = Time.time;
+            float time = m_Time;
             for (int i = 0; i < world.Table(RpgKeys.Item).Count; i++)
             {
                 float2 p = positions[i];
@@ -402,7 +379,7 @@ namespace RpgFoundation.Presentation
             var positions = world.Column(RpgKeys.ProjectilePosition);
             var prev = world.Column(RpgKeys.ProjectilePrev);
             var infos = world.Column(RpgKeys.ProjectileInfo);
-            float time = Time.time;
+            float time = m_Time;
             for (int i = 0; i < world.Table(RpgKeys.Projectile).Count; i++)
             {
                 var pr = infos[i];
@@ -434,7 +411,7 @@ namespace RpgFoundation.Presentation
         {
             if (game.Flow == RpgFlow.Menu) return;
             float2 stairs = map.AsView().CenterOf(game.StairsCell);
-            float time = Time.time;
+            float time = m_Time;
             m_Opaque.Add(stairs, new float2(1f), m_Art.Sheet[m_Art.Stairs.FrameAt(time)].Uv, TileDepth - 0.5f, game.BossAlive ? new float4(0.8f, 0.5f, 0.5f, 1f) : new float4(1f));
             var glow = game.BossAlive ? new float4(0.7f, 0.15f, 0.2f, 0.3f) : new float4(0.3f, 0.9f, 1f, 0.25f + 0.15f * math.sin(time * 3f));
             m_Additive.Add(stairs, new float2(1.8f), m_Art.Sheet[m_Art.Disc].Uv, TileDepth - 0.6f, glow);

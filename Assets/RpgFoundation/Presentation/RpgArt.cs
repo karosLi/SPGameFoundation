@@ -6,15 +6,18 @@ using UnityEngine;
 namespace RpgFoundation.Presentation
 {
     /// <summary>Animation clips of one character.</summary>
-    public enum CharacterClip { Idle = 0, Walk = 1, Attack = 2, Cast = 3, Hit = 4, Death = 5 }
+    public enum CharacterClip { Idle = 0, Walk = 1, Attack = 2, Cast = 3, Hit = 4, Death = 5, Run = 6, AreaCast = 7, Channel = 8, SlamCast = 9 }
 
     public sealed class CharacterArt
     {
-        public SpriteClip[] Clips = new SpriteClip[6];
+        public SpriteClip[] Clips = new SpriteClip[10];
         public float2 Size;          // world size of a frame
         public float2 Center;        // sprite centre relative to the actor position (feet below)
         public float2 Hand;          // weapon hand relative to the actor position, facing right
         public SpriteClip Clip(CharacterClip c) => Clips[(int)c];
+        public float PoseScale;      // humanoid authored pixels -> world; zero for non-humanoids
+        public float2 HandAt(CharacterClip clip, int frame) => PoseScale > 0f
+            ? RpgArt.HandAt(clip, frame - Clip(clip).First) * PoseScale : Hand;
     }
 
     public sealed class WeaponArt
@@ -25,8 +28,8 @@ namespace RpgFoundation.Presentation
     }
 
     /// <summary>
-    /// Procedural pixel art for the dungeon (the repository ships no art): characters with idle / walk /
-    /// attack / cast / hit / death clips, weapon overlays, projectiles, items, tiles, effects and a pixel
+    /// Procedural pixel art for the dungeon (the repository ships no art): characters with idle / walk / run /
+    /// attack / skill-specific cast / hit / death clips, weapon overlays, projectiles, items, tiles, effects and a pixel
     /// font, all packed into one atlas. 24 pixels per world unit (one tile = 24 px).
     /// </summary>
     public sealed class RpgArt : IDisposable
@@ -54,7 +57,7 @@ namespace RpgFoundation.Presentation
             art.Hero = Humanoid(atlas, new Style
             {
                 Skin = C(240, 200, 160), Hair = C(110, 70, 40), Shirt = C(60, 110, 210), Pants = C(70, 60, 90), Boots = C(80, 50, 30),
-                Eye = C(30, 30, 50), Size = 24, Cast = C(255, 150, 60),
+                Eye = C(30, 30, 50), Size = 24, Cast = C(255, 150, 60), HeroSkills = true,
             });
             art.Monsters = new CharacterArt[monsterKinds];
             for (int k = 0; k < monsterKinds; k++)
@@ -223,7 +226,7 @@ namespace RpgFoundation.Presentation
         {
             public Color32 Skin, Hair, Shirt, Pants, Boots, Eye, Cast, Cape;
             public int Size;
-            public bool Skeleton, Horns, Helmet, Bulky;
+            public bool Skeleton, Horns, Helmet, Bulky, HeroSkills;
         }
 
         static CharacterArt Humanoid(SpriteAtlasBuilder atlas, Style s)
@@ -235,19 +238,36 @@ namespace RpgFoundation.Presentation
                 Size = new float2(size, size) / PixelsPerUnit,
                 // Feet at the actor position (pixel y = 2), sprite centre above it.
                 Center = new float2(0f, (size * 0.5f - 2f * k) / PixelsPerUnit),
-                Hand = new float2(4.5f * k, (11f - 2f) * k) / PixelsPerUnit,
+                Hand = new float2(4.5f * k, (10f - 2f) * k) / PixelsPerUnit,
+                PoseScale = k / PixelsPerUnit,
             };
-            art.Clips[(int)CharacterClip.Idle] = new SpriteClip(atlas.AddStrip(4, size, size, (c, f) => DrawHumanoid(c, s, bob: f == 2 ? 0.6f : f == 0 ? 0f : 0.3f, leg: 0f, lean: 0f, arms: 0f), "idle"), 4, 5f, true);
-            art.Clips[(int)CharacterClip.Walk] = new SpriteClip(atlas.AddStrip(4, size, size, (c, f) => DrawHumanoid(c, s, bob: f % 2 == 1 ? 0.8f : 0f, leg: f == 0 ? -1f : f == 2 ? 1f : 0f, lean: 0.3f, arms: 0f)), 4, 9f, true);
-            art.Clips[(int)CharacterClip.Attack] = new SpriteClip(atlas.AddStrip(4, size, size, (c, f) => DrawHumanoid(c, s, bob: f < 2 ? 0.4f : -0.4f, leg: f < 2 ? -0.6f : 0.8f, lean: f < 2 ? -1f : 1.6f, arms: 0f)), 4, 12f, false);
-            art.Clips[(int)CharacterClip.Cast] = new SpriteClip(atlas.AddStrip(3, size, size, (c, f) =>
+            SpriteClip PoseStrip(CharacterClip clip, int count, float fps, bool loop, bool glow = false)
             {
-                DrawHumanoid(c, s, bob: 0.5f, leg: 0f, lean: -0.4f, arms: 1f);
-                float g = 1.6f + f * 0.7f;
-                c.Ellipse(12 * k, 22 * k, g * k, g * k, new Color32(s.Cast.r, s.Cast.g, s.Cast.b, 200));
-                c.Ellipse(12 * k, 22 * k, g * 0.5f * k, g * 0.5f * k, C(255, 255, 230));
-            }), 3, 10f, true);
-            art.Clips[(int)CharacterClip.Hit] = new SpriteClip(atlas.AddStrip(2, size, size, (c, f) => DrawHumanoid(c, s, bob: -0.5f, leg: 0f, lean: -1.8f + f * 0.6f, arms: 0.4f)), 2, 10f, false);
+                return new SpriteClip(atlas.AddStrip(count, size, size, (c, f) =>
+                {
+                    var pose = Pose(clip, f);
+                    DrawHumanoid(c, s, pose.Bob, pose.Leg, pose.Lean, pose.Arms, pose.Swing);
+                    if (!glow) return;
+                    float2 hand = HandAt(clip, f) + new float2(12f, 2f);
+                    float radius = (1f + f * 0.35f) * k;
+                    c.Ellipse(hand.x * k, hand.y * k, radius, radius, s.Cast);
+                    c.Ellipse(hand.x * k, hand.y * k, radius * 0.5f, radius * 0.5f, C(255, 255, 230));
+                }), count, fps, loop);
+            }
+            art.Clips[(int)CharacterClip.Idle] = PoseStrip(CharacterClip.Idle, 4, 5f, true);
+            art.Clips[(int)CharacterClip.Walk] = PoseStrip(CharacterClip.Walk, 4, 6f, true);
+            art.Clips[(int)CharacterClip.Run] = PoseStrip(CharacterClip.Run, 4, 12f, true);
+            art.Clips[(int)CharacterClip.Attack] = PoseStrip(CharacterClip.Attack, 4, 12f, false);
+            // Only the hero owns projectile/nova/whirlwind. The Warden's existing three cast frames
+            // become its overhead slam; unused variants alias the existing strip, avoiding atlas bloat.
+            var casting = s.Helmet ? CharacterClip.SlamCast : CharacterClip.Cast;
+            art.Clips[(int)CharacterClip.Cast] = PoseStrip(casting, 3, 10f, false, true);
+            art.Clips[(int)CharacterClip.SlamCast] = art.Clip(CharacterClip.Cast);
+            art.Clips[(int)CharacterClip.AreaCast] = s.HeroSkills
+                ? PoseStrip(CharacterClip.AreaCast, 3, 10f, false, true) : art.Clip(CharacterClip.Cast);
+            art.Clips[(int)CharacterClip.Channel] = s.HeroSkills
+                ? PoseStrip(CharacterClip.Channel, 4, 12f, true) : art.Clip(CharacterClip.Cast);
+            art.Clips[(int)CharacterClip.Hit] = PoseStrip(CharacterClip.Hit, 2, 10f, false);
             art.Clips[(int)CharacterClip.Death] = new SpriteClip(atlas.AddStrip(5, size, size, (c, f) =>
             {
                 var upright = new PixelCanvas(size, size);
@@ -258,7 +278,46 @@ namespace RpgFoundation.Presentation
             return art;
         }
 
-        static void DrawHumanoid(PixelCanvas c, Style s, float bob, float leg, float lean, float arms)
+        struct CharacterPose
+        {
+            public float Bob, Leg, Lean, Arms, Swing;
+        }
+
+        // Sprite pixels and weapon grips share the exact authored frame pose. This is a pixel-art
+        // attachment anchor, not a skeletal IK solver.
+        static CharacterPose Pose(CharacterClip clip, int f)
+        {
+            float stride = f == 0 ? -1f : f == 2 ? 1f : 0f;
+            switch (clip)
+            {
+                case CharacterClip.Walk:
+                    return new CharacterPose { Bob = f == 1 ? 0.8f : f == 3 ? 0.3f : 0f, Leg = stride, Lean = 0.3f, Swing = stride * 0.5f };
+                case CharacterClip.Run:
+                    return new CharacterPose { Bob = f == 1 ? 1.5f : f == 3 ? 0.7f : -0.3f, Leg = stride * 2.4f, Lean = 1.6f, Swing = stride * 1.8f };
+                case CharacterClip.Attack:
+                    return new CharacterPose { Bob = f < 2 ? 0.4f : -0.4f, Leg = f < 2 ? -0.6f : 0.8f, Lean = f < 2 ? -1f : 1.6f };
+                case CharacterClip.Cast: // projectile: gather close to the chest, then extend forwards
+                    return new CharacterPose { Bob = 0.2f, Lean = -0.8f + f * 0.7f, Arms = 0.3f, Swing = -1.2f + f * 1.4f };
+                case CharacterClip.AreaCast: // nova: crouch, then raise both hands to release
+                    return new CharacterPose { Bob = -1f + f * 0.7f, Leg = -0.8f, Arms = 0.35f + f * 0.3f };
+                case CharacterClip.SlamCast: // Warden: overhead windup, braced stance
+                    return new CharacterPose { Bob = f * 0.3f, Leg = -1f, Lean = -1f, Arms = 0.65f + f * 0.15f };
+                case CharacterClip.Channel: // whirlwind: alternate planted contacts and torso/arm sweeps
+                    return new CharacterPose { Bob = f % 2 == 0 ? -0.5f : 0.3f, Leg = stride * 1.8f, Lean = stride * 1.5f, Arms = 0.25f, Swing = stride * 2.2f };
+                case CharacterClip.Hit:
+                    return new CharacterPose { Bob = -0.5f, Lean = -1.8f + f * 0.6f, Arms = 0.4f };
+                default:
+                    return new CharacterPose { Bob = f == 2 ? 0.6f : f == 0 ? 0f : 0.3f };
+            }
+        }
+
+        internal static float2 HandAt(CharacterClip clip, int frame)
+        {
+            var pose = Pose(clip, frame);
+            return new float2(4.5f + pose.Lean * 0.5f + pose.Swing, 8f + pose.Bob + pose.Arms * 8f);
+        }
+
+        static void DrawHumanoid(PixelCanvas c, Style s, float bob, float leg, float lean, float arms, float swing = 0f)
         {
             float k = s.Size / 24f;
             float bulk = s.Bulky ? 1.25f : 1f;
@@ -270,12 +329,12 @@ namespace RpgFoundation.Presentation
             c.Rect((int)((12f - leg) * k), (int)(1.5f * k), (int)(3.5f * k), (int)(1.8f * k), Shade(s.Boots, 0.8f));
             // Back arm, torso, front arm (raised when casting).
             float tx = (12 + lean * 0.5f) * k, ty = (11.5f + bob) * k;
-            c.Line(new float2(tx - 2.5f * k, ty + 1.5f * k), new float2(tx - 3.5f * k, ty - 2.5f * k + arms * 7f * k), 2f * k, Shade(s.Skin, 0.8f));
+            c.Line(new float2(tx - 2.5f * k, ty + 1.5f * k), new float2(tx - (3.5f + swing) * k, ty - 2.5f * k + arms * 7f * k), 2f * k, Shade(s.Skin, 0.8f));
             c.Ellipse(tx, ty, 4f * k * bulk, 4.6f * k, s.Shirt);
             c.Ellipse(tx - 1.2f * k, ty + 1f * k, 2f * k, 2.5f * k, Shade(s.Shirt, 1.18f));
             if (s.Skeleton)
                 for (int r = 0; r < 3; r++) c.Rect((int)(tx - 2.5f * k), (int)(ty - 1.5f * k + r * 1.6f * k), (int)(5 * k), 1, C(90, 85, 80));
-            c.Line(new float2(tx + 2.5f * k, ty + 1.5f * k), new float2(tx + 4.5f * k, ty - 1.5f * k + arms * 8f * k), 2f * k, s.Skin);
+            c.Line(new float2(tx + 2.5f * k, ty + 1.5f * k), new float2(tx + (4.5f + swing) * k, ty - 1.5f * k + arms * 8f * k), 2f * k, s.Skin);
             // Head.
             float hx = (12.5f + lean) * k, hy = (17.8f + bob) * k;
             c.Ellipse(hx, hy, 3.8f * k, 3.8f * k, s.Skin);
@@ -326,9 +385,17 @@ namespace RpgFoundation.Presentation
                 float hop = f switch { 0 => 0f, 1 => 2.5f, 2 => 3.5f, _ => 1f };
                 Blob(c, f == 0 ? 9f : 7f, f == 0 ? 4.5f : 6f, hop, 0, 1);
             }), 4, 8f, true);
+            art.Clips[(int)CharacterClip.Run] = new SpriteClip(atlas.AddStrip(4, W, H, (c, f) =>
+            {
+                float hop = f == 0 ? 0f : f == 1 ? 4f : f == 2 ? 2.5f : 1f;
+                Blob(c, f == 0 ? 10f : f == 1 ? 6f : 8f, f == 0 ? 3.8f : 6.5f, hop, f == 1 ? 1f : 0f, 1);
+            }), 4, 12f, true);
             art.Clips[(int)CharacterClip.Attack] = new SpriteClip(atlas.AddStrip(4, W, H, (c, f) =>
                 Blob(c, f < 2 ? 7f : 10f, f < 2 ? 6.5f : 4f, f < 2 ? 0.5f : 0f, f < 2 ? -1.5f : 2.5f, 1)), 4, 12f, false);
             art.Clips[(int)CharacterClip.Cast] = art.Clips[(int)CharacterClip.Idle];
+            art.Clips[(int)CharacterClip.AreaCast] = art.Clip(CharacterClip.Cast);
+            art.Clips[(int)CharacterClip.Channel] = art.Clip(CharacterClip.Cast);
+            art.Clips[(int)CharacterClip.SlamCast] = art.Clip(CharacterClip.Cast);
             art.Clips[(int)CharacterClip.Hit] = new SpriteClip(atlas.AddStrip(2, W, H, (c, f) => Blob(c, 10f - f, 3.8f + f * 0.6f, 0, -1, 0.4f)), 2, 10f, false);
             art.Clips[(int)CharacterClip.Death] = new SpriteClip(atlas.AddStrip(5, W, H, (c, f) =>
             {

@@ -14,7 +14,8 @@
         "Unity.Collections",
         "Unity.Mathematics",
         "Unity.Burst",
-        "BrawlerFoundation.Runtime"
+        "BrawlerFoundation.Runtime",
+        "BrawlerFoundation.Presentation"
     ],
     "includePlatforms": [
         "Editor"

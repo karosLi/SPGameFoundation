@@ -42,7 +42,7 @@ namespace SurvivorFoundation.Presentation
         GameplayCharacterPresenter m_Characters;
         GameplayCharacterSelection m_CharacterSelection;
         NativeArray<byte> m_NaturalMask;
-        struct DeathVisual { public float2 Position; public float Scale, Life; public int Generation; }
+        struct DeathVisual { public float2 Position; public float Scale, Life; public int Generation, MotionProfileId; }
         NativeArray<DeathVisual> m_Deaths;
         int m_DeathSequence, m_HeroCastTick = -100;
         bool m_BoundNatural;
@@ -351,25 +351,27 @@ namespace SurvivorFoundation.Presentation
                 if(weapon.Equipped&&game.Hp>0&&weapon.Stage!=WeaponStage.Idle)state=weapon.Stage==WeaponStage.Recovery?GameplayCharacterState.Recovery:GameplayCharacterState.Attack;
                 var skill=world.HasResource(SvWeapons.PoseKey)?world.Resource(SvWeapons.PoseKey):null;
                 int skillId=skill!=null&&skill.Running?skill.ContentId:0;
+                // Damage grants invulnerability without cancelling autoattack, so recoil is additive
+                // to the unchanged weapon action, phase and release socket.
                 m_Characters.Submit(new GameplayCharacterInput {MotionProfileId=0,SkillPoseId=skillId,SkillPhase=skillId!=0?skill.Phase(alpha):0,SkillPulse=skillId!=0?skill.Timeline.PulseId:0,SkillWeight=skillId!=0?1:0,Weapon=weapon,Handle=new EntityHandle(-1,1),Root=hero,Ground=hero,Velocity=velocity,Facing=game.Facing.x<0?-1:1,
                     Scale=.66f,State=state,Phase=weapon.Equipped?weapon.Phase:math.saturate(castAge/12f),Action=GameplayCharacterAction.Cast,Kind=0,
-                    Flash=game.Invulnerable>.01f?.5f:0,Depth=ActorDepth+hero.y*DepthPerY,Tint=new float4(1f)});
+                    HitWeight=game.Hp>0&&game.Invulnerable>.01f?1:0,Flash=game.Invulnerable>.01f?.5f:0,Depth=ActorDepth+hero.y*DepthPerY,Tint=new float4(1f)});
             }
             for(int i=0;i<m_Deaths.Length;i++)
             {
                 var d=m_Deaths[i];if(d.Life<=0)continue;d.Life=math.max(0,d.Life-dt);m_Deaths[i]=d;
-                m_Characters.Submit(new GameplayCharacterInput {Handle=new EntityHandle(-2-i,d.Generation),Root=d.Position,Ground=d.Position,
+                m_Characters.Submit(new GameplayCharacterInput {MotionProfileId=d.MotionProfileId,Handle=new EntityHandle(-2-i,d.Generation),Root=d.Position,Ground=d.Position,
                     Facing=(i&1)==0?1:-1,Scale=d.Scale,State=GameplayCharacterState.Death,Kind=1,Depth=ActorDepth+d.Position.y*DepthPerY,Tint=new float4(1,1,1,math.saturate(d.Life*4))});
             }
         }
-        void AddNaturalDeath(SimWorld world,SvFeedback e)
+        void AddNaturalDeath(SvFeedback e)
         {
             // Death events supply position/kind, not an entity handle. These 16 short-lived presentation-only
             // identities are explicitly separate from live actors; no culling disappearance is treated as death.
             for(int i=0;i<m_Deaths.Length;i++)if(m_Deaths[i].Life<=0)
             {
-                var config=world.Resource(SvKeys.Config);int kind=math.clamp(e.Enemy-1,0,config.EnemyKinds-1);
-                m_Deaths[i]=new DeathVisual {Position=e.Position,Scale=math.clamp(config.Enemies[kind].Radius*1.22f,.28f,.85f),Life=.55f,Generation=++m_DeathSequence};return;
+                // Resolve publishes the effective live radius, including elite scaling.
+                m_Deaths[i]=new DeathVisual {Position=e.Position,Scale=math.clamp(e.Value*1.22f,.28f,.85f),MotionProfileId=e.Value>=.65f?2:1,Life=.55f,Generation=++m_DeathSequence};return;
             }
         }
 
@@ -616,7 +618,7 @@ namespace SurvivorFoundation.Presentation
                 switch (e.Kind)
                 {
                     case SvFeedbackKind.Death:
-                        if (NaturalCharacters) AddNaturalDeath(world, e);
+                        if (NaturalCharacters) AddNaturalDeath(e);
                         m_CombatFx.Emit(DeathProfile, e.Position, key, math.clamp(e.Value, 0.5f, 1.5f));
                         break;
                     case SvFeedbackKind.Hit:

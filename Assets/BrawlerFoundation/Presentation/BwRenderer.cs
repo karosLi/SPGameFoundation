@@ -294,7 +294,10 @@ namespace BrawlerFoundation.Presentation
                 if(belt)
                 {
                     ground=BwBeltRules.Project(math.lerp(world.Column(BwBeltKeys.PreviousGround)[i],world.Column(BwBeltKeys.Ground)[i],alpha),0);
-                    var v=world.Column(BwBeltKeys.Motion)[i].GroundVelocity;velocity=new float2(v.x,v.y*BwBeltRules.DepthProjection);
+                    // Final ground includes arena clamping and crowd separation. Keep this fixed-tick
+                    // pair while paused; Begin(0) freezes the existing gait without replanning its feet.
+                    var v=(world.Column(BwBeltKeys.Ground)[i]-world.Column(BwBeltKeys.PreviousGround)[i])/(float)m_Session.Clock.StepSeconds;
+                    velocity=new float2(v.x,v.y*BwBeltRules.DepthProjection);
                 }
                 bool armed=f.Team==0&&world.HasResource(BwWeapons.Key);
                 var weapon=armed?world.Resource(BwWeapons.Key).View(alpha):default;

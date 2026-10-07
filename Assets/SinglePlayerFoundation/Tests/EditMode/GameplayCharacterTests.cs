@@ -13,6 +13,24 @@ namespace SPF.Tests.EditMode
     public class GameplayCharacterTests
     {
         static GameplayCharacterInput Input(int index=1)=>new GameplayCharacterInput {Handle=new EntityHandle(index,1),Facing=1,Scale=1,Tint=new float4(1)};
+        [Test] public void AdditiveHitIsBoundedAndRejectsNonFinitePresentationInputs()
+        {
+            using(var presenter=new GameplayCharacterPresenter(RenderTier.DataTexture,1))
+            {
+                var input=Input();input.State=GameplayCharacterState.Attack;input.Phase=.42f;input.HitWeight=2;
+                for(int i=0;i<30;i++){presenter.Begin(1f/60,0);Assert.IsTrue(presenter.Submit(input));presenter.Evaluate();}
+                presenter.TryRead(input.Handle,out var recoil);Assert.Greater(recoil.Hit,.99f);Assert.LessOrEqual(recoil.Hit,1);
+                Assert.AreEqual(1,recoil.Attack,.00001f,"the independent layer does not replace action state");
+                input.HitWeight=-2;
+                for(int i=0;i<30;i++){presenter.Begin(1f/60,0);presenter.Submit(input);presenter.Evaluate();}
+                presenter.TryRead(input.Handle,out recoil);Assert.That(recoil.Hit,Is.InRange(0f,.001f));
+                foreach(float invalid in new[]{float.NaN,float.PositiveInfinity,float.NegativeInfinity})
+                {input.HitWeight=invalid;presenter.Begin(1f/60,0);Assert.IsFalse(presenter.Submit(input));}
+                input.HitWeight=0;input.State=GameplayCharacterState.Hit;
+                for(int i=0;i<20;i++){presenter.Begin(1f/60,0);Assert.IsTrue(presenter.Submit(input));presenter.Evaluate();}
+                presenter.TryRead(input.Handle,out recoil);Assert.Greater(recoil.Hit,.99f,"existing state-only callers keep their recoil");
+            }
+        }
         [Test] public void SelectionUsesStableHandlesAcrossReorderAndHasHardBudget()
         {
             var a=new GameplayCharacterSelection(8);var b=new GameplayCharacterSelection(8);a.Begin(0,8);b.Begin(0,8);

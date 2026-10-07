@@ -88,6 +88,7 @@ namespace SPF.Presentation.Animation
         public bool Submit(in GameplayCharacterInput input)
         {
             if(input.Weapon.Equipped&&!m_IncludeWeapons)return false;
+            if(!math.isfinite(input.HitWeight))return false;
             if(input.MotionProfile.Id!=0&&!GameplayMotionProfiles.Valid(input.MotionProfile)||input.SkillProfile.Id!=0&&!GameplaySkillProfiles.Valid(input.SkillProfile))return false;
             if(Count>=Capacity||input.Handle.IsNull||!math.all(math.isfinite(input.Root))||!math.all(math.isfinite(input.Ground)))return false;
             if(!m_Submitted.Add(input.Handle))return false;

@@ -16,6 +16,8 @@ namespace SPF.Presentation.Animation
         public EntityHandle Handle;
         public float2 Root, Ground, Velocity, AimTarget;
         public float Facing, Scale, Phase, Flash, Depth;
+        /// <summary>Optional additive recoil, independent of an ongoing action. Clamped to [0,1].</summary>
+        public float HitWeight;
         public float4 Tint;
         public GameplayCharacterState State;
         public GameplayCharacterAction Action;
@@ -77,7 +79,8 @@ namespace SPF.Presentation.Animation
             float attack = input.State == GameplayCharacterState.Attack || input.State == GameplayCharacterState.Recovery ? Strike(input.Phase) : 0;
             // Action phase is already a continuous authoritative clock: filtering it delays contact.
             Attack = attack;
-            Hit = math.lerp(Hit, input.State == GameplayCharacterState.Hit ? 1 : 0, response);
+            float hitWeight=math.isfinite(input.HitWeight)?math.saturate(input.HitWeight):0;
+            Hit = math.lerp(Hit, input.State == GameplayCharacterState.Hit ? 1 : hitWeight, response);
             Death = math.lerp(Death, input.State == GameplayCharacterState.Death ? 1 : 0, 1f-math.exp(-7f*dt));
             // A bounded walk/run cycle, rather than speeding tiny legs up to 10+ cycles/second.
             // Faster travel shortens contact time; the fixed world-space plant releases before reach is lost.

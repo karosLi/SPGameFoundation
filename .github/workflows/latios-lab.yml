@@ -46,10 +46,15 @@ jobs:
     timeout-minutes: 180
     env:
       LAB_SOURCE: latios-s1a-source-${{ github.run_id }}-${{ github.run_attempt }}
-      LAB_WORKSPACE: ${{ runner.temp }}/latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}
-      LAB_EVIDENCE: ${{ runner.temp }}/latios-s1a-evidence-${{ github.run_id }}-${{ github.run_attempt }}
       UNITY_EDITOR_PATH: ${{ vars.UNITY_EDITOR_PATH }}
     steps:
+      - name: Initialize run-specific paths on the assigned runner
+        shell: bash
+        run: |
+          : "${RUNNER_TEMP:?Missing runner temporary directory}"
+          : "${GITHUB_RUN_ID:?Missing run ID}" "${GITHUB_RUN_ATTEMPT:?Missing run attempt}"
+          printf 'LAB_WORKSPACE=%s/latios-s1a-%s-%s\n' "$RUNNER_TEMP" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
+          printf 'LAB_EVIDENCE=%s/latios-s1a-evidence-%s-%s\n' "$RUNNER_TEMP" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
         with:
           path: ${{ env.LAB_SOURCE }}

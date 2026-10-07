@@ -3,9 +3,12 @@ import copy
 from datetime import datetime, timedelta, timezone
 import importlib.util
 import json
+import os
+import re
 from pathlib import Path
 import subprocess
 import tempfile
+import textwrap
 import unittest
 from unittest.mock import Mock, patch
 import zipfile
@@ -248,6 +251,51 @@ class ExecutionTests(unittest.TestCase):
         self.assertNotIn('-nographics', source)
         self.assertIn('start_new_session=True', source)
         self.assertIn("if key != 'GITHUB_TOKEN'", source)
+
+    def test_job_env_expressions_use_only_supported_github_contexts(self):
+        # GitHub's jobs.<job_id>.env context excludes runner/env/steps/job.
+        # YAML parsing alone cannot detect a server-side expression-context error.
+        allowed = {'github', 'needs', 'strategy', 'matrix', 'vars', 'secrets', 'inputs'}
+        def check(source):
+            blocks = re.findall(r'(?m)^    env:\n((?:^      [^\n]*\n)+)', source)
+            for block in blocks:
+                contexts = re.findall(r'\$\{\{\s*([A-Za-z_]\w*)[.\[]', block)
+                self.assertLessEqual(set(contexts), allowed)
+        workflow = (REPO / ci.WORKFLOW).read_text()
+        check(workflow)
+        with self.assertRaises(AssertionError):
+            check('    env:\n      LAB_WORKSPACE: ${{ runner.temp }}/lab\n')
+        self.assertNotIn('${{ runner.temp }}', workflow)
+
+    def test_runner_path_step_writes_only_job_local_environment(self):
+        workflow = (REPO / ci.WORKFLOW).read_text()
+        start = workflow.index('      - name: Initialize run-specific paths on the assigned runner')
+        stop = workflow.index('      - uses:', start)
+        step = workflow[start:stop]
+        script = textwrap.dedent(step.split('        run: |\n', 1)[1])
+        self.assertLess(start, workflow.index('          path: ${{ env.LAB_SOURCE }}'))
+        self.assertNotIn('${{', script)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            runner_temp = root / 'runner temp'; runner_temp.mkdir()
+            checkout = root / 'checkout'; checkout.mkdir()
+            environment_file = root / 'github-env'
+            env = {'PATH': os.environ.get('PATH', ''), 'RUNNER_TEMP': str(runner_temp),
+                   'GITHUB_RUN_ID': '123', 'GITHUB_RUN_ATTEMPT': '2', 'GITHUB_ENV': str(environment_file)}
+            subprocess.run(['bash', '-e', '-c', script], env=env, cwd=checkout, check=True)
+            entries = dict(line.split('=', 1) for line in environment_file.read_text().splitlines())
+            self.assertEqual({'LAB_WORKSPACE': str(runner_temp / 'latios-s1a-123-2'),
+                              'LAB_EVIDENCE': str(runner_temp / 'latios-s1a-evidence-123-2')}, entries)
+            for value in entries.values():
+                self.assertEqual(Path(value), ci.validate_workspace(checkout, Path(value)))
+                self.assertFalse(Path(value).exists(), 'Initialization must not create native/worktree paths.')
+            self.assertEqual([], list(checkout.iterdir()))
+            self.assertEqual([], list(runner_temp.iterdir()))
+            before = environment_file.read_bytes()
+            del env['RUNNER_TEMP']
+            result = subprocess.run(['bash', '-e', '-c', script], env=env, cwd=checkout, capture_output=True)
+            self.assertNotEqual(0, result.returncode)
+            self.assertEqual(before, environment_file.read_bytes())
 
     def test_workflow_is_dedicated_fail_closed_and_bounded(self):
         workflow = (REPO / ci.WORKFLOW).read_text()

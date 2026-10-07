@@ -168,6 +168,7 @@ namespace BrawlerFoundation.Tests
         {
             using var t = World(); Duel(t, new float2(8, 0));
             var skills = t.World.Resource(BwMobileSkills.Key); Assert.IsTrue(skills.TryActivate(1, true));
+            var pose = t.World.Resource(BwWeapons.PoseKey); pose.Begin(BwWeapons.KickPose, 28); Assert.IsTrue(pose.Running);
             var before = skills.GetSnapshot(1); t.Game.Flow = BwFlow.WaveClear; t.Game.FlowTimer = 2.2f;
             t.World.Resource(BwBeltKeys.State).TryDrop(new float2(4.2f, 0), BwBeltDropKind.Coin, 10);
             t.Game.Input = new InputFrame { Move = new float2(1, 0), Held = 15, Pressed = 15 }; t.Step(75);
@@ -175,6 +176,7 @@ namespace BrawlerFoundation.Tests
             Assert.AreEqual(FighterState.Walk, t.Info(0).State); Assert.AreEqual(0, Motion(t).Height);
             Assert.AreEqual(before.RechargeTicks, skills.GetSnapshot(1).RechargeTicks);
             Assert.AreEqual(before.Charges, skills.GetSnapshot(1).Charges);
+            Assert.IsFalse(pose.Running, "collection movement cancels an in-flight skill pose while recharge remains paused");
             for (int slot = 0; slot < 4; slot++) Assert.IsFalse(BwBeltRules.CanUseSlot(t.World, slot));
         }
         [Test]

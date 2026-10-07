@@ -40,6 +40,21 @@ namespace SurvivorFoundation.Tests.PlayMode
                     float2 canonical=game.State.Hero+new float2(side*weapons.Current.MuzzleOffset.x,weapons.Current.MuzzleOffset.y)*SvWeapons.ActorScale;Assert.Less(math.distance(canonical,socket.Muzzle),.17f);
                     for(int i=0;i<35;i++)game.Session.Step();Assert.Greater(weapons.AcceptedHits,0);Assert.AreEqual(0,world.Table(SvKeys.Bullet).Count,"classic hero bolt is disabled only for this explicit variant");
                 }
+                yield return null;game.Session.Pause();uint consumed=game.Renderer.LastWeaponCueSequence;Assert.Greater(consumed,0);
+                game.Renderer.NaturalCharacters=false;yield return null;yield return null;game.Session.Resume();
+                for(int i=0;i<weapons.Current.DurationTicks+weapons.Current.ReleaseTick+2;i++)game.Session.Step();
+                Assert.Greater(weapons.Equipment.CueSequence,consumed);game.Session.Pause();game.Renderer.NaturalCharacters=true;yield return null;yield return null;
+                Assert.AreEqual(weapons.Equipment.CueSequence,game.Renderer.LastWeaponCueSequence);Assert.AreEqual(0,game.Renderer.WeaponParticles.Renderer.Pool.ReservedCount,"rebuilding the view must not replay retained bursts from the hidden interval");game.Session.Resume();
+                uint baseline=game.Renderer.LastWeaponCueSequence;bool observedNewBurst=false;uint releaseSequence=0;
+                game.State.Input=default;
+                for(int tick=0;tick<weapons.Current.DurationTicks+weapons.Current.ReleaseTick+3;tick++)
+                {
+                    game.Session.Step();
+                    for(int c=0;c<weapons.CueCount;c++){var cue=weapons.Cues[c];if(cue.Kind==SPF.Contracts.Weapons.WeaponCueKind.Release&&cue.Sequence>baseline)releaseSequence=cue.Sequence;}
+                    yield return null;
+                    observedNewBurst|=releaseSequence!=0&&game.Renderer.LastWeaponCueSequence>=releaseSequence&&game.Renderer.WeaponParticles.Renderer.Pool.SpawnCount>0;
+                }
+                game.State.Input=default;Assert.IsTrue(observedNewBurst,"new releases after binding still produce their sequenced burst");
                 game.State.Input=new InputFrame{Pressed=1};game.Session.Step();game.State.Input=default;game.Session.Step();
                 Assert.AreEqual(SvWeapons.PulsePose,world.Resource(SvWeapons.PoseKey).ContentId);yield return capture.Save("weapon-horde-skill-pulse-"+suffix,safe);
                 game.State.Input=new InputFrame{Pressed=2,Aim=new float2(1,0)};game.Session.Step();game.State.Input=default;game.Session.Step();

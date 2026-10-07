@@ -55,6 +55,9 @@ namespace SurvivorFoundation.Presentation
         float2[] m_WeaponTrailPoints;
         long[] m_WeaponTrailBirths;
         bool[] m_WeaponTrailValid;
+        uint m_WeaponCueSequence;
+        bool m_HasWeaponCue;
+        public uint LastWeaponCueSequence => m_WeaponCueSequence;
         public WeaponParticlePresenter WeaponParticles => m_WeaponParticles;
         public int QualityLevel { get; private set; }
         public int ShadowBudget => QualityLevel >= 3 ? 32 : QualityLevel >= 2 ? 128 : QualityLevel >= 1 ? 256 : 768;
@@ -124,7 +127,14 @@ namespace SurvivorFoundation.Presentation
             m_Art = SvArt.Build(config.EnemyKinds, k => { var c = config.Enemies[k].Color; return new Color(c.x, c.y, c.z, 1f); }, NaturalCharacters ? SvArtStyle.SmoothOutline : ArtStyle);
             var tier = m_Assets.Tier;
             if(NaturalCharacters&&world.HasResource(SvWeapons.Key))m_WeaponParticles=new WeaponParticlePresenter(tier, lowQuality: tier!=RenderTier.GpuDriven);
-            if(m_WeaponParticles!=null){int capacity=world.Resource(SvWeapons.Key).Projectiles.Length;m_WeaponTrailPoints=new float2[capacity];m_WeaponTrailBirths=new long[capacity];m_WeaponTrailValid=new bool[capacity];}
+            if(m_WeaponParticles!=null)
+            {
+                var equipped=world.Resource(SvWeapons.Key);int capacity=equipped.Projectiles.Length;
+                m_WeaponTrailPoints=new float2[capacity];m_WeaponTrailBirths=new long[capacity];m_WeaponTrailValid=new bool[capacity];
+                // A newly bound view starts at the current cue head; time spent hidden is not replayed.
+                m_WeaponRuntime=equipped;m_WeaponRevision=equipped.Revision;m_WeaponTick=equipped.Tick;
+                m_WeaponCueSequence=equipped.Equipment.CueSequence;m_HasWeaponCue=m_WeaponCueSequence!=0;
+            }
             var atlas = m_Art.Sheet.Texture;
             // Jobs validate containers before Execute, including the classic path. Keep its zero mask valid.
             m_NaturalMask = new NativeArray<byte>(world.Table(SvKeys.Enemy).Capacity, Allocator.Persistent);
@@ -272,15 +282,16 @@ namespace SurvivorFoundation.Presentation
         void UpdateWeaponParticles(SimWorld world,SvGameState game,float alpha,float4 viewRect)
         {
             var weapons=world.Resource(SvWeapons.Key);
-            if(!ReferenceEquals(m_WeaponRuntime,weapons)||m_WeaponRevision!=weapons.Revision||weapons.Tick<m_WeaponTick||game.Flow==SvFlow.Menu){m_WeaponParticles.Clear();System.Array.Clear(m_WeaponTrailValid,0,m_WeaponTrailValid.Length);}
+            if(!ReferenceEquals(m_WeaponRuntime,weapons)||m_WeaponRevision!=weapons.Revision||weapons.Tick<m_WeaponTick||game.Flow==SvFlow.Menu){m_WeaponParticles.Clear();m_HasWeaponCue=false;System.Array.Clear(m_WeaponTrailValid,0,m_WeaponTrailValid.Length);}
             m_WeaponParticles.BeginFrame(m_Session.State==SessionState.Running&&game.Flow==SvFlow.Playing?Time.deltaTime:0,viewRect);
             var view=weapons.View(alpha);
             if(game.Hp>0&&m_Characters.TryReadWeapon(weapons.Owner,out var socket))m_WeaponParticles.UpdateEmitter(weapons.Owner,view,socket.Tip,socket.Muzzle,socket.Direction,BulletDepth,true);
             for(int i=0;i<weapons.CueCount;i++)
             {
                 var cue=weapons.Cues[i];
+                if(m_HasWeaponCue&&unchecked((int)(cue.Sequence-m_WeaponCueSequence))<=0)continue;
                 if(cue.ActionPulse==view.ActionPulse&&((cue.Kind==WeaponCueKind.Release&&view.Phase<view.ReleasePhase)||(cue.Kind==WeaponCueKind.Impact&&view.Stage==WeaponStage.Windup)))break;
-                cue.Position+=new float2(0,cue.Height);cue.Height=0;m_WeaponParticles.SubmitCue(cue,BulletDepth,true);
+                cue.Position+=new float2(0,cue.Height);cue.Height=0;m_WeaponParticles.SubmitCue(cue,BulletDepth,true);m_WeaponCueSequence=cue.Sequence;m_HasWeaponCue=true;
             }
             for(int i=0;i<weapons.Projectiles.Length;i++)
             {

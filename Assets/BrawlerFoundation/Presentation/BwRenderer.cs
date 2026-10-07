@@ -40,6 +40,9 @@ namespace BrawlerFoundation.Presentation
         float2[] m_WeaponTrailPoints;
         long[] m_WeaponTrailBirths;
         bool[] m_WeaponTrailValid;
+        uint m_WeaponCueSequence;
+        bool m_HasWeaponCue;
+        public uint LastWeaponCueSequence => m_WeaponCueSequence;
         public WeaponParticlePresenter WeaponParticles => m_WeaponParticles;
         bool m_BoundNatural;
         public FollowCamera2D Camera;
@@ -92,7 +95,14 @@ namespace BrawlerFoundation.Presentation
             m_Art = BwArt.Build(rig, NaturalCharacters);
             if (NaturalCharacters) m_Characters = new GameplayCharacterPresenter(m_Assets.Tier, math.clamp(session.World.Table(BwKeys.Fighter).Capacity, 1, 128), includeWeapons: session.World.HasResource(BwWeapons.Key));
             if(NaturalCharacters&&session.World.HasResource(BwWeapons.Key))m_WeaponParticles=new WeaponParticlePresenter(m_Assets.Tier, lowQuality: m_Assets.Tier!=RenderTier.GpuDriven);
-            if(m_WeaponParticles!=null){int capacity=session.World.Resource(BwWeapons.Key).Projectiles.Length;m_WeaponTrailPoints=new float2[capacity];m_WeaponTrailBirths=new long[capacity];m_WeaponTrailValid=new bool[capacity];}
+            if(m_WeaponParticles!=null)
+            {
+                var equipped=session.World.Resource(BwWeapons.Key);int capacity=equipped.Projectiles.Length;
+                m_WeaponTrailPoints=new float2[capacity];m_WeaponTrailBirths=new long[capacity];m_WeaponTrailValid=new bool[capacity];
+                // A newly bound view starts at the current cue head; time spent hidden is not replayed.
+                m_WeaponRuntime=equipped;m_WeaponRevision=equipped.Revision;m_WeaponTick=equipped.Tick;
+                m_WeaponCueSequence=equipped.Equipment.CueSequence;m_HasWeaponCue=m_WeaponCueSequence!=0;
+            }
             var atlas = m_Art.Sheet.Texture;
             m_Arena = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Opaque, 1024, queueOffset: -10);
             m_Fighters = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Opaque, MaxFighters * (m_Art.Parts.Length + 4));
@@ -210,16 +220,17 @@ namespace BrawlerFoundation.Presentation
         void UpdateWeaponParticles(SPF.Runtime.World.SimWorld world,BwGameState game,float alpha)
         {
             var weapons=world.Resource(BwWeapons.Key);
-            if(!ReferenceEquals(m_WeaponRuntime,weapons)||m_WeaponRevision!=weapons.Revision||weapons.Tick<m_WeaponTick||game.Flow==BwFlow.Menu){m_WeaponParticles.Clear();System.Array.Clear(m_WeaponTrailValid,0,m_WeaponTrailValid.Length);}
+            if(!ReferenceEquals(m_WeaponRuntime,weapons)||m_WeaponRevision!=weapons.Revision||weapons.Tick<m_WeaponTick||game.Flow==BwFlow.Menu){m_WeaponParticles.Clear();m_HasWeaponCue=false;System.Array.Clear(m_WeaponTrailValid,0,m_WeaponTrailValid.Length);}
             m_WeaponParticles.BeginFrame(m_Session.State==SessionState.Running&&game.Flow==BwFlow.Fighting?Time.deltaTime:0,Camera!=null?Camera.ViewRect:new float4(-12,-5,12,8));
             var view=weapons.View(alpha);view.AimDirection=new float2(view.AimDirection.x,view.AimDirection.y*BwBeltRules.DepthProjection);
             if(m_Characters.TryReadWeapon(weapons.Owner,out var socket))m_WeaponParticles.UpdateEmitter(weapons.Owner,view,socket.Tip,socket.Muzzle,socket.Direction,FxDepth,true);
             for(int i=0;i<weapons.CueCount;i++)
             {
                 var cue=weapons.Cues[i];
+                if(m_HasWeaponCue&&unchecked((int)(cue.Sequence-m_WeaponCueSequence))<=0)continue;
                 if(cue.ActionPulse==view.ActionPulse&&((cue.Kind==WeaponCueKind.Release&&view.Phase<view.ReleasePhase)||(cue.Kind==WeaponCueKind.Impact&&view.Stage==WeaponStage.Windup)))break;
                 cue.Position=BwBeltRules.Project(cue.Position,cue.Height);cue.Height=0;cue.Direction=new float2(cue.Direction.x,cue.Direction.y*BwBeltRules.DepthProjection);
-                m_WeaponParticles.SubmitCue(cue,FxDepth,true);
+                m_WeaponParticles.SubmitCue(cue,FxDepth,true);m_WeaponCueSequence=cue.Sequence;m_HasWeaponCue=true;
             }
             for(int i=0;i<weapons.Projectiles.Length;i++)
             {

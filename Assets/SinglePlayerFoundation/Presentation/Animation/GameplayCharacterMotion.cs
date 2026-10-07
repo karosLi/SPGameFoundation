@@ -47,7 +47,7 @@ namespace SPF.Presentation.Animation
         public float HeldWeaponBody, ChangeWeaponBody, HeldWeaponBodyVelocity, ChangeWeaponBodyVelocity;
         public float Phase, Run, Attack, Hit, Death, Facing, Scale, FarSwingSeconds, NearSwingSeconds;
         public bool Initialized, Airborne, Moving, WeaponWasActing, ChangingWeapon;
-        public float TransferDelay, SupportCeiling;
+        public float TransferDelay, SupportCeiling, WeaponAimDrop;
         public bool NextNearStep;
 
         public void Step(in GameplayCharacterInput input, float dt)
@@ -66,6 +66,7 @@ namespace SPF.Presentation.Animation
                 Phase = ((uint)input.Handle.Index * 37u % 97) / 97f;
                 Breath=Phase;Turn=facing;WeaponAim=input.Weapon.Equipped?input.Weapon.AimDirection:new float2(facing,0);
                 WeaponWeight=input.Weapon.Equipped?1:0;WeaponVisualId=input.Weapon.VisualId;EquipAge=1;
+                WeaponAimDrop=input.Weapon.Equipped?.16f*math.saturate(-input.Weapon.AimDirection.y):0;
                 NaturalMotion.InitializeFoot(ref FarFoot, ground, ground + new float2(-width, .075f), 0);
                 NaturalMotion.InitializeFoot(ref NearFoot, ground, ground + new float2(width, .075f), .5f);
             }
@@ -107,10 +108,11 @@ namespace SPF.Presentation.Animation
             float swingSeconds=period-stanceSeconds;
             bool moving=speed>.03f&&input.State!=GameplayCharacterState.Death;
             Facing=facing;
-            if(moving&&!Moving)
+            if(moving&&!Moving&&FarFoot.InStance&&NearFoot.InStance)
             {
                 // Begin with one support and a short placement step. Never release both legs
-                // just because the authoritative root began moving in a single fixed tick.
+                // just because the authoritative root began moving in a single fixed tick. A
+                // short stop may still be settling one foot; keep that transfer on restart.
                 float2 atStart=FarFoot.PreviousRoot;
                 NearSwingSeconds=math.min(swingSeconds,math.max(.065f,SupportTime(FarFoot,atStart,velocity,-.1f,facing)*.8f));
                 PlanSwing(ref NearFoot,atStart,velocity,width,NearSwingSeconds,stanceSeconds);
@@ -147,8 +149,8 @@ namespace SPF.Presentation.Animation
             float ceiling=1.15f,supportX=Support*Turn*Facing;
             if(!Airborne)
             {
-                if(FarFoot.InStance||FarFoot.AirSeconds<.04f)ceiling=math.min(ceiling,ContactCeiling(FarFoot,ground,Facing,supportX,-.1f));
-                if(NearFoot.InStance||NearFoot.AirSeconds<.04f)ceiling=math.min(ceiling,ContactCeiling(NearFoot,ground,Facing,supportX,.1f));
+                if(FarFoot.InStance||FarFoot.ToeOffSupported&&FarFoot.AirSeconds<.04f)ceiling=math.min(ceiling,ContactCeiling(FarFoot,ground,Facing,supportX,-.1f));
+                if(NearFoot.InStance||NearFoot.ToeOffSupported&&NearFoot.AirSeconds<.04f)ceiling=math.min(ceiling,ContactCeiling(NearFoot,ground,Facing,supportX,.1f));
             }
             // Contact can require immediate compression, but releasing that support must not
             // snap the body upward or pull the just-lifted FK foot away from its world plant.
@@ -161,6 +163,10 @@ namespace SPF.Presentation.Animation
                 float length=math.lerp(math.length(WeaponAim),math.length(desiredAim),1-math.exp(-18f*dt));
                 WeaponAim=new float2(math.cos(angle),math.sin(angle))*length;
             }
+            // A horizontal 180-degree turn may interpolate the weapon through downward Y.
+            // That drawing path is not a requested downward aim and must not crouch the actor.
+            float aimDrop=input.Weapon.Equipped?.16f*math.saturate(-input.Weapon.AimDirection.y):0;
+            WeaponAimDrop=math.lerp(WeaponAimDrop,aimDrop,1-math.exp(-18f*dt));
             bool changed=input.Weapon.VisualId!=WeaponVisualId;
             if(changed||WeaponWasActing&&!WeaponMotion.Acting(input.Weapon))
             {ChangeGrip=HeldGrip;ChangeAngle=HeldAngle;ChangeGripVelocity=HeldGripVelocity;ChangeAngleVelocity=HeldAngleVelocity;ChangeWeaponBody=HeldWeaponBody;ChangeWeaponBodyVelocity=HeldWeaponBodyVelocity;EquipAge=0;ChangingWeapon=changed;}
@@ -178,6 +184,7 @@ namespace SPF.Presentation.Animation
         // Projected ground has two contact coordinates; swing clearance alone adds screen height.
         static void PlanSwing(ref FootPlantState foot,float2 root,float2 velocity,float offset,float duration,float stance)
         {
+            if(foot.InStance)foot.ToeOffSupported=foot.SupportSeconds>0;
             foot.Phase=NaturalMotion.Stance;foot.AirSeconds=0;foot.SwingStart=foot.Position;
             foot.SwingEnd=Landing(root,velocity,offset,duration,stance);
         }
@@ -192,7 +199,8 @@ namespace SPF.Presentation.Animation
         {
             if(foot.InStance)return;
             swing=math.clamp(swing*(1-foot.Phase)/(1-NaturalMotion.Stance),.04f,.25f);
-            PlanSwing(ref foot,root,velocity,offset,swing,stance);
+            float airborneAge=foot.AirSeconds;
+            PlanSwing(ref foot,root,velocity,offset,swing,stance);foot.AirSeconds=airborneAge;
         }
         // One coupled transfer controller owns both contacts. Stance phases describe support
         // age; they cannot independently lift a foot. A run releases its support only during the
@@ -216,7 +224,12 @@ namespace SPF.Presentation.Animation
                 if(NearFoot.InStance)NearFoot.Phase=math.min(NaturalMotion.Stance-1e-6f,NearFoot.Phase+h*NaturalMotion.Stance/math.max(.005f,stance));
                 if(FarFoot.InStance&&NearFoot.InStance)
                 {
-                    float supportTime=NextNearStep?SupportTime(NearFoot,ground,velocity,.1f,facing):SupportTime(FarFoot,ground,velocity,-.1f,facing);
+                    float farTime=SupportTime(FarFoot,ground,velocity,-.1f,facing),nearTime=SupportTime(NearFoot,ground,velocity,.1f,facing);
+                    // After a turn, a newly landed foot can be the one behind the new motion.
+                    // Lift the contact that will lose reach first instead of blindly alternating
+                    // and leaving that short-lived contact as the sole support for a full swing.
+                    if(math.min(farTime,nearTime)<swing+.04f)NextNearStep=nearTime<farTime;
+                    float supportTime=NextNearStep?nearTime:farTime;
                     TransferDelay=math.min(TransferDelay-h,supportTime*.8f);
                     if(TransferDelay<=0)
                     {
@@ -271,11 +284,11 @@ namespace SPF.Presentation.Animation
         }
         static bool AdvanceSwing(ref FootPlantState foot,ref float swing,float dt,float lift)
         {
-            if(foot.InStance){foot.Position=foot.Plant;return false;}
+            if(foot.InStance){foot.Position=foot.Plant;foot.SupportSeconds+=dt;return false;}
             foot.AirSeconds+=dt;
             foot.Phase+=dt*(1-NaturalMotion.Stance)/math.max(.005f,swing);
             if(foot.Phase>=1)
-            {foot.Phase=0;foot.Plant=foot.Position=foot.SwingEnd;return true;}
+            {foot.Phase=0;foot.SupportSeconds=0;foot.Plant=foot.Position=foot.SwingEnd;return true;}
             float u=(foot.Phase-NaturalMotion.Stance)/(1-NaturalMotion.Stance);
             foot.Position=math.lerp(foot.SwingStart,foot.SwingEnd,NaturalMotion.Ease(u));
             float arc=math.sin(math.PI*u);foot.Position.y+=lift*arc*arc;return false;
@@ -327,7 +340,7 @@ namespace SPF.Presentation.Animation
             float baseHeight=rig.Bones[NaturalCharacterRig.Pelvis].Position.y-.045f*motion.Move+.015f*motion.Gait*motion.Gait*math.lerp(.6f,1.25f,motion.Run)-.065f*math.max(0,motion.Attack)+profile.Breath*breathing*(1-motion.Move)-skill.PelvisDrop*skillBodyWeight;
             pelvis.Position.x=motion.Support*motion.Turn*motion.Facing;pelvis.Rotation=0;
             pelvis.Position.y=baseHeight;
-            if(input.Weapon.Equipped)baseHeight-=.16f*math.saturate(-motion.WeaponAim.y);
+            if(input.Weapon.Equipped)baseHeight-=motion.WeaponAimDrop;
             if(!motion.Airborne)
             {
                 float support=math.min(baseHeight,motion.SupportCeiling);

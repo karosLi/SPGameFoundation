@@ -151,6 +151,9 @@ namespace SPF.Presentation.Animation
         public void Draw(Bounds bounds)=>m_Batch.Draw(bounds);
         public bool TryRead(EntityHandle handle,out GameplayCharacterMotion motion)
         {if(m_Slots.TryGetValue(handle,out int slot)){motion=m_Motion[slot];return true;}motion=default;return false;}
+        /// <summary>Read a current-frame submitted actor, excluding retained offscreen identity slots.</summary>
+        public bool TryReadCurrent(EntityHandle handle,out GameplayCharacterMotion motion)
+        {if(m_Slots.TryGetValue(handle,out int slot)&&m_Seen[slot]==m_Frame){motion=m_Motion[slot];return true;}motion=default;return false;}
         public bool TryReadWeapon(EntityHandle handle,out WeaponAttachmentSample sample)
         {if(m_IncludeWeapons&&m_Slots.TryGetValue(handle,out int slot)&&m_Seen[slot]==m_Frame){sample=m_WeaponSamples[slot];return sample.VisualId!=0;}sample=default;return false;}
         /// <summary>Read-only diagnostic access to this frame's sorted packed stream.</summary>

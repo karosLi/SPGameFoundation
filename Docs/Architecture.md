@@ -286,6 +286,8 @@ public static class ExampleKeys
 
 ## 7. 只读表现、渲染后端与保存
 
+可选[保存 envelope](VersionedSaveEnvelope.md)在旧 raw payload 外增加有界 framing、完整性及显式 schema/content/runtime 身份检查；原始 writer/reader 保留，可组合 raw 流不被强制改为 EOF。两个武器模式提供完整已知布局描述，额外资源/系统会被拒绝；它不是任意版本或跨平台迁移器。后端扩展使用[共享契约夹具](StageFBackendContracts.md)检验实际输出边界与数值顺序，不按后端名称推断等价或更快。
+
 ### 7.1 读取路径与身份
 
 表现可读同步完成的表，也可读模块提供的投影；不是所有游戏都经过同一种 SnapshotBuffer。`NativeArray` 类型本身不阻止写入，“只读表现”是代码与测试合约。

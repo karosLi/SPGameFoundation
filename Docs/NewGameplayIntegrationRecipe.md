@@ -280,6 +280,7 @@ Command 是意图，Event 是结算后的事实，Query 是不改变模拟的读
 - 这些 opt-in 检查没有替所有历史配置提供完整指纹，也没有提供通用旧存档迁移器。继续保留已存在的 Classic fixture 和布局隔离测试；不要把同一版本内生成的 A/B 快照比较称为历史 fixture 兼容
 - Snake 的 GameState、RegionPopulations、ReplayBuffer、SnakeQuality、Signals 未实现完整保存资源合约，相关 system 也无 ISnapshotSystem；已有输入回放测试不能证明完整中途 Session 存档。其他模式的证据范围逐项见[兼容矩阵](FoundationCompatibilityMatrix.md)
 - `SimSession.ReadSnapshot` 遇到非法数据会重启 session 后抛异常，不保留恢复前的进行中对局；直接调用底层 world 的恢复不能假设事务回滚，应遵守其 reset-before-use 合约
+- 新模式可使用[有界 envelope 与显式完整布局](VersionedSaveEnvelope.md)，先检查规则/schema/runtime 身份和长度/完整性，再进入旧 raw 恢复；预检拒绝不动当前对局，已通过 framing 的非法 raw 内容仍按明确的重启失败语义处理。新增权威资源须给自己的版本与完整新 recipe，不能挪用两个旧武器模式的身份。
 - raw Native 快照是同构检查点，不自动成为跨版本/跨平台长期格式。保存 envelope、稳定 schema ID 和迁移入口属于后续计划，不在旧 writer 前随意插入字段
 
 验收时从“空闲”与“飞剑在途 / 空中 / 连招缓冲 / 充能中”分别抓快照；在同配置新 Session 续跑同输入，比较完整快照。随后逐项修改容量、技能定义、伤害、速度、宿主模式，确认该功能明确保护的配置差异会被拒绝。

@@ -16,6 +16,8 @@ parser.add_argument('--nunit', type=Path, required=True)
 parser.add_argument('--out', type=Path, required=True)
 parser.add_argument('--all-assets', action='store_true',
                     help='Compile every Assets C# file, including all native test fixtures.')
+parser.add_argument('--target-framework', choices=('net8.0', 'netstandard2.1'), default='net8.0',
+                    help='Use netstandard2.1 to additionally check the Unity-era BCL surface.')
 args = parser.parse_args()
 repo, unity, out = args.repo.resolve(), args.unity_data.resolve(), args.out.resolve()
 out.mkdir(parents=True, exist_ok=True)
@@ -48,7 +50,7 @@ for path in list(map(Path, sources)) + refs:
 project = ET.Element('Project', Sdk='Microsoft.NET.Sdk')
 props = ET.SubElement(project, 'PropertyGroup')
 for key, value in {
-    'TargetFramework': 'net8.0', 'LangVersion': '9.0', 'EnableDefaultCompileItems': 'false',
+    'TargetFramework': args.target_framework, 'LangVersion': '9.0', 'EnableDefaultCompileItems': 'false',
     'AllowUnsafeBlocks': 'true', 'NuGetAudit': 'false',
     'DefineConstants': 'UNITY_2022_3_OR_NEWER;ENABLE_LEGACY_INPUT_MANAGER;UNITY_INCLUDE_TESTS;UNITY_EDITOR',
 }.items():

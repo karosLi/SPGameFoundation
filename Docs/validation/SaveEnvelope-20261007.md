@@ -31,6 +31,26 @@ A separate read-only review identified three issues, all corrected and re-review
 
 No further blocking finding was reported. Review is not a test execution result.
 
-## Integration gates
+## Final integrated local result
 
-The focused implementation is being rebased onto the parent's current P1 integration before the full harness, all-assets real Unity API compile-only and 19-composition cold comparison. Those results will be appended after execution; an earlier green checkpoint is not substituted. Actual native Unity/Burst/graphics execution belongs to the publishing parent's exact-commit CI. Physical Android/iOS remains an external validation gate; desktop/stub results do not establish mobile memory or load-time budgets.
+Exact runtime/test head **`56a13dea32579afb4b76eb0f27406122380056b9`**, based on P1 integration `40a4323`. [Machine-readable result and raw-body comparisons](SaveEnvelope-20261007.json).
+
+- Full .NET harness: **1,245 passed / 0 failed / 0 skipped**, 11 EditMode assemblies. Build: 0 warnings / 0 errors. These are Unity stubs, not native Jobs/Burst or graphics execution.
+- All **519 Assets C# sources** compiled against installed real Unity 2022.3.62f2/package APIs: **0 errors, 7 existing warnings**.
+- The same all-assets API project also compiled targeting **.NET Standard 2.1**, rather than net8.0: **0 errors, the same 7 existing warnings**. This checks the declared Unity-era BCL API surface; it does not execute Mono/IL2CPP/Unity.
+- Two independent cold inventory processes are byte-identical and all **19 compositions** match the retained table/column/resource/system order, capacities, scopes and settings. Output SHA-256: `a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30`, identical to the Stage A baseline. Original baseline source hashes are not rewritten or claimed unchanged.
+- Six entire raw/fixture files and eight raw writer/reader bodies were compared directly with `40a4323` and are unchanged; exact hashes are in the machine result. The full suite includes the original fixed Survivor raw fixtures and existing weapon/skill corruption/replay tests.
+- The final consumer tests keep one session **uninterrupted**, comparing its fixed-input continuation against the envelope-restored session. The known-legacy Guard-weapon import also compares subsequent fixed-input continuation against an untouched original. Same-tick view invalidation is verified on the restored side separately.
+- `git diff --check` and all added document relative links pass. No remote write was performed by this task.
+
+The independent reviewer’s final test-coverage observation was that the first continuation tests restored both sessions. Commit `56a13de` corrects that by keeping untouched controls; it is included in the full result above. Framing-memory wording was also narrowed to avoid claiming that downstream raw readers allocate nothing.
+
+### Reproduction
+
+Use the normal `Tools/DotnetHarness/generate.py`, then `dotnet build` and `dotnet test Tools/DotnetHarness/.gen/Harness.proj` with `--no-build` only after the build succeeds. Run [GenerateCompositionApiCompile.py](GenerateCompositionApiCompile.py) with `--all-assets` and the installed Unity Data/NUnit paths; build its generated project. To check the BCL boundary, copy the generated project to a separate directory, change only TargetFramework from `net8.0` to `netstandard2.1`, and build again with its installed reference pack. Neither project is a Unity runner.
+
+Repeat the existing [cold-probe recipe](FoundationCompatibilityProbe-20261007.md), comparing its observed compositions to the retained inventory without regenerating expected data. The raw-contract comparison lists the exact unchanged files/methods and baseline in the JSON. Preserve the external cache/dependency directories outside the commit.
+
+### Remaining execution gates
+
+Actual native Unity/Burst/graphics execution belongs to the publishing parent’s exact-commit CI and is **not claimed here**. Physical Android/iOS remains an external validation gate; desktop/stub/compile-only results do not establish device memory, IL2CPP runtime, load-time or sustained-frame budgets.

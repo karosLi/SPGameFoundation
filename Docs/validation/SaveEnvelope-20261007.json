@@ -1,0 +1,196 @@
+{
+  "date": "2026-10-07",
+  "runtime_test_head": "56a13dea32579afb4b76eb0f27406122380056b9",
+  "runtime_tree": "8eb21f55bbb3eb862b6c573bcc435abfec4b1129",
+  "integration_base": "40a4323",
+  "environment": {
+    "os": "Linux",
+    "dotnet_sdk": "8.0.425",
+    "unity_api": "2022.3.62f2",
+    "native_execution": false
+  },
+  "harness": {
+    "passed": 1245,
+    "failed": 0,
+    "skipped": 0,
+    "assemblies": [
+      {
+        "assembly": "BrawlerFoundation.Tests.EditMode",
+        "passed": 124,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "assembly": "DefenseFoundation.Tests.EditMode",
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "assembly": "PlatformerFoundation.Tests.EditMode",
+        "passed": 10,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "assembly": "PuzzleFoundation.Tests.EditMode",
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "assembly": "RpgFoundation.Tests.EditMode",
+        "passed": 63,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "assembly": "SPF.Tests.EditMode",
+        "passed": 841,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "assembly": "ShooterFoundation.Tests.EditMode",
+        "passed": 16,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "assembly": "SlingFoundation.Tests.EditMode",
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "assembly": "SnakeFoundation.Tests.EditMode",
+        "passed": 40,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "assembly": "StoryFoundation.Tests.EditMode",
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "assembly": "SurvivorFoundation.Tests.EditMode",
+        "passed": 127,
+        "failed": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "new_focused_cases": {
+    "SaveEnvelopeTests": 38,
+    "BwWeaponSaveTests": 4,
+    "SvWeaponSaveTests": 7
+  },
+  "compile_only": {
+    "asset_source_count": 519,
+    "net8.0": {
+      "errors": 0,
+      "existing_warnings": 7
+    },
+    "netstandard2.1": {
+      "errors": 0,
+      "existing_warnings": 7
+    }
+  },
+  "cold_compositions": {
+    "count": 19,
+    "unchanged_from_retained_inventory": true,
+    "repeat_byte_identical": true,
+    "sha256": "a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30"
+  },
+  "raw_contract_comparison": {
+    "baseline": "40a4323",
+    "head": "56a13dea32579afb4b76eb0f27406122380056b9",
+    "checks": [
+      {
+        "path": "Assets/SinglePlayerFoundation/Contracts/Snapshot.cs",
+        "entire_file_unchanged": true,
+        "sha256": "45fd9837a4d176828589906bfaa6fbb37b568d5ca719931d38f7879a84ef292e"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/Runtime/Persistence/SessionSnapshotSave.cs",
+        "entire_file_unchanged": true,
+        "sha256": "63dd253d49c26383676fb0ed4f0b23f1d6e37d468b99d0310ce37a80bb80cf9c"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/Runtime/Persistence/ProfileStore.cs",
+        "entire_file_unchanged": true,
+        "sha256": "b931670cd5b883e0197d8cf93dc98235d885b47252786f30fbb5dfc2caf823b5"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/L2Gameplay/Skills/SkillSlots.cs",
+        "entire_file_unchanged": true,
+        "sha256": "e78e9dc8c8d3825b2c5556a9f73fabdc472bab6a401e839678db0ec85da3d2d8"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/Runtime/Scheduling/TickPipeline.cs",
+        "entire_file_unchanged": true,
+        "sha256": "30bf30543c7c1d1a1df45bace461c267e637af74828edbe2b10c053d2bdb5ac4"
+      },
+      {
+        "path": "Assets/SurvivorFoundation/Tests/EditMode/SvLegacySnapshotFixtures.cs",
+        "entire_file_unchanged": true,
+        "sha256": "89ae29a00e076e684d2de52100fb864df50b31a01ac3da041c94455c297c3133"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/Runtime/Session/SimSession.cs",
+        "method": "WriteSnapshot",
+        "method_body_unchanged": true,
+        "sha256": "471b4fc3d62a20b0cccea7a4d89cb4849c7f79b99d13a6f81b4d53c1222f208f"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/Runtime/Session/SimSession.cs",
+        "method": "ReadSnapshot",
+        "method_body_unchanged": true,
+        "sha256": "2ab1084da5bfe25c309d77618f7a2275ada3dbe7d8bce0656d808eb41c031dac"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/Runtime/World/SimWorld.cs",
+        "method": "WriteSnapshot",
+        "method_body_unchanged": true,
+        "sha256": "fdb0de7ae293e4e62e5424e3b2023ac64b4e1efb4004587d972b5c3f324fe0dc"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/Runtime/World/SimWorld.cs",
+        "method": "ReadSnapshot",
+        "method_body_unchanged": true,
+        "sha256": "598f13a9345f0c877f74b1ff3fe0c673baa924f84b46f558a034bba4504e3fdc"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/Runtime/World/SimTable.cs",
+        "method": "WriteSnapshot",
+        "method_body_unchanged": true,
+        "sha256": "aa3af0df3ba32c6c9412d225183de75e059026b5c874d4428cda8b4a292af38e"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/Runtime/World/SimTable.cs",
+        "method": "ReadSnapshot",
+        "method_body_unchanged": true,
+        "sha256": "6143d882286590cbfd4f5e0e8cf8442278602a693caa85c1f511ff79f0b791ab"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/L2Gameplay/Weapons/WeaponRuntime.cs",
+        "method": "WriteSnapshot",
+        "method_body_unchanged": true,
+        "sha256": "0d69260d58268f6d8850375f35b99a6bc2cb9d7b2c234df76b6ef23346f845aa"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/L2Gameplay/Weapons/WeaponRuntime.cs",
+        "method": "ReadSnapshot",
+        "method_body_unchanged": true,
+        "sha256": "9eb66d181ee0e9ca0918bade6325eb6ece927bf733ee8abedf4c9e49012cb8e7"
+      }
+    ]
+  },
+  "remaining_gates": [
+    "actual Unity EditMode/Burst execution at published exact commit",
+    "actual graphics PlayMode at published exact commit",
+    "physical Android/iOS memory, IL2CPP, interruptions and sustained performance"
+  ]
+}

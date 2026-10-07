@@ -7,7 +7,7 @@
 - 源码固定为本地 `62c5b7f5765a879aaf8ec9fa69bc7601ae3fa969`，树 `04435658d8b1c2e95e286b093405141b5fd6040b`。已发布的 `e86ee87a7691282ae7e96713c315dbec5998c414` 使用同一树；映射和既有 CI 结果见[闭环记录](validation/NativePrecisionClosure-20261007.json)与[验证报告](MobileFoundationFollowupValidation.md)。本分支随后仅接入 `de755e1` 的闭环文档，`Assets` / `Tools` 相对源码基线无差异。
 - 覆盖九个经典玩法、四个新增移动变体，另列六个会改变组合的 shared-combat / mobile / weapon opt-in。下文的 `snake.classic` 等只是本次盘点标签，**不是运行时 ModeId、schema ID 或兼容性承诺**；现有 ModeDefinition 没有这些稳定模式标识。
 - 容量为所列默认工厂的声明/分配容量，不是活跃实体数、推荐负载、设备预算或实际峰值。自定义 Config、Editor 资产、测试缩小容量均须另列配置；不能直接套用本表。
-- 采用源码审查与临时只读 .NET 组合探针：调用真实 Mode 工厂和 `SimSession.Create`，不启动 Tick，读取世界/管线组成；19 种组合均成功创建与释放，两次独立进程输出一致。探针使用项目 Unity 桩，**没有验证原生 Job、GPU、触摸、内存峰值或真机性能**。不提交探针为生产工具。
+- 采用源码审查与临时只读 .NET 组合探针：调用真实 Mode 工厂和 `SimSession.Create`，不启动 Tick，读取世界/管线组成；19 种组合均成功创建与释放，两次独立进程输出一致。探针使用项目 Unity 桩，**没有验证原生 Job、GPU、触摸、内存峰值或真机性能**。探针只作为[可复现文档诊断](validation/FoundationCompatibilityProbe-20261007.md)保留，未加入运行时或 Unity Tests。
 - [机器可读清单](validation/FoundationCompatibilityInventory-20261007.json)保留默认工厂、按序表/列/资源/系统、容量、源码 SHA-256 和 fixture 方法索引，便于下一阶段有界对照。它是盘点证据，不是新生成的游戏 golden snapshot，也没有把缺失的历史 fixture 补成“通过”。
 
 ## 2. 所有组合共同遵守的现有契约
@@ -315,4 +315,4 @@ RPG 真实接线还有 `RpgGameTests.ProfilesSaveAndContinueOnTheSameFloor`（He
 - 19 个默认/opt-in 组合的真实工厂 + SimSession 创建/释放，按 .NET harness 桩读取表/列顺序、capacity、scope、资源接口和最终 pipeline；第二独立进程重复输出逐字节一致。没有执行游戏 Tick、改写快照、进行性能测量或原生验收。
 - 编译临时探针成功；最初探针误用 internal AccessDeclaration.IsBarrier，改为诊断反射后重新编译通过。依赖恢复曾输出 NU1900 vulnerability-cache warning，不影响编译/盘点；这些步骤不代表安全扫描通过。
 - 所有新增文档相对路径、机器清单源码路径与精确测试方法均检查存在；源文件 SHA-256 与固定基线核对；所有 Markdown 表列数和 git diff --check 检查。旧 fixture 两个 SHA-256 独立核对，不更新任何 expected。
-- 本交付仅新增本文件与机器清单；没有 Runtime / Game / Presentation / Tests / AGENTS / README 改动。后续运行时提交必须重新执行适用门槛，不能引用本次创建探针替代。
+- 本交付仅新增本文件、机器清单及其冷路径诊断源码/复现文档；没有 Runtime / Game / Presentation / Tests / AGENTS / README 改动。后续运行时提交必须重新执行适用门槛，不能引用本次创建探针替代。

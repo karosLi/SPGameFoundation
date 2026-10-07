@@ -1,0 +1,125 @@
+{
+  "verifiedRuntimeLocal": "0436983bf0353afb0c3751865907d18409cbcb8f",
+  "verifiedRuntimeTree": "4302438bfe01a59441b93778eb9116baaa344502",
+  "dotnet": {
+    "passed": 1432,
+    "failed": 0,
+    "projects": 78,
+    "assemblies": [
+      {
+        "assembly": "BrawlerFoundation.Tests.EditMode.dll",
+        "passed": 167,
+        "failed": 0
+      },
+      {
+        "assembly": "DefenseFoundation.Tests.EditMode.dll",
+        "passed": 8,
+        "failed": 0
+      },
+      {
+        "assembly": "FoundationAcceptance.Tests.EditMode.dll",
+        "passed": 9,
+        "failed": 0
+      },
+      {
+        "assembly": "PlatformerFoundation.Tests.EditMode.dll",
+        "passed": 18,
+        "failed": 0
+      },
+      {
+        "assembly": "PuzzleFoundation.Tests.EditMode.dll",
+        "passed": 7,
+        "failed": 0
+      },
+      {
+        "assembly": "RpgFoundation.Tests.EditMode.dll",
+        "passed": 63,
+        "failed": 0
+      },
+      {
+        "assembly": "SPF.Tests.EditMode.dll",
+        "passed": 927,
+        "failed": 0
+      },
+      {
+        "assembly": "ShooterFoundation.Tests.EditMode.dll",
+        "passed": 24,
+        "failed": 0
+      },
+      {
+        "assembly": "SlingFoundation.Tests.EditMode.dll",
+        "passed": 4,
+        "failed": 0
+      },
+      {
+        "assembly": "SnakeFoundation.Tests.EditMode.dll",
+        "passed": 40,
+        "failed": 0
+      },
+      {
+        "assembly": "StoryFoundation.Tests.EditMode.dll",
+        "passed": 5,
+        "failed": 0
+      },
+      {
+        "assembly": "SurvivorFoundation.Tests.EditMode.dll",
+        "passed": 160,
+        "failed": 0
+      }
+    ],
+    "nativeExecution": false
+  },
+  "apiCompile": {
+    "sources": 566,
+    "references": 95,
+    "targets": [
+      "net8.0",
+      "netstandard2.1"
+    ],
+    "errorsEach": 0,
+    "existingWarningsEach": 7,
+    "execution": false
+  },
+  "coldCompositions": {
+    "count": 19,
+    "twoRunsByteIdentical": true,
+    "sha256": "a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30",
+    "baselineRewritten": false
+  },
+  "python": {
+    "ci": 30,
+    "acceptance": 24,
+    "audioAuthoring": 10
+  },
+  "preFixFullAggregate": {
+    "source": "a87aa5e39112786a7a5be93196bac8a8e8d7f6f9",
+    "passed": 1428,
+    "status": "preserved; does not validate corrected layout"
+  },
+  "independentReview": {
+    "mechanicsFocusedPassed": 95,
+    "motionStyleFinding": "one P2: pop size drove layout descent",
+    "fixedSource": "0436983bf0353afb0c3751865907d18409cbcb8f",
+    "newRegressionCases": 4,
+    "regressionsFailedBefore": true,
+    "relatedFocusedAfter": 58,
+    "narrowFixRecheck": "no additional findings; source/formula review, not native visual approval"
+  },
+  "logSha256": {
+    "netstandard-api-generation.log": "538cc7a5df6ad5b981b7fd9bfdfb2a071137a840321ac61e12959df6f2497644",
+    "acceptance-python-tests.log": "20ddb70b5f6e3eef886c3895a30080fa9fcd7f46c0dac98016ff7020799e6149",
+    "netstandard-api-build.log": "9849defc6d56fc4f2ecab613519d6a4e24369a31ca329ca354a92cd007fa0c95",
+    "tests-final.log": "46815385748159e4b78f8787e0b042c7023c40ea5b0c9b50ffc3fc3b7a4a21f9",
+    "api-build.log": "977193c65ffe6efb859ac4a26949661c12147cec98e55373443962b419dd77dd",
+    "probe-build.log": "0207037d895d40dfab7be630f26ad98469299736d92145b25a7fa6a3ef93eb3c",
+    "generate-final.log": "84374d7390892b388c3fc5c3bbce07092f5dfa77caeebe550851e40e5fc8572c",
+    "ci-python-tests.log": "1e8dd1d843cac9e4717b19c2778523de5483b765b829fda3ead71b2de26c958a",
+    "api-generation.log": "6f1bbb9bba1e46a9ac508bb325a616a26bf6865d8aeb1e451c0a1240ab54cbbe",
+    "audio-python-tests.log": "ac5f3261864ae1c7b33fbfd65c2cbd3a8e58ecc7ddba846feb791b1606b48e17",
+    "build-final.log": "2c209199909be911a1b24300ad13cb540f525611d8876ce4cbd1d3c860006b2b"
+  },
+  "nativeExactHead": "pending publication and full native execution",
+  "motionVisualAcceptance": "pending matched real1x GPU/DataTexture clips",
+  "damageVisualAcceptance": "pending both-tier isolated glyph/single/mixed/dense/continuous cases",
+  "physicalAndroidIos": "pending"
+}

@@ -49,6 +49,25 @@ namespace RpgFoundation.Tests
             Assert.AreEqual(frame, animation.Frame, "death clock also freezes");
         }
 
+        [TestCase(float.PositiveInfinity)]
+        [TestCase(float.NegativeInfinity)]
+        [TestCase(float.NaN)]
+        [TestCase(-1f)]
+        public void InvalidDeathDeltaDoesNotPoisonTheFrameOrClock(float invalidDelta)
+        {
+            using var art = RpgArt.Build(0, k => Color.white);
+            var animation = new RpgActorAnimation();
+            animation.Sample(1, art.Hero, default, SkillKind.None, true, 0f, 5f, 0.1f);
+            int frame = animation.Frame;
+            float time = animation.Time;
+            animation.Sample(1, art.Hero, default, SkillKind.None, true, 0f, 5f, invalidDelta);
+            Assert.AreEqual(frame, animation.Frame);
+            Assert.AreEqual(time, animation.Time);
+            animation.Sample(1, art.Hero, default, SkillKind.None, true, 0f, 5f, 0.1f);
+            Assert.AreEqual(art.Hero.Clip(CharacterClip.Death).First + 2, animation.Frame,
+                "valid deltas still advance the death clip after invalid input");
+        }
+
         [Test]
         public void HitAndDeathOverrideActionsWhileWindupAndRecoveryShareTheAttackStrip()
         {

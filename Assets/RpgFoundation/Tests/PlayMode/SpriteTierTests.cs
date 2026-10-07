@@ -41,6 +41,7 @@ namespace RpgFoundation.Tests.PlayMode
                 yield return null;
                 game.NewGame(21);
                 yield return UIDriver.WaitUntil(() => game.State.Flow == RpgFlow.Playing, 5f);
+                Assert.AreEqual(RpgFlow.Playing, game.State.Flow, "start timed out");
                 game.Session.Sync();
                 var world = game.Session.World;
                 var handles = world.Table(RpgKeys.Actor).Handles;
@@ -49,18 +50,18 @@ namespace RpgFoundation.Tests.PlayMode
                 game.State.MonstersAlive = 0; game.State.BossAlive = false;
                 // An obstacle-free fixture lets real analog input demonstrate sustained velocity.
                 world.Resource(RpgKeys.Map).Fill(0);
-                float move = 0f; uint pressed = 0;
+                float move = 0f;
                 game.InputRouter.Sink = f => game.State.Input = InputFrame.Latch(game.State.Input,
-                    new InputFrame { Move = new float2(move, 0f), Pressed = pressed });
+                    new InputFrame { Move = new float2(move, 0f) });
                 game.CameraRig.Camera.targetTexture = target;
                 yield return UIDriver.WaitUntil(() => CurrentClip() == CharacterClip.Idle, 3f);
-                yield return Capture("idle");
+                yield return Capture("idle", CharacterClip.Idle);
                 move = 0.35f;
                 yield return UIDriver.WaitUntil(() => CurrentClip() == CharacterClip.Walk, 3f);
-                yield return Capture("walk");
+                yield return Capture("walk", CharacterClip.Walk);
                 move = 1f;
                 yield return UIDriver.WaitUntil(() => CurrentClip() == CharacterClip.Run, 3f);
-                yield return Capture("run");
+                yield return Capture("run", CharacterClip.Run);
                 game.Session.Pause();
                 game.InputRouter.enabled = false;
                 yield return null;
@@ -73,11 +74,22 @@ namespace RpgFoundation.Tests.PlayMode
                 Assert.AreEqual(before.StridePhase, after.StridePhase);
                 Assert.AreEqual(before.Frame, after.Frame);
                 CollectionAssert.AreEqual(snapshot, game.Session.CaptureSnapshot(), "rendering must not write gameplay snapshots");
-                move = 0f; pressed = 1u << RpgButton.Skill1;
-                game.InputRouter.enabled = true; game.Session.Resume();
-                yield return UIDriver.WaitUntil(() => CurrentClip() == CharacterClip.Cast, 3f);
-                pressed = 0;
-                yield return Capture("projectile-cast");
+                // Keep automatic ticks/input paused. Submit the real skill input and step the
+                // simulation to mid-cast, so a slow render frame cannot skip the short cast.
+                Assert.IsTrue(world.Registry.TryResolve(game.State.Hero, out _, out int heroRow));
+                game.State.Input = new InputFrame { Pressed = 1u << RpgButton.Skill1 };
+                game.Session.Step();
+                var casting = world.Column(RpgKeys.Combat)[heroRow];
+                Assert.AreEqual(ActionPhase.Cast, casting.Phase, "skill input must start a real cast");
+                int maxCastTicks = 1 + (int)math.ceil(casting.PhaseDuration / (float)game.Session.Clock.StepSeconds);
+                for (int tick = 0; tick < maxCastTicks && casting.Phase == ActionPhase.Cast && casting.PhaseProgress < 0.45f; tick++)
+                {
+                    game.Session.Step();
+                    casting = world.Column(RpgKeys.Combat)[heroRow];
+                }
+                Assert.AreEqual(ActionPhase.Cast, casting.Phase, "mid-cast fixture must remain active");
+                Assert.That(casting.PhaseProgress, Is.InRange(0.45f, 0.99f));
+                yield return Capture("projectile-cast", CharacterClip.Cast);
                 game.Host.Initialize(replacement, 21, start: false);
                 yield return null;
                 Assert.AreEqual(0f, game.WorldRenderer.AnimationTime);
@@ -94,12 +106,32 @@ namespace RpgFoundation.Tests.PlayMode
             }
 
             CharacterClip CurrentClip() => game.WorldRenderer.TryGetAnimation(game.State.Hero, out var a) ? a.Clip : CharacterClip.Death;
-            IEnumerator Capture(string state)
+            IEnumerator Capture(string state, CharacterClip expected)
             {
                 bool resume = game.Session.State == SPF.Runtime.Session.SessionState.Running;
                 game.Session.Pause(); // Freeze the actual simulated transition while the camera captures it.
                 yield return null;
                 yield return null;
+                // Validate after Pause has completed the last tick and the renderer has settled.
+                // A timed-out predicate or an already-finished action must fail before capture.
+                Assert.AreEqual(RpgFlow.Playing, game.State.Flow, state + " gameplay flow");
+                Assert.IsTrue(game.WorldRenderer.TryGetAnimation(game.State.Hero, out var animation), state + " actor must be drawn");
+                Assert.AreEqual(expected, animation.Clip, state + " settled clip");
+                var clip = game.WorldRenderer.Art.Hero.Clip(expected);
+                int expectedFrame;
+                if (expected == CharacterClip.Cast)
+                {
+                    Assert.IsTrue(game.Session.World.Registry.TryResolve(game.State.Hero, out _, out int row));
+                    var action = game.Session.World.Column(RpgKeys.Combat)[row];
+                    Assert.AreEqual(ActionPhase.Cast, action.Phase, "captured cast must still be authoritative");
+                    Assert.Greater(action.PhaseSkill, 0);
+                    Assert.AreEqual(SkillKind.Projectile, game.Runtime.Skills[action.PhaseSkill - 1].Kind);
+                    Assert.That(action.PhaseProgress, Is.InRange(0.45f, 0.99f));
+                    expectedFrame = clip.FrameAtProgress(action.PhaseProgress);
+                }
+                else expectedFrame = expected == CharacterClip.Idle ? clip.FrameAt(animation.Time)
+                    : clip.FrameAtProgress(animation.StridePhase);
+                Assert.AreEqual(expectedFrame, animation.Frame, state + " exact settled sprite frame");
                 var previous = RenderTexture.active;
                 RenderTexture.active = target;
                 read.ReadPixels(new Rect(0, 0, 960, 540), 0, 0); read.Apply(false);

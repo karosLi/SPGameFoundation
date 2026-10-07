@@ -30,15 +30,17 @@ namespace PlatformerFoundation.Tests.PlayMode
                 yield return null;
                 game.StartGame();
                 yield return UIDriver.WaitUntil(() => game.State.Flow == PlFlow.Playing && game.State.Motor.Grounded, 5f);
+                Assert.AreEqual(PlFlow.Playing, game.State.Flow, "start timed out");
+                Assert.IsTrue(game.State.Motor.Grounded, "landing timed out");
                 game.CameraRig.Camera.targetTexture = target;
-                yield return Capture("idle");
+                yield return Capture("idle", GameplayLocomotionState.Idle);
                 int uploads = game.Renderer.TileUploads;
                 game.Script = () => new InputFrame { Move = new float2(0.3f, 0f) };
                 yield return UIDriver.WaitUntil(() => game.Renderer.HeroLocomotion == GameplayLocomotionState.Walk, 3f);
-                yield return Capture("walk");
+                yield return Capture("walk", GameplayLocomotionState.Walk);
                 game.Script = () => new InputFrame { Move = new float2(1f, 0f) };
                 yield return UIDriver.WaitUntil(() => game.Renderer.HeroLocomotion == GameplayLocomotionState.Run, 3f);
-                yield return Capture("run");
+                yield return Capture("run", GameplayLocomotionState.Run);
                 game.Session.Pause();
                 yield return null;
                 float time = game.Renderer.AnimationTime, phase = game.Renderer.HeroStridePhase;
@@ -51,11 +53,15 @@ namespace PlatformerFoundation.Tests.PlayMode
                 CollectionAssert.AreEqual(snapshot, game.Session.CaptureSnapshot(), "paused rendering cannot alter gameplay/snapshot state");
                 game.Session.Resume();
                 game.Script = () => new InputFrame { Held = 1u << PlButton.Jump, Pressed = 1u << PlButton.Jump };
-                yield return UIDriver.WaitUntil(() => game.State.Motor.Velocity.y > 1f && !game.State.Motor.Grounded, 3f);
-                yield return Capture("jump");
+                yield return UIDriver.WaitUntil(() => game.State.Motor.Velocity.y > 1f && !game.State.Motor.Grounded
+                    && game.Renderer.HeroLocomotion == GameplayLocomotionState.Air
+                    && game.Renderer.HeroFrame == game.Renderer.Art.HeroJump, 3f);
+                yield return Capture("jump", GameplayLocomotionState.Air, 1);
                 game.Script = () => default;
-                yield return UIDriver.WaitUntil(() => game.State.Motor.Velocity.y < -1f && !game.State.Motor.Grounded, 3f);
-                yield return Capture("fall");
+                yield return UIDriver.WaitUntil(() => game.State.Motor.Velocity.y < -1f && !game.State.Motor.Grounded
+                    && game.Renderer.HeroLocomotion == GameplayLocomotionState.Air
+                    && game.Renderer.HeroFrame == game.Renderer.Art.HeroFall, 3f);
+                yield return Capture("fall", GameplayLocomotionState.Air, -1);
                 Assert.AreEqual(uploads, game.Renderer.TileUploads, "actor transitions preserve the static tile upload contract");
                 game.Host.Initialize(replacement, 1, start: false);
                 yield return null;
@@ -72,12 +78,33 @@ namespace PlatformerFoundation.Tests.PlayMode
                 target.Release(); Object.Destroy(target); Object.Destroy(read);
             }
 
-            IEnumerator Capture(string state)
+            IEnumerator Capture(string state, GameplayLocomotionState expected, int vertical = 0)
             {
                 bool resume = game.Session.State == SPF.Runtime.Session.SessionState.Running;
                 game.Session.Pause(); // Freeze the actual simulated transition while the camera captures it.
                 yield return null;
                 yield return null;
+                // WaitUntil has a timeout without an assertion. Guard the settled state before
+                // writing an artifact, including the tick Pause completed before freezing.
+                Assert.AreEqual(PlFlow.Playing, game.State.Flow, state + " gameplay flow");
+                Assert.AreEqual(expected, game.Renderer.HeroLocomotion, state + " settled locomotion");
+                var art = game.Renderer.Art;
+                int expectedFrame;
+                if (vertical != 0)
+                {
+                    Assert.IsFalse(game.State.Motor.Grounded, state + " must be airborne");
+                    Assert.Less(game.State.Riding, 0, state + " must not be riding a platform");
+                    Assert.Greater(game.State.Motor.Velocity.y * vertical, 0f, state + " vertical velocity");
+                    expectedFrame = vertical > 0 ? art.HeroJump : art.HeroFall;
+                }
+                else
+                {
+                    Assert.IsTrue(game.State.Motor.Grounded || game.State.Riding >= 0, state + " must be grounded");
+                    expectedFrame = expected == GameplayLocomotionState.Run ? art.HeroRun.FrameAtProgress(game.Renderer.HeroStridePhase)
+                        : expected == GameplayLocomotionState.Walk ? art.HeroWalk.FrameAtProgress(game.Renderer.HeroStridePhase)
+                        : art.HeroIdle.FrameAt(game.Renderer.HeroAnimationTime);
+                }
+                Assert.AreEqual(expectedFrame, game.Renderer.HeroFrame, state + " exact settled sprite frame");
                 var previous = RenderTexture.active;
                 RenderTexture.active = target;
                 read.ReadPixels(new Rect(0, 0, 960, 540), 0, 0); read.Apply(false);

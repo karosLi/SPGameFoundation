@@ -1,5 +1,6 @@
 using SPF.Presentation.Animation;
 using SPF.Presentation.Sprites;
+using Unity.Mathematics;
 
 namespace RpgFoundation.Presentation
 {
@@ -19,6 +20,7 @@ namespace RpgFoundation.Presentation
             bool dead, float speed, float runSpeed, float dt)
         {
             if (Generation != generation) { this = default; Generation = generation; }
+            dt = math.isfinite(dt) ? math.max(0f, dt) : 0f;
             bool locomoting = !dead && (action.Phase == ActionPhase.None || action.Phase == ActionPhase.Dash
                 || action.Phase == ActionPhase.Recover && action.PhaseSkill != 0);
             m_Locomotion.Advance(dt, speed, runSpeed, enabled: locomoting);
@@ -26,7 +28,7 @@ namespace RpgFoundation.Presentation
             if (dead)
             {
                 Clip = CharacterClip.Death;
-                m_DeathTime += dt > 0f ? dt : 0f;
+                m_DeathTime = math.min(m_DeathTime + dt, art.Clip(Clip).Duration);
                 Frame = art.Clip(Clip).FrameAt(m_DeathTime);
             }
             else if (action.Phase == ActionPhase.Stagger || action.HitFlash > 0.08f)

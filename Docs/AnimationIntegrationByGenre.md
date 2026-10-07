@@ -45,6 +45,6 @@ Platformer 明确用 512 像素 shelf 宽度，新增 Walk 放到第二行；继
 
 新增 EditMode 测试覆盖：速度阈值滞回、Walk↔Run 相位连续、30 / 120 FPS 下相同推进量、air / disabled 时冻结步态、pause 时冻结时钟、generation 回收、动作优先级 / 技能映射、frame anchor 和 atlas 上限。真实 Unity 分支另外读取像素，要求每个 Run 帧互不重复，Platformer Walk / Run 八帧互异。
 
-新增 PlayMode 测试在 GpuDriven / DataTexture 两档启动真实游戏，用输入驱动 Idle→Walk→Run，Platformer 再 Jump→Fall，RPG 再 projectile Cast；检查 paused snapshot 不变、时钟不动、session rebind 重置，并写出 `Artifacts/Screenshots/platformer-motion-<state>-<tier>.png`、`rpg-motion-<state>-<tier>.png`。截图时只暂停已进入的真实模拟状态，不制造独立陈列 pose。
+新增 PlayMode 测试在 GpuDriven / DataTexture 两档启动真实游戏，用输入驱动 Idle→Walk→Run，Platformer 再 Jump→Fall，RPG 再 projectile Cast；检查 paused snapshot 不变、时钟不动、session rebind 重置，并写出 `Artifacts/Screenshots/platformer-motion-<state>-<tier>.png`、`rpg-motion-<state>-<tier>.png`。截图时只暂停已进入的真实模拟状态，不制造独立陈列 pose。每张图在 pause 完成待执行 tick、renderer 稳定两帧后，断言实际 clip、精确 sprite frame 和对应动作 / motor 状态；等待超时不会被当作成功。短 projectile Cast 由真实技能输入加有界 `Session.Step()` 推进到施法中段后冻结，避免低帧率跳过整个施法窗口。
 
 本提交准备期间本地 .NET 测试启动遭遇 MSBuild `NamedPipeServerStream` 的 `SocketException (13): Permission denied`，未绕过权限重试。上述测试及真实 shader / Burst / 图像结果须由集中 Mac Unity CI 对最终集成 SHA 执行；源码 packing 复算不是运行时纹理验收，测试代码不是通过记录，静态截图也不是完整动作自然度视频证据。

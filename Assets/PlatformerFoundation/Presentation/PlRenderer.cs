@@ -44,8 +44,10 @@ namespace PlatformerFoundation.Presentation
         public bool Night { get; private set; }
         public int LightsUsed { get; private set; }
         public int Torches => m_TorchCount;
+        public PlArt Art => m_Art;
         public GameplayLocomotionState HeroLocomotion => m_HeroClock.State;
         public float HeroStridePhase => m_HeroClock.Phase;
+        public float HeroAnimationTime => m_HeroClock.Time;
         public float AnimationTime => m_Time;
         public int HeroFrame { get; private set; }
 

@@ -125,6 +125,11 @@ Verification added for this change:
   including actual ZIP/header/inventory order, the inclusive 1 MiB metadata boundary,
   deterministic repeated packaging, and byte-exact restoration with JPEGs across the
   real 16 MiB split boundary. Existing security/hash/limit tests remain.
+- The complete 76-assembly .NET harness builds and passes 980 logic tests with no
+  failures; the opt-in `SearchShots`/`ExportFrames` tooling cases remain explicitly
+  skipped. The new image-encoding fixture is native-only and is not counted as
+  executed by this stub harness. Build-time NuGet vulnerability-audit warnings were
+  caused by the read-only default HTTP cache, not C# compile errors.
 - The changed C# helper, fixture and both gameplay call sites compile against the
   actual Unity 2022.3.62f2 managed DLLs, including ImageConversionModule, rather than
   an invented JPEG stub API. This is API compilation only; native execution and

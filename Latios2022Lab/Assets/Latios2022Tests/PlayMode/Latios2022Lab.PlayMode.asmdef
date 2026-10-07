@@ -1,0 +1,25 @@
+{
+  "name": "Latios2022Lab.PlayMode",
+  "rootNamespace": "Latios2022Lab",
+  "references": [
+    "Latios.Core",
+    "Latios.Transforms",
+    "Latios.Psyshock",
+    "Unity.Entities",
+    "Unity.Collections",
+    "Unity.Mathematics",
+    "Unity.Jobs",
+    "Unity.Burst",
+    "Latios2022Lab.Runtime",
+    "UnityEngine.TestRunner"
+  ],
+  "includePlatforms": [],
+  "allowUnsafeCode": false,
+  "autoReferenced": true,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ]
+}

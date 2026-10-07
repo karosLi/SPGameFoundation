@@ -1,0 +1,133 @@
+import copy
+import importlib.util
+import json
+from pathlib import Path
+import tempfile
+import unittest
+from unittest.mock import patch
+from datetime import datetime, timedelta, timezone
+
+spec = importlib.util.spec_from_file_location('lab', Path(__file__).with_name('lab.py'))
+lab = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(lab)
+
+
+class LauncherTests(unittest.TestCase):
+    def test_static_preflight_keeps_native_status_unrun(self):
+        report = lab.preflight()
+        self.assertEqual('STATIC_PREFLIGHT_ONLY', report['status'])
+        self.assertEqual('NOT_RUN', report['native'])
+
+    def test_unity_normalized_version_record_is_accepted_without_relaxing_pin(self):
+        self.assertIsNone(lab.parse_project_version('m_EditorVersion: 2022.3.62f2\n'))
+        self.assertEqual('2022.3.62f2 (abcdef123456)', lab.parse_project_version(
+            'm_EditorVersion: 2022.3.62f2\nm_EditorVersionWithRevision: 2022.3.62f2 (abcdef123456)\n'))
+        for text in ('m_EditorVersion: 2022.3.62f1\n',
+                     'm_EditorVersion: 2022.3.62f2\nm_EditorVersion: 2022.3.62f2\n',
+                     'm_EditorVersion: 2022.3.62f2\nm_EditorVersionWithRevision: 6000.3.8f1 (test)\n'):
+            with self.assertRaises(ValueError): lab.parse_project_version(text)
+
+    def test_normalized_define_order_is_accepted_and_missing_define_rejected(self):
+        settings = (lab.PROJECT / 'ProjectSettings/ProjectSettings.asset').read_text()
+        reordered = settings.replace('ENTITY_STORE_V1;UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS',
+                                     'UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS;ENTITY_STORE_V1')
+        lab.check_defines(reordered)
+        with self.assertRaises(ValueError): lab.check_defines(reordered.replace(';ENTITY_STORE_V1', ''))
+
+    def test_read_only_preflight_never_launches_process(self):
+        with patch.object(lab.subprocess, 'run', side_effect=AssertionError('Native launch forbidden')):
+            self.assertEqual(0, lab.main(['preflight']))
+
+    def test_dry_plan_never_launches_process(self):
+        with patch.object(lab.subprocess, 'run', side_effect=AssertionError('Native launch forbidden')):
+            self.assertEqual(0, lab.main(['editmode', '--editor', '/not-installed/Unity']))
+
+    def test_execute_without_gate_fails_before_process(self):
+        with patch.object(lab.subprocess, 'run', side_effect=AssertionError('Native launch forbidden')):
+            with self.assertRaisesRegex(ValueError, 'coordinator-issued'):
+                lab.main(['import', '--editor', '/not-installed/Unity', '--execute'])
+
+    def test_command_is_isolated_and_test_runner_owns_exit(self):
+        c = lab.make_command(Path('/editor/Unity'), 'editmode', Path('/evidence'), 'on', 'StandaloneOSX')
+        self.assertEqual(str(lab.PROJECT), c[c.index('-projectPath') + 1])
+        self.assertNotIn('-quit', c)
+        self.assertNotIn('-nographics', c)
+        self.assertIn('Latios2022Lab.Editor', c)
+
+    def test_burst_off_is_per_process_not_preference_mutation(self):
+        c = lab.make_command(Path('/editor/Unity'), 'playmode', Path('/evidence'), 'off', 'StandaloneOSX')
+        self.assertIn('--burst-disable-compilation', c)
+        self.assertNotIn('-nographics', c)
+
+    def test_rosetta_runner_still_launches_physical_arm64_host(self):
+        with patch.object(lab.sys, 'platform', 'darwin'), patch.object(lab.subprocess, 'check_output', return_value='1\n'):
+            c = lab.make_command(Path('/editor/Unity'), 'import', Path('/evidence'), 'on', 'StandaloneOSX')
+            self.assertEqual(['/usr/bin/arch', '-arm64'], c[:2])
+
+    def test_import_requires_real_capture_entrypoint(self):
+        c = lab.make_command(Path('/editor/Unity'), 'import', Path('/evidence'), 'on', 'StandaloneOSX')
+        self.assertIn('Latios2022Lab.LabEnvironment.CaptureEnvironment', c)
+        self.assertIn('-quit', c)
+
+    def test_player_build_cannot_be_managed_control(self):
+        with self.assertRaisesRegex(ValueError, 'IL2CPP smoke requires Burst'):
+            lab.main(['player-build', '--editor', '/editor/Unity', '--burst', 'off'])
+
+    def valid_gate(self):
+        return dict(schema=1, project_path=str(lab.PROJECT), p0_native_status='passed',
+                    p0_commit='a' * 40, p0_evidence_url='https://example.invalid/test-fixture-only',
+                    runner_reserved=True, coordinator='unit-test-only',
+                    expires_utc=(datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat(),
+                    allowed_phases=['import', 'editmode', 'playmode', 'player-build'])
+
+    def test_gate_rejects_pending_foreign_expired_and_unreserved(self):
+        mutations = [dict(p0_native_status='pending'), dict(project_path='/elsewhere/Latios2022Lab'),
+                     dict(p0_commit='short'), dict(p0_evidence_url=''), dict(runner_reserved=False),
+                     dict(expires_utc='2000-01-01T00:00:00Z'), dict(allowed_phases=[])]
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / 'gate.json'
+            for mutation in mutations:
+                with self.subTest(mutation=mutation):
+                    data = self.valid_gate(); data.update(mutation); p.write_text(json.dumps(data))
+                    with self.assertRaises(ValueError): lab.read_gate(p, lab.PROJECT, 'import')
+
+    def test_gate_allows_only_explicit_phase_and_player_needs_editor_gate(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / 'gate.json'; p.write_text(json.dumps(self.valid_gate()))
+            self.assertEqual(1, lab.read_gate(p, lab.PROJECT, 'import')['schema'])
+            with self.assertRaisesRegex(ValueError, 'actual S1a Editor gates'):
+                lab.read_gate(p, lab.PROJECT, 'player-build')
+
+    def test_lock_parser_rejects_floating_git_and_dependency_drift(self):
+        # Synthetic parser inputs live only in a temporary directory, never Packages/.
+        data = {'dependencies': {k: {'version': v} for k, v in lab.PINS.items()}}
+        data['dependencies']['com.latios.latiosframework'] = dict(source='git', hash=lab.LATIOS_COMMIT, version=lab.LATIOS_URL)
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / 'synthetic-parser-input.json'
+            p.write_text(json.dumps(data)); lab.check_lock(p)
+            for name, key, value in [('com.latios.latiosframework', 'hash', 'main'),
+                                      ('com.unity.burst', 'version', '1.8.27')]:
+                bad = copy.deepcopy(data); bad['dependencies'][name][key] = value; p.write_text(json.dumps(bad))
+                with self.assertRaises(ValueError): lab.check_lock(p)
+
+    def test_test_results_reject_skips_and_wrong_discovery_count(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / 'tests.xml'
+            for text in ('<test-run result="Passed"/>', '<test-run result="Passed"><test-case result="Skipped"/></test-run>'):
+                p.write_text(text)
+                with self.assertRaises(ValueError): lab.check_results(p, 'playmode')
+            p.write_text('<test-run result="Passed"><test-case result="Passed"/></test-run>')
+            self.assertEqual(1, lab.check_results(p, 'playmode'))
+
+    def test_project_symlink_rejected(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            link = Path(tmp) / 'Latios2022Lab'; link.symlink_to(lab.PROJECT, target_is_directory=True)
+            with self.assertRaisesRegex(ValueError, 'symlink'): lab.validate_paths(link)
+
+    def test_product_manifest_remains_without_latios(self):
+        data = json.loads((lab.PROJECT.parent / 'Packages/manifest.json').read_text())
+        self.assertNotIn('com.latios.latiosframework', data['dependencies'])
+
+
+if __name__ == '__main__':
+    unittest.main()

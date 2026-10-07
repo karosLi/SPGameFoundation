@@ -1,0 +1,17 @@
+{
+  "name": "Latios2022Lab.Runtime",
+  "rootNamespace": "Latios2022Lab",
+  "references": [
+    "Latios.Core",
+    "Latios.Transforms",
+    "Latios.Psyshock",
+    "Unity.Entities",
+    "Unity.Collections",
+    "Unity.Mathematics",
+    "Unity.Jobs",
+    "Unity.Burst"
+  ],
+  "includePlatforms": [],
+  "allowUnsafeCode": false,
+  "autoReferenced": true
+}

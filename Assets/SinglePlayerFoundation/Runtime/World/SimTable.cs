@@ -47,8 +47,17 @@ namespace SPF.Runtime.World
             if (pooled)
             {
                 // The dead flags are an ordinary (hidden) column: they move, reset and snapshot with the rows.
-                m_Dead = new Column<byte>(capacity);
-                m_ColumnList.Add(m_Dead);
+                try
+                {
+                    m_Dead = new Column<byte>(capacity);
+                    m_ColumnList.Add(m_Dead);
+                }
+                catch (Exception failure)
+                {
+                    if (m_Dead != null) CleanupErrors.Try(m_Dead.Dispose, ref failure);
+                    CleanupErrors.Try(() => m_Handles.Dispose(), ref failure);
+                    throw;
+                }
             }
         }
 
@@ -109,8 +118,17 @@ namespace SPF.Runtime.World
             if (m_Columns.ContainsKey(key.Id))
                 return;
             var column = new Column<T>(Capacity);
-            m_Columns.Add(key.Id, column);
-            m_ColumnList.Add(column);
+            try
+            {
+                m_Columns.Add(key.Id, column);
+                m_ColumnList.Add(column);
+            }
+            catch (Exception failure)
+            {
+                m_Columns.Remove(key.Id);
+                CleanupErrors.Try(column.Dispose, ref failure);
+                throw;
+            }
         }
 
         public bool HasColumn(AccessKey key) => m_Columns.ContainsKey(key.Id);
@@ -264,11 +282,13 @@ namespace SPF.Runtime.World
 
         public void Dispose()
         {
+            Exception failure = null;
             for (int i = 0; i < m_ColumnList.Count; i++)
-                m_ColumnList[i].Dispose();
+                CleanupErrors.Try(m_ColumnList[i].Dispose, ref failure);
             m_ColumnList.Clear();
             m_Columns.Clear();
-            if (m_Handles.IsCreated) m_Handles.Dispose();
+            if (m_Handles.IsCreated) CleanupErrors.Try(() => m_Handles.Dispose(), ref failure);
+            CleanupErrors.ThrowIfAny(failure);
         }
     }
 

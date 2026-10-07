@@ -25,8 +25,14 @@ namespace SPF.Runtime.Scheduling
         readonly PipelineStats m_Stats;
         JobHandle m_Pending;
         long m_BeginTimestamp;
+        int m_InitializedSystems;
+        bool m_Disposed;
+        bool m_Disposing;
+        bool m_EndingTick;
 
         public bool HasPendingTick { get; private set; }
+        /// <summary>True after all initialized systems have received their final cleanup attempt.</summary>
+        public bool IsDisposed => m_Disposed && !m_Disposing;
         public PipelineStats Stats => m_Stats;
         public TickTime LastTickTime { get; private set; }
 
@@ -60,8 +66,20 @@ namespace SPF.Runtime.Scheduling
                 names[i] = m_Systems[i].Name;
             m_Stats = new PipelineStats(names);
 
-            foreach (var entry in m_Systems)
-                entry.System.OnCreate(world);
+            try
+            {
+                foreach (var entry in m_Systems)
+                {
+                    entry.System.OnCreate(world);
+                    m_InitializedSystems++;
+                }
+            }
+            catch (Exception failure)
+            {
+                m_Disposed = true;
+                DestroyInitialized(ref failure);
+                throw;
+            }
         }
 
         /// <summary>
@@ -77,6 +95,7 @@ namespace SPF.Runtime.Scheduling
 
         public void BeginTick(TickTime time)
         {
+            ThrowIfDisposed();
             if (HasPendingTick)
                 throw new InvalidOperationException("EndTick must be called before the next BeginTick.");
 
@@ -147,22 +166,32 @@ namespace SPF.Runtime.Scheduling
             if (!HasPendingTick)
                 return;
 
+            if (m_EndingTick) throw new InvalidOperationException("EndTick cannot be reentered during resource sync.");
+            m_EndingTick = true;
             s_EndMarker.Begin();
             long waitStart = Stopwatch.GetTimestamp();
-            m_Pending.Complete();
-            long waitEnd = Stopwatch.GetTimestamp();
-            m_Pending = default;
-            m_Tracker.Reset();
-            m_World.Sync();
-            HasPendingTick = false;
-            s_EndMarker.End();
-
-            m_Stats.RecordSync(waitEnd - waitStart, Stopwatch.GetTimestamp() - m_BeginTimestamp);
+            try
+            {
+                m_Pending.Complete();
+                long waitEnd = Stopwatch.GetTimestamp();
+                m_Pending = default;
+                m_Tracker.Reset();
+                try
+                {
+                    m_World.Sync();
+                    m_Stats.RecordSync(waitEnd - waitStart, Stopwatch.GetTimestamp() - m_BeginTimestamp);
+                }
+                // Keep BeginTick blocked throughout OnSync, but distinguish callback failure from
+                // failed job completion so final cleanup can safely release native storage.
+                finally { HasPendingTick = false; }
+            }
+            finally { m_EndingTick = false; s_EndMarker.End(); }
         }
 
         /// <summary>Completes outstanding work and resets systems that support it.</summary>
         public void Reset()
         {
+            ThrowIfDisposed();
             EndTick();
             foreach (var entry in m_Systems)
                 (entry.System as IResettableSystem)?.OnReset(m_World);
@@ -172,6 +201,7 @@ namespace SPF.Runtime.Scheduling
         /// <summary>State of every <see cref="ISnapshotSystem"/> (between ticks).</summary>
         public void WriteSnapshot(System.IO.BinaryWriter writer)
         {
+            ThrowIfDisposed();
             EndTick();
             foreach (var entry in m_Systems)
             {
@@ -185,6 +215,7 @@ namespace SPF.Runtime.Scheduling
 
         public void ReadSnapshot(System.IO.BinaryReader reader)
         {
+            ThrowIfDisposed();
             EndTick();
             foreach (var entry in m_Systems)
             {
@@ -200,9 +231,34 @@ namespace SPF.Runtime.Scheduling
 
         public void Dispose()
         {
-            EndTick();
-            for (int i = m_Systems.Length - 1; i >= 0; i--)
-                m_Systems[i].System.OnDestroy(m_World);
+            if (m_Disposed || m_Disposing) return;
+            m_Disposing = true;
+            try
+            {
+                Exception failure = null;
+                CleanupErrors.Try(EndTick, ref failure);
+                // A failed JobHandle.Complete leaves safety unestablished. Keep ownership for a retry;
+                // an OnSync failure after completion does not prevent system/world cleanup.
+                if (HasPendingTick) CleanupErrors.ThrowIfAny(failure);
+                m_Disposed = true;
+                DestroyInitialized(ref failure);
+                CleanupErrors.ThrowIfAny(failure);
+            }
+            finally { m_Disposing = false; }
+        }
+
+        void DestroyInitialized(ref Exception failure)
+        {
+            while (m_InitializedSystems > 0)
+            {
+                var system = m_Systems[--m_InitializedSystems].System;
+                CleanupErrors.Try(() => system.OnDestroy(m_World), ref failure);
+            }
+        }
+
+        void ThrowIfDisposed()
+        {
+            if (m_Disposed || m_Disposing) throw new ObjectDisposedException(nameof(TickPipeline));
         }
 
         struct SystemEntry

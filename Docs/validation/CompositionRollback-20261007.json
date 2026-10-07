@@ -1,0 +1,90 @@
+{
+  "baseline_commit": "9bc7c41",
+  "scope": "Stage B core ownership and settings preflight; native execution pending",
+  "focused_cases": 35,
+  "initial_red": {
+    "failed": 15,
+    "passed": 6
+  },
+  "adversarial_red": {
+    "failed": 1,
+    "passed": 29
+  },
+  "final_focused": {
+    "failed": 0,
+    "passed": 35
+  },
+  "full_dotnet": "pending final revision",
+  "cold_compositions": 19,
+  "cold_output_sha256": "a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30",
+  "real_api_compile": {
+    "sources": 213,
+    "references": 96,
+    "errors": 0,
+    "warnings": 4
+  },
+  "reviewed_baseline_source_changes": [
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/Composition/IGameplayModule.cs",
+      "baseline_sha256": "392f9cdf1b20a5309a0d9aa8803b3f0e72eb9edd570782d56b9ce37224a82d85",
+      "current_sha256": "de4c0d1681ef846a63a82c86d9feaceb4128e41c08c7241071475df0439cd4be"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/Composition/ModeDefinition.cs",
+      "baseline_sha256": "1152a158ef7a48308196eb3227887568b91792b010f2f09ff8a0b57b5f608d77",
+      "current_sha256": "f09c3fbe593bb0414b95c037f66920278463541d8447c60c89bf1dcd76b3dae3"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/Composition/WorldComposer.cs",
+      "baseline_sha256": "a95999e58b4d7c3b736ffcbcdd81e218d4b38b715912bd4f4af0ec9cdd69bdb8",
+      "current_sha256": "911c8ad68d3ee4160b523af50caf3040087924eea8377d041fa9a75eef376529"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/Scheduling/TickPipeline.cs",
+      "baseline_sha256": "40b835f9a51ebbbbd66ef2e61ee4a9cb88b251de66f1c289b60fa427f020f428",
+      "current_sha256": "17c9b0c9541405f253155c700421f0d60bdd9a07e792dd12c1dea40e2080ef8b"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/Session/SimSession.cs",
+      "baseline_sha256": "789737ee148f57b2658e160254f3b09aff66a8fbf491dd6ffeb1d7805c70c40f",
+      "current_sha256": "531842b1786d2bb06e678b2a735c415d15ec3e7c5761cf0cd53ac572cbffae07"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/World/EntityRegistry.cs",
+      "baseline_sha256": "a6c7679051510f659ecc2332fafb43c8186a9d7b607aab3302c8810307ff4057",
+      "current_sha256": "dced172286a260fe42e770df6cf5b9fea8d50782d3c2635e314eaf23f78bdd18"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/World/SimTable.cs",
+      "baseline_sha256": "8c78262e70a58d576c10c79cafe87505442f1cfa69e7a74ec2c74e2146c78586",
+      "current_sha256": "261906dd3b8f797e0b9da72ec7bd11e23e89c0cc14079e8421fcde129d685914"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/World/SimWorld.cs",
+      "baseline_sha256": "b0186c0e9c34994b0dcbf91b4a06a5937c7e4fe39b70af883c0b92748ba5b143",
+      "current_sha256": "fb100ef9e1acf718848b54deaaf031043f05062f5e56ec32c410162954649f99"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/World/WorldLayout.cs",
+      "baseline_sha256": "c51cfc47e7f8d704f7c29183d894b08ef72c05dffa907c77ca31f592f1c740bb",
+      "current_sha256": "0eff213d71b86925d4060c1bd70440d8dbf7f1d4750f31361a370a7233c3eedc"
+    }
+  ],
+  "evidence_hashes": {
+    "composition-red.trx": {
+      "sha256": "f89bbcfd064965ca49f2330aad6972e7a461f0f9a77600af54e1eede5360fc34"
+    },
+    "composition-adversarial-red.trx": {
+      "sha256": "0f2697ad0b0fc23c6150e0cbde760d457d84e7dcae9c184c7c01dc954dd113a8"
+    },
+    "composition-reviewed-green.trx": {
+      "sha256": "bb652d3a943c42f9502aec4a4b56eaaba61d579977b42d10d602ebe7b99ad76d"
+    },
+    "native-api.log": {
+      "sha256": "c2ca2b0215f55c6b8535a7ba8ec5fa00be348fcf42eb1ef113a3516a0f2b1710"
+    },
+    "full-build.log": {
+      "sha256": "4f565f9487337cc280e650d0597af6f66515346e2c56a9ca0b63d132208bedca"
+    }
+  }
+}

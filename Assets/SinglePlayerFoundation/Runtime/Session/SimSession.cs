@@ -23,6 +23,7 @@ namespace SPF.Runtime.Session
         readonly FixedStepClock m_Clock;
         SessionState m_State;
         bool m_HostSuspended;
+        bool m_Disposing;
         bool m_IgnoreNextFrameDelta;
 
         public SimWorld World { get; }
@@ -67,17 +68,19 @@ namespace SPF.Runtime.Session
 
         public SimSession(IReadOnlyList<IGameplayModule> modules, SessionSettings settings, uint seed)
         {
+            settings.Validate();
+            // Validate/create the clock before modules can allocate native resources.
+            m_Clock = new FixedStepClock(settings.TickRate, settings.MaxTicksPerFrame);
             World = WorldComposer.BuildWorld(modules, settings, seed);
             try
             {
                 Pipeline = WorldComposer.BuildPipeline(modules, World);
             }
-            catch
+            catch (Exception failure)
             {
-                World.Dispose();
+                CleanupErrors.Try(World.Dispose, ref failure);
                 throw;
             }
-            m_Clock = new FixedStepClock(settings.TickRate, settings.MaxTicksPerFrame);
             m_State = SessionState.Created;
         }
 
@@ -234,11 +237,25 @@ namespace SPF.Runtime.Session
 
         public void Dispose()
         {
-            if (State == SessionState.Disposed) return;
-            Pipeline.Dispose();
-            World.Dispose();
-            ResetPendingTicks();
-            m_State = SessionState.Disposed;
+            if (State == SessionState.Disposed || m_Disposing) return;
+            m_Disposing = true;
+            try
+            {
+                Exception failure = null;
+                CleanupErrors.Try(Pipeline.Dispose, ref failure);
+                // Never free storage if jobs could still run or an outer pipeline cleanup is
+                // still invoking systems. A direct child Dispose can reenter this owner via a hook.
+                if (!Pipeline.IsDisposed)
+                {
+                    if (failure == null) failure = new InvalidOperationException("Pipeline cleanup is still in progress.");
+                    CleanupErrors.ThrowIfAny(failure);
+                }
+                m_State = SessionState.Disposed;
+                ResetPendingTicks();
+                CleanupErrors.Try(World.Dispose, ref failure);
+                CleanupErrors.ThrowIfAny(failure);
+            }
+            finally { m_Disposing = false; }
         }
 
         void ResetPendingTicks()
@@ -249,7 +266,7 @@ namespace SPF.Runtime.Session
 
         void ThrowIfDisposed()
         {
-            if (State == SessionState.Disposed)
+            if (State == SessionState.Disposed || m_Disposing)
                 throw new ObjectDisposedException(nameof(SimSession));
         }
     }

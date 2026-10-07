@@ -23,10 +23,18 @@ namespace SPF.Runtime.World
 
         public EntityRegistry(int capacity)
         {
-            m_Generations = new NativeArray<int>(capacity, Allocator.Persistent);
-            m_Tables = new NativeArray<short>(capacity, Allocator.Persistent);
-            m_Rows = new NativeArray<int>(capacity, Allocator.Persistent);
-            m_FreeSlots = new NativeArray<int>(capacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            try
+            {
+                m_Generations = new NativeArray<int>(capacity, Allocator.Persistent);
+                m_Tables = new NativeArray<short>(capacity, Allocator.Persistent);
+                m_Rows = new NativeArray<int>(capacity, Allocator.Persistent);
+                m_FreeSlots = new NativeArray<int>(capacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            }
+            catch (Exception failure)
+            {
+                CleanupErrors.Try(Dispose, ref failure);
+                throw;
+            }
         }
 
         /// <summary>Allocates a handle; returns Null when every slot is in use.</summary>
@@ -129,10 +137,12 @@ namespace SPF.Runtime.World
 
         public void Dispose()
         {
-            if (m_Generations.IsCreated) m_Generations.Dispose();
-            if (m_Tables.IsCreated) m_Tables.Dispose();
-            if (m_Rows.IsCreated) m_Rows.Dispose();
-            if (m_FreeSlots.IsCreated) m_FreeSlots.Dispose();
+            Exception failure = null;
+            if (m_Generations.IsCreated) CleanupErrors.Try(() => m_Generations.Dispose(), ref failure);
+            if (m_Tables.IsCreated) CleanupErrors.Try(() => m_Tables.Dispose(), ref failure);
+            if (m_Rows.IsCreated) CleanupErrors.Try(() => m_Rows.Dispose(), ref failure);
+            if (m_FreeSlots.IsCreated) CleanupErrors.Try(() => m_FreeSlots.Dispose(), ref failure);
+            CleanupErrors.ThrowIfAny(failure);
         }
     }
 

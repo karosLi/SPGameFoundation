@@ -27,6 +27,8 @@ namespace SPF.Runtime.World
         readonly List<SimTable> m_PooledTables = new List<SimTable>();
         readonly List<IResettableResource> m_LevelResources = new List<IResettableResource>();
 
+        bool m_Disposed;
+
         public EntityRegistry Registry { get; }
 
         /// <summary>Development check of undeclared accesses during system scheduling (see <see cref="AccessGuard"/>).</summary>
@@ -39,33 +41,55 @@ namespace SPF.Runtime.World
 
         public SimWorld(WorldLayout layout, uint seed)
         {
-            Seed = seed;
-            int totalCapacity = 0;
-            foreach (var spec in layout.Tables)
+            if (layout == null) throw new ArgumentNullException(nameof(layout));
+            layout.ThrowIfConsumed();
+            try
             {
-                if (m_Tables.Count >= short.MaxValue)
-                    throw new InvalidOperationException("Too many tables.");
-                var table = new SimTable(spec.Key, m_Tables.Count, spec.Capacity, spec.IsPooled);
-                if (spec.IsPooled) m_PooledTables.Add(table);
-                foreach (var addColumn in spec.ColumnFactories)
-                    addColumn(table);
-                if (spec.TrackChanges)
-                    table.EnableChangeTracking();
-                table.Guard = Guard;
-                if (spec.IsLevelScoped) m_LevelTables.Add(table);
-                m_Tables.Add(table);
-                m_TablesByKey.Add(spec.Key.Id, table);
-                totalCapacity += spec.Capacity;
-            }
-            Registry = new EntityRegistry(Math.Max(1, totalCapacity));
+                Seed = seed;
+                int totalCapacity = 0;
+                foreach (var spec in layout.Tables)
+                {
+                    if (m_Tables.Count >= short.MaxValue)
+                        throw new InvalidOperationException("Too many tables.");
+                    var table = new SimTable(spec.Key, m_Tables.Count, spec.Capacity, spec.IsPooled);
+                    // Register the table before adding columns; a later factory can throw.
+                    try { m_Tables.Add(table); }
+                    catch (Exception failure)
+                    {
+                        CleanupErrors.Try(table.Dispose, ref failure);
+                        throw;
+                    }
+                    if (spec.IsPooled) m_PooledTables.Add(table);
+                    foreach (var addColumn in spec.ColumnFactories)
+                        addColumn(table);
+                    if (spec.TrackChanges)
+                        table.EnableChangeTracking();
+                    table.Guard = Guard;
+                    if (spec.IsLevelScoped) m_LevelTables.Add(table);
+                    m_TablesByKey.Add(spec.Key.Id, table);
+                    totalCapacity = checked(totalCapacity + spec.Capacity);
+                }
+                Registry = new EntityRegistry(Math.Max(1, totalCapacity));
 
-            m_DestroyQueue = new DestroyQueue(layout.DestroyQueueCapacity);
-            AddResource(DestroyQueueKey, m_DestroyQueue);
-            foreach (var (key, resource) in layout.Resources)
+                m_DestroyQueue = new DestroyQueue(layout.DestroyQueueCapacity);
+                AddResource(DestroyQueueKey, m_DestroyQueue);
+                foreach (var (key, resource) in layout.Resources)
+                {
+                    AddResource(key, resource);
+                    if (layout.LevelResources.Contains(key.Id))
+                        m_LevelResources.Add((IResettableResource)resource);
+                }
+                layout.TransferOwnership();
+            }
+            catch (Exception failure)
             {
-                AddResource(key, resource);
-                if (layout.LevelResources.Contains(key.Id))
-                    m_LevelResources.Add((IResettableResource)resource);
+                // Until successful completion, the layout owns its declared resources. The world
+                // owns only its table storage, registry and implicit queue, even if registration failed.
+                m_Disposed = true;
+                if (m_DestroyQueue != null) CleanupErrors.Try(m_DestroyQueue.Dispose, ref failure);
+                DisposeStorage(ref failure);
+                CleanupErrors.Try(layout.Dispose, ref failure);
+                throw;
             }
         }
 
@@ -350,16 +374,37 @@ namespace SPF.Runtime.World
 
         public void Dispose()
         {
-            foreach (var resource in m_ResourceList)
-                (resource as IDisposable)?.Dispose();
+            if (m_Disposed) return;
+            m_Disposed = true;
+            Exception failure = null;
+            // Retain classic registration-order disposal; aliases have one owner, not two.
+            for (int i = 0; i < m_ResourceList.Count; i++)
+            {
+                bool duplicate = false;
+                for (int j = 0; j < i; j++)
+                    if (ReferenceEquals(m_ResourceList[i], m_ResourceList[j])) { duplicate = true; break; }
+                if (!duplicate && m_ResourceList[i] is IDisposable resource)
+                    CleanupErrors.Try(resource.Dispose, ref failure);
+            }
             m_ResourceList.Clear();
             m_ResourceKeys.Clear();
             m_Resources.Clear();
+            m_SyncResources.Clear();
+            m_ResettableResources.Clear();
+            m_LevelResources.Clear();
+            DisposeStorage(ref failure);
+            CleanupErrors.ThrowIfAny(failure);
+        }
+
+        void DisposeStorage(ref Exception failure)
+        {
             foreach (var table in m_Tables)
-                table.Dispose();
+                CleanupErrors.Try(table.Dispose, ref failure);
             m_Tables.Clear();
             m_TablesByKey.Clear();
-            Registry.Dispose();
+            m_LevelTables.Clear();
+            m_PooledTables.Clear();
+            if (Registry != null) CleanupErrors.Try(Registry.Dispose, ref failure);
         }
     }
 

@@ -42,6 +42,15 @@ namespace SPF.Runtime.Composition
         public int MaxTicksPerFrame;
         public int DestroyQueueCapacity;
 
+        /// <summary>Runtime limits, independent of authoring UI ranges. A zero-capacity destroy
+        /// queue is valid: every request is counted as overflow.</summary>
+        public void Validate()
+        {
+            if (TickRate <= 0) throw new System.ArgumentOutOfRangeException(nameof(TickRate));
+            if (MaxTicksPerFrame <= 0) throw new System.ArgumentOutOfRangeException(nameof(MaxTicksPerFrame));
+            if (DestroyQueueCapacity < 0) throw new System.ArgumentOutOfRangeException(nameof(DestroyQueueCapacity));
+        }
+
         public static SessionSettings Default => new SessionSettings
         {
             TickRate = 30,

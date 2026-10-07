@@ -18,6 +18,9 @@ namespace SPF.Runtime.Scheduling
         int Order { get; }
 
         void Declare(AccessDeclaration access);
+        /// <summary>Synchronous initialization. If this throws, the initializer must release its
+        /// partial allocations and complete any work it scheduled. Only successfully returned
+        /// initializers receive OnDestroy; the pipeline cannot see or own a local partial resource.</summary>
         void OnCreate(SimWorld world);
         JobHandle OnTick(in SimContext context, JobHandle dependency);
         void OnDestroy(SimWorld world);

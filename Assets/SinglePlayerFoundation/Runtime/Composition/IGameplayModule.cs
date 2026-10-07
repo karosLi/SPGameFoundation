@@ -14,9 +14,14 @@ namespace SPF.Runtime.Composition
     {
         string Id { get; }
 
-        /// <summary>Declare tables, columns (including extension columns on other modules' tables) and resources.</summary>
+        /// <summary>Declare tables, columns (including extension columns on other modules' tables)
+        /// and resources. Successful Resource calls transfer ownership to the layout. The module
+        /// still owns rejected values and allocations made before registration, and must self-clean
+        /// those if it throws. Modules and borrowed Unity assets are not owned by the composer.</summary>
         void DeclareData(WorldLayout layout);
 
+        /// <summary>Register system objects without acquiring external/native resources. Acquire
+        /// those in exception-safe OnCreate instead; uninitialized systems do not receive OnDestroy.</summary>
         void RegisterSystems(SystemRegistry registry);
     }
 

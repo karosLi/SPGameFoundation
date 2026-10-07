@@ -18,7 +18,17 @@ namespace SPF.Contracts.Collections
         public ParallelQueue(int capacity, Allocator allocator)
         {
             m_Items = new NativeArray<T>(capacity, allocator, NativeArrayOptions.UninitializedMemory);
-            m_Counter = new NativeArray<int>(1, allocator);
+            m_Counter = default;
+            try { m_Counter = new NativeArray<int>(1, allocator); }
+            catch (Exception failure)
+            {
+                // The counter constructor has not transferred ownership. Release only the items
+                // already acquired here, without depending on Runtime.Core from Contracts.
+                try { m_Items.Dispose(); }
+                catch (Exception cleanup)
+                { failure.Data["SPF.CleanupFailures"] = new AggregateException(cleanup); }
+                throw;
+            }
         }
 
         public bool IsCreated => m_Items.IsCreated;

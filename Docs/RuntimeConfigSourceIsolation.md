@@ -98,3 +98,9 @@ Linux x86_64、.NET SDK 8.0.425 / Unity 桩。单线程、每配置一次代码�
 来源隔离增加托管常驻副本；检查也增加冷分配。这里**没有速度或分配优化收益**。Native 有效载荷是 `Length × UnsafeUtility.SizeOf<T>()` 的精确表项和，不含 allocator 对齐/头部、安全句柄、源 SO、World 表/网格、表现对象、JIT、共享字符串或 GPU。GC 前 live heap 是批次末端采样，并非启动峰值；GC 后增量会有运行时观测噪声，不能用差值反推精确对象大小。
 
 需要在集成提交上继续执行聚合 harness、精确 Editor 原生 EditMode/Jobs/Burst 回归。实际 Unity 冷启动峰值、完整 Session 常驻、Android/iOS IL2CPP 内存和设备持续负载仍是外部门槛。本工作未运行或声称通过这些原生/设备检查；不得用此表代替移动内存预算。
+
+## 集成审阅的有效边界修正
+
+独立审阅发现新预检对两个原来合法的房间边界过严：`RoomSizeMax == min(Width, Height) - 4` 允许生成固定起点 `NextInt(2,2)`；`2×2` 房间允许怪物使用固定内部位置 `NextInt(1,1)`。预检分别改为 `<=` 和最小尺寸 `2`，仍拒绝超出边距或尺寸 `1`。
+
+两个成对反例各先得到 1 失败 / 1 通过，修正后四项全部通过。其中 `2×2` 用例以 MonsterDensity=1 创建真实 Session/楼层并要求实际产生怪物，避免默认密度舍入成 0 掩盖出生路径。第一处修正还运行完整 RPG harness，86 项通过；最终集成全量结果另列，不把该中间结果套用到之后的调度合并。见[审阅修正记录](validation/LatiosIntegrationReview-20261007/evidence.json)。默认值、raw 写入/读取体和旧比较哈希不改。

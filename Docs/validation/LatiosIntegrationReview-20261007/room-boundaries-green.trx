@@ -1,0 +1,51 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="378b5584-19d7-4958-8842-bcf95cc96921" name="@5e9498f43725 2026-10-07 23:41:30" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-07T23:41:30.0060625+08:00" queuing="2026-10-07T23:41:30.0060625+08:00" start="2026-10-07T23:41:29.2979941+08:00" finish="2026-10-07T23:41:30.0112191+08:00" />
+  <TestSettings name="default" id="ed859e61-1fbf-42b0-b77b-0ba9348b42c6">
+    <Deployment runDeploymentRoot="_5e9498f43725_2026-10-07_23_41_30" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="72d2bd0d-1766-445d-9c41-fb4b6c5180a8" testId="0e20c833-cf79-8c1b-0fd6-5ae645a974a7" testName="MinimumRoomInteriorPreservesEqualMonsterSpawnBounds(1,False)" computerName="5e9498f43725" duration="00:00:00.0039710" startTime="2026-10-07T23:41:29.8717332+08:00" endTime="2026-10-07T23:41:29.8757040+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="72d2bd0d-1766-445d-9c41-fb4b6c5180a8" />
+    <UnitTestResult executionId="12b15868-6214-4c38-abee-fb95fda9e236" testId="d9b089ff-6f43-d38d-01f3-a4c235bb1575" testName="MinimumRoomInteriorPreservesEqualMonsterSpawnBounds(2,True)" computerName="5e9498f43725" duration="00:00:00.0791449" startTime="2026-10-07T23:41:29.7908007+08:00" endTime="2026-10-07T23:41:29.8698918+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="12b15868-6214-4c38-abee-fb95fda9e236" />
+    <UnitTestResult executionId="cd156282-fbba-43a4-843d-e5d046dd7de5" testId="d81ef406-29d1-3cb7-918c-91482409efce" testName="RoomMarginBoundaryPreservesValidEqualRandomBounds(14,False)" computerName="5e9498f43725" duration="00:00:00.0004740" startTime="2026-10-07T23:41:29.8834431+08:00" endTime="2026-10-07T23:41:29.8839169+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="cd156282-fbba-43a4-843d-e5d046dd7de5" />
+    <UnitTestResult executionId="80f84016-3625-46d6-893a-702223e32bc7" testId="2b850608-117c-1d41-e64e-71011257aec0" testName="RoomMarginBoundaryPreservesValidEqualRandomBounds(15,True)" computerName="5e9498f43725" duration="00:00:00.0063240" startTime="2026-10-07T23:41:29.8770978+08:00" endTime="2026-10-07T23:41:29.8834214+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="80f84016-3625-46d6-893a-702223e32bc7" />
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="MinimumRoomInteriorPreservesEqualMonsterSpawnBounds(1,False)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-latios-implementation/tools/dotnetharness/.gen/rpgfoundation.tests.editmode/bin/debug/net8.0/rpgfoundation.tests.editmode.dll" id="0e20c833-cf79-8c1b-0fd6-5ae645a974a7">
+      <Execution id="72d2bd0d-1766-445d-9c41-fb4b6c5180a8" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-latios-implementation/Tools/DotnetHarness/.gen/RpgFoundation.Tests.EditMode/bin/Debug/net8.0/RpgFoundation.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="RpgFoundation.Tests.RpgConfigIsolationTests" name="MinimumRoomInteriorPreservesEqualMonsterSpawnBounds(1,False)" />
+    </UnitTest>
+    <UnitTest name="RoomMarginBoundaryPreservesValidEqualRandomBounds(14,False)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-latios-implementation/tools/dotnetharness/.gen/rpgfoundation.tests.editmode/bin/debug/net8.0/rpgfoundation.tests.editmode.dll" id="d81ef406-29d1-3cb7-918c-91482409efce">
+      <Execution id="cd156282-fbba-43a4-843d-e5d046dd7de5" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-latios-implementation/Tools/DotnetHarness/.gen/RpgFoundation.Tests.EditMode/bin/Debug/net8.0/RpgFoundation.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="RpgFoundation.Tests.RpgConfigIsolationTests" name="RoomMarginBoundaryPreservesValidEqualRandomBounds(14,False)" />
+    </UnitTest>
+    <UnitTest name="RoomMarginBoundaryPreservesValidEqualRandomBounds(15,True)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-latios-implementation/tools/dotnetharness/.gen/rpgfoundation.tests.editmode/bin/debug/net8.0/rpgfoundation.tests.editmode.dll" id="2b850608-117c-1d41-e64e-71011257aec0">
+      <Execution id="80f84016-3625-46d6-893a-702223e32bc7" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-latios-implementation/Tools/DotnetHarness/.gen/RpgFoundation.Tests.EditMode/bin/Debug/net8.0/RpgFoundation.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="RpgFoundation.Tests.RpgConfigIsolationTests" name="RoomMarginBoundaryPreservesValidEqualRandomBounds(15,True)" />
+    </UnitTest>
+    <UnitTest name="MinimumRoomInteriorPreservesEqualMonsterSpawnBounds(2,True)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-latios-implementation/tools/dotnetharness/.gen/rpgfoundation.tests.editmode/bin/debug/net8.0/rpgfoundation.tests.editmode.dll" id="d9b089ff-6f43-d38d-01f3-a4c235bb1575">
+      <Execution id="12b15868-6214-4c38-abee-fb95fda9e236" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-latios-implementation/Tools/DotnetHarness/.gen/RpgFoundation.Tests.EditMode/bin/Debug/net8.0/RpgFoundation.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="RpgFoundation.Tests.RpgConfigIsolationTests" name="MinimumRoomInteriorPreservesEqualMonsterSpawnBounds(2,True)" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="0e20c833-cf79-8c1b-0fd6-5ae645a974a7" executionId="72d2bd0d-1766-445d-9c41-fb4b6c5180a8" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d9b089ff-6f43-d38d-01f3-a4c235bb1575" executionId="12b15868-6214-4c38-abee-fb95fda9e236" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d81ef406-29d1-3cb7-918c-91482409efce" executionId="cd156282-fbba-43a4-843d-e5d046dd7de5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="2b850608-117c-1d41-e64e-71011257aec0" executionId="80f84016-3625-46d6-893a-702223e32bc7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="4" executed="4" passed="4" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 4.5.0.0: Test execution started
+Running selected tests in /workspace/scratch/dc59b980bb73/SPGameFoundation-latios-implementation/Tools/DotnetHarness/.gen/RpgFoundation.Tests.EditMode/bin/Debug/net8.0/RpgFoundation.Tests.EditMode.dll
+   NUnit3TestExecutor discovered 4 of 4 NUnit test cases using Current Discovery mode, Non-Explicit run
+NUnit Adapter 4.5.0.0: Test execution complete
+</StdOut>
+    </Output>
+  </ResultSummary>
+</TestRun>

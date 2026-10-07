@@ -32,7 +32,7 @@ namespace RpgFoundation
             Grid(d.Width * d.TileSize, d.Height * d.TileSize, c.GridCellSize, "RPG actor grid");
             Require(d.Width > 0 && d.Height > 0 && d.TileSize > 0, "RPG map dimensions");
             Require(d.RoomsMin > 0 && d.RoomsMax >= d.RoomsMin && d.RoomsMax < int.MaxValue, "RPG room count range");
-            Require(d.RoomSizeMin >= 3 && d.RoomSizeMax >= d.RoomSizeMin && d.RoomSizeMax < Math.Min(d.Width, d.Height) - 4, "RPG room size range");
+            Require(d.RoomSizeMin >= 2 && d.RoomSizeMax >= d.RoomSizeMin && d.RoomSizeMax <= Math.Min(d.Width, d.Height) - 4, "RPG room size range");
             Require(d.BarrelsPerRoom >= 0 && d.BarrelsPerRoom < int.MaxValue && d.TrapsPerRoom >= 0 && d.TrapsPerRoom < int.MaxValue, "RPG room prop ranges");
             Require(l.GoldMin <= l.GoldMax && l.GoldMax < int.MaxValue, "RPG gold range");
             Require(source.Monsters.Count <= 255 && source.Skills.Count <= 255, "RPG byte definition identity");

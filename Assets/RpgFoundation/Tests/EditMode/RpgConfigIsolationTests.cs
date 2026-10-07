@@ -10,6 +10,63 @@ namespace RpgFoundation.Tests
 {
     public class RpgConfigIsolationTests
     {
+        [TestCase(2, true)]
+        [TestCase(1, false)]
+        public void MinimumRoomInteriorPreservesEqualMonsterSpawnBounds(int roomSize, bool valid)
+        {
+            var source = RpgConfig.CreateDefault();
+            source.Dungeon.RoomSizeMin = source.Dungeon.RoomSizeMax = roomSize;
+            source.Dungeon.MonsterDensity = 1f;
+            try
+            {
+                if (!valid)
+                {
+                    Assert.Throws<ArgumentException>(() => RpgRuntimeConfig.Validate(source));
+                    return;
+                }
+                Assert.DoesNotThrow(() => RpgRuntimeConfig.Validate(source));
+                using var world = new RpgTestWorld(tweak: config =>
+                {
+                    config.Dungeon.RoomSizeMin = config.Dungeon.RoomSizeMax = roomSize;
+                    config.Dungeon.MonsterDensity = 1f;
+                });
+                Assert.Greater(world.Game.MonstersAlive, 0,
+                    "Nonzero density exercises valid NextInt(1,1) monster placement inside 2x2 rooms.");
+                Assert.GreaterOrEqual(world.HeroRow, 0);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(source); }
+        }
+
+        [TestCase(15, true)]
+        [TestCase(14, false)]
+        public void RoomMarginBoundaryPreservesValidEqualRandomBounds(int width, bool valid)
+        {
+            var source = RpgConfig.CreateDefault();
+            source.Dungeon.Width = width;
+            source.Dungeon.RoomSizeMin = source.Dungeon.RoomSizeMax = 11;
+            try
+            {
+                if (!valid)
+                {
+                    Assert.Throws<ArgumentException>(() => RpgRuntimeConfig.Validate(source));
+                    return;
+                }
+                Assert.DoesNotThrow(() => RpgRuntimeConfig.Validate(source));
+                using var config = RpgRuntimeConfig.Bake(source);
+                using var map = new SPF.L1.Spatial.TileMap(
+                    new Unity.Mathematics.int2(width, source.Dungeon.Height), source.Dungeon.TileSize);
+                var rooms = new System.Collections.Generic.List<Room>();
+                DungeonGenerator.Generate(map, 123, 1, config.Dungeon, rooms, out _, out _, out _);
+                Assert.Greater(rooms.Count, 0);
+                foreach (var room in rooms)
+                {
+                    Assert.AreEqual(2, room.Min.x, "NextInt(2,2) is the valid fixed room origin.");
+                    Assert.AreEqual(width - 2, room.Min.x + room.Size.x);
+                }
+            }
+            finally { UnityEngine.Object.DestroyImmediate(source); }
+        }
+
         [Test]
         public void SourceEditsAfterSessionCreationDoNotChangeRuntimeOrReplay()
         {

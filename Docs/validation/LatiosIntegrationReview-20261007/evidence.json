@@ -1,0 +1,39 @@
+{
+  "scope": "A3 valid room boundary review corrections; no default/raw-format changes",
+  "pre_correction_config_commit": "5b7e82c2a777a3b6237277de74805e6d6933f468",
+  "integration_base": "5f97857",
+  "red": [
+    {
+      "case": "maximum room margin",
+      "bounds": "RoomSizeMax < min(width,height)-4",
+      "failed": 1,
+      "passed": 1
+    },
+    {
+      "case": "minimum monster interior",
+      "bounds": "RoomSizeMin >= 3",
+      "failed": 1,
+      "passed": 1
+    }
+  ],
+  "final_bounds": "RoomSizeMax <= min(width,height)-4; RoomSizeMin >= 2",
+  "green": {
+    "failed": 0,
+    "passed": 4,
+    "skipped": 0
+  },
+  "full_aggregate": "pending separate integrated checkpoint",
+  "native": "not run on this correction",
+  "source_sha256": {
+    "Assets/RpgFoundation/Runtime/RpgConfigValidation.cs": "8ad7523101384812a4bf42604f170a2fe5ae72ab0d7e8125c6d57afa55bcf313",
+    "Assets/RpgFoundation/Tests/EditMode/RpgConfigIsolationTests.cs": "ef2115d613fefca23891b7cff55ab2409f926897f7cfdbdcdb754cd9234a8a93"
+  },
+  "evidence_sha256": {
+    "room-margin-red.trx": "af8d4064e9e38d1c954211456bea16b81bdc0158b307872123647dedb357e7a2",
+    "room-interior-red.trx": "04f00bfc8dc17e72201a3063021d70e8eb49cda3d7ff188f6b507ecd205e08a6",
+    "room-boundaries-green.trx": "a69d578638071cafe6c1a9a4ecc474492d4800ddeb1eb68b7e53cab5413ed5b3",
+    "room-margin-red.log": "3766ef9ed1f4ade93f58973793f22ddcf2b4844251ea151f0fd3b5b56f76b1c6",
+    "room-interior-red.log": "387f461d920d78ea704e30f37aadcdb03bb99bda92c48cd23f8b79247084e0f6",
+    "room-boundaries-green.log": "1c5b1b638c6af78dd32d6f253726c1eafbaf49e64918f85895efa57d12fca950"
+  }
+}

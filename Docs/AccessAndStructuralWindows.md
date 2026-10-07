@@ -28,6 +28,8 @@ SimContext、SimWorld、SimTable 均增加同名入口：
 - HasPendingTick 本身不是是否有 Job 的证据。完全同步的已声明系统以及已经完成所有工作但还未 EndTick 的 barrier 之后都允许结构修改。
 - `JobHandle.IsCompleted` 不是主线程已取回 NativeContainer 所有权的证明，本实现不会凭它开放窗口，也不会在 getter 或结构检查中悄悄 Complete。
 
+框架只识别自身 barrier、SerialProfiling 和 EndTick/Sync 的完成路径。已声明系统内部直接调用 `dependency.Complete()` 不会通知此诊断；若仍登记着前序工作，紧接的结构操作可能被保守拒绝。需要结构修改时使用已完成的框架 barrier 或 Tick 间 Sync。不能把这个检查当成对任意私有 Complete 的观察，也不在结构入口补做隐式等待。已审计的生产结构调用没有受此限制影响的路径。
+
 当前检查故意采用 **World 级保守窗口**：即使 Job 使用另一张表，也先拒绝该 World 的结构变更；没有增加细粒度 table/registry/resource lease。直接由用户代码调度、尚未从 OnTick 返回的私有 Job 不可见，调用者仍须负责其同步，尤其在 OnTick/OnCreate 抛错时。一个 World 可以构造多个 Pipeline，但同一时刻最多允许一个处于调度、pending Tick 或 OnSync 中。BeginTick 在任何 playback/调度副作用前取得 World 准入；另一个 Pipeline 会明确抛错，即使第一个 Tick 没有 Job 或 Enabled=false。已构造的非活动 Pipeline 仍可轮流使用同一 World。
 
 ## 3. 操作类别

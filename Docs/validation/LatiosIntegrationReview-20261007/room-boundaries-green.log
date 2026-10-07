@@ -1,0 +1,8 @@
+Test run for /workspace/scratch/dc59b980bb73/SPGameFoundation-latios-implementation/Tools/DotnetHarness/.gen/RpgFoundation.Tests.EditMode/bin/Debug/net8.0/RpgFoundation.Tests.EditMode.dll (.NETCoreApp,Version=v8.0)
+VSTest version 17.11.1 (x64)
+
+Starting test execution, please wait...
+A total of 1 test files matched the specified pattern.
+Results File: /workspace/scratch/dc59b980bb73/integration-validation/latios-a1-a3/review-fixes/room-boundaries-green.trx
+
+Passed!  - Failed:     0, Passed:     4, Skipped:     0, Total:     4, Duration: 93 ms - RpgFoundation.Tests.EditMode.dll (net8.0)

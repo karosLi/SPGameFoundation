@@ -143,10 +143,12 @@
 - 不新增贴图、材质、UI 对象或逐帧字符串。移动状态字符缓冲在 Build 时预热至 256 字符，防止中途显示诊断或数字位数增长触发常见的容量扩张。布局仅在初建或明确诊断开关变化时调整。
 - 原有原生捕获加强了卡片高度、文字边界、菜单分离、两行默认内容、诊断开关与快照不变断言；增加 `survivor-portrait-compact-restored-{gpu,datatex}.png` 和 720×1600 带安全区的 `survivor-portrait-compact-tall-{gpu,datatex}.png`，同时保留原 safe-area / aim / cancel 图片及原亮度阈值。切换后仍须捕获实际文字和点击命中，不能用隐藏 HUD 通过。
 
-验收：本地全程序集编译 0 error，完整 harness 849 passed / 0 failed；再交由集成提交原生 CI 获取新的默认 / 合成刘海 / 诊断恢复 / 武器三行图。上述尺寸是实现预算，修复后的实际画面尚待新提交审视；54477736 的大面板截图只作为前态。
+验收：本地全程序集编译 0 error，完整 harness 849 passed / 0 failed；精确 3f6362f 的原生两档普通 / 合成刘海 / 诊断恢复 / 720×1600 长屏截图与武器三行图已实际查看，相关测试通过。这个具体的紧凑 HUD 问题可以关闭；[完整证据与限制](CompactMobileHudValidation.md)保留独立的 EditMode 失败、重型怪早期 UI 遮挡及物理设备门槛。54477736 的大面板截图只作为前态。
 
 ## 后续原生确认：4af9b87
 
 精确 `4af9b87cc32fcd1a5f10a4bd2817848044ad4649` 的完整 29 分片已取回并校验，archive SHA-256 为 `2a62d8ad4776279f77b9a170ab4a4725c1134909d00c0eb1e3305557b6b6232d`。两档 portrait capture、`CancelKeepsHighContrastText`、`DelayedNewFloorSnaps` 和 `NewGameShowsTheDungeonAndTheHud` 全部通过；逐帧实际查看 fallback CANCEL PNG，象牙白文字清晰、箭头/环保持珊瑚色，RPG run 图中英雄可见。这确认了 a03c9a4 对应的两项真实修复，不再只依赖本地构建。
 
 该头完整 graphics PlayMode 为 148 passed / 1 explicit diagnostic skip；EditMode 还有两项独立 separation candidate 精度失败，不能称全绿。新的 compact HUD 5dfb807 在它之后，仍需新原生 normal/tall/武器三行截图；密集重叠的角色/血条也不能从稀疏画面推导为已解决。新的弹丸轮廓 native cases 已通过，后续箭头碰撞前缘枢轴调整、debug overlay 和真实移动/命中可读性仍依各自精确源码验收。总状态见 [MobileFoundationFollowupValidation](MobileFoundationFollowupValidation.md)。
+
+上述 4af9b87 段落保留当时边界；后续 3f6362f 的 compact HUD 验收已见上文及 [CompactMobileHudValidation](CompactMobileHudValidation.md)。

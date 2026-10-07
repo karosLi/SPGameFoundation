@@ -13,8 +13,9 @@ namespace SPF.Presentation.Animation
         public readonly BoneAttachment[][] Attachments = new BoneAttachment[2][];
         public SpriteSheet Sheet { get; private set; }
         public int White, Disc, Halo, Blob;
+        public readonly int[] WeaponFrames=new int[WeaponArt.Count];
         static readonly Color32 Ink=new Color32(19,31,44,255), Cream=new Color32(242,224,186,255), Gold=new Color32(238,166,75,255);
-        public NaturalCharacterArt()
+        public NaturalCharacterArt(bool includeWeapons=false)
         {
             var builder=new SpriteAtlasBuilder();
             var frames=new int[2][];
@@ -23,6 +24,7 @@ namespace SPF.Presentation.Animation
                 Canvases[kind]=new PixelCanvas[8];frames[kind]=new int[8];
                 for(int part=0;part<8;part++) { Canvases[kind][part]=Draw(kind,part);frames[kind][part]=builder.Add(Canvases[kind][part]); }
             }
+            if(includeWeapons)for(int k=0;k<WeaponArt.Count;k++)WeaponFrames[k]=builder.Add(WeaponArt.Draw(k));
             var white=new PixelCanvas(4,4);white.Rect(0,0,4,4,new Color32(255,255,255,255));White=builder.Add(white);
             var disc=new PixelCanvas(48,48);disc.Ellipse(24,24,22,22,new Color32(255,255,255,255));Disc=builder.Add(SmoothSpriteArt.Downsample(disc,2));
             Halo=builder.Add(BlobShadow.CreateCanvas(64,64));Blob=builder.Add(BlobShadow.CreateCanvas());

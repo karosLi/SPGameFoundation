@@ -101,6 +101,28 @@ namespace SPF.Presentation.Animation
             Skeletal.TwoBoneIK(rig, pose, upper, lower, ModelPoint(target, root, facing, scale), bend < 0 ? -1 : 1, at);
         }
 
+        /// <summary>FK point in unmirrored model coordinates; bounded parent stack, no temporary arrays.</summary>
+        public static float2 BonePoint(in SkeletonView rig,NativeArray<BoneLocal> pose,int bone,float distance,int at=0)
+        {
+            float2 point=new float2(distance,0);
+            for(int depth=0;bone>=0&&depth<16;depth++,bone=rig.Bones[bone].Parent)
+            {var b=pose[at+bone];point=WeaponMotion.Rotate(point,b.Rotation)+b.Position;}
+            return point;
+        }
+        /// <summary>Weight blends the FK hand target before IK rather than blending solved angles. This
+        /// preserves elbow side and a continuous reachable hand path, including near full extension.</summary>
+        public static void BlendAim(in SkeletonView rig,NativeArray<BoneLocal> pose,int upper,int lower,
+            float2 target,float2 root,float facing,float scale,float bend,float weight,int at=0)
+        {
+            float2 current=BonePoint(rig,pose,lower,rig.Bones[lower].Length,at);
+            float2 desired=math.lerp(current,ModelPoint(target,root,facing,scale),math.saturate(weight));
+            float2 shoulder=BonePoint(rig,pose,upper,0,at),delta=desired-shoulder;
+            float reach=rig.Bones[upper].Length+rig.Bones[lower].Length-.014f;
+            float distance=math.length(delta);
+            if(distance>reach)desired=shoulder+delta*(reach/math.max(.0001f,distance));
+            Skeletal.TwoBoneIK(rig,pose,upper,lower,desired,bend<0?-1:1,at);
+        }
+
         /// <summary>Analytic, continuous straight-line gait used for the explicitly bounded shadow pose library.</summary>
         public static float2 CanonicalFoot(float phase, float offset, float speed = .65f)
         {

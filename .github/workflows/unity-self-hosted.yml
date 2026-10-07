@@ -117,3 +117,171 @@ jobs:
           path: ${{ steps.evidence.outputs.directory }}/part07/
           compression-level: 0
           if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part08
+          path: ${{ steps.evidence.outputs.directory }}/part08/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part09
+          path: ${{ steps.evidence.outputs.directory }}/part09/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part10
+          path: ${{ steps.evidence.outputs.directory }}/part10/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part11
+          path: ${{ steps.evidence.outputs.directory }}/part11/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part12
+          path: ${{ steps.evidence.outputs.directory }}/part12/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part13
+          path: ${{ steps.evidence.outputs.directory }}/part13/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part14
+          path: ${{ steps.evidence.outputs.directory }}/part14/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part15
+          path: ${{ steps.evidence.outputs.directory }}/part15/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part16
+          path: ${{ steps.evidence.outputs.directory }}/part16/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part17
+          path: ${{ steps.evidence.outputs.directory }}/part17/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part18
+          path: ${{ steps.evidence.outputs.directory }}/part18/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part19
+          path: ${{ steps.evidence.outputs.directory }}/part19/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part20
+          path: ${{ steps.evidence.outputs.directory }}/part20/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part21
+          path: ${{ steps.evidence.outputs.directory }}/part21/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part22
+          path: ${{ steps.evidence.outputs.directory }}/part22/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part23
+          path: ${{ steps.evidence.outputs.directory }}/part23/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part24
+          path: ${{ steps.evidence.outputs.directory }}/part24/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part25
+          path: ${{ steps.evidence.outputs.directory }}/part25/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part26
+          path: ${{ steps.evidence.outputs.directory }}/part26/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part27
+          path: ${{ steps.evidence.outputs.directory }}/part27/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part28
+          path: ${{ steps.evidence.outputs.directory }}/part28/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part29
+          path: ${{ steps.evidence.outputs.directory }}/part29/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part30
+          path: ${{ steps.evidence.outputs.directory }}/part30/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part31
+          path: ${{ steps.evidence.outputs.directory }}/part31/
+          compression-level: 0
+          if-no-files-found: ignore

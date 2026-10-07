@@ -1,8 +1,9 @@
 # Unity CI evidence parts
 
 The self-hosted Unity job uploads `unity-test-results-self-hosted-part00` through
-`part07`, creating only the parts that are needed. Each artifact contains one binary
+`part31`, creating only the parts that are needed. Each artifact contains one binary
 part of at most 16 MiB and an identical `evidence-manifest.json` of at most 1 MiB.
+The cap accommodates paired before/after live gait captures with original painted backgrounds; individual downloads remain unchanged. Only nonempty parts are uploaded.
 The outer GitHub artifact uses no compression; the evidence ZIP is already compressed.
 Each download therefore stays comfortably below a 32 MiB download limit.
 
@@ -12,7 +13,7 @@ screenshots, raw profiler captures, JSON, logs, reports, and test results. It re
 symlinks rather than reading outside evidence. It does not collect `Library/`, caches,
 the repository, or credential directories. Screenshot branch publication is unchanged.
 
-The ZIP is limited to eight parts (128 MiB compressed). Oversized evidence or a manifest
+The ZIP is limited to 32 parts (512 MiB compressed). Oversized evidence or a manifest
 over 1 MiB fails the packaging step explicitly; files are never silently omitted.
 Packaging also runs after test failures, and does not change test assertions or outcomes.
 Output lives in the runner's temporary directory, outside `Artifacts/`. Only temporary
@@ -52,3 +53,5 @@ Tests generate fixtures and cover byte-exact restoration across the real 16 MiB 
 raw/nested/hidden evidence inclusion, missing/corrupt/duplicate parts, mixed manifests,
 archive and file hashes, size-limit failure without dropped files, symlink rejection,
 safe extraction, and protection of existing output.
+
+The current restore helper also accepts the historical eight-part manifests. It still enforces their declared limit, verifies every part and file, and rejects unsupported/unbounded manifest capacities. Increasing this evidence transport cap does not change runtime memory, performance budgets, frame counts or test assertions.

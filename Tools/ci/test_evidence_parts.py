@@ -50,7 +50,7 @@ class EvidencePartsTests(unittest.TestCase):
         (self.root / "Library" / "excluded.cache").write_bytes(b"not test evidence")
         manifest = evidence.package_evidence(self.source, self.parts)
         self.assertEqual(2, len(manifest["parts"]))
-        self.assertLessEqual(len(manifest["parts"]), 8)
+        self.assertLessEqual(len(manifest["parts"]), evidence.MAX_PARTS)
         for index, part in enumerate(manifest["parts"]):
             folder = self.parts / "part{:02d}".format(index)
             self.assertEqual({part["name"], evidence.MANIFEST_NAME}, {p.name for p in folder.iterdir()})
@@ -100,13 +100,39 @@ class EvidencePartsTests(unittest.TestCase):
         self.assertFalse(self.restored.exists())
 
     def test_oversize_archive_fails_without_dropping_files(self):
-        self.write("profiler/large.raw", os.urandom(9 * 1024))
+        self.write("profiler/large.raw", os.urandom((evidence.MAX_PARTS + 1) * 1024))
         with mock.patch.object(evidence, "PART_BYTES", 1024):
-            with self.assertRaisesRegex(ValueError, "limit is 8192 bytes.*No evidence was dropped"):
+            with self.assertRaisesRegex(ValueError, "limit is 32768 bytes.*No evidence was dropped"):
                 evidence.package_evidence(self.source, self.parts)
         self.assertFalse(self.parts.exists())
         self.assertEqual({"Artifacts"}, {p.name for p in self.root.iterdir()})
-        self.assertEqual(9 * 1024, (self.source / "profiler/large.raw").stat().st_size)
+        self.assertEqual((evidence.MAX_PARTS + 1) * 1024, (self.source / "profiler/large.raw").stat().st_size)
+
+    def test_legacy_eight_part_manifest_still_restores(self):
+        self.package_small()
+        self.alter_manifest(lambda manifest: manifest.update(max_parts=8))
+        with mock.patch.object(evidence, "PART_BYTES", 1024):
+            evidence.restore_evidence(self.parts, self.restored)
+        self.assertEqual((self.source / "profiler/story.raw").read_bytes(),
+                         (self.restored / "Artifacts/profiler/story.raw").read_bytes())
+
+    def test_manifest_cannot_claim_unbounded_capacity(self):
+        self.package_small()
+        self.alter_manifest(lambda manifest: manifest.update(max_parts=9999))
+        with mock.patch.object(evidence, "PART_BYTES", 1024):
+            with self.assertRaisesRegex(ValueError, "Unsupported evidence manifest"):
+                evidence.restore_evidence(self.parts, self.restored)
+        self.assertFalse(self.restored.exists())
+
+    def test_new_capacity_retains_more_than_eight_parts(self):
+        self.write("captures/continuous.raw", os.urandom(9 * 1024))
+        with mock.patch.object(evidence, "PART_BYTES", 1024):
+            manifest = evidence.package_evidence(self.source, self.parts)
+            self.assertGreater(len(manifest["parts"]), 8)
+            self.assertLessEqual(len(manifest["parts"]), evidence.MAX_PARTS)
+            evidence.restore_evidence(self.parts, self.restored)
+        self.assertEqual((self.source / "captures/continuous.raw").read_bytes(),
+                         (self.restored / "Artifacts/captures/continuous.raw").read_bytes())
 
     def test_manifest_size_is_bounded_and_empty_evidence_fails(self):
         with self.assertRaisesRegex(ValueError, "no evidence files"):

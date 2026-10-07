@@ -18,6 +18,9 @@ jobs:
     timeout-minutes: 120
     env:
       UNITY_EDITOR_PATH: ${{ vars.UNITY_EDITOR_PATH }}
+      # This review branch records bounded raw frames after its normal gameplay assertions.
+      # Encoding occurs after acquisition; timestamps retain the actual Editor capture cadence.
+      SPF_WEAPON_GAMEPLAY_SEQUENCE: ${{ github.ref == 'refs/heads/dot/weapon-motion-stage5' && '1' || '0' }}
     steps:
       - uses: actions/checkout@v4
         with:

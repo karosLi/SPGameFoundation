@@ -63,7 +63,11 @@ namespace SPF.Runtime.Session
         /// <summary>Creates the session from code (bootstraps, tests). Disposes a previous session.</summary>
         public SimSession Initialize(ModeDefinition mode, uint seed, bool start = true)
         {
-            Session?.Dispose();
+            // Stop publishing/scheduling the old session before cleanup or creation can throw.
+            var previous = Session;
+            Session = null;
+            if (m_Launcher != null) m_Launcher.enabled = false;
+            previous?.Dispose();
             m_Mode = mode;
             m_Seed = seed;
             Session = SimSession.Create(mode, seed);
@@ -108,7 +112,7 @@ namespace SPF.Runtime.Session
             bool suspended = !isActiveAndEnabled || m_ApplicationPaused || m_FocusLost;
             Session?.SetHostSuspended(suspended);
             if (m_Launcher != null)
-                m_Launcher.enabled = m_OverlapRendering && !suspended;
+                m_Launcher.enabled = Session != null && m_OverlapRendering && !suspended;
         }
 
         void Update()
@@ -133,8 +137,9 @@ namespace SPF.Runtime.Session
                 m_Launcher.enabled = false;
                 m_Launcher.Host = null;
             }
-            Session?.Dispose();
+            var session = Session;
             Session = null;
+            session?.Dispose();
         }
     }
 }

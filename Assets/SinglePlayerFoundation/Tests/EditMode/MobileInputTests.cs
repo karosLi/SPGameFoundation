@@ -293,6 +293,128 @@ namespace SPF.Tests.EditMode
             Assert.AreEqual(1, tracker.Taps.Count);
         }
 
+        [TestCase(false)]
+        [TestCase(true)]
+        public void DisabledHudCannotReviveControlsWhenBuiltOrRefreshed(bool disableBeforeBuild)
+        {
+            var canvas = UIFactory.CreateCanvas(m_Object.transform);
+            var hud = m_Object.AddComponent<MobileCombatHud>();
+            if (disableBeforeBuild) hud.enabled = false;
+            hud.Build(canvas.transform, new HudSource(), false);
+            if (!disableBeforeBuild)
+            {
+                hud.Joystick.OnPointerDown(Pointer(1));
+                hud.Joystick.OnDrag(Pointer(1, 80));
+                hud.Buttons[0].OnPointerDown(Pointer(2));
+                hud.enabled = false;
+                InvokeHud(hud, "OnDisable");
+            }
+            hud.Refresh();
+            var controls = hud.SafeRoot.Find("CombatControls").gameObject;
+            Assert.IsFalse(controls.activeSelf, "explicit refresh/build must respect the disabled HUD");
+            Assert.IsFalse(hud.Joystick.Pressed);
+            Assert.IsFalse(hud.Buttons[0].Pressed);
+            var frame = default(InputFrame);
+            Assert.IsFalse(hud.Input.TryRead(ref frame));
+
+            hud.enabled = true;
+            hud.Refresh();
+            Assert.IsTrue(controls.activeSelf);
+            Assert.IsFalse(hud.Input.TryRead(ref frame), "enable must not replay input from before disable");
+            hud.Buttons[0].OnPointerDown(Pointer(2));
+            Assert.IsTrue(hud.Input.TryRead(ref frame));
+            Assert.AreEqual(1u, frame.Pressed);
+        }
+
+        [TestCase(true)]
+        [TestCase(false)]
+        public void HudInterruptionReasonsFlushLatchedInputUntilBothClear(bool focusReturnsFirst)
+        {
+            var canvas = UIFactory.CreateCanvas(m_Object.transform);
+            var hud = m_Object.AddComponent<MobileCombatHud>();
+            hud.Build(canvas.transform, new HudSource(), false);
+            var latched = default(InputFrame);
+            hud.Interrupted = () => latched = default;
+            for (int cycle = 0; cycle < 3; cycle++)
+            {
+                hud.Joystick.OnPointerDown(Pointer(1));
+                hud.Joystick.OnDrag(Pointer(1, 80));
+                hud.Buttons[0].OnPointerDown(Pointer(2));
+                Assert.IsTrue(hud.Input.TryRead(ref latched));
+                Assert.AreEqual(1u, latched.Pressed);
+                Assert.Greater(math.lengthsq(latched.Move), 0f);
+
+                InvokeHud(hud, "OnApplicationPause", true);
+                InvokeHud(hud, "OnApplicationFocus", false);
+                Assert.AreEqual(default(InputFrame), latched, "interruption clears the adapter's already-latched command");
+                Assert.IsFalse(hud.Joystick.Pressed);
+                Assert.IsFalse(hud.Buttons[0].Pressed);
+                InvokeHud(hud, focusReturnsFirst ? "OnApplicationFocus" : "OnApplicationPause", focusReturnsFirst);
+                hud.Refresh();
+                Assert.IsFalse(hud.SafeRoot.Find("CombatControls").gameObject.activeSelf);
+                Assert.IsFalse(hud.Input.TryRead(ref latched));
+
+                InvokeHud(hud, focusReturnsFirst ? "OnApplicationPause" : "OnApplicationFocus", !focusReturnsFirst);
+                hud.Refresh();
+                hud.Joystick.OnDrag(Pointer(1, 160));
+                hud.Joystick.OnPointerUp(Pointer(1));
+                hud.Buttons[0].OnPointerUp(Pointer(2));
+                Assert.IsFalse(hud.Input.TryRead(ref latched), "late release from an old gesture must stay canceled");
+            }
+        }
+
+        [Test]
+        public void RepeatedHudDisableEnableRetainsOneBindingAndLeavesOtherHudInputAlone()
+        {
+            var canvas = UIFactory.CreateCanvas(m_Object.transform);
+            var first = m_Object.AddComponent<MobileCombatHud>();
+            var second = m_Object.AddComponent<MobileCombatHud>();
+            var source = new HudSource();
+            first.Build(canvas.transform, source, false);
+            second.Build(canvas.transform, new HudSource(), false);
+            var firstInput = first.Input;
+            var firstRoot = first.SafeRoot;
+            var firstButton = first.Buttons[0];
+            for (int cycle = 0; cycle < 3; cycle++)
+            {
+                firstButton.OnPointerDown(Pointer(1));
+                second.Buttons[0].OnPointerDown(Pointer(2));
+                first.enabled = false;
+                InvokeHud(first, "OnDisable");
+                first.Refresh();
+                var frame = default(InputFrame);
+                Assert.IsFalse(first.Input.TryRead(ref frame));
+                Assert.IsTrue(second.Input.TryRead(ref frame), "one HUD never cancels another HUD's gesture");
+                Assert.AreEqual(1u, frame.Held);
+                second.CancelInput();
+
+                first.enabled = true;
+                first.Refresh();
+                first.Refresh();
+                Assert.AreSame(firstInput, first.Input);
+                Assert.AreSame(firstRoot, first.SafeRoot);
+                Assert.AreSame(firstButton, first.Buttons[0]);
+                Assert.IsFalse(first.Input.TryRead(ref frame));
+                firstButton.OnPointerDown(Pointer(1));
+                firstButton.OnPointerUp(Pointer(1));
+                Assert.IsTrue(first.Input.TryRead(ref frame));
+                Assert.AreEqual(1u, frame.Pressed);
+                Assert.IsFalse(first.Input.TryRead(ref frame), "a short press is consumed only once");
+            }
+        }
+
+        static void InvokeHud(MobileCombatHud hud, string method, params object[] arguments) =>
+            typeof(MobileCombatHud).GetMethod(method, BindingFlags.Instance | BindingFlags.NonPublic).Invoke(hud, arguments);
+
+        sealed class HudSource : IMobileCombatHudSource
+        {
+            public int SlotCount => 1;
+            public int TickRate => 30;
+            public bool Playing => true;
+            public SkillSlotSnapshot ReadSlot(int slot) => new SkillSlotSnapshot(new SkillSlotDefinition(1, 0, SkillActivation.Hold, 30), 1, 0, true);
+            public string SlotLabel(int slot) => "HOLD";
+        }
+
         static void SeedGestureOutputs(GestureTracker tracker)
         {
             tracker.Down(1, float2.zero, 0f);

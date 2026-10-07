@@ -109,7 +109,7 @@ namespace SPF.Shell.UI
         public void Refresh()
         {
             if (m_Source == null) return;
-            bool playing = m_Source.Playing && !m_Paused && !m_FocusLost;
+            bool playing = isActiveAndEnabled && m_Source.Playing && !m_Paused && !m_FocusLost;
             if (playing != m_Playing)
             {
                 CancelInput(); m_Playing = playing; m_Controls.gameObject.SetActive(playing);

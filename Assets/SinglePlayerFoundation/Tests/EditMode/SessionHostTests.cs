@@ -1,5 +1,6 @@
 using System.Reflection;
 using NUnit.Framework;
+using SPF.Contracts;
 using SPF.Runtime.Composition;
 using SPF.Runtime.Session;
 using SPF.Runtime.World;
@@ -232,6 +233,74 @@ namespace SPF.Tests.EditMode
             Assert.AreEqual(SessionState.Running, Session.State);
         }
 
+        [TestCase(true)]
+        [TestCase(false)]
+        public void FailedReinitializeClearsPublishedSessionAndStopsLauncherUntilRetry(bool overlap)
+        {
+            m_Host.OverlapRendering = overlap;
+            var previous = Session;
+            var launcher = Launcher;
+            int notifications = 0;
+            m_Host.SessionCreated += _ => notifications++;
+            var failing = ScriptableObject.CreateInstance<FailingModule>();
+            var invalidMode = ModeDefinition.Create(new GameplayModuleAsset[] { failing }, SessionSettings.Default);
+            try
+            {
+                Assert.Throws<System.InvalidOperationException>(() => m_Host.Initialize(invalidMode, 2));
+                Assert.AreEqual(SessionState.Disposed, previous.State);
+                Assert.IsNull(Session, "failed replacement must not publish the disposed previous session");
+                Assert.IsFalse(launcher.enabled, "there is no session left to schedule");
+                Assert.AreEqual(0, notifications, "only successful creation is published");
+                SetEnabled(false);
+                SetEnabled(true);
+                m_Host.OverlapRendering = true;
+                Assert.IsFalse(launcher.enabled, "lifecycle and scheduling changes cannot revive an empty host");
+                Assert.DoesNotThrow(() => Invoke(m_Host, "LateUpdate"));
+                Assert.DoesNotThrow(() => Invoke(launcher, "LateUpdate"));
+
+                m_Host.OverlapRendering = overlap;
+                m_Host.Initialize(m_Mode, 3);
+                Assert.AreSame(launcher, Launcher, "retry reuses the single launcher");
+                Assert.AreEqual(1, notifications);
+                Assert.AreEqual(SessionState.Running, Session.State);
+                Assert.AreEqual(overlap, Launcher.enabled);
+                Session.ManualClock = true;
+                Session.RequestTicks();
+                Invoke(m_Host, overlap ? "LaunchTicks" : "Update");
+                Assert.AreEqual(1u, Session.Clock.NextTickIndex);
+            }
+            finally
+            {
+                Object.DestroyImmediate(invalidMode);
+                Object.DestroyImmediate(failing);
+            }
+        }
+
+        [Test]
+        public void DestroyingHostDetachesEvenWhenSessionCleanupThrows()
+        {
+            var module = ScriptableObject.CreateInstance<ThrowingCleanupModule>();
+            var mode = ModeDefinition.Create(new GameplayModuleAsset[] { module }, SessionSettings.Default);
+            SimSession session = null;
+            try
+            {
+                session = m_Host.Initialize(mode, 2);
+                Assert.Throws<TargetInvocationException>(() => Invoke(m_Host, "OnDestroy"));
+                Assert.IsNull(Session, "destroy must unpublish the session even when owner cleanup reports an error");
+                Assert.IsFalse(Launcher.enabled);
+                Assert.DoesNotThrow(() => Invoke(Launcher, "LateUpdate"));
+                Assert.DoesNotThrow(() => Invoke(m_Host, "OnDestroy"), "host destruction is idempotent after a cleanup error");
+                Assert.AreEqual(1, module.Resource.DisposeCalls);
+            }
+            finally
+            {
+                // Keep fixture cleanup independent of the host's error path. The injected error is one-shot.
+                session?.Dispose();
+                Object.DestroyImmediate(mode);
+                Object.DestroyImmediate(module);
+            }
+        }
+
         [Test]
         public void DestroyingHostDetachesAndDisablesLauncher()
         {
@@ -252,6 +321,29 @@ namespace SPF.Tests.EditMode
 
         static void Invoke(object target, string method, params object[] arguments) =>
             target.GetType().GetMethod(method, BindingFlags.Instance | BindingFlags.NonPublic).Invoke(target, arguments);
+
+        sealed class ThrowingCleanupModule : GameplayModuleAsset
+        {
+            static readonly ResourceKey<ThrowingResource> Key = new ResourceKey<ThrowingResource>("Test.HostCleanup");
+            public ThrowingResource Resource { get; private set; }
+            public override void DeclareData(WorldLayout layout) => layout.Resource(Key, Resource = new ThrowingResource());
+            public override void RegisterSystems(SystemRegistry registry) { }
+        }
+
+        sealed class ThrowingResource : System.IDisposable
+        {
+            public int DisposeCalls { get; private set; }
+            public void Dispose()
+            {
+                if (++DisposeCalls == 1) throw new System.InvalidOperationException("injected cleanup failure");
+            }
+        }
+
+        sealed class FailingModule : GameplayModuleAsset
+        {
+            public override void DeclareData(WorldLayout layout) => throw new System.InvalidOperationException("injected initialization failure");
+            public override void RegisterSystems(SystemRegistry registry) { }
+        }
 
         sealed class EmptyModule : GameplayModuleAsset
         {

@@ -161,7 +161,7 @@ namespace SPF.Runtime.Scheduling
                     var dependency = m_Tracker.GetDependency(entry.Access);
                     // Undeclared systems are main-thread barriers; finish earlier work first.
                     if (entry.Access.IsBarrier)
-                        Complete(dependency);
+                        Complete(ref dependency);
                     m_World.Guard.Begin(entry.Allowed, entry.Name);
                     try
                     {
@@ -172,14 +172,16 @@ namespace SPF.Runtime.Scheduling
                     }
                     finally { m_World.Guard.End(); }
                     var handle = m_Unrecorded;
+                    if (SerialProfiling)
+                    {
+                        // m_Unrecorded keeps ownership if completion fails. On success, record the
+                        // completed local value just as before (serial dependencies remain empty).
+                        Complete(ref handle);
+                        m_Stats.RecordExecute(i, Stopwatch.GetTimestamp() - start);
+                    }
                     m_Tracker.Record(entry.Access, handle);
                     m_Unrecorded = default;
                     m_HasUnrecorded = false;
-                    if (SerialProfiling)
-                    {
-                        Complete(handle);
-                        m_Stats.RecordExecute(i, Stopwatch.GetTimestamp() - start);
-                    }
                 }
                 finally { entry.Marker.End(); }
                 m_Stats.RecordSchedule(i, entry.System.Phase, Stopwatch.GetTimestamp() - start);
@@ -205,11 +207,11 @@ namespace SPF.Runtime.Scheduling
             {
                 if (m_HasUnrecorded)
                 {
-                    Complete(m_Unrecorded);
+                    Complete(ref m_Unrecorded);
                     m_Unrecorded = default;
                     m_HasUnrecorded = false;
                 }
-                Complete(m_Pending);
+                Complete(ref m_Pending);
                 long waitEnd = Stopwatch.GetTimestamp();
                 m_Pending = default;
                 m_Tracker.Reset();
@@ -226,12 +228,16 @@ namespace SPF.Runtime.Scheduling
             finally { m_EndingTick = false; s_EndMarker.End(); }
         }
 
-        void Complete(JobHandle handle)
+        void Complete(ref JobHandle handle)
         {
 #if SPF_DOTNET_HARNESS
             m_BeforeCompleteForTesting?.Invoke(handle);
 #endif
-            handle.Complete();
+            // Unity completes through a ref receiver. Preserve its successful mutation for local
+            // barrier dependencies, but do not overwrite owned handles when native completion throws.
+            var completing = handle;
+            completing.Complete();
+            handle = completing;
         }
 
         /// <summary>Completes outstanding work and resets systems that support it.</summary>

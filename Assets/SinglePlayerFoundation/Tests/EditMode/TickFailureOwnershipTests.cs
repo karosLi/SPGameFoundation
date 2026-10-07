@@ -109,6 +109,25 @@ namespace SPF.Tests.EditMode
             session.Step();
         }
 
+        [TestCase(false, false), TestCase(true, false), TestCase(true, true)]
+        public void SchedulingPreservesCompletedDependencyValues(bool serial, bool declared)
+        {
+            var sync = new SyncProbe(); var barrier = new BarrierSystem { ReadValues = declared };
+            using var session = Create(sync, new WriterSystem(), barrier);
+            session.Pipeline.SerialProfiling = serial;
+            // Native positive control: Complete clears its receiver. Eager default-handle stubs
+            // cannot distinguish the by-value wrapper regression this test guards in Unity.
+            var direct = new WriteJob { Values = session.World.Column(Values) }.Schedule();
+            direct.Complete();
+            Assert.AreEqual(default(JobHandle), direct, "native receiver-mutation positive control");
+            barrier.Callback = dependency => {
+                Assert.AreEqual(default(JobHandle), dependency, "barriers and serial readers must receive the value after Complete");
+                Assert.AreEqual(37, session.World.Column(Values)[0]);
+            };
+            session.Step();
+            Assert.AreEqual(1, barrier.Calls);
+        }
+
 #if SPF_DOTNET_HARNESS
         // These inject BEFORE Complete; the harness executes jobs eagerly. They validate ownership
         // state/retry policy, not Unity engine Complete failure behavior or native worker timing.
@@ -159,8 +178,11 @@ namespace SPF.Tests.EditMode
                     if (recoveryAlsoRejects) throw secondary;
                 });
                 Assert.AreSame(first, Assert.Catch(() => session.Pipeline.BeginTick(Time)));
-                Assert.AreEqual(2, calls);
+                Assert.AreEqual(recoveryAlsoRejects ? 2 : 3, calls);
                 Assert.AreEqual(recoveryAlsoRejects, session.Pipeline.HasPendingTick);
+                Assert.AreEqual(recoveryAlsoRejects, typeof(TickPipeline)
+                    .GetField("m_HasUnrecorded", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(session.Pipeline),
+                    "a returned handle stays explicitly owned if serial and recovery completion both reject");
                 Assert.AreEqual(recoveryAlsoRejects ? 0 : 1, sync.Calls);
                 Assert.AreEqual(0, session.Pipeline.Stats.TickCount);
                 if (recoveryAlsoRejects)
@@ -203,14 +225,15 @@ namespace SPF.Tests.EditMode
             typeof(TickPipeline).GetField("m_BeforeCompleteForTesting", BindingFlags.Instance | BindingFlags.NonPublic)
                 .SetValue(pipeline, hook);
 
+#endif
+
         sealed class BarrierSystem : SimSystemBase
         {
-            public int Calls;
+            public int Calls; public Action<JobHandle> Callback; public bool ReadValues;
             public override SimPhase Phase => SimPhase.Move;
-            public override void Declare(AccessDeclaration access) { }
-            public override JobHandle OnTick(in SimContext context, JobHandle dependency) { Calls++; return dependency; }
+            public override void Declare(AccessDeclaration access) { if (ReadValues) access.Read(Values); }
+            public override JobHandle OnTick(in SimContext context, JobHandle dependency) { Calls++; Callback?.Invoke(dependency); return dependency; }
         }
-#endif
 
         static void Reenter(SimSession session, string operation)
         {

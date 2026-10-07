@@ -3,7 +3,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 if [ "${GITHUB_EVENT_NAME:-}" != push ] ||
-   [ "${GITHUB_REF:-}" != refs/heads/dot/ci-burst-setup-approved-20261007 ] ||
+   [ "${GITHUB_REF:-}" != refs/heads/dot/ci-burst-persist-approved-20261007 ] ||
    [ "${SPF_APPROVED_BURST_SETUP:-}" != 2026-10-07 ] || [ "$(uname)" != Darwin ]; then
   echo '::error::This setup is restricted to the explicitly approved Mac CI branch.'; exit 1
 fi
@@ -26,8 +26,16 @@ if [ "$(sysctl -n hw.optional.arm64 2>/dev/null)" = 1 ]; then
   launch=(arch -arm64)
 fi
 rm -rf BurstSetupArtifacts
+rm -rf Artifacts
 mkdir -p BurstSetupArtifacts
 git rev-parse HEAD HEAD^{tree} > BurstSetupArtifacts/revision.txt
+read_persisted_preferences() {
+  local key
+  for key in BurstCompilation BurstCompileSynchronously BurstShowTimings BurstDebug BurstForceSafetyChecks; do
+    printf '%s: ' "$key"
+    defaults read com.unity3d.UnityEditor5.x "$key" 2>/dev/null || echo '<absent>'
+  done | tee "BurstSetupArtifacts/$1-storage.txt"
+}
 run_editor() {
   local stage=$1 method=$2; shift 2
   echo "::group::Fresh Editor: $stage"
@@ -39,6 +47,7 @@ run_editor() {
   cat "BurstSetupArtifacts/$stage.txt"
   echo '::endgroup::'
 }
+read_persisted_preferences before
 run_editor before Inspect
 # Verify the resolved package's persistence surface before allowing the option setter to run.
 python3 - <<'PY'
@@ -58,7 +67,9 @@ assert session_keys == {'BurstSafetyChecks'}, session_keys
 shutil.copyfile(source, 'BurstSetupArtifacts/resolved-BurstEditorOptions.cs')
 PY
 run_editor activation EnableApproved --spf-enable-approved-ci-burst-20261007
+read_persisted_preferences after-activation
 run_editor verified VerifyFreshProcess
+read_persisted_preferences after-verification
 python3 - <<'PY'
 from pathlib import Path
 def values(name):

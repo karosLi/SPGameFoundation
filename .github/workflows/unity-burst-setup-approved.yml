@@ -4,7 +4,7 @@ name: Approved one-time Mac Burst setup and verification
 # A dedicated branch-creation event bounds this mutation; ordinary pushes cannot invoke it.
 on:
   push:
-    branches: [dot/ci-burst-setup-approved-20261007]
+    branches: [dot/ci-burst-persist-approved-20261007]
 
 jobs:
   activate-and-verify:

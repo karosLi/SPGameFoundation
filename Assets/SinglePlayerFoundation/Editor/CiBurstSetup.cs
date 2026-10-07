@@ -75,6 +75,9 @@ namespace SPF.Editor
                 throw;
             }
             finally { Save("activation.txt", report.ToString()); }
+            // On macOS, automatic -batchmode/-quit can exit without flushing EditorPrefs.
+            // Request the public Editor exit path only after activation and evidence succeeded.
+            EditorApplication.Exit(0);
         }
 
         public static void VerifyFreshProcess()

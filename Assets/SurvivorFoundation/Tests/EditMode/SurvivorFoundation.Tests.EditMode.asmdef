@@ -15,7 +15,8 @@
         "Unity.Burst",
         "SurvivorFoundation.Runtime",
         "SPF.Presentation",
-        "SurvivorFoundation.Presentation"
+        "SurvivorFoundation.Presentation",
+        "SPF.Shell"
     ],
     "includePlatforms": [
         "Editor"

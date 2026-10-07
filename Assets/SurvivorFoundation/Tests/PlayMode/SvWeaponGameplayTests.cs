@@ -93,6 +93,33 @@ namespace SurvivorFoundation.Tests.PlayMode
                 game.Session.Pause();game.Renderer.RenderFrame();Assert.IsTrue(game.Renderer.Characters.TryReadWeapon(new EntityHandle(-1,1),out var pausedSocket));
                 yield return null;yield return null;game.Renderer.RenderFrame();Assert.IsTrue(game.Renderer.Characters.TryReadWeapon(new EntityHandle(-1,1),out var heldSocket));
                 Assert.Less(math.distance(pausedSocket.Muzzle,heldSocket.Muzzle),.0001f,"paused interpolation must not oscillate a skill or held weapon");game.Session.Resume();
+                // Native lifecycle regression on this exact renderer/backend. Disable retains its
+                // private warm buffers, drops hidden cue backlog and releases its camera callback.
+                weapons.RequestEquip(WeaponProfiles.Staff);
+                for(int i=0;i<weapons.Profile(WeaponProfiles.Staff).EquipTicks;i++)game.Session.Step();
+                Assert.AreEqual(WeaponProfiles.Staff,weapons.Current.ContentId);
+                int hiddenReleases=weapons.Releases;
+                var warmParticles=game.Renderer.WeaponParticles;
+                uint hiddenHead=weapons.Equipment.CueSequence;
+                game.Renderer.enabled=false;
+                Assert.IsNull(game.CameraRig.UpdateTarget);
+                for(int i=0;i<weapons.Current.DurationTicks*2+weapons.Current.EquipTicks+4;i++)
+                {game.State.Input=new InputFrame{Held=1u<<SvWeapons.AttackButton};game.Session.Step();}
+                game.State.Input=default;game.Session.Pause();
+                Assert.Greater(weapons.Equipment.CueSequence,hiddenHead,"the disabled interval must contain real authoritative weapon cues");
+                Assert.Greater(weapons.Releases,hiddenReleases,"the hidden interval must contain an actual release burst");
+                var lifecycleSnapshot=game.Session.CaptureSnapshot();
+                game.Renderer.enabled=true;game.Renderer.RenderFrame();
+                Assert.AreSame(warmParticles,game.Renderer.WeaponParticles);
+                Assert.AreEqual(weapons.Equipment.CueSequence,game.Renderer.LastWeaponCueSequence);
+                Assert.Zero(warmParticles.Renderer.Pool.ReservedCount,"reenable must skip hidden releases and old attachments");
+                Assert.IsNotNull(game.CameraRig.UpdateTarget);
+                uint restoreTick=game.Session.Clock.NextTickIndex;
+                game.Session.RestoreSnapshot(lifecycleSnapshot);game.Renderer.RenderFrame();
+                Assert.AreEqual(restoreTick,game.Session.Clock.NextTickIndex);
+                Assert.Zero(warmParticles.Renderer.Pool.ReservedCount);
+                CollectionAssert.AreEqual(lifecycleSnapshot,game.Session.CaptureSnapshot());
+                game.Session.Resume();
                 if(Environment.GetEnvironmentVariable("SPF_WEAPON_GAMEPLAY_SEQUENCE")=="1")
                 {
                     capture.Dispose();capture=new CanvasCapture(game.gameObject,game.CameraRig.Camera,360,640);game.Hud.MobileHud.SetPreviewViewport(360,640,new Rect(0,0,360,640));world.ClearLevel();game.State.Flow=SvFlow.Playing;game.State.Hero=game.State.HeroPrev=0;Equip(game,weapons,WeaponProfiles.Staff);

@@ -15,7 +15,8 @@
         "Unity.Mathematics",
         "Unity.Burst",
         "BrawlerFoundation.Runtime",
-        "BrawlerFoundation.Presentation"
+        "BrawlerFoundation.Presentation",
+        "SPF.Shell"
     ],
     "includePlatforms": [
         "Editor"

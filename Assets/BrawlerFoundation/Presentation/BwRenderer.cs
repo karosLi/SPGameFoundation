@@ -57,7 +57,10 @@ namespace BrawlerFoundation.Presentation
         SpriteEffects m_Fx;
         SimSession m_Session;
         MonotonicInterpolation m_Interpolation;
-        int m_InterpolationLevelVersion;
+        ViewTimelineStamp m_Timeline;
+        bool m_ResumePending;
+        FollowCamera2D m_BoundCamera;
+        System.Action<FollowCamera2D> m_CameraCallback;
         NativeArray<Animator2D> m_Animators;
         NativeArray<float2> m_Roots;
         NativeArray<float> m_Facing, m_Flash, m_Depth;
@@ -73,8 +76,42 @@ namespace BrawlerFoundation.Presentation
 
         void OnDestroy() => Release();
 
+        void OnDisable()
+        {
+            DetachCamera(); ClearTransientState(); m_Interpolation.Reset();
+            m_ResumePending = true;
+        }
+
+        void ClearTransientState()
+        {
+            m_Fx?.Clear(); m_Characters?.Clear(); m_WeaponParticles?.Clear();
+            m_HasWeaponCue = false;
+            if (m_WeaponTrailValid != null) System.Array.Clear(m_WeaponTrailValid, 0, m_WeaponTrailValid.Length);
+        }
+
+        void BindCamera()
+        {
+            if (m_BoundCamera != Camera) { DetachCamera(); m_BoundCamera = Camera; }
+            if (m_BoundCamera != null && m_BoundCamera.UpdateTarget == null)
+            {
+                if (m_CameraCallback == null) m_CameraCallback = Frame;
+                m_BoundCamera.UpdateTarget = m_CameraCallback;
+            }
+        }
+
+        void DetachCamera()
+        {
+            if (m_BoundCamera != null && m_BoundCamera.UpdateTarget == m_CameraCallback)
+                m_BoundCamera.UpdateTarget = null;
+            m_BoundCamera = null;
+        }
+
         void Release()
         {
+            DetachCamera(); m_Timeline.Reset(); m_Session = null; m_PoseClock = null; m_WeaponRuntime = null;
+            m_WeaponTrailPoints = null; m_WeaponTrailBirths = null; m_WeaponTrailValid = null;
+            m_WeaponCueSequence = 0; m_HasWeaponCue = false; m_ResumePending = false;
+            m_Fx = null;
             m_Sanctuary?.Dispose(); m_Sanctuary=null;
             m_WeaponParticles?.Dispose(); m_WeaponParticles=null; m_WeaponTick=-1;
             m_NaturalShadows?.Dispose(); m_NaturalShadows = null;
@@ -96,6 +133,7 @@ namespace BrawlerFoundation.Presentation
         {
             if (session != m_Session) m_Interpolation.Reset();
             Release();
+            m_Timeline.Update(session, session.TimelineRevision, session.World.LevelVersion);
             m_Session = session; m_BoundNatural = NaturalCharacters;
             var rig = session.World.Resource(BwKeys.Rig);
             m_Assets = new RenderAssets(RenderCapabilities.Detect());
@@ -138,14 +176,31 @@ namespace BrawlerFoundation.Presentation
         /// <summary>Same live presentation path; exposed for calibrated synchronous probes.</summary>
         public void RenderFrame()
         {
+            if (!isActiveAndEnabled) return;
             var session = Host != null ? Host.Session : null;
-            if (session == null) return;
+            if (session == null || session.State == SessionState.Disposed)
+            {
+                if (m_Session != null) Release();
+                return;
+            }
             session.Sync();
             if (session != m_Session || m_BoundNatural != NaturalCharacters) Bind(session);
             var world = session.World;
             var game = world.Resource(BwKeys.Game);
-            bool interpolationDiscontinuity = m_InterpolationLevelVersion != world.LevelVersion;
-            m_InterpolationLevelVersion = world.LevelVersion;
+            bool interpolationDiscontinuity = m_Timeline.Update(session, session.TimelineRevision, world.LevelVersion);
+            if (interpolationDiscontinuity) ClearTransientState();
+            if (m_ResumePending)
+            {
+                // Hidden time is not a delayed presentation backlog. Keep the warmed resources,
+                // but begin this visible interval at the authoritative cue head.
+                if (world.HasResource(BwWeapons.Key))
+                {
+                    var equipped = world.Resource(BwWeapons.Key);
+                    m_WeaponRuntime = equipped; m_WeaponRevision = equipped.Revision; m_WeaponTick = equipped.Tick;
+                    m_WeaponCueSequence = equipped.Equipment.CueSequence; m_HasWeaponCue = m_WeaponCueSequence != 0;
+                }
+                m_ResumePending = false;
+            }
             if(NaturalCharacters&&world.HasResource(BwWeapons.PoseKey))
             {
                 var poseClock=world.Resource(BwWeapons.PoseKey);
@@ -162,7 +217,7 @@ namespace BrawlerFoundation.Presentation
             float alpha = m_Interpolation.Resolve(session.Clock.NextTickIndex, session.TimelineRevision, requestedAlpha, interpolationDiscontinuity);
             float tickDt = 1f / 60f;
             var bounds = new Bounds(Vector3.zero, new Vector3(1e5f, 1e5f, 100f));
-            if (Camera != null && Camera.UpdateTarget == null) Camera.UpdateTarget = Frame;
+            BindCamera();
             if (!m_ArenaBuilt) { BuildArena(); m_ArenaBuilt = true; }
 
             m_NaturalShadows?.Clear();
@@ -240,7 +295,7 @@ namespace BrawlerFoundation.Presentation
             {
                 var cue=weapons.Cues[i];
                 if(m_HasWeaponCue&&unchecked((int)(cue.Sequence-m_WeaponCueSequence))<=0)continue;
-                if(cue.ActionPulse==view.ActionPulse&&((cue.Kind==WeaponCueKind.Release&&view.Phase<view.ReleasePhase)||(cue.Kind==WeaponCueKind.Impact&&view.Stage==WeaponStage.Windup)))break;
+                if(cue.ActionPulse==view.ActionPulse&&((cue.Kind==WeaponCueKind.Release&&(view.Stage==WeaponStage.Windup||view.Stage==WeaponStage.Active||view.Stage==WeaponStage.Recovery)&&view.Phase<view.ReleasePhase)||(cue.Kind==WeaponCueKind.Impact&&view.Stage==WeaponStage.Windup)))break;
                 cue.Position=BwBeltRules.Project(cue.Position,cue.Height);cue.Height=0;cue.Direction=new float2(cue.Direction.x,cue.Direction.y*BwBeltRules.DepthProjection);
                 m_WeaponParticles.SubmitCue(cue,FxDepth,true,weapons.Profile(cue.ContentId).Family);m_WeaponCueSequence=cue.Sequence;m_HasWeaponCue=true;
             }

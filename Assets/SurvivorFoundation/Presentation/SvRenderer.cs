@@ -85,7 +85,10 @@ namespace SurvivorFoundation.Presentation
         uint m_EventSequence;
         SimSession m_Session;
         MonotonicInterpolation m_Interpolation;
-        int m_InterpolationLevelVersion;
+        ViewTimelineStamp m_Timeline;
+        bool m_ResumePending;
+        FollowCamera2D m_BoundCamera;
+        System.Action<FollowCamera2D> m_CameraCallback;
         SvArtStyle m_BoundStyle;
         NativeArray<float4> m_EnemyColors;
         NativeArray<int> m_Counts;
@@ -101,8 +104,44 @@ namespace SurvivorFoundation.Presentation
 
         void OnDestroy() => Release();
 
+        void OnDisable()
+        {
+            DetachCamera(); ClearTransientState(); m_Interpolation.Reset();
+            m_ResumePending = true;
+        }
+
+        void ClearTransientState()
+        {
+            m_Fx?.Clear(); m_Characters?.Clear(); m_WeaponParticles?.Clear();
+            m_HasWeaponCue = false;
+            if (m_WeaponTrailValid != null) System.Array.Clear(m_WeaponTrailValid, 0, m_WeaponTrailValid.Length);
+            m_CombatFx?.Clear(); m_LastHitTick = -1; m_EventSequence = 0; m_HeroCastTick = -100;
+            if (m_Deaths.IsCreated) for (int i = 0; i < m_Deaths.Length; i++) m_Deaths[i] = default;
+        }
+
+        void BindCamera()
+        {
+            if (m_BoundCamera != Camera) { DetachCamera(); m_BoundCamera = Camera; }
+            if (m_BoundCamera != null && m_BoundCamera.UpdateTarget == null)
+            {
+                if (m_CameraCallback == null) m_CameraCallback = AimCamera;
+                m_BoundCamera.UpdateTarget = m_CameraCallback;
+            }
+        }
+
+        void DetachCamera()
+        {
+            if (m_BoundCamera != null && m_BoundCamera.UpdateTarget == m_CameraCallback)
+                m_BoundCamera.UpdateTarget = null;
+            m_BoundCamera = null;
+        }
+
         void Release()
         {
+            DetachCamera(); m_Timeline.Reset(); m_Session = null; m_PoseClock = null; m_WeaponRuntime = null;
+            m_WeaponTrailPoints = null; m_WeaponTrailBirths = null; m_WeaponTrailValid = null;
+            m_WeaponCueSequence = 0; m_HasWeaponCue = false; m_ResumePending = false;
+            m_Fx = null; m_CombatFx = null;
             m_Sanctuary?.Dispose();m_Sanctuary=null;
             m_WeaponParticles?.Dispose();m_WeaponParticles=null;m_WeaponTick=-1;
             m_Characters?.Dispose(); m_Characters = null; ArticulatedEnemies = 0;
@@ -126,6 +165,7 @@ namespace SurvivorFoundation.Presentation
         {
             if (session != m_Session) m_Interpolation.Reset();
             Release();
+            m_Timeline.Update(session, session.TimelineRevision, session.World.LevelVersion);
             m_Session = session; m_BoundStyle = ArtStyle; m_BoundNatural = NaturalCharacters;
             var world = session.World;
             var config = world.Resource(SvKeys.Config);
@@ -183,14 +223,31 @@ namespace SurvivorFoundation.Presentation
         /// <summary>Same live presentation path; exposed for calibrated synchronous probes.</summary>
         public void RenderFrame()
         {
+            if (!isActiveAndEnabled) return;
             var session = Host != null ? Host.Session : null;
-            if (session == null) return;
+            if (session == null || session.State == SessionState.Disposed)
+            {
+                if (m_Session != null) Release();
+                return;
+            }
             session.Sync();
             if (session != m_Session || ArtStyle != m_BoundStyle || NaturalCharacters != m_BoundNatural) Bind(session);
             var world = session.World;
             var game = world.Resource(SvKeys.Game);
-            bool interpolationDiscontinuity = m_InterpolationLevelVersion != world.LevelVersion;
-            m_InterpolationLevelVersion = world.LevelVersion;
+            bool interpolationDiscontinuity = m_Timeline.Update(session, session.TimelineRevision, world.LevelVersion);
+            if (interpolationDiscontinuity) ClearTransientState();
+            if (m_ResumePending)
+            {
+                // Hidden time is not a delayed presentation backlog. Keep the warmed resources,
+                // but begin this visible interval at the authoritative cue head.
+                if (world.HasResource(SvWeapons.Key))
+                {
+                    var equipped = world.Resource(SvWeapons.Key);
+                    m_WeaponRuntime = equipped; m_WeaponRevision = equipped.Revision; m_WeaponTick = equipped.Tick;
+                    m_WeaponCueSequence = equipped.Equipment.CueSequence; m_HasWeaponCue = m_WeaponCueSequence != 0;
+                }
+                m_ResumePending = false;
+            }
             if(NaturalCharacters&&world.HasResource(SvWeapons.PoseKey))
             {
                 var poseClock=world.Resource(SvWeapons.PoseKey);
@@ -207,8 +264,7 @@ namespace SurvivorFoundation.Presentation
             float dt = Time.deltaTime;
             float time = Time.time;
             float2 hero = math.lerp(game.HeroPrev, game.Hero, alpha);
-            if (Camera != null && Camera.UpdateTarget == null)
-                Camera.UpdateTarget = AimCamera;
+            BindCamera();
             float4 view = Camera != null ? Camera.ViewRect : new float4(hero - 20f, hero + 20f);
             float4 effectView = view; // fill budget uses the actual viewport, not the padded culling rectangle
             view += new float4(-2f, -2f, 2f, 2f);
@@ -301,7 +357,7 @@ namespace SurvivorFoundation.Presentation
             {
                 var cue=weapons.Cues[i];
                 if(m_HasWeaponCue&&unchecked((int)(cue.Sequence-m_WeaponCueSequence))<=0)continue;
-                if(cue.ActionPulse==view.ActionPulse&&((cue.Kind==WeaponCueKind.Release&&view.Phase<view.ReleasePhase)||(cue.Kind==WeaponCueKind.Impact&&view.Stage==WeaponStage.Windup)))break;
+                if(cue.ActionPulse==view.ActionPulse&&((cue.Kind==WeaponCueKind.Release&&(view.Stage==WeaponStage.Windup||view.Stage==WeaponStage.Active||view.Stage==WeaponStage.Recovery)&&view.Phase<view.ReleasePhase)||(cue.Kind==WeaponCueKind.Impact&&view.Stage==WeaponStage.Windup)))break;
                 cue.Position+=new float2(0,cue.Height);cue.Height=0;m_WeaponParticles.SubmitCue(cue,BulletDepth,true,weapons.Profile(cue.ContentId).Family);m_WeaponCueSequence=cue.Sequence;m_HasWeaponCue=true;
             }
             for(int i=0;i<weapons.Projectiles.Length;i++)
@@ -385,11 +441,10 @@ namespace SurvivorFoundation.Presentation
         void AimCamera(FollowCamera2D camera)
         {
             var session = Host != null ? Host.Session : null;
-            if (session == null) return;
+            if (session == null || session.State == SessionState.Disposed) return;
             var game = session.World.Resource(SvKeys.Game);
             if(session!=m_Session)m_Interpolation.Reset();
-            bool discontinuity=m_InterpolationLevelVersion!=session.World.LevelVersion;
-            m_InterpolationLevelVersion=session.World.LevelVersion;
+            bool discontinuity=!m_Timeline.Matches(session,session.TimelineRevision,session.World.LevelVersion);
             float requested=session.State==SessionState.Running&&game.Flow==SvFlow.Playing?session.InterpolationAlpha:1f;
             float alpha=m_Interpolation.Resolve(session.Clock.NextTickIndex,session.TimelineRevision,requested,discontinuity);
             float2 hero = math.lerp(game.HeroPrev, game.Hero, alpha);

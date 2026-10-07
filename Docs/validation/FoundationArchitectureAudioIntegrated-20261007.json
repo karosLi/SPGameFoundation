@@ -1,0 +1,111 @@
+{
+  "verifiedSource": "14652d5a77422d10fc89f8e800199243cacc9bd2",
+  "verifiedTree": "afb0cf6fde96d52adbae1040d79469bd0c47b8df",
+  "dotnet": {
+    "passed": 1368,
+    "failed": 0,
+    "projects": 78,
+    "assemblies": [
+      {
+        "name": "BrawlerFoundation.Tests.EditMode.dll",
+        "passed": 158,
+        "failed": 0
+      },
+      {
+        "name": "DefenseFoundation.Tests.EditMode.dll",
+        "passed": 8,
+        "failed": 0
+      },
+      {
+        "name": "FoundationAcceptance.Tests.EditMode.dll",
+        "passed": 9,
+        "failed": 0
+      },
+      {
+        "name": "PlatformerFoundation.Tests.EditMode.dll",
+        "passed": 18,
+        "failed": 0
+      },
+      {
+        "name": "PuzzleFoundation.Tests.EditMode.dll",
+        "passed": 7,
+        "failed": 0
+      },
+      {
+        "name": "RpgFoundation.Tests.EditMode.dll",
+        "passed": 63,
+        "failed": 0
+      },
+      {
+        "name": "SPF.Tests.EditMode.dll",
+        "passed": 882,
+        "failed": 0
+      },
+      {
+        "name": "ShooterFoundation.Tests.EditMode.dll",
+        "passed": 24,
+        "failed": 0
+      },
+      {
+        "name": "SlingFoundation.Tests.EditMode.dll",
+        "passed": 4,
+        "failed": 0
+      },
+      {
+        "name": "SnakeFoundation.Tests.EditMode.dll",
+        "passed": 40,
+        "failed": 0
+      },
+      {
+        "name": "StoryFoundation.Tests.EditMode.dll",
+        "passed": 5,
+        "failed": 0
+      },
+      {
+        "name": "SurvivorFoundation.Tests.EditMode.dll",
+        "passed": 150,
+        "failed": 0
+      }
+    ],
+    "nativeExecution": false
+  },
+  "apiCompile": {
+    "sources": 551,
+    "references": 95,
+    "targets": [
+      "net8.0",
+      "netstandard2.1"
+    ],
+    "errorsEach": 0,
+    "existingWarningsEach": 7,
+    "execution": false
+  },
+  "coldCompositions": {
+    "count": 19,
+    "twoRunsByteIdentical": true,
+    "sha256": "a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30",
+    "baselineRewritten": false
+  },
+  "python": {
+    "ci": 30,
+    "acceptance": 24,
+    "audioAuthoring": 10
+  },
+  "logSha256": {
+    "netstandard-api-generation.log": "958dfbb4aa34bcbdd98f375e4b4f51794c7d397863bbe032bdd182f29d2ee805",
+    "acceptance-python-tests.log": "dffa77467c4b3202d28eec43af522a59905def6d00b4901792d7e4b3a9f0a88c",
+    "netstandard-api-build.log": "c91df0843099af9b20fc3f69918425e3148b15bec73a2f0ec65ee72ba2582140",
+    "tests-final.log": "c73a50c84f745e3ca6cf8a84165d33a518516e8cdcfe9b7c67c8a3297c2fcebf",
+    "api-build.log": "44991b73f57ffd1f7d2be0529b701c849d2107ffda2ddff2a32ab17655e98322",
+    "probe-build.log": "cce5e9eb1919d6923d9a87ffc5ec59b53b1e787a1bafbef95dd825300fb383bc",
+    "generate-final.log": "84374d7390892b388c3fc5c3bbce07092f5dfa77caeebe550851e40e5fc8572c",
+    "ci-python-tests.log": "cabdca5cb0094f2417090033bc27d60f3bd582bd13281cd6f150117846f149b1",
+    "api-generation.log": "0f10243cbc2ecd5ec1a8527df57ccf86b1407da4ee01234d262059fe4fe7e36f",
+    "audio-python-tests.log": "3979803309c5c2699f8172bfc6542cf931a120ecf9053f1fc2efe578963fcacd",
+    "build-final.log": "eb6e1b4ed0d7534c40f75cfd475dff6097af0578d9d9cc9f13b560d38ef544d1"
+  },
+  "nativeExactHead": "pending",
+  "physicalAndroidIos": "pending",
+  "audition": "not performed; objective audio checks are separate",
+  "motionNaturalness": "reopened by reference review; contact support does not establish natural visual quality"
+}

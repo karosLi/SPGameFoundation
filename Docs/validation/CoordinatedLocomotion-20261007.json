@@ -1,0 +1,41 @@
+{
+  "date": "2026-10-07",
+  "baseline_commit": "14652d5a77422d10fc89f8e800199243cacc9bd2",
+  "scope": "Presentation-only coordinated humanoid Walk; native visual acceptance pending",
+  "source_sha256": {
+    "Assets/SinglePlayerFoundation/Presentation/Animation/GameplayCharacterMotion.cs": "04b617a395fb46028edc15823ef3cf356187ea32faf7204f83aba356f051b11b",
+    "Assets/SinglePlayerFoundation/Presentation/Animation/GameplayMotionProfiles.cs": "4fc4200864fb262544b816e0df5b02b428c3fdfa4c7fdee17c7fb5f7636e0725",
+    "Assets/SinglePlayerFoundation/Presentation/Animation/WeaponMotion.cs": "1fafca0020810620e4cfc8bf3e91e63830422db352f29b51321a252d2dc86fb3",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/CoordinatedLocomotionTests.cs": "383287316ddb444271a1bcfee885bb0e40b708f00f90ab30f18c7a50b0f724c6",
+    "Assets/BrawlerFoundation/Tests/PlayMode/BwWeaponGameplayTests.cs": "cd1ab7b57a3da083e0ad24d89cb601249cdd9275d5d859836b8e94495c49b20a",
+    "Assets/SurvivorFoundation/Tests/PlayMode/SvWeaponGameplayTests.cs": "91464915254c04a37363db64ad4bee02090688c859a865f2c4c4ee6e9e67602d"
+  },
+  "focused_dotnet": {
+    "passed": 83,
+    "failed": 0,
+    "skipped": 0,
+    "build_warnings": 0,
+    "build_errors": 0,
+    "filter": "FullyQualifiedName~CoordinatedLocomotionTests|FullyQualifiedName~GroundedGait|FullyQualifiedName~WeaponMotionTests|FullyQualifiedName~GameplayMotionProfileTests|FullyQualifiedName~GameplayCharacterTests"
+  },
+  "baseline_probe": {
+    "passed": 1,
+    "expected_regression_failures": 9,
+    "detail": "Same new probe with three exact baseline presentation sources. Nine captured-path cases fail; role distinction test already passed baseline."
+  },
+  "real_unity_api_compile": {
+    "sources": 235,
+    "errors": 0,
+    "warnings": 4,
+    "warning_codes": [
+      "CS0649"
+    ],
+    "detail": "Two capture fixtures and production dependency closure; existing serialized SvGameBootstrap fields. No native execution."
+  },
+  "limits": [
+    "No separate full aggregate in this branch; integration owner runs combined exact commit.",
+    "No new native video accepted here.",
+    "Ankle elevation includes projected depth and ankle rest height; path clearance subtracts the projected start/end trajectory.",
+    "No physical Android/iOS performance result."
+  ]
+}

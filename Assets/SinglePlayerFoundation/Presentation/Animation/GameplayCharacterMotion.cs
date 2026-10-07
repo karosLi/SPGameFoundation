@@ -95,7 +95,10 @@ namespace SPF.Presentation.Animation
             bool run=LocomotionClassifier.RunLatched;
             bool travel=allowed&&Locomotion!=GameplayLocomotionState.Idle;
             Move=math.lerp(Move,travel?1:0,response);Run=math.lerp(Run,run?1:0,response);Walk=Move*(1-Run);
-            SwingHeight=math.clamp(profile.StepHeight,.10f,.28f)*math.lerp(.58f,1,Run)*math.saturate(speed/.8f);
+            // Walk skims the support plane; Run retains the authored larger clearance. Blend
+            // the lift envelope too, so a stop cannot drop an already airborne foot in one frame.
+            float clearance=math.clamp(profile.StepHeight,.10f,.28f)*math.lerp(.25f,1,Run)*math.saturate(speed/1.2f);
+            SwingHeight=math.lerp(SwingHeight,clearance,response);
             float period=speed>.03f?math.clamp(math.lerp(profile.WalkStride,profile.RunStride,Run)/speed,
                 math.lerp(.44f,math.max(.26f,profile.MinimumPeriod),Run),math.lerp(profile.WalkPeriod,profile.RunPeriod,Run)):profile.WalkPeriod;
             // Contact duty is a gait decision, never an independent reach-time cap. A walk
@@ -190,10 +193,12 @@ namespace SPF.Presentation.Animation
         }
         static float2 Landing(float2 root,float2 velocity,float offset,float swing,float stance)
         {
-            // Screen Y also represents ground depth. Place the depth support patch above the
-            // root's contact baseline, rather than asking a trailing depth foot to pull the
-            // entire body down by half a model unit. This is a fixed world-space landing.
-            return root+velocity*(swing+stance*.5f)+new float2(offset,.075f+math.abs(velocity.y)*stance*.5f);
+            // Screen Y mixes depth with height. The previous full upward depth bias made a
+            // slow diagonal Walk raise each ankle almost 20% of stature. Use the rig's
+            // existing knee-flexion reserve before raising the entire landing footprint.
+            // Large/deep strides retain the remaining bias, avoiding a trailing support squat.
+            float depthBias=math.max(0,math.abs(velocity.y)*stance*.5f-.12f);
+            return root+velocity*(swing+stance*.5f)+new float2(offset,.075f+depthBias);
         }
         static void ReplanAirFoot(ref FootPlantState foot,ref float swing,float2 root,float2 velocity,float offset,float stance)
         {
@@ -338,21 +343,22 @@ namespace SPF.Presentation.Animation
             var pelvis=local[at+NaturalCharacterRig.Pelvis];
             float breathing=math.sin(motion.Breath*2*math.PI);
             float baseHeight=rig.Bones[NaturalCharacterRig.Pelvis].Position.y-.045f*motion.Move+.015f*motion.Gait*motion.Gait*math.lerp(.6f,1.25f,motion.Run)-.065f*math.max(0,motion.Attack)+profile.Breath*breathing*(1-motion.Move)-skill.PelvisDrop*skillBodyWeight;
-            pelvis.Position.x=motion.Support*motion.Turn*motion.Facing;pelvis.Rotation=0;
+            pelvis.Position.x=motion.Support*motion.Turn*motion.Facing;
+            pelvis.Rotation=profile.WeightShift*.65f*motion.Gait;
             pelvis.Position.y=baseHeight;
             if(input.Weapon.Equipped)baseHeight-=motion.WeaponAimDrop;
             if(!motion.Airborne)
             {
                 float support=math.min(baseHeight,motion.SupportCeiling);
-                if(motion.FarFoot.InStance)support=math.min(support,SupportHeight(rig,NaturalCharacterRig.FarThigh,NaturalCharacterRig.FarShin,NaturalMotion.ModelPoint(far,input.Root,motion.Facing,scale)-new float2(pelvis.Position.x,0)));
-                if(motion.NearFoot.InStance)support=math.min(support,SupportHeight(rig,NaturalCharacterRig.NearThigh,NaturalCharacterRig.NearShin,NaturalMotion.ModelPoint(near,input.Root,motion.Facing,scale)-new float2(pelvis.Position.x,0)));
+                if(motion.FarFoot.InStance)support=math.min(support,SupportHeight(rig,NaturalCharacterRig.FarThigh,NaturalCharacterRig.FarShin,NaturalMotion.ModelPoint(far,input.Root,motion.Facing,scale)-new float2(pelvis.Position.x,0),pelvis.Rotation));
+                if(motion.NearFoot.InStance)support=math.min(support,SupportHeight(rig,NaturalCharacterRig.NearThigh,NaturalCharacterRig.NearShin,NaturalMotion.ModelPoint(near,input.Root,motion.Facing,scale)-new float2(pelvis.Position.x,0),pelvis.Rotation));
                 pelvis.Position.y=math.clamp(support,baseHeight-.52f,baseHeight);
             }
             local[at+NaturalCharacterRig.Pelvis]=pelvis;
             NaturalMotion.Aim(rig,local,NaturalCharacterRig.FarThigh,NaturalCharacterRig.FarShin,far,input.Root,motion.Facing,scale,1,at);
             NaturalMotion.Aim(rig,local,NaturalCharacterRig.NearThigh,NaturalCharacterRig.NearShin,near,input.Root,motion.Facing,scale,1,at);
-            var foot=local[at+NaturalCharacterRig.FarFoot];foot.Rotation=-local[at+NaturalCharacterRig.FarThigh].Rotation-local[at+NaturalCharacterRig.FarShin].Rotation;local[at+NaturalCharacterRig.FarFoot]=foot;
-            foot=local[at+NaturalCharacterRig.NearFoot];foot.Rotation=-local[at+NaturalCharacterRig.NearThigh].Rotation-local[at+NaturalCharacterRig.NearShin].Rotation;local[at+NaturalCharacterRig.NearFoot]=foot;
+            var foot=local[at+NaturalCharacterRig.FarFoot];foot.Rotation=-pelvis.Rotation-local[at+NaturalCharacterRig.FarThigh].Rotation-local[at+NaturalCharacterRig.FarShin].Rotation;local[at+NaturalCharacterRig.FarFoot]=foot;
+            foot=local[at+NaturalCharacterRig.NearFoot];foot.Rotation=-pelvis.Rotation-local[at+NaturalCharacterRig.NearThigh].Rotation-local[at+NaturalCharacterRig.NearShin].Rotation;local[at+NaturalCharacterRig.NearFoot]=foot;
             float forward=motion.BodyVelocity.x*motion.Facing;
             float depth=math.clamp(motion.BodyVelocity.y*.02f,-.08f,.08f);
             float lean=math.clamp(forward*profile.Lean,-.12f,.12f);
@@ -360,7 +366,7 @@ namespace SPF.Presentation.Animation
             var weapon=WeaponMotion.Sample(input,motion);
             var torso=local[at+NaturalCharacterRig.Torso];torso.Position=rig.Bones[NaturalCharacterRig.Torso].Position;
             torso.Position.x=-motion.Support*.38f;torso.Position.y+=depth*.18f;
-            torso.Rotation=-.035f-lean-depth-profile.BodySway*motion.Gait+weapon.Body+skill.Body*skillBodyWeight-.12f*motion.Attack+motion.Hit*.24f*profile.HitRecoil;
+            torso.Rotation=-.035f-lean-depth-profile.BodySway*motion.Gait-pelvis.Rotation*.65f+weapon.Body+skill.Body*skillBodyWeight-.12f*motion.Attack+motion.Hit*.24f*profile.HitRecoil;
             torso.Rotation+=.065f*(motion.Turn*motion.Facing-1);
             torso.Rotation-=math.clamp(motion.Acceleration*motion.Facing*.004f,-.045f,.045f);
             local[at+NaturalCharacterRig.Torso]=torso;
@@ -369,17 +375,17 @@ namespace SPF.Presentation.Animation
                 // A projected-depth step can lower the support pelvis. Let the chest/shoulders reach
                 // modestly toward the held target before asking the elbow to lock or the hand to detach.
                 float2 shoulder=NaturalMotion.BonePoint(rig,local,NaturalCharacterRig.Torso,0,at)+
-                    WeaponMotion.Rotate(new float2(.05f*motion.Turn*motion.Facing,.45f),torso.Rotation);
+                    WeaponMotion.Rotate(new float2(.05f*motion.Turn*motion.Facing,.45f),pelvis.Rotation+torso.Rotation);
                 float2 delta=NaturalMotion.ModelPoint(weapon.Grip,input.Root,motion.Facing,scale)-shoulder;
                 float distance=math.length(delta);
                 if(distance>.80f)
                 {
                     float2 correction=math.clamp(delta*(1-.80f/math.max(.001f,distance)),new float2(-.18f,-.15f),new float2(.18f,.24f));
-                    torso.Position+=correction;local[at+NaturalCharacterRig.Torso]=torso;
+                    torso.Position+=WeaponMotion.Rotate(correction,-pelvis.Rotation);local[at+NaturalCharacterRig.Torso]=torso;
                 }
             }
             var head=local[at+NaturalCharacterRig.Head];head.Position=rig.Bones[NaturalCharacterRig.Head].Position;head.Position.x*=motion.Turn*motion.Facing;
-            head.Rotation=-torso.Rotation*.76f+.028f*motion.Gait+profile.Breath*1.3f*breathing-motion.Hit*.15f*profile.HitRecoil+skill.Head;
+            head.Rotation=-(torso.Rotation+pelvis.Rotation)*.76f+.028f*motion.Gait+profile.Breath*1.3f*breathing-motion.Hit*.15f*profile.HitRecoil+skill.Head;
             local[at+NaturalCharacterRig.Head]=head;
             var arm=local[at+NaturalCharacterRig.FarArm];arm.Position=rig.Bones[NaturalCharacterRig.FarArm].Position;arm.Position.x*=motion.Turn*motion.Facing;
             arm.Rotation=math.radians(-84)+armStride*motion.Gait+.12f*(1-motion.Move);local[at+NaturalCharacterRig.FarArm]=arm;
@@ -398,11 +404,12 @@ namespace SPF.Presentation.Animation
             if(offHand>.001f)
                 NaturalMotion.BlendAim(rig,local,NaturalCharacterRig.FarArm,NaturalCharacterRig.FarForearm,input.Root+new float2(skill.FarHand.x*motion.Facing,skill.FarHand.y)*scale,input.Root,motion.Facing,scale,-1,offHand,at);
         }
-        static float SupportHeight(in SkeletonView rig,int upper,int lower,float2 target)
+        static float SupportHeight(in SkeletonView rig,int upper,int lower,float2 target,float pelvisRotation)
         {
             var hip=rig.Bones[upper];float reach=hip.Length+rig.Bones[lower].Length-.01f;
-            float x=target.x-hip.Position.x;
-            return target.y+math.sqrt(math.max(0,reach*reach-x*x))-hip.Position.y;
+            float2 hipPosition=WeaponMotion.Rotate(hip.Position,pelvisRotation);
+            float x=target.x-hipPosition.x;
+            return target.y+math.sqrt(math.max(0,reach*reach-x*x))-hipPosition.y;
         }
 
     }

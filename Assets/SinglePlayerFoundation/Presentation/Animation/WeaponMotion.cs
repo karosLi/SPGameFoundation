@@ -92,6 +92,9 @@ namespace SPF.Presentation.Animation
             // Locomotion only perturbs the relaxed hold; contact/release stays on the canonical socket.
             float relaxed=1-reachWeight;
             offset+=new float2(motion.Support*.25f,.022f*motion.Gait)*relaxed;
+            // A guarded hand follows the weight transfer by a few degrees. Action weight
+            // removes this contribution exactly at authoritative contact/release.
+            rotation+=.055f*motion.Gait*relaxed;
             float equip=w.Stage==WeaponStage.Equipping?NaturalMotion.Ease(w.StagePhase):0;
             offset+=new float2(-.12f,-.48f)*equip;
             rotation-=.8f*equip;
@@ -144,7 +147,7 @@ namespace SPF.Presentation.Animation
                     float2 direction=distance>.00001f?reach/distance:new float2(0,-1);
                     float2 slide=distance>.82f?direction*math.min(.035f,distance-.82f):-direction*(.035f-distance);
                     var arm=local[at+NaturalCharacterRig.FarArm];
-                    arm.Position+=Rotate(slide,-local[at+NaturalCharacterRig.Torso].Rotation);local[at+NaturalCharacterRig.FarArm]=arm;
+                    arm.Position+=Rotate(slide,-local[at+NaturalCharacterRig.Pelvis].Rotation-local[at+NaturalCharacterRig.Torso].Rotation);local[at+NaturalCharacterRig.FarArm]=arm;
                 }
                 NaturalMotion.BlendAim(rig,local,NaturalCharacterRig.FarArm,NaturalCharacterRig.FarForearm,support,input.Root,motion.Facing,motion.Scale,-1,pose.Weight*(1-SupportRelease(input,motion)),at);
             }

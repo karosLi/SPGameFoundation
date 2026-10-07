@@ -229,7 +229,7 @@ namespace SurvivorFoundation.Tests.PlayMode
         // Test-only, fixed-capacity samples. Serialization happens after image acquisition.
         struct GaitSample
         {
-            public int Frame,Actor,SourceState,SourceAction,ScenarioPhase;public double Time;public GameplayCharacterMotion Motion;public float Pelvis,Head,SourcePhase,Hp;public EntityHandle Handle;public bool Visible;
+            public int Frame,Actor,SourceState,SourceAction,ScenarioPhase;public double Time;public GameplayCharacterMotion Motion;public float Pelvis,Head,SourcePhase,Hp,PelvisAngle,ChestAngle,HeadAngle,FreeElbowAngle,GuardAngle,HeadX;public EntityHandle Handle;public bool Visible;
         }
         sealed class GaitTrace
         {
@@ -244,7 +244,11 @@ namespace SurvivorFoundation.Tests.PlayMode
                 bool visible=feetViewport.z>0&&feetViewport.x>.02f&&feetViewport.x<.98f&&feetViewport.y>.02f&&headViewport.y<.98f;
                 samples[count++]=new GaitSample {Frame=frame,Actor=actor,Time=time,Motion=motion,Handle=handle,SourceState=sourceState,SourceAction=sourceAction,SourcePhase=sourcePhase,Hp=hp,ScenarioPhase=scenarioPhase,Visible=visible,
                     Pelvis=presenter.ReadBone(handle,NaturalCharacterRig.Pelvis).Position.y,
-                    Head=head};
+                    Head=head,HeadX=presenter.ReadBone(handle,NaturalCharacterRig.Head).Position.x,
+                    PelvisAngle=presenter.ReadBone(handle,NaturalCharacterRig.Pelvis).Rotation,ChestAngle=presenter.ReadBone(handle,NaturalCharacterRig.Torso).Rotation,
+                    HeadAngle=presenter.ReadBone(handle,NaturalCharacterRig.Head).Rotation,
+                    FreeElbowAngle=presenter.ReadBone(handle,NaturalCharacterRig.FarForearm).Rotation-presenter.ReadBone(handle,NaturalCharacterRig.FarArm).Rotation,
+                    GuardAngle=presenter.TryReadWeapon(handle,out var weapon)?weapon.Rotation:0};
             }
             public void AssertRoleCoverage()
             {
@@ -266,14 +270,21 @@ namespace SurvivorFoundation.Tests.PlayMode
                     Assert.AreEqual(0,unsupportedWalk,"a visible grounded walk must retain support");
                 }
             }
+            // Clearance relative to each projected contact trajectory, not ankle-minus-root Y.
+            static float PathClearance(in FootPlantState foot)
+            {
+                if(foot.InStance)return 0;
+                float u=(foot.Phase-NaturalMotion.Stance)/(1-NaturalMotion.Stance);
+                return foot.Position.y-math.lerp(foot.SwingStart.y,foot.SwingEnd.y,NaturalMotion.Ease(u));
+            }
             public void Write(string directory)
             {
-                var csv=new System.Text.StringBuilder("frame,actor,acquisition_seconds,root_x,root_y,ground_y,velocity_x,velocity_depth,scale,locomotion,far_phase,near_phase,far_stance,near_stance,far_x,far_y,near_x,near_y,pelvis_above_ground,head_above_ground,authoritative_jump,entity_index,entity_generation,current_frame_visible,source_state,source_action,source_phase,hp,scenario_phase,hit_weight,attack_weight,facing,turn,far_air_seconds,near_air_seconds,far_support_seconds,near_support_seconds,far_toeoff_support,near_toeoff_support,support_ceiling,transfer_delay,weapon_aim_x,weapon_aim_y,weapon_aim_drop,skill_pelvis_drop,moving\n");
+                var csv=new System.Text.StringBuilder("frame,actor,acquisition_seconds,root_x,root_y,ground_y,velocity_x,velocity_depth,scale,locomotion,far_phase,near_phase,far_stance,near_stance,far_x,far_y,near_x,near_y,pelvis_above_ground,head_above_ground,authoritative_jump,entity_index,entity_generation,current_frame_visible,source_state,source_action,source_phase,hp,scenario_phase,hit_weight,attack_weight,facing,turn,far_air_seconds,near_air_seconds,far_support_seconds,near_support_seconds,far_toeoff_support,near_toeoff_support,support_ceiling,transfer_delay,weapon_aim_x,weapon_aim_y,weapon_aim_drop,skill_pelvis_drop,moving,pelvis_angle,chest_angle,head_angle,free_elbow_angle,guard_angle,head_x,far_path_clearance,near_path_clearance\n");
                 for(int i=0;i<count;i++)
                 {
                     var s=samples[i];var m=s.Motion;float ground=m.FarFoot.PreviousRoot.y*m.Scale;
                     csv.Append(s.Frame).Append(',').Append(s.Actor).Append(',').Append((s.Time-samples[0].Time).ToString("F9",System.Globalization.CultureInfo.InvariantCulture));
-                    foreach(float value in new[]{m.PreviousRoot.x,m.PreviousRoot.y,ground,m.PreviousVelocity.x*m.Scale,m.PreviousVelocity.y*m.Scale,m.Scale,(float)m.Locomotion,m.FarFoot.Phase,m.NearFoot.Phase,m.FarFoot.InStance?1:0,m.NearFoot.InStance?1:0,m.FarFoot.Position.x*m.Scale,m.FarFoot.Position.y*m.Scale,m.NearFoot.Position.x*m.Scale,m.NearFoot.Position.y*m.Scale,s.Pelvis-ground,s.Head-ground,m.PreviousRoot.y-ground,s.Handle.Index,s.Handle.Generation,s.Visible?1:0,s.SourceState,s.SourceAction,s.SourcePhase,s.Hp,s.ScenarioPhase,m.Hit,m.Attack,m.Facing,m.Turn,m.FarFoot.AirSeconds,m.NearFoot.AirSeconds,m.FarFoot.SupportSeconds,m.NearFoot.SupportSeconds,m.FarFoot.ToeOffSupported?1:0,m.NearFoot.ToeOffSupported?1:0,m.SupportCeiling,m.TransferDelay,m.WeaponAim.x,m.WeaponAim.y,m.WeaponAimDrop,m.Skill.Pose.PelvisDrop,m.Moving?1:0})
+                    foreach(float value in new[]{m.PreviousRoot.x,m.PreviousRoot.y,ground,m.PreviousVelocity.x*m.Scale,m.PreviousVelocity.y*m.Scale,m.Scale,(float)m.Locomotion,m.FarFoot.Phase,m.NearFoot.Phase,m.FarFoot.InStance?1:0,m.NearFoot.InStance?1:0,m.FarFoot.Position.x*m.Scale,m.FarFoot.Position.y*m.Scale,m.NearFoot.Position.x*m.Scale,m.NearFoot.Position.y*m.Scale,s.Pelvis-ground,s.Head-ground,m.PreviousRoot.y-ground,s.Handle.Index,s.Handle.Generation,s.Visible?1:0,s.SourceState,s.SourceAction,s.SourcePhase,s.Hp,s.ScenarioPhase,m.Hit,m.Attack,m.Facing,m.Turn,m.FarFoot.AirSeconds,m.NearFoot.AirSeconds,m.FarFoot.SupportSeconds,m.NearFoot.SupportSeconds,m.FarFoot.ToeOffSupported?1:0,m.NearFoot.ToeOffSupported?1:0,m.SupportCeiling,m.TransferDelay,m.WeaponAim.x,m.WeaponAim.y,m.WeaponAimDrop,m.Skill.Pose.PelvisDrop,m.Moving?1:0,s.PelvisAngle,s.ChestAngle,s.HeadAngle,s.FreeElbowAngle,s.GuardAngle,s.HeadX,PathClearance(m.FarFoot)*m.Scale,PathClearance(m.NearFoot)*m.Scale})
                         csv.Append(',').Append(value.ToString("R",System.Globalization.CultureInfo.InvariantCulture));
                     csv.Append('\n');
                 }

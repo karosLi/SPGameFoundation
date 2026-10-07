@@ -80,3 +80,49 @@ The existing CSV columns remain in order. Appended fields identify the entity, c
 The original heavy horde spawn overlapped the beacon exclusion, became stationary, and later left the camera. That was a capture-fixture gap, not evidence of heavy walking. The revised portrait fixture keeps the camera unchanged and uses clear, separated spawns plus a bounded hero route. NPC content speeds explicitly change from slow to fast and back through the real automatic-clock simulation. These are labelled scripted test inputs, not fabricated poses. Agile/standard/heavy spawns are (3.5,4.2), (0,6.5) and (-3.5,7). Their slow speeds are .4/.45/.3 world units/s; frames 32–55 use 1.4/1.9/3.7 before returning to slow motion. The real simulation/production-adapter preflight passes at 20/21/22/23/30 Hz and at alternating 20–23 Hz intervals, with every role retaining grounded walking support. Each recorded role must have at least 120 visible samples, 100 moving samples, 60 Walk samples, 16 Run samples and two world units of cumulative travel. The revised portrait fixture is fresh coverage, not an alleged matching pair with the invalid old portrait fixture; the belt comparison retains its original scenario.
 
 A fresh native run and 1× inspection of both backends are still required before accepting this follow-up visually. Local API compilation and numeric regressions are necessary but do not replace that gate.
+
+## Reference-informed coordinated Walk correction (2026-10-07)
+
+### Diagnosis and scope
+
+The user-supplied gameplay reference and exact `2066211` Belt footage were inspected as decoded frame sequences. The existing Belt Walk has alternating support, but still reads as high knees below a relatively rigid guarded upper body. The reference supports articulated, offset body/limb silhouettes; its small, occluded humans do **not** establish reliable human contact duty, foot clearance or cadence. Its larger dragon is hovering/attacking, so that motion is not copied into grounded humanoids. No reference art, font, texture or character asset is incorporated.
+
+This bounded follow-up preserves the coupled contact controller, cadence/reach bounds, 14-bone cutout rig, Run flight distinction and independent three-bone BAT ABI. It does not change Runtime, damage, snapshots, camera, input schedules or rendering tiers.
+
+- Walk swing lift is lower than Run and smoothly responds to speed, including slowing/stopping while a foot is airborne. Creeping retains very small lift rather than a full-height step.
+- Landing prediction previously combined forward projected-depth travel with a full upward depth bias. The new bias uses up to 0.12 model units of the existing knee-flexion reserve before raising the footprint. The remaining bias is retained for large/deep strides; a swing still cannot pull the pelvis down.
+- The pelvis now rotates a restrained amount with actual foot transfer, with opposing chest rotation, speed/acceleration-dependent lean and head counter-rotation. Leg support-height calculations use the rotated hip anchors and feet remain level.
+- A relaxed weapon guard follows transfer by a few degrees. The contribution is multiplied by the existing relaxed/action weight and disappears exactly at canonical contact/release. Dominant/support IK and reach accommodation use the full parent rotation. Moving attacks retain the same lower-body contacts and return continuously to the guard.
+- Hero/agile/heavy profiles retain distinct cadence/support widths and now separate their actual clearance/arm arcs more clearly. All three are grounded humanoid profiles; no flying or quadruped capability is implied.
+
+### Measured quantities are different
+
+“Ankle elevation” below means rendered ankle Y minus root/contact-plane Y, divided by the rendered head height above that plane. It includes the ankle rest offset and projected ground depth. “Path clearance” subtracts the interpolated projected start/end contact trajectory from the swing ankle Y, then divides by stature; it measures the additional swing arc only. Neither is a sole-to-physical-terrain measurement, because this rig has a projected 2D ground plane.
+
+The reference review's 4–8% suggestion was a tuning hypothesis, not a universal gate. Tests use bounded regressions for the identified recorded input and check support, continuity and articulation separately. They cannot certify naturalness.
+
+### Matched numeric comparison
+
+The baseline compiles the exact three presentation files from `14652d5`, with the same new probe and remaining dependencies as the candidate. Inputs match the observed Belt hero's scale 0.9 and X velocity 0.864; projected depth is 0 or ±0.3168 world units/s. Both revisions run at 30/60/120 Hz for five seconds, measuring seconds 1–5. This is a deterministic math comparison, not new native footage.
+
+| Measurement | Baseline | Candidate |
+| --- | ---: | ---: |
+| Horizontal ankle elevation / stature | 10.46% | 6.01% |
+| Positive-depth ankle elevation / stature | 19.90–20.05% | 11.52% |
+| Negative-depth ankle elevation / stature | 19.81–19.83% | 11.43–11.45% |
+| Swing path clearance / stature, all three paths | 6.47–6.48% | 2.02–2.15% |
+| Pelvis rotation excursion | 0 | 0.0455–0.0485 rad |
+| Chest rotation excursion | 0.1555–0.1658 rad | 0.1863–0.1986 rad |
+| Relaxed guard rotation excursion | 0 | 0.0855–0.0912 rad |
+
+The unchanged free-elbow phase remains active; the free upper-arm range is role-specific. At the same one-model-unit/s horizontal speed over the seven-second steady window, hero/agile/heavy actual free-arm arcs are 0.648/0.771/0.374 rad, additional swing clearances are 0.0396/0.0500/0.0292 model units, and landing counts are 13/15/12. These are measured output differences, not a claim that three numerical profiles alone establish three convincing performances.
+
+### Focused verification and pending native acceptance
+
+`CoordinatedLocomotionTests` adds 16 cases: matched horizontal/positive-depth/negative-depth Walk at three frame rates; creeping/start/stop/Run/reversal/depth continuity across all roles; measured role output separation; and all four weapon families at both facings under moving action/recovery. It checks exact planted FK, absence of unsupported Walk, smooth lift response, idle settling, unchanged lower-body positions under the action overlay, guard transition continuity and the existing 3 mm canonical socket limit. The nine captured-path regressions fail against the exact baseline. No existing bound was loosened.
+
+The focused candidate suite includes the new cases plus all existing `GameplayCharacterTests`, `GameplayMotionProfileTests`, `GroundedGaitTests`, `GroundedGaitInterruptionTests` and `WeaponMotionTests`. Their existing zero-allocation, identity, support, run-flight, weapon, skill and reach tests remain required. **Candidate result: 83/83 focused tests passed, zero skipped; focused project build had zero warnings/errors.** [Machine-readable source hashes and scope](validation/CoordinatedLocomotion-20261007.json) identify the tested files. The real-API compile passed 235 source files with zero errors and four existing serialized-field CS0649 warnings. An initial reuse of an old compile-only source list missed newer composition/audio dependencies; rebuilding the actual dependency closure fixed that validation recipe. A separate compile-only check covers both modified capture fixtures and their production dependencies against installed real Unity 2022.3 APIs; this does not execute graphics or Burst. The main integration owner runs the combined aggregate and native CI for the exact integrated commit.
+
+Both native `gait.csv` fixtures only append columns: pelvis/chest/head world angles, free-elbow relative angle, guard angle, head X and each foot's path clearance. Existing columns/order, frame count, timing, camera, speed schedule, actor selection and 1× encoding rules remain unchanged. The six extra captured floats occupy a bounded 15,360 bytes for each 160×4 test sample buffer; clearance is derived after acquisition. Production sprite counts and buffers are unchanged.
+
+Visual acceptance remains **pending** centrally queued, matched real-game GPU and fallback clips at recorded 1× PTS. Inspect full phone-size view and labeled close-ups of low-speed Walk, Run, start/stop/reverse/depth, roles, all weapons, attack/recovery and interruption. Check feet/support, pelvis/chest/head and held/free hands together. A numerical pass, lower elevation or static pose does not close this gate. Physical Android/iOS performance and sustained thermal/input acceptance remain separate.

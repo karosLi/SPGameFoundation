@@ -27,12 +27,12 @@ namespace SPF.Presentation.Animation
         public static GameplayLocomotionProfile Get(int id)
         {
             var p=new GameplayLocomotionProfile {Id=1,RunEnter=3.1f,RunExit=2.6f,WalkStride=1.4f,RunStride=2.7f,
-                WalkPeriod=1.08f,RunPeriod=.85f,MinimumPeriod=.26f,WalkArm=.38f,RunArm=.64f,BodySway=.10f,Lean=.021f,
-                Breath=.007f,FootWidth=.13f,StepHeight=.21f,WeightShift=.045f,HitRecoil=1};
+                WalkPeriod=1.08f,RunPeriod=.85f,MinimumPeriod=.26f,WalkArm=.40f,RunArm=.64f,BodySway=.13f,Lean=.021f,
+                Breath=.007f,FootWidth=.13f,StepHeight=.19f,WeightShift=.045f,HitRecoil=1};
             if(id==1) // Agile: lighter support, quicker response and a larger balancing arm arc.
-            {p.Id=2;p.RunEnter=2.65f;p.RunExit=2.15f;p.WalkStride=1.25f;p.RunStride=2.5f;p.WalkPeriod=.95f;p.RunPeriod=.75f;p.WalkArm=.44f;p.RunArm=.72f;p.BodySway=.115f;p.Breath=.005f;p.FootWidth=.105f;p.StepHeight=.23f;p.WeightShift=.038f;p.HitRecoil=1.2f;}
+            {p.Id=2;p.RunEnter=2.65f;p.RunExit=2.15f;p.WalkStride=1.25f;p.RunStride=2.5f;p.WalkPeriod=.95f;p.RunPeriod=.75f;p.WalkArm=.48f;p.RunArm=.72f;p.BodySway=.15f;p.Breath=.005f;p.FootWidth=.105f;p.StepHeight=.24f;p.WeightShift=.038f;p.HitRecoil=1.2f;}
             else if(id==2) // Heavy: wider support, deliberate cycle and restrained upper-arm swing.
-            {p.Id=3;p.RunEnter=3.8f;p.RunExit=3.1f;p.WalkStride=1.65f;p.RunStride=3;p.WalkPeriod=1.18f;p.RunPeriod=1.02f;p.MinimumPeriod=.34f;p.WalkArm=.27f;p.RunArm=.46f;p.BodySway=.075f;p.Lean=.026f;p.Breath=.012f;p.FootWidth=.16f;p.StepHeight=.17f;p.WeightShift=.06f;p.HitRecoil=.7f;}
+            {p.Id=3;p.RunEnter=3.8f;p.RunExit=3.1f;p.WalkStride=1.65f;p.RunStride=3;p.WalkPeriod=1.18f;p.RunPeriod=1.02f;p.MinimumPeriod=.34f;p.WalkArm=.23f;p.RunArm=.46f;p.BodySway=.075f;p.Lean=.026f;p.Breath=.012f;p.FootWidth=.16f;p.StepHeight=.14f;p.WeightShift=.06f;p.HitRecoil=.7f;}
             return p;
         }
     }

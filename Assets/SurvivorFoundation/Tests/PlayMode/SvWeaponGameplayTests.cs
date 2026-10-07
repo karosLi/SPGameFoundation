@@ -113,9 +113,10 @@ namespace SurvivorFoundation.Tests.PlayMode
                     // above intentionally freezes enemies and cannot demonstrate their walking.
                     capture.Dispose();capture=new CanvasCapture(game.gameObject,game.CameraRig.Camera,320,568);game.Hud.MobileHud.SetPreviewViewport(320,568,new Rect(0,0,320,568));
                     world.ClearLevel();game.State.Flow=SvFlow.Playing;game.State.Hero=game.State.HeroPrev=0;game.State.Input=default;
-                    for(int kind=0;kind<runtime.Enemies.Length;kind++){var enemy=runtime.Enemies[kind];enemy.Speed=kind==2?1.3f:kind==0?2.1f:1.7f;runtime.Enemies[kind]=enemy;}
+                    for(int kind=0;kind<runtime.Enemies.Length;kind++){var enemy=runtime.Enemies[kind];enemy.Speed=kind==2?.3f:kind==0?.4f:.45f;runtime.Enemies[kind]=enemy;}
+                    runtime.Settings.GuardAggroRadius=30;
                     Assert.GreaterOrEqual(runtime.EnemyKinds,3,"the locomotion fixture requires three authored enemy families");
-                    SvSpawner.SpawnEnemy(world,runtime,1,new float2(3.5f,4));SvSpawner.SpawnEnemy(world,runtime,2,new float2(-3.5f,3.5f));SvSpawner.SpawnEnemy(world,runtime,3,new float2(0,-4));
+                    SvSpawner.SpawnEnemy(world,runtime,1,new float2(3.5f,4.2f));SvSpawner.SpawnEnemy(world,runtime,2,new float2(0,6.5f));SvSpawner.SpawnEnemy(world,runtime,3,new float2(-3.5f,7));
                     Assert.AreEqual(3,world.Table(SvKeys.Enemy).Count);
                     for(int row=0;row<3;row++)Assert.AreEqual(row+1,world.Column(SvKeys.Info)[row].Kind,"enemy content IDs are one-based");
                     Assert.Less(world.Column(SvKeys.Info)[0].Radius,.65f,"first captured enemy uses the agile profile");
@@ -123,17 +124,26 @@ namespace SurvivorFoundation.Tests.PlayMode
                     Canvas.ForceUpdateCanvases();yield return null;yield return null;
                     using(var frames=new BufferedFrameCapture(capture.Target,160))
                     {
-                        var trace=new GaitTrace();game.Session.ManualClock=false;double next=Time.realtimeSinceStartupAsDouble;
+                        var trace=new GaitTrace(game.CameraRig.Camera);game.Session.ManualClock=false;double next=Time.realtimeSinceStartupAsDouble;
                         for(int i=0;i<160;i++)
                         {
                             while(Time.realtimeSinceStartupAsDouble<next)yield return null;
-                            float2 move=i<40?new float2(.20f,.12f):i<80?new float2(.8f,.6f):i<100?float2.zero:i<135?new float2(-.2f,-.12f):new float2(0,.20f);
+                            int scenarioPhase=i<32?0:i<56?1:2;
+                            // Explicit scripted content-speed transitions, through the real simulation.
+                            // The renderer still receives only actual fixed-tick travel and combat state.
+                            if(i==32||i==56)for(int row=0;row<world.Table(SvKeys.Enemy).Count;row++)
+                            {
+                                var enemy=world.Column(SvKeys.Info)[row];
+                                enemy.Speed=i==32?(enemy.Kind==3?3.7f:enemy.Kind==1?1.4f:1.9f):(enemy.Kind==3?.3f:enemy.Kind==1?.4f:.45f);
+                                world.Column(SvKeys.Info).Set(row,enemy);
+                            }
+                            float2 move=i<32?new float2(.18f,.10f):i<48?new float2(.6f,0):i<64?new float2(-.6f,0):i<84?float2.zero:i<116?new float2(-.18f,-.10f):i<138?new float2(0,.2f):new float2(0,-.2f);
                             game.State.Input=InputFrame.Latch(game.State.Input,new InputFrame{Move=move});
-                            double acquiredAt=Time.realtimeSinceStartupAsDouble;frames.Capture(weapons.Tick/30d);trace.Capture(i,0,acquiredAt,game.Renderer.Characters,new EntityHandle(-1,1));
-                            var handles=world.Table(SvKeys.Enemy).Handles;for(int row=0;row<math.min(3,world.Table(SvKeys.Enemy).Count);row++)trace.Capture(i,row+1,acquiredAt,game.Renderer.Characters,handles[row]);
+                            double acquiredAt=Time.realtimeSinceStartupAsDouble;frames.Capture(weapons.Tick/30d);trace.Capture(i,0,acquiredAt,game.Renderer.Characters,new EntityHandle(-1,1),(int)game.State.Flow,0,game.State.Time,game.State.Hp,scenarioPhase);
+                            var handles=world.Table(SvKeys.Enemy).Handles;for(int row=0;row<math.min(3,world.Table(SvKeys.Enemy).Count);row++){var actor=world.Column(SvKeys.Info)[row];trace.Capture(i,row+1,acquiredAt,game.Renderer.Characters,handles[row],(int)actor.Flags,actor.Kind,actor.Timer,actor.Hp,scenarioPhase);}
                             next=acquiredAt+1d/30;
                         }
-                        game.Session.ManualClock=true;string directory=frames.Write("grounded-horde-live-"+suffix,"Actual automatic-clock hero plus moving agile, standard and heavy enemies: walk, run, stop, reverse and depth walk. Same camera/input schedule for before/after. Per-actor gait.csv is a readback annotation, not a manufactured render clock.",BufferedFrameFormat.Jpeg95Review);trace.Write(directory);
+                        game.Session.ManualClock=true;string directory=frames.Write("grounded-horde-live-"+suffix,"Actual automatic-clock hero plus agile, standard and heavy enemies: bounded walking/running/reversal/depth input. Scripted NPC speeds in world units/s: agile/standard/heavy .4/.45/.3 for frames0-31 and56-159, 1.4/1.9/3.7 for frames32-55; hero aggro30, through the real simulation. Spawns clear of the beacon; same camera. Per-actor gait.csv is a readback annotation, not a manufactured render clock.",BufferedFrameFormat.Jpeg95Review);trace.Write(directory);trace.AssertRoleCoverage();
                     }
                 }
                 LogAssert.NoUnexpectedReceived();
@@ -155,26 +165,51 @@ namespace SurvivorFoundation.Tests.PlayMode
         // Test-only, fixed-capacity samples. Serialization happens after image acquisition.
         struct GaitSample
         {
-            public int Frame,Actor;public double Time;public GameplayCharacterMotion Motion;public float Pelvis,Head;
+            public int Frame,Actor,SourceState,SourceAction,ScenarioPhase;public double Time;public GameplayCharacterMotion Motion;public float Pelvis,Head,SourcePhase,Hp;public EntityHandle Handle;public bool Visible;
         }
         sealed class GaitTrace
         {
-            readonly GaitSample[] samples=new GaitSample[160*4];int count;
-            public void Capture(int frame,int actor,double time,GameplayCharacterPresenter presenter,EntityHandle handle)
+            readonly GaitSample[] samples=new GaitSample[160*4];readonly Camera camera;int count;
+            public GaitTrace(Camera camera){this.camera=camera;}
+            public void Capture(int frame,int actor,double time,GameplayCharacterPresenter presenter,EntityHandle handle,int sourceState=0,int sourceAction=0,float sourcePhase=0,float hp=0,int scenarioPhase=0)
             {
-                if(count==samples.Length||!presenter.TryRead(handle,out var motion))return;
-                samples[count++]=new GaitSample {Frame=frame,Actor=actor,Time=time,Motion=motion,
+                if(count==samples.Length||!presenter.TryReadCurrent(handle,out var motion))return;
+                float head=presenter.ReadBone(handle,NaturalCharacterRig.Head).Position.y;
+                var feetViewport=camera.WorldToViewportPoint(new Vector3(motion.PreviousRoot.x,motion.PreviousRoot.y,0));
+                var headViewport=camera.WorldToViewportPoint(new Vector3(motion.PreviousRoot.x,head,0));
+                bool visible=feetViewport.z>0&&feetViewport.x>.02f&&feetViewport.x<.98f&&feetViewport.y>.02f&&headViewport.y<.98f;
+                samples[count++]=new GaitSample {Frame=frame,Actor=actor,Time=time,Motion=motion,Handle=handle,SourceState=sourceState,SourceAction=sourceAction,SourcePhase=sourcePhase,Hp=hp,ScenarioPhase=scenarioPhase,Visible=visible,
                     Pelvis=presenter.ReadBone(handle,NaturalCharacterRig.Pelvis).Position.y,
-                    Head=presenter.ReadBone(handle,NaturalCharacterRig.Head).Position.y};
+                    Head=head};
+            }
+            public void AssertRoleCoverage()
+            {
+                for(int actor=0;actor<4;actor++)
+                {
+                    int visible=0,moving=0,walk=0,run=0,unsupportedWalk=0;float distance=0;bool hasPrevious=false;float2 previous=0;
+                    for(int i=0;i<count;i++)
+                    {
+                        var sample=samples[i];if(sample.Actor!=actor||!sample.Visible)continue;
+                        visible++;var m=sample.Motion;float speed=math.length(m.PreviousVelocity*m.Scale);
+                        if(m.Locomotion==GameplayLocomotionState.Walk&&!m.Airborne&&!m.FarFoot.InStance&&!m.NearFoot.InStance)unsupportedWalk++;
+                        if(speed>.05f){moving++;if(m.Locomotion==GameplayLocomotionState.Walk)walk++;if(m.Locomotion==GameplayLocomotionState.Run)run++;}
+                        if(hasPrevious)distance+=math.distance(previous,m.PreviousRoot);previous=m.PreviousRoot;hasPrevious=true;
+                    }
+                    TestContext.WriteLine($"Captured role {actor}: visible={visible}, moving={moving}, Walk={walk}, Run={run}, unsupportedWalk={unsupportedWalk}, travel={distance}");
+                    Assert.GreaterOrEqual(visible,120,"the role must remain on camera");Assert.GreaterOrEqual(moving,100,"the role must actually move");
+                    Assert.GreaterOrEqual(walk,60,"the role must demonstrate sustained walking");Assert.GreaterOrEqual(run,16,"the role must demonstrate running");
+                    Assert.GreaterOrEqual(distance,2f,"static or beacon-pinned actors do not validate locomotion");
+                    Assert.AreEqual(0,unsupportedWalk,"a visible grounded walk must retain support");
+                }
             }
             public void Write(string directory)
             {
-                var csv=new System.Text.StringBuilder("frame,actor,acquisition_seconds,root_x,root_y,ground_y,velocity_x,velocity_depth,scale,locomotion,far_phase,near_phase,far_stance,near_stance,far_x,far_y,near_x,near_y,pelvis_above_ground,head_above_ground,authoritative_jump\n");
+                var csv=new System.Text.StringBuilder("frame,actor,acquisition_seconds,root_x,root_y,ground_y,velocity_x,velocity_depth,scale,locomotion,far_phase,near_phase,far_stance,near_stance,far_x,far_y,near_x,near_y,pelvis_above_ground,head_above_ground,authoritative_jump,entity_index,entity_generation,current_frame_visible,source_state,source_action,source_phase,hp,scenario_phase,hit_weight,attack_weight,facing,turn,far_air_seconds,near_air_seconds,far_support_seconds,near_support_seconds,far_toeoff_support,near_toeoff_support,support_ceiling,transfer_delay,weapon_aim_x,weapon_aim_y,weapon_aim_drop,skill_pelvis_drop,moving\n");
                 for(int i=0;i<count;i++)
                 {
                     var s=samples[i];var m=s.Motion;float ground=m.FarFoot.PreviousRoot.y*m.Scale;
                     csv.Append(s.Frame).Append(',').Append(s.Actor).Append(',').Append((s.Time-samples[0].Time).ToString("F9",System.Globalization.CultureInfo.InvariantCulture));
-                    foreach(float value in new[]{m.PreviousRoot.x,m.PreviousRoot.y,ground,m.PreviousVelocity.x*m.Scale,m.PreviousVelocity.y*m.Scale,m.Scale,(float)m.Locomotion,m.FarFoot.Phase,m.NearFoot.Phase,m.FarFoot.InStance?1:0,m.NearFoot.InStance?1:0,m.FarFoot.Position.x*m.Scale,m.FarFoot.Position.y*m.Scale,m.NearFoot.Position.x*m.Scale,m.NearFoot.Position.y*m.Scale,s.Pelvis-ground,s.Head-ground,m.PreviousRoot.y-ground})
+                    foreach(float value in new[]{m.PreviousRoot.x,m.PreviousRoot.y,ground,m.PreviousVelocity.x*m.Scale,m.PreviousVelocity.y*m.Scale,m.Scale,(float)m.Locomotion,m.FarFoot.Phase,m.NearFoot.Phase,m.FarFoot.InStance?1:0,m.NearFoot.InStance?1:0,m.FarFoot.Position.x*m.Scale,m.FarFoot.Position.y*m.Scale,m.NearFoot.Position.x*m.Scale,m.NearFoot.Position.y*m.Scale,s.Pelvis-ground,s.Head-ground,m.PreviousRoot.y-ground,s.Handle.Index,s.Handle.Generation,s.Visible?1:0,s.SourceState,s.SourceAction,s.SourcePhase,s.Hp,s.ScenarioPhase,m.Hit,m.Attack,m.Facing,m.Turn,m.FarFoot.AirSeconds,m.NearFoot.AirSeconds,m.FarFoot.SupportSeconds,m.NearFoot.SupportSeconds,m.FarFoot.ToeOffSupported?1:0,m.NearFoot.ToeOffSupported?1:0,m.SupportCeiling,m.TransferDelay,m.WeaponAim.x,m.WeaponAim.y,m.WeaponAimDrop,m.Skill.Pose.PelvisDrop,m.Moving?1:0})
                         csv.Append(',').Append(value.ToString("R",System.Globalization.CultureInfo.InvariantCulture));
                     csv.Append('\n');
                 }

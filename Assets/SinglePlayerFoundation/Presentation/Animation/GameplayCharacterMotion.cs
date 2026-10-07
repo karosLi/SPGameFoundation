@@ -6,7 +6,7 @@ using Unity.Mathematics;
 
 namespace SPF.Presentation.Animation
 {
-    public enum GameplayCharacterState : byte { Idle, Run, Attack, Hit, Death, Recovery }
+    public enum GameplayCharacterState : byte { Idle, Run, Attack, Hit, Death, Recovery, Walk, Dodge, Jump, Knockdown }
     public enum GameplayCharacterAction : byte { Punch, Kick, Cast }
 
     /// <summary>Read-only view contract. Ground is the contact plane; Root includes any authoritative jump
@@ -20,6 +20,11 @@ namespace SPF.Presentation.Animation
         public GameplayCharacterState State;
         public GameplayCharacterAction Action;
         public WeaponViewState Weapon;
+        public int MotionProfileId,SkillPoseId;
+        public uint SkillPulse;
+        public float SkillPhase,SkillWeight;
+        public GameplayLocomotionProfile MotionProfile;
+        public GameplaySkillPoseProfile SkillProfile;
         public int Kind;
         public bool Aim, Teleported;
     }
@@ -30,7 +35,10 @@ namespace SPF.Presentation.Animation
         public FootPlantState FarFoot, NearFoot;
         public SmoothedAimState Aim;
         public float2 PreviousRoot, PreviousVelocity, BodyVelocity, WeaponAim;
-        public float Gait, Support, Breath, AimWeight, WeaponWeight, Turn, Acceleration;
+        public float Gait, Support, Breath, AimWeight, WeaponWeight, Turn, Acceleration, Move, Walk, SwingHeight;
+        public GameplayLocomotionState Locomotion;
+        public GameplayLocomotionClassifier LocomotionClassifier;
+        public GameplaySkillMotion Skill;
         public int WeaponVisualId;
         public float2 HeldGrip, ChangeGrip, HeldGripVelocity, ChangeGripVelocity;
         public float HeldAngle, ChangeAngle, HeldAngleVelocity, ChangeAngleVelocity, EquipAge;
@@ -42,6 +50,7 @@ namespace SPF.Presentation.Animation
         {
             dt = math.clamp(dt, 0, .1f);
             float scale = math.clamp(input.Scale, .1f, 4f);
+            var profile=GameplayMotionProfiles.Resolve(input);float width=math.clamp(profile.FootWidth,.08f,.2f);
             float facing = input.Facing < 0 ? -1f : 1f;
             float2 ground = input.Ground / scale;
             bool discontinuity = Initialized && (input.Teleported || math.distancesq(input.Root, PreviousRoot) > scale * scale * 2.25f || math.abs(Scale-scale) > .001f);
@@ -52,19 +61,19 @@ namespace SPF.Presentation.Animation
                 Phase = ((uint)input.Handle.Index * 37u % 97) / 97f;
                 Breath=Phase;Turn=facing;WeaponAim=input.Weapon.Equipped?input.Weapon.AimDirection:new float2(facing,0);
                 WeaponWeight=input.Weapon.Equipped?1:0;WeaponVisualId=input.Weapon.VisualId;EquipAge=1;
-                NaturalMotion.InitializeFoot(ref FarFoot, ground, ground + new float2(-.13f, .075f), 0);
-                NaturalMotion.InitializeFoot(ref NearFoot, ground, ground + new float2(.13f, .075f), .5f);
+                NaturalMotion.InitializeFoot(ref FarFoot, ground, ground + new float2(-width, .075f), 0);
+                NaturalMotion.InitializeFoot(ref NearFoot, ground, ground + new float2(width, .075f), .5f);
             }
             bool airborne=input.Root.y-input.Ground.y>.03f;
             if(Airborne&&!airborne)
             {
-                NaturalMotion.InitializeFoot(ref FarFoot,ground,ground+new float2(-.13f,.075f),0);
-                NaturalMotion.InitializeFoot(ref NearFoot,ground,ground+new float2(.13f,.075f),.5f);
+                NaturalMotion.InitializeFoot(ref FarFoot,ground,ground+new float2(-width,.075f),0);
+                NaturalMotion.InitializeFoot(ref NearFoot,ground,ground+new float2(width,.075f),.5f);
                 Moving=false;
             }
             Airborne=airborne;
             float response = 1f - math.exp(-18f * dt);
-            Run = math.lerp(Run, input.State == GameplayCharacterState.Run ? 1 : 0, response);
+            Skill.Step(input,dt);
             float attack = input.State == GameplayCharacterState.Attack || input.State == GameplayCharacterState.Recovery ? Strike(input.Phase) : 0;
             // Action phase is already a continuous authoritative clock: filtering it delays contact.
             Attack = attack;
@@ -73,7 +82,15 @@ namespace SPF.Presentation.Animation
             // A bounded walk/run cycle, rather than speeding tiny legs up to 10+ cycles/second.
             // Faster travel shortens contact time; the fixed world-space plant releases before reach is lost.
             float2 velocity=discontinuity?float2.zero:input.Velocity/scale;
-            float speed=math.length(velocity),period=speed>.03f?math.clamp(2.7f/speed,.26f,.85f):.85f;
+            float speed=math.length(velocity);
+            bool allowed=input.State!=GameplayCharacterState.Death;
+            Locomotion=LocomotionClassifier.Step(speed,profile.RunEnter,profile.RunExit,!Airborne,allowed);
+            bool run=LocomotionClassifier.RunLatched;
+            bool travel=allowed&&Locomotion!=GameplayLocomotionState.Idle;
+            Move=math.lerp(Move,travel?1:0,response);Run=math.lerp(Run,run?1:0,response);Walk=Move*(1-Run);
+            SwingHeight=math.clamp(profile.StepHeight,.10f,.28f)*math.lerp(.58f,1,Run);
+            float period=speed>.03f?math.clamp(math.lerp(profile.WalkStride,profile.RunStride,Run)/speed,
+                math.lerp(.44f,math.max(.26f,profile.MinimumPeriod),Run),math.lerp(profile.WalkPeriod,profile.RunPeriod,Run)):profile.WalkPeriod;
             float stanceSeconds=math.min(period*NaturalMotion.Stance,.52f/math.max(.03f,speed));
             float swingSeconds=period-stanceSeconds;
             bool moving=speed>.03f&&input.State!=GameplayCharacterState.Death;
@@ -83,33 +100,33 @@ namespace SPF.Presentation.Animation
                 NaturalMotion.InitializeFoot(ref FarFoot,ground,FarFoot.Position,NaturalMotion.Stance*.5f);
                 NaturalMotion.InitializeFoot(ref NearFoot,ground,NearFoot.Position,NaturalMotion.Stance);
                 FarSwingSeconds=swingSeconds;NearSwingSeconds=math.max(.04f,period*.5f-stanceSeconds*.5f);
-                PlanSwing(ref NearFoot,ground,velocity,.13f,NearSwingSeconds,stanceSeconds);
+                PlanSwing(ref NearFoot,ground,velocity,width,NearSwingSeconds,stanceSeconds);
             }
             bool reverse=moving&&Moving&&math.dot(velocity,PreviousVelocity)<.7f*speed*math.length(PreviousVelocity);
             if(reverse)
             {
-                ReplanAirFoot(ref FarFoot,ref FarSwingSeconds,ground,velocity,-.13f,stanceSeconds);
-                ReplanAirFoot(ref NearFoot,ref NearSwingSeconds,ground,velocity,.13f,stanceSeconds);
+                ReplanAirFoot(ref FarFoot,ref FarSwingSeconds,ground,velocity,-width,stanceSeconds);
+                ReplanAirFoot(ref NearFoot,ref NearSwingSeconds,ground,velocity,width,stanceSeconds);
             }
             if(moving)
             {
-                GuardAirPlan(ref FarFoot,ref FarSwingSeconds,ground,velocity,-.13f,-.1f,facing,stanceSeconds);
-                GuardAirPlan(ref NearFoot,ref NearSwingSeconds,ground,velocity,.13f,.1f,facing,stanceSeconds);
-                ReleaseBeforeReach(ref FarFoot,ref FarSwingSeconds,ground,velocity,-.13f,-.1f,facing,stanceSeconds,swingSeconds,dt);
-                ReleaseBeforeReach(ref NearFoot,ref NearSwingSeconds,ground,velocity,.13f,.1f,facing,stanceSeconds,swingSeconds,dt);
-                StepGroundFoot(ref FarFoot,ground,velocity,-.13f,dt,stanceSeconds,ref FarSwingSeconds,swingSeconds,facing,-.1f);
-                StepGroundFoot(ref NearFoot,ground,velocity,.13f,dt,stanceSeconds,ref NearSwingSeconds,swingSeconds,facing,.1f);
+                GuardAirPlan(ref FarFoot,ref FarSwingSeconds,ground,velocity,-width,-.1f,facing,stanceSeconds);
+                GuardAirPlan(ref NearFoot,ref NearSwingSeconds,ground,velocity,width,.1f,facing,stanceSeconds);
+                ReleaseBeforeReach(ref FarFoot,ref FarSwingSeconds,ground,velocity,-width,-.1f,facing,stanceSeconds,swingSeconds,dt);
+                ReleaseBeforeReach(ref NearFoot,ref NearSwingSeconds,ground,velocity,width,.1f,facing,stanceSeconds,swingSeconds,dt);
+                StepGroundFoot(ref FarFoot,ground,velocity,-width,dt,stanceSeconds,ref FarSwingSeconds,swingSeconds,facing,-.1f,SwingHeight);
+                StepGroundFoot(ref NearFoot,ground,velocity,width,dt,stanceSeconds,ref NearSwingSeconds,swingSeconds,facing,.1f,SwingHeight);
                 Phase=math.frac(Phase+dt/period);
             }
             else
             {
                 if(Moving)
                 {
-                    ReplanAirFoot(ref FarFoot,ref FarSwingSeconds,ground,0,-.13f,stanceSeconds);
-                    ReplanAirFoot(ref NearFoot,ref NearSwingSeconds,ground,0,.13f,stanceSeconds);
+                    ReplanAirFoot(ref FarFoot,ref FarSwingSeconds,ground,0,-width,stanceSeconds);
+                    ReplanAirFoot(ref NearFoot,ref NearSwingSeconds,ground,0,width,stanceSeconds);
                 }
-                Settle(ref FarFoot,ref FarSwingSeconds,ground,-.13f,dt,facing,-.1f);
-                Settle(ref NearFoot,ref NearSwingSeconds,ground,.13f,dt,facing,.1f);
+                Settle(ref FarFoot,ref FarSwingSeconds,ground,-width,dt,facing,-.1f,SwingHeight);
+                Settle(ref NearFoot,ref NearSwingSeconds,ground,width,dt,facing,.1f,SwingHeight);
                 Phase=math.frac(Phase+dt*.16f);
             }
             Moving=moving;
@@ -117,8 +134,8 @@ namespace SPF.Presentation.Animation
             Acceleration=math.lerp(Acceleration,dt>0?math.clamp((BodyVelocity.x-oldBody.x)/dt,-12,12):0,response);
             // Weight transfer and shoulder opposition share the actual two-foot cycle, not a separate oscillator.
             float rawGait=(math.sin(FarFoot.Phase*2*math.PI)-math.sin(NearFoot.Phase*2*math.PI))*.5f;
-            Gait=math.lerp(Gait,rawGait*Run,1-math.exp(-24f*dt));
-            float support=(FarFoot.InStance?-.045f:0)+(NearFoot.InStance?.045f:0);
+            Gait=math.lerp(Gait,rawGait*Move*math.saturate(speed/1.2f),1-math.exp(-24f*dt));
+            float support=(FarFoot.InStance?-profile.WeightShift:0)+(NearFoot.InStance?profile.WeightShift:0);
             Support=math.lerp(Support,support,1-math.exp(-16f*dt));
             Breath=math.frac(Breath+dt*.29f);
             AimWeight=math.lerp(AimWeight,input.Aim&&!input.Weapon.Equipped?1:0,1-math.exp(-14f*dt));
@@ -182,7 +199,7 @@ namespace SPF.Presentation.Animation
             if(ContactEnvelope(foot,root+velocity*math.min(math.max(dt,.0167f),stance),facing,hip))return;
             swing=normalSwing;PlanSwing(ref foot,root,velocity,offset,swing,stance);
         }
-        static void StepGroundFoot(ref FootPlantState foot,float2 root,float2 velocity,float offset,float dt,float stance,ref float swing,float normalSwing,float facing,float hip)
+        static void StepGroundFoot(ref FootPlantState foot,float2 root,float2 velocity,float offset,float dt,float stance,ref float swing,float normalSwing,float facing,float hip,float lift=NaturalMotion.SwingHeight)
         {
             dt=math.clamp(dt,0,.1f);float consumed=0,remaining=dt;
             for(int segment=0;segment<4&&remaining>0;segment++)
@@ -207,7 +224,7 @@ namespace SPF.Presentation.Animation
             {
                 float u=(foot.Phase-NaturalMotion.Stance)/(1-NaturalMotion.Stance);
                 foot.Position=math.lerp(foot.SwingStart,foot.SwingEnd,NaturalMotion.Ease(u));
-                float arc=math.sin(math.PI*u);foot.Position.y+=NaturalMotion.SwingHeight*arc*arc;
+                float arc=math.sin(math.PI*u);foot.Position.y+=lift*arc*arc;
             }
             foot.PreviousRoot=root;
             // An abrupt turn can make a previously planned landing infeasible. It remains a recovery
@@ -215,11 +232,11 @@ namespace SPF.Presentation.Animation
             if(foot.InStance&&!ContactEnvelope(foot,root,facing,hip))
             {swing=math.min(.18f,normalSwing);PlanSwing(ref foot,root,velocity,offset,swing,stance);}
         }
-        static void Settle(ref FootPlantState foot,ref float swing,float2 ground,float offset,float dt,float facing,float hip)
+        static void Settle(ref FootPlantState foot,ref float swing,float2 ground,float offset,float dt,float facing,float hip,float lift=NaturalMotion.SwingHeight)
         {
             if(foot.InStance&&math.distancesq(foot.Position,ground+new float2(offset,.075f))>.35f*.35f)
             {swing=.18f;PlanSwing(ref foot,ground,0,offset,swing,.5f);}
-            if(!foot.InStance)StepGroundFoot(ref foot,ground,0,offset,dt,.5f,ref swing,.18f,facing,hip);
+            if(!foot.InStance)StepGroundFoot(ref foot,ground,0,offset,dt,.5f,ref swing,.18f,facing,hip,lift);
             foot.PreviousRoot=ground;
         }
 
@@ -248,9 +265,11 @@ namespace SPF.Presentation.Animation
         public static void CorrectContacts(in SkeletonView rig,NativeArray<BoneLocal> local,
             in GameplayCharacterInput input,in GameplayCharacterMotion motion,int at)
         {
+            var profile=GameplayMotionProfiles.Resolve(input);var skill=motion.Skill.Pose;
+            float skillBodyWeight=1-WeaponMotion.ActionWeight(input.Weapon);
             float scale=motion.Scale,height=math.max(0,input.Root.y-input.Ground.y);
             float2 far=motion.FarFoot.Position*scale+new float2(0,height),near=motion.NearFoot.Position*scale+new float2(0,height);
-            if(motion.Airborne){far=input.Root+new float2(-motion.Facing*.15f,.27f)*scale;near=input.Root+new float2(motion.Facing*.24f,.17f)*scale;}
+            if(motion.Airborne){far=input.Root+new float2(-motion.Facing*(.15f+skill.FootTuck*.3f),.27f+skill.FootTuck)*scale;near=input.Root+new float2(motion.Facing*(.24f-skill.FootTuck*.3f),.17f+skill.FootTuck*.65f)*scale;}
             if(input.Action==GameplayCharacterAction.Kick)
                 near=input.Aim?input.AimTarget:math.lerp(near,input.Root+new float2(motion.Facing*.86f,.98f)*scale,math.max(0,motion.Attack));
             // Solve support height before the legs. Screen Y contains ground depth as well as visual
@@ -258,7 +277,7 @@ namespace SPF.Presentation.Animation
             // Lower the pelvis within a bounded .52-model-unit crouch, preserving both exact plants.
             var pelvis=local[at+NaturalCharacterRig.Pelvis];
             float breathing=math.sin(motion.Breath*2*math.PI);
-            float baseHeight=rig.Bones[NaturalCharacterRig.Pelvis].Position.y+.025f*motion.Gait*motion.Gait-.065f*math.max(0,motion.Attack)+.006f*breathing*(1-motion.Run);
+            float baseHeight=rig.Bones[NaturalCharacterRig.Pelvis].Position.y+.025f*motion.Gait*motion.Gait*math.lerp(.6f,1.25f,motion.Run)-.065f*math.max(0,motion.Attack)+profile.Breath*breathing*(1-motion.Move)-skill.PelvisDrop*skillBodyWeight;
             pelvis.Position.x=motion.Support*motion.Turn*motion.Facing;pelvis.Rotation=0;
             pelvis.Position.y=baseHeight;
             if(input.Weapon.Equipped)baseHeight-=.16f*math.saturate(-motion.WeaponAim.y);
@@ -275,12 +294,12 @@ namespace SPF.Presentation.Animation
             foot=local[at+NaturalCharacterRig.NearFoot];foot.Rotation=-local[at+NaturalCharacterRig.NearThigh].Rotation-local[at+NaturalCharacterRig.NearShin].Rotation;local[at+NaturalCharacterRig.NearFoot]=foot;
             float forward=motion.BodyVelocity.x*motion.Facing;
             float depth=math.clamp(motion.BodyVelocity.y*.02f,-.08f,.08f);
-            float lean=math.clamp(forward*.021f,-.12f,.12f);
-            float armStride=math.lerp(.58f,.38f,math.saturate(-forward*.25f));
+            float lean=math.clamp(forward*profile.Lean,-.12f,.12f);
+            float armStride=math.lerp(profile.WalkArm,profile.RunArm,motion.Run)*math.lerp(1,.76f,math.saturate(-forward*.25f));
             var weapon=WeaponMotion.Sample(input,motion);
             var torso=local[at+NaturalCharacterRig.Torso];torso.Position=rig.Bones[NaturalCharacterRig.Torso].Position;
             torso.Position.x=-motion.Support*.38f;torso.Position.y+=depth*.18f;
-            torso.Rotation=-.035f-lean-depth-.095f*motion.Gait+weapon.Body-.12f*motion.Attack+motion.Hit*.24f;
+            torso.Rotation=-.035f-lean-depth-profile.BodySway*motion.Gait+weapon.Body+skill.Body*skillBodyWeight-.12f*motion.Attack+motion.Hit*.24f*profile.HitRecoil;
             torso.Rotation+=.065f*(motion.Turn*motion.Facing-1);
             torso.Rotation-=math.clamp(motion.Acceleration*motion.Facing*.004f,-.045f,.045f);
             local[at+NaturalCharacterRig.Torso]=torso;
@@ -299,19 +318,24 @@ namespace SPF.Presentation.Animation
                 }
             }
             var head=local[at+NaturalCharacterRig.Head];head.Position=rig.Bones[NaturalCharacterRig.Head].Position;head.Position.x*=motion.Turn*motion.Facing;
-            head.Rotation=-torso.Rotation*.76f+.028f*motion.Gait+.009f*breathing-motion.Hit*.15f;
+            head.Rotation=-torso.Rotation*.76f+.028f*motion.Gait+profile.Breath*1.3f*breathing-motion.Hit*.15f*profile.HitRecoil+skill.Head;
             local[at+NaturalCharacterRig.Head]=head;
             var arm=local[at+NaturalCharacterRig.FarArm];arm.Position=rig.Bones[NaturalCharacterRig.FarArm].Position;arm.Position.x*=motion.Turn*motion.Facing;
-            arm.Rotation=math.radians(-84)+armStride*motion.Gait+.12f*(1-motion.Run);local[at+NaturalCharacterRig.FarArm]=arm;
-            var fore=local[at+NaturalCharacterRig.FarForearm];fore.Rotation=-.34f-.27f*motion.Run-.17f*motion.Gait;local[at+NaturalCharacterRig.FarForearm]=fore;
+            arm.Rotation=math.radians(-84)+armStride*motion.Gait+.12f*(1-motion.Move);local[at+NaturalCharacterRig.FarArm]=arm;
+            var fore=local[at+NaturalCharacterRig.FarForearm];fore.Rotation=-.34f-.18f*motion.Move-.09f*motion.Run-.17f*motion.Gait;local[at+NaturalCharacterRig.FarForearm]=fore;
             arm=local[at+NaturalCharacterRig.NearArm];arm.Position=rig.Bones[NaturalCharacterRig.NearArm].Position;arm.Position.x*=motion.Turn*motion.Facing;
             arm.Rotation=math.radians(-80)-armStride*motion.Gait;local[at+NaturalCharacterRig.NearArm]=arm;
-            fore=local[at+NaturalCharacterRig.NearForearm];fore.Rotation=-.36f-.29f*motion.Run+.17f*motion.Gait;local[at+NaturalCharacterRig.NearForearm]=fore;
+            fore=local[at+NaturalCharacterRig.NearForearm];fore.Rotation=-.36f-.20f*motion.Move-.09f*motion.Run+.17f*motion.Gait;local[at+NaturalCharacterRig.NearForearm]=fore;
             // A genuinely relaxed run leaves both arms free. Aim affects only the requested layer.
             float aimWeight=math.max(motion.AimWeight,math.abs(motion.Attack));
             if(!input.Weapon.Equipped&&aimWeight>.001f&&input.Action!=GameplayCharacterAction.Kick)
                 NaturalMotion.BlendAim(rig,local,NaturalCharacterRig.NearArm,NaturalCharacterRig.NearForearm,motion.Aim.Target,input.Root,motion.Facing,scale,-1,aimWeight,at);
             WeaponMotion.ApplyArms(rig,local,input,motion,at);
+            if(!input.Weapon.Equipped&&skill.NearWeight>.001f)
+                NaturalMotion.BlendAim(rig,local,NaturalCharacterRig.NearArm,NaturalCharacterRig.NearForearm,input.Root+new float2(skill.NearHand.x*motion.Facing,skill.NearHand.y)*scale,input.Root,motion.Facing,scale,-1,skill.NearWeight,at);
+            float offHand=skill.FarWeight*(input.Weapon.Equipped?WeaponMotion.SupportRelease(input,motion):1);
+            if(offHand>.001f)
+                NaturalMotion.BlendAim(rig,local,NaturalCharacterRig.FarArm,NaturalCharacterRig.FarForearm,input.Root+new float2(skill.FarHand.x*motion.Facing,skill.FarHand.y)*scale,input.Root,motion.Facing,scale,-1,offHand,at);
         }
         static float SupportHeight(in SkeletonView rig,int upper,int lower,float2 target)
         {

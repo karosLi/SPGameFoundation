@@ -35,3 +35,28 @@ The previous brawler and horde gameplay videos were inspected before this change
 - [Epic Aim Offset](https://dev.epicgames.com/documentation/unreal-engine/aim-offset-in-unreal-engine?lang=en-US) layers aim over an existing base pose and cautions that extreme aim poses can conflict with locomotion. The shared presenter therefore preserves a locomotion base and applies only requested upper-body control.
 
 These are design references. The repository does not claim to implement Unity Animation Rigging, Unreal Lyra, Motion Matching, arbitrary rig retargeting or a commercial authored animation library.
+
+## Role, locomotion and skill layers
+
+`GameplayLocomotionClassifier` is a public value-only API usable by both articulated and sprite backends. `Step(speed, runEnter, runExit, grounded, enabled, idleEnter, idleExit)` returns Idle, Walk, Run or Air and retains `RunLatched`. The caller supplies consistent speed units. It has no bone, animation clock or gameplay dependency. Speed hysteresis chooses locomotion independently of upper-body attack state; an attack no longer removes the moving gait. Walk and run blend different stride/cycle bounds, foot lift, pelvis bob and arm arcs without resetting either foot's contact phase.
+
+The default role profiles are hero (0), agile monster (1), and heavy monster (2). They vary thresholds, stride, support width, breathing, arm/chest opposition and hit recoil. They share the same rig, instance stream and identity slots. The heavy profile uses a longer minimum cycle, not faster legs to conceal reach errors. `MotionProfile` is an optional validated POD override; new role content does not require another actor enum.
+
+The skill layer consumes `SkillPoseId`, `SkillPhase`, `SkillWeight` and `SkillPulse`. Its time comes from the game adapter. The built-in pose IDs are content examples:
+
+| ID | Pose | Distinct contribution | Required authority |
+|---|---|---|---|
+| 100 | Kick | Raised guard, backward chest counterweight, released support hand | Existing kick phase and foot probe |
+| 101 | Pulse | Chest gather, free hand raised outward, lowered carried weapon | Actual pulse activation/phase |
+| 102 | Blink/dodge | Low compact body, tucked hands/weapon | Actual blink/dodge activation; teleport resets roots |
+| 103 | Jump | Air tuck, opening for landing, balancing free arm | Authoritative height/velocity and jump phase |
+| 104 | Knockdown | Whole-body fall/recovery layer | A game that actually reports knockdown |
+| 105 | Heal | Hand to chest, raised free hand and bowed head | Actual heal activation/phase |
+
+Idle/walk/run are lower-body states; aim/weapon/skill is an upper-body layer; hit/death are existing actor state responses. Unsupported states are not invented by the presenter. Games may provide a validated `SkillProfile` POD with a new content ID and its own body keys, hand anchors, support-hand release, weapon carry, foot tuck and fall contributions. Invalid overrides cause `Submit` to return false before batch work. Direct math calls defensively use the default role or empty skill. Profile changes and interrupted skills blend from the outgoing pose, while teleport/recycled identity resets them.
+
+A skill can release the support hand while the dominant hand keeps carrying the weapon. The bowstring then returns toward its neutral nock instead of following a free gesturing hand. At an authoritative weapon contact/release, the weapon layer has priority over conflicting skill hand, chest, pelvis and carry-angle offsets, keeping projectile/collision alignment. Hit/death and unsupported combinations remain the adapter's responsibility; presentation never creates a second gameplay state machine.
+
+Additional tests cover classifier hysteresis, idle→walk→run under moving attacks at 30/60/120 Hz, role distinctions, custom authored profiles, interrupt/teleport transitions, invalid-data rejection, zero warmed allocations, and all six skill peaks combined with all four weapons in eight aim directions while moving. Dominant and secondary contact errors remain below 3 mm in that matrix. The secondary shoulder correction also handles the nonzero inner reach radius of the unequal arm segments.
+
+Local checkpoint: 46 focused .NET tests pass, zero skipped; compilation has zero warnings/errors. This is math, layering, contacts and harness allocation evidence. The updated actual-game role/skill captures and real Unity/Burst graphics verification are separate integration gates.

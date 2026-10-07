@@ -9,7 +9,7 @@ namespace SPF.Presentation.Animation
     public struct WeaponAttachmentSample
     {
         public float2 PrimaryGrip, SupportGrip, Muzzle, Tip, Direction;
-        public float Rotation, Draw, Visibility;
+        public float Rotation, Draw, Visibility, SupportWeight;
         public int VisualId;
         public uint ActionPulse, CueSequence;
         public WeaponCueKind Cues;
@@ -27,6 +27,16 @@ namespace SPF.Presentation.Animation
     {
         const float MarkerEpsilon=.00001f;
         public static bool Acting(in WeaponViewState w)=>w.Stage==WeaponStage.Windup||w.Stage==WeaponStage.Active||w.Stage==WeaponStage.Recovery;
+        public static float ActionWeight(in WeaponViewState w)
+        {
+            if(!Acting(w))return 0;
+            float marker=w.Family==WeaponActionFamily.Cast?w.ReleasePhase:w.ContactPhase;
+            marker=math.clamp(marker,MarkerEpsilon,1-2*MarkerEpsilon);
+            float end=math.clamp(w.ActiveEndPhase,marker+MarkerEpsilon,1-MarkerEpsilon);
+            return NaturalMotion.Ease(w.Phase/marker)*(1-NaturalMotion.Ease((w.Phase-end)/math.max(MarkerEpsilon,1-end)));
+        }
+        public static float SupportRelease(in GameplayCharacterInput input,in GameplayCharacterMotion motion)=>
+            math.saturate(motion.Skill.Pose.SupportRelease*(1-ActionWeight(input.Weapon)));
         public static float Hermite(float a,float b,float ta,float tb,float u,float duration)
         {
             u=math.saturate(u);float u2=u*u,u3=u2*u;
@@ -87,6 +97,10 @@ namespace SPF.Presentation.Animation
             rotation-=.8f*equip;
             float2 grip=canonical+(aim*offset.x+new float2(0,offset.y))*input.Scale;
             angle+=rotation*facing;
+            var skill=motion.Skill.Pose;
+            float2 skillGrip=input.Root+new float2(skill.NearHand.x*facing,skill.NearHand.y)*input.Scale;
+            grip=math.lerp(grip,skillGrip,skill.NearWeight*relaxed);
+            angle+=skill.WeaponAngle*facing*relaxed;
             float transition=NaturalMotion.Ease(motion.EquipAge);
             if(motion.EquipAge<1&&(!acting||phase<contact))
             {
@@ -123,14 +137,16 @@ namespace SPF.Presentation.Animation
                 float2 shoulder=NaturalMotion.BonePoint(rig,local,NaturalCharacterRig.FarArm,0,at);
                 float2 reach=NaturalMotion.ModelPoint(support,input.Root,motion.Facing,motion.Scale)-shoulder;
                 float distance=math.length(reach);
-                if(distance>.82f)
+                if(distance>.82f||distance<.035f)
                 {
-                    // A small scapular glide closes a two-hand grip without locking the elbow.
-                    float2 slide=reach*(math.min(.035f,distance-.82f)/math.max(.001f,distance));
+                    // A small scapular glide keeps the target inside the reachable annulus: unequal
+                    // arm lengths also have a nonzero inner radius when the hand folds to the shoulder.
+                    float2 direction=distance>.00001f?reach/distance:new float2(0,-1);
+                    float2 slide=distance>.82f?direction*math.min(.035f,distance-.82f):-direction*(.035f-distance);
                     var arm=local[at+NaturalCharacterRig.FarArm];
                     arm.Position+=Rotate(slide,-local[at+NaturalCharacterRig.Torso].Rotation);local[at+NaturalCharacterRig.FarArm]=arm;
                 }
-                NaturalMotion.BlendAim(rig,local,NaturalCharacterRig.FarArm,NaturalCharacterRig.FarForearm,support,input.Root,motion.Facing,motion.Scale,-1,pose.Weight,at);
+                NaturalMotion.BlendAim(rig,local,NaturalCharacterRig.FarArm,NaturalCharacterRig.FarForearm,support,input.Root,motion.Facing,motion.Scale,-1,pose.Weight*(1-SupportRelease(input,motion)),at);
             }
         }
         public static WeaponAttachmentSample Attach(in GameplayCharacterInput input,in GameplayCharacterMotion motion,
@@ -143,7 +159,7 @@ namespace SPF.Presentation.Animation
             float2 direction=new float2(math.cos(p.Angle),math.sin(p.Angle));
             float2 tip=grip+direction*p.Length*motion.Scale;
             return new WeaponAttachmentSample {PrimaryGrip=grip,SupportGrip=support,Muzzle=tip,Tip=tip,Direction=direction,
-                Rotation=p.Angle,Draw=p.Draw,Visibility=p.Visibility,VisualId=WeaponArt.Resolve(w.VisualId,w.Family),ActionPulse=w.ActionPulse,CueSequence=w.CueSequence,Cues=w.Cues};
+                Rotation=p.Angle,Draw=p.Draw,Visibility=p.Visibility,SupportWeight=1-SupportRelease(input,motion),VisualId=WeaponArt.Resolve(w.VisualId,w.Family),ActionPulse=w.ActionPulse,CueSequence=w.CueSequence,Cues=w.Cues};
         }
     }
 }

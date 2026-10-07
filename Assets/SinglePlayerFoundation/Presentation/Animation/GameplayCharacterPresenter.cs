@@ -42,6 +42,7 @@ namespace SPF.Presentation.Animation
         /// <summary>Cached base-pose refreshes. Continuous body/contact/weapon composition still runs every render.</summary>
         public int PosesEvaluated { get; private set; }
         public uint VisibleStates { get; private set; }
+        public uint VisibleLocomotion { get; private set; }
         public int ColorAtlasBytes=>m_Art.Sheet.Texture.width*m_Art.Sheet.Texture.height*4;
         public GameplayCharacterPresenter(RenderTier tier,int capacity,int queueOffset=-20,bool includeWeapons=false)
         {
@@ -77,11 +78,12 @@ namespace SPF.Presentation.Animation
         public void Begin(float dt,int quality)
         {
             m_Dt=math.clamp(dt,0,.1f);m_Time+=m_Dt;m_Quality=math.clamp(quality,0,3);
-            m_Frame++;m_Submitted.Clear();Count=0;VisibleStates=0;PosesEvaluated=0;m_Batch.Clear();
+            m_Frame++;m_Submitted.Clear();Count=0;VisibleStates=0;VisibleLocomotion=0;PosesEvaluated=0;m_Batch.Clear();
         }
         public bool Submit(in GameplayCharacterInput input)
         {
             if(input.Weapon.Equipped&&!m_IncludeWeapons)return false;
+            if(input.MotionProfile.Id!=0&&!GameplayMotionProfiles.Valid(input.MotionProfile)||input.SkillProfile.Id!=0&&!GameplaySkillProfiles.Valid(input.SkillProfile))return false;
             if(Count>=Capacity||input.Handle.IsNull||!math.all(math.isfinite(input.Root))||!math.all(math.isfinite(input.Ground)))return false;
             if(!m_Submitted.Add(input.Handle))return false;
             m_Inputs[Count++]=input;return true;
@@ -129,7 +131,7 @@ namespace SPF.Presentation.Animation
                 }
                 m_SpriteOffsets[i]=sprites;sprites+=NaturalCharacterArt.Parts+(input.Weapon.Equipped?WeaponArt.ExtraParts:0);
                 var motion=m_Motion[slot];motion.Step(input,m_Dt);m_Motion[slot]=motion;
-                VisibleStates|=1u<<(int)input.State;
+                VisibleStates|=1u<<(int)input.State;VisibleLocomotion|=1u<<(int)motion.Locomotion;
                 int hz=input.Kind==0?60:m_Quality==0?30:m_Quality==1?24:15;
                 int tick=(int)(m_Time*hz);
                 if(m_PoseTicks[slot]!=tick)PosesEvaluated++;
@@ -178,7 +180,7 @@ namespace SPF.Presentation.Animation
                     GameplayCharacterMotion.Pose(Rig,Local,World,input,motion,at);PoseTicks[slot]=tick;
                 }
                 else { GameplayCharacterMotion.CorrectContacts(Rig,Local,input,motion,at); Skeletal.ToWorld(Rig,Local,input.Root,motion.Facing,motion.Scale,World,at,at); }
-                float fall=NaturalMotion.Ease(motion.Death),angle=-motion.Facing*fall*1.48f;
+                float fall=math.max(NaturalMotion.Ease(motion.Death),motion.Skill.Pose.Fall*(1-WeaponMotion.ActionWeight(input.Weapon))),angle=-motion.Facing*fall*1.48f;
                 float c=math.cos(angle),s=math.sin(angle);
                 float4 tint=input.Tint;tint.w*=1f-math.saturate((motion.Death-.8f)*5f);
                 var sample=WeaponMotion.Attach(input,motion,World,at);if(WeaponSamples.Length>0)WeaponSamples[slot]=sample;
@@ -215,7 +217,7 @@ namespace SPF.Presentation.Animation
                     // Bow grip is at pixel(86,128): both limb tips and the live string share that pivot.
                     float2 top=sample.PrimaryGrip+WeaponMotion.Rotate(new float2(-.265f,.608f*motion.Facing)*scale,sample.Rotation);
                     float2 bottom=sample.PrimaryGrip+WeaponMotion.Rotate(new float2(-.265f,-.608f*motion.Facing)*scale,sample.Rotation);
-                    float2 pull=sample.SupportGrip;
+                    float2 pull=math.lerp(sample.PrimaryGrip-sample.Direction*.10f*scale,sample.SupportGrip,sample.SupportWeight);
                     float4 stringTint=new float4(.93f,.86f,.65f,color.w);
                     Line(first+12,Fallen(top,input,fallAngle),Fallen(pull,input,fallAngle),.016f*scale,input,stringTint);
                     Line(first+13,Fallen(pull,input,fallAngle),Fallen(bottom,input,fallAngle),.016f*scale,input,stringTint);

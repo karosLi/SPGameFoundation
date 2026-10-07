@@ -13,6 +13,8 @@ namespace SurvivorFoundation
     {
         public SvSettings Settings = DefaultSettings();
         public bool MobileSkills;
+        public bool WeaponCombat;
+        public SPF.L2.Weapons.WeaponProfile[] WeaponProfiles;
         public List<EnemyEntry> Enemies = EnemyEntry.Defaults();
         public CapacitySection Capacity = new CapacitySection();
 
@@ -128,6 +130,14 @@ namespace SurvivorFoundation
             config.Enemies[1].SpawnFrom = 6f; config.Enemies[1].Hp = 40;
             config.Enemies[2].SpawnFrom = 25f; config.Enemies[2].Hp = 160;
             config.Enemies[3].SpawnFrom = 18f;
+            return config;
+        }
+
+        public static SvConfig CreateWeaponCombatExample()
+        {
+            var config = CreateMobileCombatExample(); config.WeaponCombat = true;
+            config.WeaponProfiles = SPF.L2.Weapons.WeaponProfiles.CreateDefaults(30);
+            var settings = config.Settings; settings.AnnularSkill.Enabled = false; settings.SpawnPerSecond = 3f; settings.SpawnGrowth = .045f; settings.HeroHp = 160; config.Settings = settings;
             return config;
         }
 

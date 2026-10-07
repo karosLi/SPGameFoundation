@@ -18,6 +18,7 @@ namespace SurvivorFoundation.Game
         [SerializeField] bool m_GuardExample;
         [SerializeField] bool m_MobileCombatExample;
         [SerializeField] bool m_FlyingSwordExample;
+        [SerializeField] bool m_WeaponCombatExample;
         [SerializeField] bool m_NaturalCharacters;
         [SerializeField] SvArtStyle m_ArtStyle = SvArtStyle.Pixel;
         [SerializeField] uint m_Seed = 1;
@@ -110,13 +111,21 @@ namespace SurvivorFoundation.Game
             return game;
         }
 
+        public static SvGameBootstrap CreateWeaponCombatExample(SvConfig config = null, uint seed = 1, bool ui = true)
+        {
+            bool owns = config == null; if (owns) config = SvConfig.CreateWeaponCombatExample();
+            if (!config.WeaponCombat || !config.MobileSkills) throw new System.ArgumentException("Weapon example requires WeaponCombat and MobileSkills.");
+            var game = Create(config, seed, ui, artStyle: SvArtStyle.SmoothOutline, naturalCharacters: true); game.m_OwnsConfig = owns; return game;
+        }
+
         void Awake()
         {
             Governor = gameObject.AddComponent<FrameGovernor>();
             Governor.ThrottleWhenIdle = false;
             Governor.SetFrameRates(m_TargetFrameRate, 30);
-            if (m_Config == null) { m_Config = m_FlyingSwordExample ? SvConfig.CreateFlyingSwordExample() : m_MobileCombatExample ? SvConfig.CreateMobileCombatExample() : m_GuardExample ? SvConfig.CreateGuardExample() : SvConfig.CreateDefault(); m_OwnsConfig = true; }
-            if (m_GuardExample || m_MobileCombatExample || m_FlyingSwordExample) m_ArtStyle = SvArtStyle.SmoothOutline;
+            if (m_Config == null) { m_Config = m_WeaponCombatExample ? SvConfig.CreateWeaponCombatExample() : m_FlyingSwordExample ? SvConfig.CreateFlyingSwordExample() : m_MobileCombatExample ? SvConfig.CreateMobileCombatExample() : m_GuardExample ? SvConfig.CreateGuardExample() : SvConfig.CreateDefault(); m_OwnsConfig = true; }
+            if (m_WeaponCombatExample) m_NaturalCharacters = true;
+            if (m_GuardExample || m_MobileCombatExample || m_FlyingSwordExample || m_WeaponCombatExample) m_ArtStyle = SvArtStyle.SmoothOutline;
             m_Mode = SvMode.Create(m_Config, out m_Module);
 
             var sim = new GameObject("Simulation");
@@ -180,6 +189,7 @@ namespace SurvivorFoundation.Game
             }
             var keyboard = new KeyboardInputSource();
             if (m_Config.MobileSkills) keyboard.Map(KeyCode.J, SvMobileSkills.Pulse).Map(KeyCode.K, SvMobileSkills.Dash);
+            if (m_Config.WeaponCombat) keyboard.Map(KeyCode.F, SvWeapons.AttackButton).Map(KeyCode.Q, SvWeapons.SwitchButton);
             InputRouter.AddSource(keyboard);
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (m_PerfHud) gameObject.AddComponent<SPF.Runtime.Diagnostics.PerfHud>().Host = Host;

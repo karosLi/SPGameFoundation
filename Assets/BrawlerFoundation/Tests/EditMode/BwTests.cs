@@ -14,9 +14,9 @@ namespace BrawlerFoundation.Tests
         readonly GameplayModuleAsset m_Module;
         readonly ModeDefinition m_Mode;
 
-        public BwTestWorld(bool start = true, BwSharedCombatConfig? sharedCombat = null, bool mobileCombat = false, BwBeltConfig? belt = null)
+        public BwTestWorld(bool start = true, BwSharedCombatConfig? sharedCombat = null, bool mobileCombat = false, BwBeltConfig? belt = null, bool weapons = false)
         {
-            m_Mode = belt.HasValue ? BwMode.CreateBeltScroller(belt.Value, out m_Module) : mobileCombat ? BwMode.CreateMobileCombat(out m_Module) : sharedCombat.HasValue ? BwMode.CreateSharedCombat(sharedCombat.Value, out m_Module) : BwMode.Create(out m_Module);
+            m_Mode = weapons ? BwMode.CreateWeaponBelt(belt ?? BwBeltConfig.Default, out m_Module) : belt.HasValue ? BwMode.CreateBeltScroller(belt.Value, out m_Module) : mobileCombat ? BwMode.CreateMobileCombat(out m_Module) : sharedCombat.HasValue ? BwMode.CreateSharedCombat(sharedCombat.Value, out m_Module) : BwMode.Create(out m_Module);
             Session = SimSession.Create(m_Mode, 7);
             Session.Start();
             if (start) { Game.Send(BwCommandKind.Start); Step(); }

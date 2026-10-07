@@ -24,6 +24,7 @@ namespace BrawlerFoundation.Game
         bool m_SharedCombat;
         [SerializeField] bool m_MobileCombat;
         [SerializeField] bool m_BeltScroller;
+        [SerializeField] bool m_WeaponCombat;
         [SerializeField] bool m_NaturalCharacters;
 
         ModeDefinition m_Mode;
@@ -53,11 +54,12 @@ namespace BrawlerFoundation.Game
         public TapButton KickButton { get; private set; }
         public VirtualJoystick Joystick { get; private set; }
         public MobileCombatHud MobileHud { get; private set; }
+        public Button SwitchWeaponButton { get; private set; }
 
         /// <summary>Scripted input for tests and demos (replaces the stick; buttons add up).</summary>
         public System.Func<InputFrame> Script { get; set; }
 
-        public static BwGameBootstrap Create(bool ui = true, bool sharedCombat = false, bool mobileCombat = false, bool beltScroller = false, bool naturalCharacters = false)
+        public static BwGameBootstrap Create(bool ui = true, bool sharedCombat = false, bool mobileCombat = false, bool beltScroller = false, bool naturalCharacters = false, bool weaponCombat = false)
         {
             var go = new GameObject("BrawlerGame");
             go.SetActive(false);
@@ -65,6 +67,7 @@ namespace BrawlerFoundation.Game
             game.m_CreateUI = ui;
             game.m_SharedCombat = sharedCombat || mobileCombat || beltScroller;
             game.m_MobileCombat = mobileCombat || beltScroller;
+            game.m_WeaponCombat = weaponCombat; beltScroller |= weaponCombat;
             game.m_BeltScroller = beltScroller; game.m_NaturalCharacters = naturalCharacters || beltScroller;
             go.SetActive(true);
             return game;
@@ -79,12 +82,15 @@ namespace BrawlerFoundation.Game
 
         public static BwGameBootstrap CreateBeltScroller(bool ui = true) => Create(ui, beltScroller: true);
 
+        public static BwGameBootstrap CreateWeaponBelt(bool ui = true) => Create(ui, beltScroller: true, weaponCombat: true);
+
         void Awake()
         {
             Governor = gameObject.AddComponent<FrameGovernor>();
             Governor.SetFrameRates(60, 30);
+            if (m_WeaponCombat) m_BeltScroller = true;
             if (m_BeltScroller) { m_MobileCombat = true; m_NaturalCharacters = true; }
-            m_Mode = m_BeltScroller ? BwMode.CreateBeltScroller(BwBeltConfig.Default, out m_Module) : m_MobileCombat ? BwMode.CreateMobileCombat(out m_Module) : m_SharedCombat
+            m_Mode = m_WeaponCombat ? BwMode.CreateWeaponBelt(BwBeltConfig.Default, out m_Module) : m_BeltScroller ? BwMode.CreateBeltScroller(BwBeltConfig.Default, out m_Module) : m_MobileCombat ? BwMode.CreateMobileCombat(out m_Module) : m_SharedCombat
                 ? BwMode.CreateSharedCombat(BwSharedCombatConfig.Default, out m_Module)
                 : BwMode.Create(out m_Module);
             var sim = new GameObject("Simulation");
@@ -146,6 +152,7 @@ namespace BrawlerFoundation.Game
             if (m_CreateUI) BuildUi();
             var keyboard = new KeyboardInputSource().Map(KeyCode.J, BwButton.Punch).Map(KeyCode.K, BwButton.Kick);
             if (m_BeltScroller) keyboard.Map(KeyCode.Space, BwBeltRules.JumpButton).Map(KeyCode.L, BwBeltRules.HealButton);
+            if (m_WeaponCombat) keyboard.Map(KeyCode.Q, BwWeapons.SwitchButton);
             InputRouter.AddSource(keyboard);
         }
 
@@ -165,6 +172,11 @@ namespace BrawlerFoundation.Game
                 InputRouter.AddSource(MobileHud.Input);
                 root = MobileHud.SafeRoot;
             }
+            if (m_WeaponCombat)
+            {
+                SwitchWeaponButton = UIFactory.Button(root, "SwitchWeapon", "SWITCH / Q", new Vector2(-115, -65), new Vector2(200, 76), new Color(.25f,.38f,.54f,.96f), new Vector2(1,1), 25);
+                SwitchWeaponButton.onClick.AddListener(() => { if (Session.State == SessionState.Running && State.Flow == BwFlow.Fighting && !InputRouter.Scripted.Active) State.Input.Pressed |= 1u << BwWeapons.SwitchButton; });
+            }
             StatsText = BufferText.Create(root, "Stats", 40, TextAnchor.UpperLeft, new Vector2(0.01f, 0.86f), new Vector2(0.7f, 0.99f));
             if (!m_MobileCombat)
             {
@@ -179,7 +191,7 @@ namespace BrawlerFoundation.Game
             }
 
             MenuPanel = UIFactory.Panel(root, "MenuPanel", new Color(0f, 0f, 0f, 0.5f), Vector2.zero, Vector2.one);
-            UIFactory.Label(MenuPanel, "Title", m_BeltScroller ? "BELT / BRAWL" : m_MobileCombat ? "BRAWL / MOBILE" : "BRAWL", m_MobileCombat ? 74 : 150, TextAnchor.MiddleCenter, new Vector2(0f, 0.6f), new Vector2(1f, 0.85f));
+            UIFactory.Label(MenuPanel, "Title", m_WeaponCombat ? "WEAPONS / BRAWL" : m_BeltScroller ? "BELT / BRAWL" : m_MobileCombat ? "BRAWL / MOBILE" : "BRAWL", m_MobileCombat ? 74 : 150, TextAnchor.MiddleCenter, new Vector2(0f, 0.6f), new Vector2(1f, 0.85f));
             StartButton = UIFactory.Button(MenuPanel, "StartButton", "FIGHT", new Vector2(0, -20), new Vector2(460, 140), new Color(0.85f, 0.4f, 0.3f, 0.95f), new Vector2(0.5f, 0.5f));
             StartButton.onClick.AddListener(() => State?.Send(BwCommandKind.Start));
 
@@ -201,6 +213,12 @@ namespace BrawlerFoundation.Game
             var stats = StatsText.Begin().Append("Wave ").Append(state.Wave).Append('/').Append(BwRules.Waves).Append("   KO ").Append(state.Kos)
                 .Append("\nHP ").Append(hp).Append("   Score ").Append(state.Score);
             if (m_BeltScroller) stats.Append("   Coins ").Append(world.Resource(BwBeltKeys.State).Coins);
+            if (m_WeaponCombat)
+            {
+                var weapons = world.Resource(BwWeapons.Key); stats.Append("\nWEAPON ").Append(weapons.Current.Name);
+                if (weapons.Equipment.PendingId != 0) stats.Append(" > ").Append(weapons.Profile(weapons.Equipment.PendingId).Name);
+                SwitchWeaponButton.interactable = Session.State == SessionState.Running && state.Flow == BwFlow.Fighting && hp > 0;
+            }
             StatsText.Commit();
             if (state.Flow == m_Flow) return;
             m_Flow = state.Flow;
@@ -219,7 +237,7 @@ namespace BrawlerFoundation.Game
             public int SlotCount => m_Game.m_BeltScroller ? 4 : 2;
             public int TickRate => 60;
             public bool Playing => m_Game.Session != null && m_Game.Session.State == SessionState.Running && m_Game.MovementPhase(m_Game.State.Flow) && !m_Game.InputRouter.Scripted.Active;
-            public string SlotLabel(int slot) => slot == 0 ? (m_Game.m_BeltScroller ? "COMBO / J" : "PUNCH / J") : slot == 1 ? "KICK / K" : slot == 2 ? "JUMP / SPACE" : "HEAL / L";
+            public string SlotLabel(int slot) => slot == 0 ? (m_Game.m_WeaponCombat ? "ATTACK / J" : m_Game.m_BeltScroller ? "COMBO / J" : "PUNCH / J") : slot == 1 ? "KICK / K" : slot == 2 ? "JUMP / SPACE" : "HEAL / L";
             public SkillSlotSnapshot ReadSlot(int slot)
             {
                 m_Game.Session.Sync();

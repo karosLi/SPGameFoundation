@@ -1,3 +1,6 @@
+using SPF.Presentation.Particles;
+using SPF.Contracts.Weapons;
+using SPF.L2.Weapons;
 using SPF.Presentation;
 using SPF.Presentation.Sprites;
 using SPF.Presentation.Combat;
@@ -43,6 +46,11 @@ namespace SurvivorFoundation.Presentation
         NativeArray<DeathVisual> m_Deaths;
         int m_DeathSequence, m_HeroCastTick = -100;
         bool m_BoundNatural;
+        WeaponParticlePresenter m_WeaponParticles;
+        long m_WeaponTick=-1;
+        uint m_WeaponRevision;
+        WeaponRuntime m_WeaponRuntime;
+        public WeaponParticlePresenter WeaponParticles => m_WeaponParticles;
         public int QualityLevel { get; private set; }
         public int ShadowBudget => QualityLevel >= 3 ? 32 : QualityLevel >= 2 ? 128 : QualityLevel >= 1 ? 256 : 768;
         public int EffectBudget => VfxBudget.ForQuality(QualityLevel).Active;
@@ -83,6 +91,7 @@ namespace SurvivorFoundation.Presentation
 
         void Release()
         {
+            m_WeaponParticles?.Dispose();m_WeaponParticles=null;m_WeaponTick=-1;
             m_Characters?.Dispose(); m_Characters = null; ArticulatedEnemies = 0;
             if (m_NaturalMask.IsCreated) m_NaturalMask.Dispose();
             if (m_Deaths.IsCreated) m_Deaths.Dispose();
@@ -109,12 +118,13 @@ namespace SurvivorFoundation.Presentation
             m_Assets = new RenderAssets(RenderCapabilities.Detect());
             m_Art = SvArt.Build(config.EnemyKinds, k => { var c = config.Enemies[k].Color; return new Color(c.x, c.y, c.z, 1f); }, NaturalCharacters ? SvArtStyle.SmoothOutline : ArtStyle);
             var tier = m_Assets.Tier;
+            if(NaturalCharacters&&world.HasResource(SvWeapons.Key))m_WeaponParticles=new WeaponParticlePresenter(tier, lowQuality: tier!=RenderTier.GpuDriven);
             var atlas = m_Art.Sheet.Texture;
             // Jobs validate containers before Execute, including the classic path. Keep its zero mask valid.
             m_NaturalMask = new NativeArray<byte>(world.Table(SvKeys.Enemy).Capacity, Allocator.Persistent);
             if (NaturalCharacters)
             {
-                m_Characters = new GameplayCharacterPresenter(tier, NaturalEnemyCapacity + 1 + NaturalDeathCapacity);
+                m_Characters = new GameplayCharacterPresenter(tier, NaturalEnemyCapacity + 1 + NaturalDeathCapacity, includeWeapons: world.HasResource(SvWeapons.Key));
                 m_CharacterSelection = new GameplayCharacterSelection(NaturalEnemyCapacity);
                 m_Deaths = new NativeArray<DeathVisual>(NaturalDeathCapacity, Allocator.Persistent);
                 m_DeathSequence = 0; m_HeroCastTick = -100;
@@ -156,6 +166,11 @@ namespace SurvivorFoundation.Presentation
             if (session != m_Session || ArtStyle != m_BoundStyle || NaturalCharacters != m_BoundNatural) Bind(session);
             var world = session.World;
             var game = world.Resource(SvKeys.Game);
+            if(NaturalCharacters&&world.HasResource(SvWeapons.Key))
+            {
+                var equipped=world.Resource(SvWeapons.Key);
+                if(!ReferenceEquals(m_WeaponRuntime,equipped)||m_WeaponRevision!=equipped.Revision)m_Characters?.Clear();
+            }
             float alpha = session.InterpolationAlpha;
             float dt = Time.deltaTime;
             float time = Time.time;
@@ -223,6 +238,7 @@ namespace SurvivorFoundation.Presentation
                 }
             }
             m_Characters?.Evaluate();
+            if(world.HasResource(SvWeapons.Key))DrawWeaponProjectiles(world.Resource(SvWeapons.Key),alpha);
             m_Fx.UpdateAndDraw(dt, m_Effects, m_Art.Sheet, m_Art.Font);
             m_CombatFx.Draw(m_Effects, m_Art.CombatFx.Resolve(m_Art.Sheet), effectView, BulletDepth - 0.2f);
 
@@ -235,9 +251,42 @@ namespace SurvivorFoundation.Presentation
             m_Characters?.Draw(bounds);
             m_Additive.Draw(bounds);
             m_Effects.Draw(bounds); m_Health.Draw(bounds);
+            if(m_WeaponParticles!=null){UpdateWeaponParticles(world,game,alpha,effectView);m_WeaponParticles.EndFrame(bounds);}
             SpritesDrawn = m_Ground.Count + m_Opaque.Count + m_Additive.Count + m_Effects.Count + m_Shadows.Count + m_Health.Count + (m_Characters?.PartsDrawn ?? 0);
             // API payload includes full data textures / indirect arguments, not just live packed sprites.
             BytesUploaded = m_Ground.BytesUploaded + m_Opaque.BytesUploaded + m_Additive.BytesUploaded + m_Effects.BytesUploaded + m_Shadows.BytesUploaded + m_Health.BytesUploaded + (m_Characters?.BytesUploaded ?? 0);
+        }
+
+        void UpdateWeaponParticles(SimWorld world,SvGameState game,float alpha,float4 viewRect)
+        {
+            var weapons=world.Resource(SvWeapons.Key);
+            if(!ReferenceEquals(m_WeaponRuntime,weapons)||m_WeaponRevision!=weapons.Revision||weapons.Tick<m_WeaponTick||game.Flow==SvFlow.Menu)m_WeaponParticles.Clear();
+            bool advancing=weapons.Tick!=m_WeaponTick;
+            m_WeaponParticles.BeginFrame(m_Session.State==SessionState.Running&&game.Flow==SvFlow.Playing?Time.deltaTime:0,viewRect);
+            var view=weapons.View(alpha);
+            if(game.Hp>0&&m_Characters.TryReadWeapon(weapons.Owner,out var socket))m_WeaponParticles.UpdateEmitter(weapons.Owner,view,socket.Tip,socket.Muzzle,socket.Direction,BulletDepth,true);
+            for(int i=0;i<weapons.CueCount;i++)
+            {
+                var cue=weapons.Cues[i];
+                if(cue.ActionPulse==view.ActionPulse&&((cue.Kind==WeaponCueKind.Release&&view.Phase<view.ReleasePhase)||(cue.Kind==WeaponCueKind.Impact&&view.Stage==WeaponStage.Windup)))break;
+                cue.Position+=new float2(0,cue.Height);cue.Height=0;m_WeaponParticles.SubmitCue(cue,BulletDepth,true);
+            }
+            if(advancing)for(int i=0;i<weapons.Projectiles.Length;i++)
+            {
+                var shot=weapons.Projectiles[i];if(!weapons.ProjectileVisible(i,alpha)||weapons.Profile(shot.ContentId).Family!=WeaponActionFamily.Draw)continue;
+                m_WeaponParticles.ProjectileTrail(shot.Previous+new float2(0,shot.Height),shot.Position+new float2(0,shot.Height),BulletDepth,shot.Pulse^(uint)i,true);
+            }
+            m_WeaponTick=weapons.Tick;m_WeaponRevision=weapons.Revision;m_WeaponRuntime=weapons;
+        }
+
+        void DrawWeaponProjectiles(WeaponRuntime weapons,float alpha)
+        {
+            for(int i=0;i<weapons.Projectiles.Length;i++)
+            {
+                var shot=weapons.Projectiles[i];if(!weapons.ProjectileVisible(i,alpha))continue;bool arrow=weapons.Profile(shot.ContentId).Family==WeaponActionFamily.Draw;
+                float2 point=math.lerp(shot.Previous,shot.Position,alpha)+new float2(0,shot.Height);
+                m_Effects.Add(point,arrow?new float2(.5f,.045f):new float2(.23f),m_Art.Sheet[m_Art.White].Uv,BulletDepth,arrow?new float4(1,.85f,.42f,1):new float4(.34f,.80f,1,1),math.atan2(shot.Direction.y,shot.Direction.x));
+            }
         }
 
         void PrepareCharacters(SimWorld world,SvGameState game,float2 hero,float alpha,float4 view,float dt)
@@ -268,8 +317,10 @@ namespace SurvivorFoundation.Presentation
                 var state=game.Hp<=0?GameplayCharacterState.Death:game.Invulnerable>.01f?GameplayCharacterState.Hit:
                     castAge>=0&&castAge<12?(castAge>6?GameplayCharacterState.Recovery:GameplayCharacterState.Attack):
                     math.lengthsq(velocity)>.001f?GameplayCharacterState.Run:GameplayCharacterState.Idle;
-                m_Characters.Submit(new GameplayCharacterInput {Handle=new EntityHandle(-1,1),Root=hero,Ground=hero,Velocity=velocity,Facing=game.Facing.x<0?-1:1,
-                    Scale=.66f,State=state,Phase=math.saturate(castAge/12f),Action=GameplayCharacterAction.Cast,Kind=0,
+                var weapon=world.HasResource(SvWeapons.Key)?world.Resource(SvWeapons.Key).View(alpha):default;
+                if(weapon.Equipped&&game.Hp>0&&weapon.Stage!=WeaponStage.Idle)state=weapon.Stage==WeaponStage.Recovery?GameplayCharacterState.Recovery:GameplayCharacterState.Attack;
+                m_Characters.Submit(new GameplayCharacterInput {Weapon=weapon,Handle=new EntityHandle(-1,1),Root=hero,Ground=hero,Velocity=velocity,Facing=game.Facing.x<0?-1:1,
+                    Scale=.66f,State=state,Phase=weapon.Equipped?weapon.Phase:math.saturate(castAge/12f),Action=GameplayCharacterAction.Cast,Kind=0,
                     Flash=game.Invulnerable>.01f?.5f:0,Depth=ActorDepth+hero.y*DepthPerY,Tint=new float4(1f)});
             }
             for(int i=0;i<m_Deaths.Length;i++)

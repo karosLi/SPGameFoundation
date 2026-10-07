@@ -1,3 +1,6 @@
+using SPF.Presentation.Particles;
+using SPF.Contracts.Weapons;
+using SPF.L2.Weapons;
 using SPF.L1.Skeleton;
 using SPF.Presentation;
 using SPF.Presentation.Animation;
@@ -28,6 +31,11 @@ namespace BrawlerFoundation.Presentation
         public void SetQualityLevel(int level) => QualityLevel = math.clamp(level, 0, 3);
         public GameplayCharacterPresenter Characters => m_Characters;
         GameplayCharacterPresenter m_Characters;
+        WeaponParticlePresenter m_WeaponParticles;
+        long m_WeaponTick=-1;
+        uint m_WeaponRevision;
+        WeaponRuntime m_WeaponRuntime;
+        public WeaponParticlePresenter WeaponParticles => m_WeaponParticles;
         bool m_BoundNatural;
         public FollowCamera2D Camera;
         public System.Action<BwFeedback> Feedback;
@@ -54,6 +62,7 @@ namespace BrawlerFoundation.Presentation
 
         void Release()
         {
+            m_WeaponParticles?.Dispose(); m_WeaponParticles=null; m_WeaponTick=-1;
             m_NaturalShadows?.Dispose(); m_NaturalShadows = null;
             m_Characters?.Dispose(); m_Characters = null;
             m_Arena?.Dispose(); m_Fighters?.Dispose(); m_Effects?.Dispose();
@@ -76,7 +85,8 @@ namespace BrawlerFoundation.Presentation
             var rig = session.World.Resource(BwKeys.Rig);
             m_Assets = new RenderAssets(RenderCapabilities.Detect());
             m_Art = BwArt.Build(rig, NaturalCharacters);
-            if (NaturalCharacters) m_Characters = new GameplayCharacterPresenter(m_Assets.Tier, math.clamp(session.World.Table(BwKeys.Fighter).Capacity, 1, 128));
+            if (NaturalCharacters) m_Characters = new GameplayCharacterPresenter(m_Assets.Tier, math.clamp(session.World.Table(BwKeys.Fighter).Capacity, 1, 128), includeWeapons: session.World.HasResource(BwWeapons.Key));
+            if(NaturalCharacters&&session.World.HasResource(BwWeapons.Key))m_WeaponParticles=new WeaponParticlePresenter(m_Assets.Tier, lowQuality: m_Assets.Tier!=RenderTier.GpuDriven);
             var atlas = m_Art.Sheet.Texture;
             m_Arena = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Opaque, 1024, queueOffset: -10);
             m_Fighters = new SpriteBatch(m_Assets.Tier, atlas, BlendKind.Opaque, MaxFighters * (m_Art.Parts.Length + 4));
@@ -110,6 +120,11 @@ namespace BrawlerFoundation.Presentation
             if (session != m_Session || m_BoundNatural != NaturalCharacters) Bind(session);
             var world = session.World;
             var game = world.Resource(BwKeys.Game);
+            if(NaturalCharacters&&world.HasResource(BwWeapons.Key))
+            {
+                var equipped=world.Resource(BwWeapons.Key);
+                if(!ReferenceEquals(m_WeaponRuntime,equipped)||m_WeaponRevision!=equipped.Revision)m_Characters?.Clear();
+            }
             var rig = world.Resource(BwKeys.Rig);
             float alpha = session.InterpolationAlpha;
             float tickDt = 1f / 60f;
@@ -169,13 +184,49 @@ namespace BrawlerFoundation.Presentation
                 }
                 else m_Fighters.Trim(m_Fighters.Count - output.Length);
             }
+            if(world.HasResource(BwWeapons.Key))DrawWeaponProjectiles(world.Resource(BwWeapons.Key),alpha);
             m_Fx.UpdateAndDraw(Time.deltaTime, m_Effects, m_Art.Sheet, null);
             m_Arena.Draw(bounds, dirty: false);
             m_NaturalShadows?.Draw(bounds);
             m_Fighters.Draw(bounds);
             m_Characters?.Draw(bounds);
             m_Effects.Draw(bounds);
+            if(m_WeaponParticles!=null){UpdateWeaponParticles(world,game,alpha);m_WeaponParticles.EndFrame(bounds);}
             SpritesDrawn = m_Arena.Count + m_Fighters.Count + m_Effects.Count + (m_Characters?.PartsDrawn ?? 0) + (m_NaturalShadows?.Count ?? 0);
+        }
+
+        void UpdateWeaponParticles(SPF.Runtime.World.SimWorld world,BwGameState game,float alpha)
+        {
+            var weapons=world.Resource(BwWeapons.Key);
+            if(!ReferenceEquals(m_WeaponRuntime,weapons)||m_WeaponRevision!=weapons.Revision||weapons.Tick<m_WeaponTick||game.Flow==BwFlow.Menu)m_WeaponParticles.Clear();
+            bool advancing=weapons.Tick!=m_WeaponTick;
+            m_WeaponParticles.BeginFrame(m_Session.State==SessionState.Running&&game.Flow==BwFlow.Fighting?Time.deltaTime:0,Camera!=null?Camera.ViewRect:new float4(-12,-5,12,8));
+            var view=weapons.View(alpha);view.AimDirection=new float2(view.AimDirection.x,view.AimDirection.y*BwBeltRules.DepthProjection);
+            if(m_Characters.TryReadWeapon(weapons.Owner,out var socket))m_WeaponParticles.UpdateEmitter(weapons.Owner,view,socket.Tip,socket.Muzzle,socket.Direction,FxDepth,true);
+            for(int i=0;i<weapons.CueCount;i++)
+            {
+                var cue=weapons.Cues[i];
+                if(cue.ActionPulse==view.ActionPulse&&((cue.Kind==WeaponCueKind.Release&&view.Phase<view.ReleasePhase)||(cue.Kind==WeaponCueKind.Impact&&view.Stage==WeaponStage.Windup)))break;
+                cue.Position=BwBeltRules.Project(cue.Position,cue.Height);cue.Height=0;cue.Direction=new float2(cue.Direction.x,cue.Direction.y*BwBeltRules.DepthProjection);
+                m_WeaponParticles.SubmitCue(cue,FxDepth,true);
+            }
+            if(advancing)for(int i=0;i<weapons.Projectiles.Length;i++)
+            {
+                var shot=weapons.Projectiles[i];if(!weapons.ProjectileVisible(i,alpha)||weapons.Profile(shot.ContentId).Family!=WeaponActionFamily.Draw)continue;
+                m_WeaponParticles.ProjectileTrail(BwBeltRules.Project(shot.Previous,shot.Height),BwBeltRules.Project(shot.Position,shot.Height),FxDepth,shot.Pulse^(uint)i,true);
+            }
+            m_WeaponTick=weapons.Tick;m_WeaponRevision=weapons.Revision;m_WeaponRuntime=weapons;
+        }
+
+        void DrawWeaponProjectiles(WeaponRuntime weapons,float alpha)
+        {
+            for(int i=0;i<weapons.Projectiles.Length;i++)
+            {
+                var shot=weapons.Projectiles[i];if(!weapons.ProjectileVisible(i,alpha))continue;bool arrow=weapons.Profile(shot.ContentId).Family==WeaponActionFamily.Draw;
+                float2 point=BwBeltRules.Project(math.lerp(shot.Previous,shot.Position,alpha),shot.Height);
+                float2 direction=new float2(shot.Direction.x,shot.Direction.y*BwBeltRules.DepthProjection);
+                m_Effects.Add(point,arrow?new float2(.66f,.055f):new float2(.28f),m_Art.Sheet[m_Art.Bar].Uv,FxDepth,arrow?new float4(1,.86f,.47f,1):new float4(.36f,.84f,1,1),math.atan2(direction.y,direction.x));
+            }
         }
 
         void Frame(FollowCamera2D camera)
@@ -215,13 +266,18 @@ namespace BrawlerFoundation.Presentation
                     ground=BwBeltRules.Project(math.lerp(world.Column(BwBeltKeys.PreviousGround)[i],world.Column(BwBeltKeys.Ground)[i],alpha),0);
                     var v=world.Column(BwBeltKeys.Motion)[i].GroundVelocity;velocity=new float2(v.x,v.y*BwBeltRules.DepthProjection);
                 }
-                float phase=f.State==FighterState.Attack ? math.saturate(f.StateTime/math.max(.01f,rig.Attack(f.Attack).Duration)) : 0;
+                bool armed=f.Team==0&&world.HasResource(BwWeapons.Key);
+                var weapon=armed?world.Resource(BwWeapons.Key).View(alpha):default;
+                if(armed){weapon.AimDirection=new float2(weapon.AimDirection.x,weapon.AimDirection.y*BwBeltRules.DepthProjection);if(f.State==FighterState.Hit||f.State==FighterState.KO){weapon.Stage=WeaponStage.Idle;weapon.Phase=0;}}
+                float phase=f.State==FighterState.Attack && f.Attack!=AttackKind.None ? math.saturate(f.StateTime/math.max(.01f,rig.Attack(f.Attack).Duration)) : 0;
                 var state=f.State==FighterState.KO?GameplayCharacterState.Death:f.State==FighterState.Hit?GameplayCharacterState.Hit:
                     f.State==FighterState.Attack?(phase>.58f?GameplayCharacterState.Recovery:GameplayCharacterState.Attack):
                     f.State==FighterState.Walk?GameplayCharacterState.Run:GameplayCharacterState.Idle;
                 float2 actionTarget=default;
-                if(f.State==FighterState.Attack)actionTarget=BrawlerFoundation.Systems.BwProbe.Tip(rig,f,world.Column(BwKeys.Anim)[i],p,m_Scratch,m_World);
-                m_Characters.Submit(new GameplayCharacterInput {Aim=f.State==FighterState.Attack,AimTarget=actionTarget,Handle=handles[i],Root=p,Ground=ground,Velocity=velocity,Facing=f.Facing,
+                if(f.State==FighterState.Attack&&f.Attack!=AttackKind.None)actionTarget=BrawlerFoundation.Systems.BwProbe.Tip(rig,f,world.Column(BwKeys.Anim)[i],p,m_Scratch,m_World);
+                if(armed&&f.State!=FighterState.Hit&&f.State!=FighterState.KO&&weapon.Stage!=WeaponStage.Idle)
+                {state=weapon.Stage==WeaponStage.Recovery?GameplayCharacterState.Recovery:GameplayCharacterState.Attack;phase=weapon.Phase;}
+                m_Characters.Submit(new GameplayCharacterInput {Weapon=weapon,Aim=!armed&&f.State==FighterState.Attack,AimTarget=actionTarget,Handle=handles[i],Root=p,Ground=ground,Velocity=velocity,Facing=f.Facing,
                     Scale=.9f,State=state,Phase=phase,Action=f.Attack==AttackKind.Kick?GameplayCharacterAction.Kick:GameplayCharacterAction.Punch,
                     Kind=f.Team==0?0:1,Flash=f.Flash,Tint=f.Team==0?new float4(1f):new float4(1f,1f-f.Variant*.035f,1f-f.Variant*.06f,1f),Depth=FighterDepth+ground.y*.01f});
                 m_NaturalShadows.Add(ground+new float2(0,.01f),new float2(.95f,.24f),m_Art.Sheet[m_Art.Shadow].Uv,ShadowDepth,new float4(0,0,0,.34f));

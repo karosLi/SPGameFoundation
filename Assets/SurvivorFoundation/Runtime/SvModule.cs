@@ -44,7 +44,8 @@ namespace SurvivorFoundation
                 layout.Resource(SvKeys.CrossedBlades, new SvCrossedBladeState(math.clamp(s.CrossedBlades.MaxTargets, 1, cap.Enemies)), levelScoped: true);
             if (s.FlyingSwords.Enabled)
                 layout.Resource(SvFlyingSwordState.Key, new SvFlyingSwordState(s.FlyingSwords, cap.Enemies, s.Variant), levelScoped: true);
-            if (Config.MobileSkills) layout.Resource(SvMobileSkills.Key, SvMobileSkills.Create(), levelScoped: true);
+            if (Config.WeaponCombat) layout.Resource(SvWeapons.Key, new SPF.L2.Weapons.WeaponRuntime(Config.WeaponProfiles ?? SPF.L2.Weapons.WeaponProfiles.CreateDefaults(30), 30), levelScoped: true);
+            if (Config.MobileSkills || Config.WeaponCombat) layout.Resource(SvMobileSkills.Key, Config.WeaponCombat ? SvWeapons.CreateSkills() : SvMobileSkills.Create(), levelScoped: true);
             layout.DestroyQueueCapacity = cap.Enemies;
         }
 
@@ -63,7 +64,8 @@ namespace SurvivorFoundation
             .Add(new ResolveSystem());
             if (Config.Settings.FlyingSwords.Enabled) registry.Add(new FlyingSwordSystem());
             if (Config.Settings.CrossedBlades.Enabled) registry.Add(new CrossedBladeSystem());
-            if (Config.MobileSkills) registry.Add(new MobileSkillInputSystem()).Add(new MobileSkillPulseSystem());
+            if (Config.WeaponCombat) registry.Add(new WeaponCombatSystem());
+            if (Config.MobileSkills || Config.WeaponCombat) registry.Add(new MobileSkillInputSystem()).Add(new MobileSkillPulseSystem());
         }
     }
 

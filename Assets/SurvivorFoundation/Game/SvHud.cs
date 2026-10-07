@@ -111,8 +111,9 @@ namespace SurvivorFoundation.Game
             MenuButton.onClick.AddListener(() => m_Game.BackToMenu());
 
             MenuPanel = UIFactory.Panel(root, "MenuPanel", new Color(0f, 0f, 0f, 0.55f), Vector2.zero, Vector2.one);
-            UIFactory.Label(MenuPanel, "Title", swords ? "FLYING SWORDS" : guard ? "BEACON GUARD" : "SURVIVE", mobile ? 64 : guard ? 85 : 140, TextAnchor.MiddleCenter, new Vector2(0f, 0.6f), new Vector2(1f, 0.85f));
-            if (guard) UIFactory.Label(MenuPanel, "Instructions", mobile ? "Move with the left stick. Tap PULSE to clear space.\nDrag BLINK to aim, release to jump.\nDrag far away to cancel. Protect the beacon." : "ORIGINAL EXAMPLE\nHold the beacon until waves end, then clear the horde.\nMove to intercept. Two electric bands damage on fixed ticks.", mobile ? 23 : 26, TextAnchor.MiddleCenter, new Vector2(0.07f, 0.2f), new Vector2(0.93f, 0.42f));
+            UIFactory.Label(MenuPanel, "Title", game.Session.World.HasResource(SvWeapons.Key) ? "WEAPON HORDE" : swords ? "FLYING SWORDS" : guard ? "BEACON GUARD" : "SURVIVE", mobile ? 64 : guard ? 85 : 140, TextAnchor.MiddleCenter, new Vector2(0f, 0.6f), new Vector2(1f, 0.85f));
+            if (game.Session.World.HasResource(SvWeapons.Key)) UIFactory.Label(MenuPanel, "WeaponInstructions", "Auto-attack nearby enemies. Hold ATTACK to strike.\nSWITCH / Q cycles BLADE, SWORD, STAFF and BOW.\nPULSE / J and BLINK / K remain available.", 23, TextAnchor.MiddleCenter, new Vector2(.05f,.18f), new Vector2(.95f,.38f));
+            if (guard && !game.Session.World.HasResource(SvWeapons.Key)) UIFactory.Label(MenuPanel, "Instructions", mobile ? "Move with the left stick. Tap PULSE to clear space.\nDrag BLINK to aim, release to jump.\nDrag far away to cancel. Protect the beacon." : "ORIGINAL EXAMPLE\nHold the beacon until waves end, then clear the horde.\nMove to intercept. Two electric bands damage on fixed ticks.", mobile ? 23 : 26, TextAnchor.MiddleCenter, new Vector2(0.07f, 0.2f), new Vector2(0.93f, 0.42f));
             if (swords) UIFactory.Label(MenuPanel, "Instructions", "Move to guide your orbiting sword swarm.\nSwords seek, pierce and return. Collect gems to grow.\nPULSE clears space. Drag BLINK to escape.\nSurvive the waves, then clear the horde.", 24, TextAnchor.MiddleCenter, new Vector2(.05f, .18f), new Vector2(.95f, .40f));
             StartButton = UIFactory.Button(MenuPanel, "StartButton", "START", new Vector2(0, -20), new Vector2(460, 140), new Color(0.3f, 0.75f, 0.45f, 0.95f), new Vector2(0.5f, 0.5f));
             StartButton.onClick.AddListener(() => m_Game.StartRun());
@@ -151,6 +152,11 @@ namespace SurvivorFoundation.Game
                 stats.Append("\nSWORDS ").Append(world.Resource(SvFlyingSwordState.Key).ActiveCount)
                     .Append(state.RunTicks < s.FlyingSwords.WaveTicks ? "   WAVES " : "   CLEAR THE HORDE ")
                     .Append(Mathf.Max(0, (s.FlyingSwords.WaveTicks - state.RunTicks + 29) / 30));
+            if (world.HasResource(SvWeapons.Key))
+            {
+                var weapons = world.Resource(SvWeapons.Key); stats.Append("\nWEAPON ").Append(weapons.Current.Name);
+                if (weapons.Equipment.PendingId != 0) stats.Append(" > ").Append(weapons.Profile(weapons.Equipment.PendingId).Name);
+            }
             StatsText.Commit();
             // Choice and death texts are only visible on those screens: don't rebuild them for every gem picked up.
             if (state.Version == m_Version || state.Flow != SvFlow.LevelUp && state.Flow != SvFlow.Dead && state.Flow != SvFlow.Won) return;
@@ -171,10 +177,10 @@ namespace SurvivorFoundation.Game
         {
             readonly SvGameBootstrap m_Game;
             public MobileSource(SvGameBootstrap game) => m_Game = game;
-            public int SlotCount => 2;
+            public int SlotCount => m_Game.Session.World.HasResource(SvWeapons.Key) ? 4 : 2;
             public int TickRate => 30;
             public bool Playing => m_Game.Session != null && m_Game.Session.State == SessionState.Running && m_Game.State.Flow == SvFlow.Playing && !m_Game.InputRouter.Scripted.Active && !m_Game.AutoPlay;
-            public string SlotLabel(int slot) => slot == 0 ? "PULSE / J" : "BLINK / K";
+            public string SlotLabel(int slot) => slot == 0 ? "PULSE / J" : slot == 1 ? "BLINK / K" : slot == 2 ? "ATTACK / F" : "SWITCH / Q";
             public SkillSlotSnapshot ReadSlot(int slot) => m_Game.Session.World.Resource(SvMobileSkills.Key).GetSnapshot(slot, Playing && m_Game.State.Hp > 0);
         }
     }

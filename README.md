@@ -37,6 +37,8 @@ Unity 2022.3 2D 单机小游戏基座（面向移动端），保留贪吃蛇、A
 
 ## 新增移动端示例
 
+- **SPF → Weapons → Create Landscape Weapon Brawler Scene / Create Portrait Weapon Horde Scene**：刀、剑、法杖、弓箭四种真实可切换武器；固定 Tick 攻击/拉弓/换装、自然握持 IK、GPU 粒子与 CPU/Burst 回退，保留摇杆和独立技能。Q / SWITCH 换装；[共享武器合约与验证范围](Docs/AuthoritativeWeapons.md)。
+
 - **SPF → Shooter → Create Or Update Scene**：拖动飞行 / WASD、自动射击、僚机、最近目标射线、波次与三选一升级。生成场景后 Play；移动端竖屏设置通过单独的 **Apply Portrait Mobile Settings** 菜单显式应用。
 - **SPF → Survivor → Create Guard Example Scene**：守护信标、双环伤害、密集血条、接触阴影与失败/胜利/重开。原 Survivor 默认模式保留。
 - **SPF → Survivor → Create Flying Sword Horde Scene**：竖屏优先，环绕/发射/追踪/返回的飞剑、升级与有限波次、共享脉冲/闪现 HUD、受预算约束的轨迹和伤害数字。

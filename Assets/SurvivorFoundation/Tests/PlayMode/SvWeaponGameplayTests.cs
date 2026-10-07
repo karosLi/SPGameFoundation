@@ -1,0 +1,67 @@
+#if !SPF_DOTNET_HARNESS
+using System;
+using System.Collections;
+using NUnit.Framework;
+using SPF.Contracts;
+using SPF.L2.Weapons;
+using SPF.Presentation;
+using SPF.Testing;
+using SurvivorFoundation.Game;
+using Unity.Mathematics;
+using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.TestTools;
+using Object=UnityEngine.Object;
+
+namespace SurvivorFoundation.Tests.PlayMode
+{
+    public class SvWeaponGameplayTests
+    {
+        [UnityTest]
+        public IEnumerator FourWeaponsDrivePortraitHordeAndKeepSkillHud([Values(RenderTier.GpuDriven,RenderTier.DataTexture)] RenderTier tier)
+        {
+            if(SystemInfo.graphicsDeviceType==GraphicsDeviceType.Null)Assert.Ignore("Actual graphics required.");
+            if(tier==RenderTier.GpuDriven&&!SystemInfo.supportsComputeShaders)Assert.Ignore("Compute tier unsupported.");
+            RenderCapabilities.Override=tier;var config=SvConfig.CreateWeaponCombatExample();config.Settings.SpawnPerSecond=config.Settings.SpawnGrowth=config.Settings.EliteEvery=0;config.Settings.XpBase=100000;config.Settings.BeaconHp=100000;config.Settings.HeroHp=100000;
+            foreach(var e in config.Enemies){e.Hp=10000;e.Speed=0;e.Damage=0;e.Shooter=false;}
+            var game=SvGameBootstrap.CreateWeaponCombatExample(config);CanvasCapture capture=null;string suffix=tier==RenderTier.GpuDriven?"gpu":"fallback";
+            try
+            {
+                yield return null;game.StartRun();yield return UIDriver.WaitUntil(()=>game.State.Flow==SvFlow.Playing,5);game.Session.Sync();game.Session.ManualClock=true;game.InputRouter.enabled=false;game.Governor.AdaptiveQuality=false;
+                var world=game.Session.World;var weapons=world.Resource(SvWeapons.Key);var runtime=world.Resource(SvKeys.Config);
+                capture=new CanvasCapture(game.gameObject,game.CameraRig.Camera,720,1280);var safe=new Rect(0,0,720,1280);game.Hud.MobileHud.SetPreviewViewport(720,1280,safe);game.CameraRig.Snap();Assert.AreEqual(4,game.Hud.MobileHud.Buttons.Length);
+                foreach(int id in new[]{WeaponProfiles.Blade,WeaponProfiles.Sword,WeaponProfiles.Staff,WeaponProfiles.Bow})for(int side=-1;side<=1;side+=2)
+                {
+                    world.ClearLevel();game.State.Flow=SvFlow.Playing;game.State.Hero=game.State.HeroPrev=0;game.State.Facing=new float2(side,0);game.State.Input=default;weapons.RequestEquip(id);for(int i=0;i<weapons.Profile(id).EquipTicks;i++)game.Session.Step();
+                    SvSpawner.SpawnEnemy(world,runtime,1,new float2(side*(id>=WeaponProfiles.Staff?5:1),0));
+                    for(int i=0;i<weapons.Current.Active.From+3;i++)game.Session.Step();
+                    yield return capture.Save("weapon-horde-"+id+"-"+(side<0?"left-":"right-")+suffix,safe,game.Hud.MobileHud.Buttons[3].gameObject);
+                    Assert.IsTrue(game.Renderer.Characters.TryReadWeapon(new EntityHandle(-1,1),out var socket));Assert.AreEqual(id,socket.VisualId);
+                    float2 canonical=game.State.Hero+new float2(side*weapons.Current.MuzzleOffset.x,weapons.Current.MuzzleOffset.y)*SvWeapons.ActorScale;Assert.Less(math.distance(canonical,socket.Muzzle),.17f);
+                    for(int i=0;i<35;i++)game.Session.Step();Assert.Greater(weapons.AcceptedHits,0);Assert.AreEqual(0,world.Table(SvKeys.Bullet).Count,"classic hero bolt is disabled only for this explicit variant");
+                }
+                game.State.Input=new InputFrame{Pressed=3,Aim=new float2(1,0)};game.Session.Step();Assert.AreEqual(1,world.Resource(SvMobileSkills.Key).GetSnapshot(0).Charges);Assert.AreEqual(1,world.Resource(SvMobileSkills.Key).GetSnapshot(1).Charges);
+                byte[] before=game.Session.CaptureSnapshot();for(int i=0;i<6;i++)game.Renderer.RenderFrame();CollectionAssert.AreEqual(before,game.Session.CaptureSnapshot());Assert.IsNotNull(game.Renderer.WeaponParticles);
+                if(Environment.GetEnvironmentVariable("SPF_WEAPON_GAMEPLAY_SEQUENCE")=="1")
+                {
+                    capture.Dispose();capture=new CanvasCapture(game.gameObject,game.CameraRig.Camera,360,640);game.Hud.MobileHud.SetPreviewViewport(360,640,new Rect(0,0,360,640));world.ClearLevel();game.State.Flow=SvFlow.Playing;game.State.Hero=game.State.HeroPrev=0;weapons.RequestEquip(WeaponProfiles.Staff);
+                    for(int i=0;i<weapons.Profile(WeaponProfiles.Staff).EquipTicks;i++)game.Session.Step();for(int i=0;i<24;i++){float a=i*2.399963f;SvSpawner.SpawnEnemy(world,runtime,1,new float2(math.cos(a),math.sin(a))*(4+i*.08f));}
+                    using(var frames=new BufferedFrameCapture(capture.Target,90))
+                    {
+                        game.Session.ManualClock=false;double next=Time.realtimeSinceStartupAsDouble;
+                        for(int i=0;i<90;i++)
+                        {
+                            while(Time.realtimeSinceStartupAsDouble<next)yield return null;
+                            game.State.Input=InputFrame.Latch(game.State.Input,new InputFrame{Move=i<40?new float2(.3f,.2f):new float2(-.3f,-.2f),Pressed=i==40?1u<<SvWeapons.SwitchButton:0});
+                            frames.Capture(weapons.Tick/30d);next=Time.realtimeSinceStartupAsDouble+1d/30;
+                        }
+                        game.Session.ManualClock=true;frames.Write("weapon-horde-live-"+suffix,"Actual automatic-clock portrait horde: locomotion, staff charge/projectile, switch to bow draw/release while independent pulse/blink HUD remains. Target30Hz, measured timestamps retained.");
+                    }
+                }
+                LogAssert.NoUnexpectedReceived();
+            }
+            finally{capture?.Dispose();RenderCapabilities.Override=null;if(Camera.main!=null)Object.Destroy(Camera.main.gameObject);Object.Destroy(game.gameObject);Object.Destroy(config);}
+        }
+    }
+}
+#endif

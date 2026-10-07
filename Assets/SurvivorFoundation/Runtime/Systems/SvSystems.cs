@@ -261,7 +261,7 @@ namespace SurvivorFoundation.Systems
             if ((s.Variant != SvVariant.GuardBeacon || game.RunTicks <= math.max(1, s.GuardDurationTicks)) &&
                 (s.Variant != SvVariant.FlyingSwordHorde || game.RunTicks <= s.FlyingSwords.WaveTicks))
                 SpawnEnemies(world, config, game, context.Seed, context.Time.Tick, dt);
-            if (!s.FlyingSwords.Enabled) FireWeapons(world, s, game, spawns.Raw, dt);
+            if (!s.FlyingSwords.Enabled && !world.HasResource(SvWeapons.Key)) FireWeapons(world, s, game, spawns.Raw, dt);
             SpawnBullets(world, spawns);
             if (s.ReorderInterval > 0 && context.Time.Tick % (uint)s.ReorderInterval == 0)
                 SortEnemies(world, s);
@@ -458,13 +458,14 @@ namespace SurvivorFoundation.Systems
             var input = game.Input;
             game.Input.Pressed = 0;
             game.HeroPrev = game.Hero;
-            if (game.Flow != SvFlow.Playing) return dependency;
+            if (game.Flow != SvFlow.Playing) { if (world.HasResource(SvWeapons.Key)) SvWeapons.Advance(world, input); return dependency; }
             float dt = context.Time.DeltaTime;
             float2 move = input.Move;
             if (math.lengthsq(move) > 1f) move = math.normalize(move);
             game.Hero = math.clamp(game.Hero + move * SvRules.HeroSpeed(s, game) * dt, -s.ArenaHalf, s.ArenaHalf);
             if (math.lengthsq(move) > 1e-4f) game.Facing = math.normalize(move);
             game.Invulnerable = math.max(game.Invulnerable - dt, 0f);
+            if (world.HasResource(SvWeapons.Key)) SvWeapons.Advance(world, input);
             return dependency;
         }
     }

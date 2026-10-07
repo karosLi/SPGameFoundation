@@ -220,7 +220,7 @@ namespace UnityEngine
 
     public static class SleepTimeout { public const int NeverSleep = -1; }
 
-    public enum KeyCode { None, Space, Return, Escape, F1, F2, W, A, S, D, E, Q, R, LeftShift, RightShift, UpArrow, DownArrow, LeftArrow, RightArrow, Mouse0, Mouse1, J, K, L, Alpha1, Alpha2, Alpha3, Alpha4 }
+    public enum KeyCode { None, Space, Return, Escape, F1, F2, W, A, S, D, E, Q, R, LeftShift, RightShift, UpArrow, DownArrow, LeftArrow, RightArrow, Mouse0, Mouse1, F, J, K, L, Alpha1, Alpha2, Alpha3, Alpha4 }
     public enum TouchPhase { Began, Moved, Stationary, Ended, Canceled }
     public struct Touch { public int fingerId { get; set; } public Vector2 position { get; set; } public TouchPhase phase { get; set; } }
     public static class Input

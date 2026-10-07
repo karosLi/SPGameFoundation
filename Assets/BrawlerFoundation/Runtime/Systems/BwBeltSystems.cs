@@ -95,8 +95,9 @@ namespace BrawlerFoundation.Systems
         {
             dependency.Complete();
             var world = context.World; var game = world.Resource(BwKeys.Game);
-            if (game.Flow != BwFlow.Fighting && game.Flow != BwFlow.WaveClear) { game.Input = default; return dependency; }
+            if (game.Flow != BwFlow.Fighting && game.Flow != BwFlow.WaveClear) { game.Input = default; if (world.HasResource(BwWeapons.Key)) world.Resource(BwWeapons.Key).CancelAll(); return dependency; }
             bool fighting = game.Flow == BwFlow.Fighting;
+            bool weapons = world.HasResource(BwWeapons.Key);
             var belt = world.Resource(BwBeltKeys.State); var slots = world.Resource(BwMobileSkills.Key); var rig = world.Resource(BwKeys.Rig);
             slots.AdvanceTick(fighting);
             var input = game.Input; game.Input.Pressed = 0;
@@ -115,10 +116,10 @@ namespace BrawlerFoundation.Systems
                 f.StateTime += dt; f.Flash = math.max(0, f.Flash - dt * 5); f.Cooldown -= dt; a.Advance(dt);
                 if (m.ComboGraceTicks > 0) m.ComboGraceTicks--;
                 bool isPlayer = f.Team == 0;
-                if (isPlayer && fighting && input.WasPressed(BwButton.Punch) && f.State != FighterState.Hit && f.State != FighterState.KO)
+                if (isPlayer && !weapons && fighting && input.WasPressed(BwButton.Punch) && f.State != FighterState.Hit && f.State != FighterState.KO)
                     m.BufferedAttack.Push(BwButton.Punch, context.Time.Tick, 24);
                 if (f.State == FighterState.Hit && f.StateTime >= .32f) { f.State = FighterState.Idle; f.StateTime = 0; }
-                if (f.State == FighterState.Attack && f.StateTime >= rig.Attack(f.Attack).Duration)
+                if (f.State == FighterState.Attack && f.Attack != AttackKind.None && f.StateTime >= rig.Attack(f.Attack).Duration)
                 { f.State = FighterState.Idle; f.StateTime = 0; f.Attack = AttackKind.None; }
                 float2 move = float2.zero;
                 bool free = f.State == FighterState.Idle || f.State == FighterState.Walk;
@@ -130,7 +131,7 @@ namespace BrawlerFoundation.Systems
                         if (math.abs(move.x) > .05f) f.Facing = math.sign(move.x);
                         if (fighting)
                         {
-                            bool punch = input.IsHeld(BwButton.Punch) || m.BufferedAttack.Pending;
+                            bool punch = !weapons && (input.IsHeld(BwButton.Punch) || m.BufferedAttack.Pending);
                             if (input.WasPressed(BwButton.Kick) && slots.TryActivate(1, true))
                             { BeginAttack(ref f, ref a, rig, AttackKind.Kick); m.BufferedAttack.Clear(); }
                             else if (punch && slots.GetSnapshot(0).Charges > 0)
@@ -184,6 +185,7 @@ namespace BrawlerFoundation.Systems
             }
             for (int i = 0; i < count; i++) { ground[i] = belt.SeparatedGround[i]; position[i] = BwBeltRules.Project(ground[i], motion[i].Height); }
             CollectDrops(world, game, belt, player, dt);
+            if (weapons) BwWeapons.Advance(world, input);
             return dependency;
         }
         static void BeginAttack(ref FighterInfo f, ref Animator2D a, BwRig rig, AttackKind kind)
@@ -243,7 +245,7 @@ namespace BrawlerFoundation.Systems
             var ground = world.Column(BwBeltKeys.Ground); var motion = world.Column(BwBeltKeys.Motion); var handles = world.Table(BwKeys.Fighter).Handles;
             for (int i = 0; i < world.Table(BwKeys.Fighter).Count; i++)
             {
-                var f = info[i]; if (f.State != FighterState.Attack) continue;
+                var f = info[i]; if (f.State != FighterState.Attack || f.Attack == AttackKind.None) continue;
                 int scope = shared.Track(handles[i], f, context.Time.DeltaTime); var def = rig.Attack(f.Attack);
                 if (scope < 0 || !shared.CrossedActive(scope, def.ActiveFrom, def.ActiveTo, context.Time.DeltaTime)) continue;
                 float2 tip = BwProbe.Tip(rig, f, anim[i], new float2(ground[i].x, motion[i].Height), m_Pose, m_Bones);

@@ -12,6 +12,8 @@ namespace BrawlerFoundation
         bool m_SharedCombat;
         bool m_MobileSkills;
         bool m_BeltScroller;
+        bool m_Weapons;
+        SPF.L2.Weapons.WeaponProfile[] m_WeaponProfiles;
         BwBeltConfig m_BeltConfig;
         BwSharedCombatConfig m_CombatConfig;
 
@@ -46,6 +48,9 @@ namespace BrawlerFoundation
             return module;
         }
 
+        public static BwModule CreateWeaponBelt(BwBeltConfig config, SPF.L2.Weapons.WeaponProfile[] profiles = null)
+        { var module = CreateBeltScroller(config); module.m_Weapons = true; module.m_WeaponProfiles = profiles; return module; }
+
         public override void DeclareData(WorldLayout layout)
         {
             var fighters = layout.Table(BwKeys.Fighter, m_SharedCombat ? m_CombatConfig.Fighters : 64).LevelScoped()
@@ -55,6 +60,7 @@ namespace BrawlerFoundation
                 fighters.Column(BwBeltKeys.Ground).Column(BwBeltKeys.PreviousGround).Column(BwBeltKeys.Motion);
                 layout.Resource(BwBeltKeys.State, new BwBeltState(m_BeltConfig), levelScoped: true);
             }
+            if (m_Weapons) layout.Resource(BwWeapons.Key, new SPF.L2.Weapons.WeaponRuntime(m_WeaponProfiles ?? SPF.L2.Weapons.WeaponProfiles.CreateDefaults(60), 60, targetsPerAttack: m_BeltConfig.TargetsPerAttack), levelScoped: true);
             layout.Resource(BwKeys.Rig, new BwRig());
             layout.Resource(BwKeys.Game, new BwGameState());
             layout.Resource(BwKeys.Feedback, new EventQueue<BwFeedback>(128, saved: false));
@@ -65,7 +71,7 @@ namespace BrawlerFoundation
         public override void RegisterSystems(SystemRegistry registry)
         {
             if (m_BeltScroller)
-            { registry.Add(new BeltFlowSystem()).Add(new BeltFighterSystem()).Add(new BeltCombatSystem()); return; }
+            { registry.Add(new BeltFlowSystem()).Add(new BeltFighterSystem()).Add(new BeltCombatSystem()); if (m_Weapons) registry.Add(new BeltWeaponSystem()); return; }
             registry.Add(new FlowSystem()).Add(new FighterSystem()).Add(new CombatSystem());
             if (m_MobileSkills) registry.Add(new MobileSkillSystem());
         }
@@ -73,6 +79,13 @@ namespace BrawlerFoundation
 
     public static class BwMode
     {
+        public static ModeDefinition CreateWeaponBelt(BwBeltConfig config, out GameplayModuleAsset module)
+        {
+            module = BwModule.CreateWeaponBelt(config);
+            var settings = SessionSettings.Default; settings.TickRate = 60; settings.MaxTicksPerFrame = 4;
+            return ModeDefinition.Create(new[] { module }, settings);
+        }
+
         public static ModeDefinition CreateBeltScroller(BwBeltConfig config, out GameplayModuleAsset module)
         {
             module = BwModule.CreateBeltScroller(config);

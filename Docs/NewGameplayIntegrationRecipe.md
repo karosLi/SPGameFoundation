@@ -4,7 +4,9 @@
 
 这份指南的目标是让下一个玩法更容易接入、容量和性能更可控、后续功能更容易扩展。Shooter、Guard、Flying Sword Horde、Belt Scroller 是四种不同压力的验证样本，价值在于证明同一套能力可以复用，不在于继续增加演示数量。
 
-本文按 `8e81244` 的实际源码核对入口和调用。之后的修复、测试数量和性能数字以对应验证报告及其提交为准；不要把旧检查点的通过结果自动套到新提交。本文是仓库接入文档，不是新的运行时框架。
+本文按 `62c5b7f`（2026-10-07）的实际源码核对入口和调用；其代码树与已恢复的远端 `e86ee87a7691282ae7e96713c315dbec5998c414` 相同。[精确验证清单](validation/NativePrecisionClosure-20261007.json)记录 1,050 .NET、1,084 原生 EditMode、154 graphics PlayMode 通过，另有 5/1 项原生跳过；不是物理 Android/iOS 验收。本文的文档检查也不等于重新运行这些原生测试。
+
+[架构与真实 API](Architecture.md)、[九个经典玩法和四个移动示例兼容矩阵](FoundationCompatibilityMatrix.md)说明现状；[分层与语义扩展计划](SharedFoundationSemanticExtensionPlan.md)中的 manifest、全安装事务、统一 binding helper、保存 envelope 与异步资源租约仍为提案，不是下面可直接调用的新接口。
 
 - 只想跑通最小模块：看第 1 节
 - 新建独立玩法：按第 2–4 节接入
@@ -56,7 +58,7 @@ finally
 
 正式场景用 `ModeDefinition.Create(new[] { module }, settings)` 和 `host.Initialize(mode, seed)`。`SessionHost` 负责帧调度、Sync、后台挂起和销毁；不要再从自己的 Update 同时调用 `session.Update`。`WorldComposer` 已由 `SimSession` 调用，无须为每个游戏重写。
 
-## 2. 独立玩法只需要三个运行时程序集
+## 2. 独立玩法通常新增三个运行时程序集
 
 例如新增 `Assets/MyGame/`。以下名字是建议的项目文件名，不是基座已经提供的新 API。
 
@@ -68,21 +70,23 @@ finally
 
 直接参考已经运行的三个 [Shooter Runtime](../Assets/ShooterFoundation/Runtime/ShooterFoundation.Runtime.asmdef)、[Presentation](../Assets/ShooterFoundation/Presentation/ShooterFoundation.Presentation.asmdef)、[Game](../Assets/ShooterFoundation/Game/ShooterFoundation.Game.asmdef) asmdef 的引用方式，改名后删掉不需要的引用。最小模块需 Contracts、Runtime.Core、Runtime，以及所用的 Collections / Mathematics / Burst；使用空间查询或技能时再引用 L1 / L2。继承 `GameplayModuleAsset` 必须引用 `SPF.Runtime`，只引用 Runtime.Core 不够。
 
-依赖方向保持为：Game → 自己的 Presentation / Runtime；Presentation → 自己的 Runtime + 公共 Presentation；Runtime → 公共 Contracts / L1 / L2 / Runtime。公共层不能反向引用 MyGame。Editor 菜单、EditMode、PlayMode 可以各有独立程序集，不计入三个运行时程序集。
+依赖方向保持为：Game → 自己的 Presentation / Runtime；Presentation → 自己的 Runtime + 公共 Presentation；Runtime → 所需公共 Contracts / L1 / L2 / Runtime.Core / Runtime。公共层不能反向引用 MyGame。Editor 菜单、EditMode、PlayMode 可以各有独立程序集，不计入这三个。
+
+这是现有项目的接入组织方式，不是已经拆好的“五层五程序集”。五层责任是内核、共享能力、游戏规则、适配器、应用组合根；目前 SPF.Runtime 同时放模块声明契约与 Session/组合/诊断，Game 也同时放 Bootstrap 和输入/HUD 适配。引用 SPF.Runtime 不授权规则反向调用全局 Bootstrap；只读职责也不会由 asmdef 自动强制。完整物理引用见[架构 §1](Architecture.md#1-五层责任与真实程序集)。
 
 ### 第一轮实际要做的文件
 
 1. 复制 DriftSmoke 的数据声明和四个小系统到自己的 Runtime，统一替换 namespace、Keys、模块名与资源名。不要让新游戏继续注册同一套 DriftKeys。
 2. 先保留 Position、Velocity 和一个固定容量表。跑过自己的移动 / 重开测试后，再添加 HP、阵营、武器等列。
-3. 将容量、速度、Tick 规则放入自己的配置，在创建 Session 时校验并冻结。不要在 Job 中直接读可变 ScriptableObject。
-4. `MyGameBootstrap` 创建模块、Mode、Host，绑定 Renderer 和 HUD。创建时拥有的临时配置/Mode/Module，销毁时也由它释放；不要销毁外部传入的共享资源。
+3. 将容量、速度、Tick 规则放入自己的配置，在创建 Session 时校验并冻结。不要在 Job 中直接读可变 ScriptableObject；现有 Bake 路径不全是深复制（如 Snake Capacity、RPG 部分 section 仍保留源引用），不要未经审计照搬这种所有权。
+4. `MyGameBootstrap` 创建模块、Mode、Host，绑定 Renderer 和 HUD。创建时拥有的临时配置/Mode/Module，销毁时也由它释放；Host 释放 Session，不替它释放这些 SO。外部传入的共享资源保留原 owner；失败、重复绑定、disable 和 destroy 路径分别检查。
 5. Renderer 先画简单 sprite，不必一开始接自然人物或 BAT。HUD 先实现状态、开始 / 暂停 / 重开，再按第 4 节接共享技能控件。
 
 完整组装参考 [ShooterGameBootstrap](../Assets/ShooterFoundation/Game/ShooterGameBootstrap.cs)；有共享技能和自然人物时参考 [SvGameBootstrap](../Assets/SurvivorFoundation/Game/SvGameBootstrap.cs) 或 [BwGameBootstrap](../Assets/BrawlerFoundation/Game/BwGameBootstrap.cs)。不要复制它们的整套规则再换皮。
 
 ## 3. Module、Table、System 各负责一件事
 
-模块实现 [IGameplayModule](../Assets/SinglePlayerFoundation/Runtime/Composition/IGameplayModule.cs) 的两个入口。以下是已有 DriftSmoke 的调用方式，省略的是现成文件中的系统实现，不是可单独编译的新模块：
+模块实现 [IGameplayModule](../Assets/SinglePlayerFoundation/Runtime/Composition/IGameplayModule.cs) 的 `Id`、`DeclareData(WorldLayout)` 和 `RegisterSystems(SystemRegistry)`；`GameplayModuleAsset` 默认 Id 为类型名。当前没有通用 BakeConfig/RegisterRules/RegisterPresentation 钩子。以下是已有 DriftSmoke 的调用方式，省略的是现成文件中的系统实现，不是可单独编译的新模块：
 
 ```csharp
 public override void DeclareData(WorldLayout layout)
@@ -104,20 +108,34 @@ public override void RegisterSystems(SystemRegistry registry)
 
 ### 数据选择
 
-- 跨 Tick 被锁定、跟踪或记录命中的对象，使用普通实体表和完整 `EntityHandle`。表压缩、排序后，row 会变；generation 变化后是新对象。
+- 跨 Tick 被锁定、跟踪或记录命中的对象，使用普通实体表和完整 `EntityHandle(Index, Generation)`，没有 Kind 字段。Index 是 Registry 槽位，不是 row；用所属 World.Registry.TryResolve 获取表和当前 row。普通表 swap-back / 排序后 row 会变；释放后旧句柄失活，再分配递增 generation。
 - 短命且不需要稳定引用的弹丸、碎片或拾取物，可评估 `.Pooled()`。这类表没有实体 handle，使用 `Spawn`，不可直接把 row 当持久身份。Shooter 的敌人也采用 pooled 表，并自行维护 `ShooterEnemy.Id`；不能假设所有游戏表都能读取有意义的 handles。
-- `.LevelScoped()` 用于换关时清除的表；对应资源指定 `levelScoped: true` 并实现 `IResettableResource`。所有 world-owned `IDisposable` 资源由 world 释放。
-- 新功能尽量增加独立资源或扩展列。不要为一个可选武器修改所有旧角色结构和旧存档字节布局。
+- `.LevelScoped()` 用于 ClearLevel 时清除的表；对应资源指定 `levelScoped: true` 并实现 `IResettableResource`。ClearLevel 保留 session-scoped 数据，不替所有 system 调用 OnReset。所有 world-owned `IDisposable` 资源由 world 释放，不把同一个独占对象交给两个 World。
+- 表扩展复用同一个 TableKey，调用 `layout.Table(key, capacity).Column(columnKey)`；同表重复声明取最大容量，同列 key 合并，资源 key 重复拒绝。相同字符串重新构造的 key 不是同一 key，新增列仍可能改变保存布局。
+- 新功能尽量增加独立资源或 opt-in 扩展列。不要为一个可选武器修改所有旧角色结构和旧存档字节布局。
+
+### 身份不只是一对整数
+
+- Session/World 归属：两个 Session 的 handle 数值可以相同；View、缓存与迟到回调不能只比较 handle。
+- 运行实体与 View 实例：部分英雄状态在 resource，渲染适配会用合成 key（如 `EntityHandle(-1, 1)`）；它不是 Registry 实体，不能拿来销毁/解析权威 row。不要因参数类型叫 EntityHandle 就假设所有 actor 都注册在表中。
+- TimelineRevision：Restart / 成功恢复递增，恢复到相同 Tick 也变。它不保存，是表现失效标记。
+- LevelVersion：只在 ClearLevel 递增，未进入存档，Restart 不靠它标识；不能替代时间线版本。
+- ContentId / VisualId / schema 版本：分别说明内容、表现和保存字节含义；AccessKey.Id 只是进程内依赖编号。
+- 异步请求版本：仅真实引入异步资源后再建立，旧回调即便指向还活着的实体也可能已失效；当前没有通用 AssetLease/RequestToken。
+
+接入时先写明哪些版本变化清掉插值、输入锁存、命中提示、粒子和订阅。普通数组借用不能跨释放或缓冲轮换长期缓存。
 
 ### 调度选择
 
-固定阶段为 `ApplyCommands → Input → Decide → Move → Body → SpatialBuild → Collision → Resolve → Spawn → Snapshot`。同阶段先按 `Order`，再按注册顺序。
+固定阶段为 `ApplyCommands → Input → Decide → Move → Body → SpatialBuild → Collision → Resolve → Spawn → Snapshot`。同阶段先按 `Order`，再按注册顺序。BeginTick 在所有系统之前播放有序销毁队列并压缩 pooled 表；阶段先后是调用顺序，不是自动完成全部前阶段 Job 的屏障。
 
-1. 在 `Declare` 中声明实际读写的列、表和 Job 资源，Job 返回自己的 `JobHandle`，把收到的 dependency 传入 Schedule。
-2. 访问声明建立依赖，不会自动使后续主线程读取安全。系统内同步读取先前 Job 所写 NativeArray 时，必须完成对应 dependency；纯主线程 barrier 系统可采用现有的空声明模式，但会串行等待之前的工作，不应把它当高性能捷径。
+1. 在 `Declare` 中声明实际读写的列、表和 Job 资源，Job 返回包含全部调度工作的 `JobHandle`，把收到的 dependency 传入 Schedule。Read 等最后 writer；Write 隐含 Read，等最后 writer 和之后的 readers。TableKey 不自动涵盖所有 ColumnKey。
+2. 访问声明建立依赖，不会自动使后续主线程读取安全。系统内同步读取先前 Job 所写 NativeArray 时，必须完成覆盖这些数据的 dependency；空声明系统会成为 barrier，等待之前全部工作。EndTick 统一汇合，但不是每 Tick 只允许/只发生一次 Complete。
 3. 结构性创建 / 销毁 / 排序统一放到安全的主线程结构变更窗口，通常为 ApplyCommands 或测试中的 tick 之间。Job 申请销毁用 `SimWorld.DestroyQueueKey` 的 writer。不要因为存在名为 Spawn 的阶段，就假设可与前面的所有 Job 无条件并发改表。
-4. 由 Job 使用的资源标记 `IJobData`，让开发期访问检查覆盖它；配置和普通主线程 flow 与 NativeArray 的并发规则不同。
+4. 新增 Job 资源标记 `IJobData`，让开发期获取资源的检查覆盖它。AccessGuard 只检查声明存在，不区分 R/W，也不扫描所有字段/Job 指针；现有 SnapshotBuffer 未带此标记，写它仍必须声明 ResourceKey。配置和普通主线程 flow 不因此自动线程安全。
 5. 热路径不增加 LINQ、闭包、每对象 List、每击 Instantiate / Destroy 或无上限循环。先预分配，再明确满容量的行为。
+
+**组合失败的现状限制：** WorldComposer 已检查空/重复模块和若干布局错误，但还没有全量能力/配置预检或完整安装回滚。DeclareData 中部分分配、System.OnCreate 中途失败及后续时钟创建失败不能笼统声称全部自动清理；新 owner 要负责自己的异常路径，后续阶段 B 才提炼完整事务。
 
 详细实现：[WorldComposer](../Assets/SinglePlayerFoundation/Runtime/Composition/WorldComposer.cs)、[WorldLayout](../Assets/SinglePlayerFoundation/Runtime/World/WorldLayout.cs)、[TickPipeline](../Assets/SinglePlayerFoundation/Runtime/Scheduling/TickPipeline.cs)、[SimWorld](../Assets/SinglePlayerFoundation/Runtime/World/SimWorld.cs)。
 
@@ -133,7 +151,7 @@ public override void RegisterSystems(SystemRegistry registry)
 6. Sink 把输入锁存到自己的模拟命令；有一个拖动瞄准技能时用 `SkillInput.Latch(stored, next, aimSlot)`。Tick 消费 Pressed 后清除一次性 bit，Held 按规则保留。
 7. `hud.Interrupted` 清空整份锁存命令；`hud.SkillCanceled` 调用 `SkillInput.CancelSlot`，只清该槽，保留别的手指和移动。
 
-现成最短配置就是 [SvMobileSkills.Create](../Assets/SurvivorFoundation/Runtime/SvMobileSkills.cs)：
+现成最短配置就是 [SvMobileSkills.Create](../Assets/SurvivorFoundation/Runtime/SvMobileSkills.cs)（所需命名空间为 `SPF.Contracts` 和 `SPF.L2.Skills`）：
 
 ```csharp
 new SkillSlots(
@@ -205,6 +223,17 @@ var game = SvGameBootstrap.CreateFlyingSwordExample(config, seed: 7);
 
 ## 6. 碰撞、身份、历史和溢出先写清楚
 
+### 先写队列语义，再选容器
+
+Command 是意图，Event 是结算后的事实，Query 是不改变模拟的读取，presentation cue 是可有预算损失的提示。`EventQueue<T>` 能运输申请、候选或事实，名称不保证语义；先列生产/消费阶段、排序键、容量、overflow、保存和清空 owner。
+
+- 当前队列是固定 `ParallelQueue<T>`，不是 NativeStream；并行 producer 使用 AsWriter().TryAdd，EventQueue.TryAdd/Raw.TryAdd 是单线程路径。多 writer 入队顺序不稳定，依赖完成后才读/排序/清空。
+- `EventQueue(saved: true)` 原样保存队列顺序，不自动排序；`saved: false` 不写 payload，恢复清掉待播项。关键规则队列不能照搬视觉丢弃政策。
+- 并行过量入队时，接纳子集也可能取决于调度；只排序接纳项不能保证同一结果，需容量证明或显式确定性接纳策略。
+- DestroyQueue 的播放和保存会按完整 handle 规范化；过期/重复销毁被忽略。`Request` 是 void；需要知道是否接纳时用 writer.TryAdd。
+- Clear 的消费者拥有队列清空责任；多个 View 需独立 cursor/只读批次，不能由第一个 View 清掉所有人的公共事件。
+
+
 ### Broad phase 后仍要 narrow phase
 
 - 网格只给候选。用权威位置、半径和高度做窄相检测，不能以“进了同一个格”直接命中。
@@ -238,16 +267,20 @@ var game = SvGameBootstrap.CreateFlyingSwordExample(config, seed: 7);
 
 ## 7. 存档不是只存位置：同配置合约与生命周期
 
-正式保存使用 [SimSession.WriteSnapshot / ReadSnapshot](../Assets/SinglePlayerFoundation/Runtime/Session/SimSession.cs)。权威资源实现 `ISnapshotResource`，跨 Tick 有状态的 system 实现 `ISnapshotSystem`；重开同时实现对应 reset。
+需要完整续算的模式使用 [SimSession.WriteSnapshot / ReadSnapshot](../Assets/SinglePlayerFoundation/Runtime/Session/SimSession.cs)。权威资源实现 `ISnapshotResource`，跨 Tick 有状态的 system 实现 `ISnapshotSystem`；重开同时实现对应 reset。
 
 - 保存动作时间线、pulse、命中历史、完整目标 handle、冷却/充能、飞行阶段、已缓冲输入、玩法时钟，以及影响以后规则的计数
 - 网格和排序 scratch 可以不保存，但必须在恢复后的首次读取前从权威数据重建
 - 特效、拖尾、飘字和视觉 IK 状态一般不属于模拟存档；恢复 / 重开 / session rebind 时清掉旧视觉身份
 - `SnapshotBuffer<T>` 是呈现三缓冲，**不是**持久存档；它按 row 匹配，若要在排序/删除后稳定插值，记录并匹配身份
-- 相同模块布局、容量、seed 和不可变配置才是续算前提。新增功能的 schema magic/version、容量和规则指纹要明确校验，不能仅凭文件能读完就认为兼容
+- 相同模块布局、容量、seed、Tick 规则和不可变配置才是续算前提。现有 World format 1 检查表/资源顺序、容量及 raw 元素大小等，没有保存列 key/type 的语义身份；Pipeline 使用系统类型短名。等大小换义/换列或同名系统可能逃过校验，不能仅凭文件能读完就认为兼容
+- SnapshotGaps 只拒绝缺少 ISnapshotResource 的 IJobData；这是诊断启发式，不能证明全部可变状态已保存。Signals 就是未标 IJobData 的 Job Native mailbox，普通主线程权威状态也不会自动检测。新增功能的 schema magic/version、内容指纹、reset/rebuild/drop 策略要逐项写清
 - 飞剑 V1 指纹包含全部飞剑规则和宿主 `SvVariant`；相同飞剑参数不能跨 Classic / Guard / FlyingSwordHorde 恢复。Belt V1 校验其容量和波次配置；SkillSlots 校验完整槽定义
-- 这些 opt-in 检查没有替所有历史配置提供完整指纹，也没有提供通用旧存档迁移器。继续保留原 Classic fixture 和布局隔离测试
-- `SimSession.ReadSnapshot` 遇到非法数据会重启 session 后抛异常；直接调用底层 world 的恢复不能假设事务回滚，应遵守其 reset-before-use 合约
+- 当前 WeaponRuntime 指纹包含 VisualId 和握持/socket 参数；规则与视觉在新设计中区分，不等于旧存档已经分离这些版本。
+- 这些 opt-in 检查没有替所有历史配置提供完整指纹，也没有提供通用旧存档迁移器。继续保留已存在的 Classic fixture 和布局隔离测试；不要把同一版本内生成的 A/B 快照比较称为历史 fixture 兼容
+- Snake 的 GameState、RegionPopulations、ReplayBuffer、SnakeQuality、Signals 未实现完整保存资源合约，相关 system 也无 ISnapshotSystem；已有输入回放测试不能证明完整中途 Session 存档。其他模式的证据范围逐项见[兼容矩阵](FoundationCompatibilityMatrix.md)
+- `SimSession.ReadSnapshot` 遇到非法数据会重启 session 后抛异常，不保留恢复前的进行中对局；直接调用底层 world 的恢复不能假设事务回滚，应遵守其 reset-before-use 合约
+- raw Native 快照是同构检查点，不自动成为跨版本/跨平台长期格式。保存 envelope、稳定 schema ID 和迁移入口属于后续计划，不在旧 writer 前随意插入字段
 
 验收时从“空闲”与“飞剑在途 / 空中 / 连招缓冲 / 充能中”分别抓快照；在同配置新 Session 续跑同输入，比较完整快照。随后逐项修改容量、技能定义、伤害、速度、宿主模式，确认该功能明确保护的配置差异会被拒绝。
 
@@ -259,7 +292,7 @@ var game = SvGameBootstrap.CreateFlyingSwordExample(config, seed: 7);
 
 [SessionHost](../Assets/SinglePlayerFoundation/Runtime/Session/SessionHost.cs) 默认让下一个 Tick 与渲染重叠，并在 LateUpdate 开头完成当前工作。常规 renderer 应在它之后读取；从 Update、HUD getter、测试或直接 Render 方法读取 NativeArray 时先 `Session.Sync()`，不能仅凭“平时在 LateUpdate 调用”就省掉独立入口的保护。
 
-视图只读取完成的数据、插值和生成批次。质量开关不得改变模拟输入、AI、碰撞、伤害、掉落或随机序列。直接读取飞剑状态的参考是 [SvSwordPresentation](../Assets/SurvivorFoundation/Presentation/SvSwordPresentation.cs)。
+视图只读取完成的数据、插值和生成批次。新增质量开关不得改变模拟输入、AI、碰撞、伤害、掉落或随机序列。经典 Snake 的 AdaptiveQualityController 会改变 AI 决策间隔并写入 ReplayFrame，是明确保留的历史模拟输入，不能把它描述为纯视觉档或直接推广给新游戏。直接读取飞剑状态的参考是 [SvSwordPresentation](../Assets/SurvivorFoundation/Presentation/SvSwordPresentation.cs)。
 
 ### 方向和安全区属于具体游戏
 
@@ -324,7 +357,8 @@ Weighted BAT 入口是 **SPF → Characters → Create Or Update Weighted BAT Sc
 
 ### A. 源码与逻辑
 
-- [ ] 三程序集依赖无反向引用；模块 Id、key 名和 schema 不冲突
+- [ ] Runtime / Presentation / Game 的实际依赖无反向引用；五层职责、模块 Id、key 名和 schema 不冲突
+- [ ] 双 Session 同值 handle 不串绑；同 Tick 恢复、ClearLevel、重开、禁用/重绑、共享资源退出各有 owner 和失效断言
 - [ ] 相同配置、种子、输入序列的续算一致；不要由单平台结果推导所有 CPU/Burst 架构逐位一致
 - [ ] 开始 / 进行 / 暂停 / 胜负 / 重开 / 回菜单均有断言
 - [ ] 命中跨 row sort、swap-back、generation 回收不串目标；精确相切、零长、高速与移动目标覆盖
@@ -340,7 +374,7 @@ Tools/DotnetHarness/run.sh
 
 它生成与 asmdef 对应的 .NET 工程并运行 EditMode 逻辑测试，但 Unity / Jobs / Burst / 渲染 API 是桩。桩构建成功可以检查 C# 和程序集边界；不能证明真实 Burst 编译、Job 安全、原生分配、触摸调度、shader 或画面。
 
-本文独立的 DriftSmoke、SkillSlots 和飞剑配置片段已在 `8e81244` 源码生成的 .NET 桩程序集上编译检查（0 warning / 0 error）；DriftSmoke 的 60 tick 方法体和 SkillSlots 构造执行通过，飞剑场景创建片段只做编译检查。模块与 HUD 摘录仍依赖其注明的原类上下文。本文没有把一个完整的新游戏源文件集加入 Assets，也没有启动 Unity，不能把本次文档检查当成“新游戏在 Unity 中已运行”。
+本轮文档验证对 `62c5b7f` 的真实源文件生成 .NET 桩程序集，独立编译 DriftSmoke、SkillSlots、飞剑配置和架构扩展列片段，并核对接口及带原类上下文的模块/HUD 摘录。具体命令、执行/仅编译边界和结果见[文档验证记录](validation/FoundationSemanticDocs-20261007.json)。本文没有把完整新游戏加入 Assets，也没有在本次文档检查中启动 Unity；不能称作“新游戏原生运行通过”。
 
 ### B. 真实 Unity 与图形
 
@@ -379,7 +413,7 @@ Tools/DotnetHarness/run.sh
 
 ## 12. 提交一个新玩法时，交付这七样
 
-1. 三个运行时程序集与明确的单向依赖
+1. 按需要组织 Runtime / Presentation / Game 程序集，列出实际引用与五层责任边界
 2. 一个最小可玩入口；若有 Editor 菜单，记录其准确名称和生成场景路径
 3. 配置、容量、溢出策略、权威状态与呈现状态的清单
 4. 同输入 / 快照 / 满容量 / 生命周期 / 多指的测试

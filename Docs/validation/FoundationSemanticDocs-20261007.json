@@ -1,0 +1,179 @@
+{
+  "date_utc": "2026-10-07",
+  "stage": "P0 / Stage A source-accurate semantic and layer documentation",
+  "source_local": "62c5b7f5765a879aaf8ec9fa69bc7601ae3fa969",
+  "source_tree": "04435658d8b1c2e95e286b093405141b5fd6040b",
+  "source_remote_equivalent": "e86ee87a7691282ae7e96713c315dbec5998c414",
+  "runtime_or_asmdef_changes": false,
+  "static_validation": {
+    "documents": {
+      "Docs/Architecture.md": "bd50a8cecb5a27ec05fccd213b0ff37d17eb1c1d9766baa3c0c4220ff4974d7f",
+      "Docs/NewGameplayIntegrationRecipe.md": "1b70d5882c5e740cc8e35ffa9901aa7d8f5c89d0fd569a654c7a45e96755c18d"
+    },
+    "relative_link_occurrences": 150,
+    "markdown_table_rows_checked": 83,
+    "unique_relative_targets": 120,
+    "integration_targets": [
+      "Docs/FoundationCompatibilityMatrix.md",
+      "Docs/validation/NativePrecisionClosure-20261007.json"
+    ],
+    "menu_paths": {
+      "Assets/Create/SPF/Samples/Drift Smoke Module": "Assets/SinglePlayerFoundation/Samples/DriftSmoke/DriftSmokeModule.cs",
+      "Assets/Create/SPF/Mode Definition": "Assets/SinglePlayerFoundation/Runtime/Composition/ModeDefinition.cs",
+      "SPF/Shooter/Apply Portrait Mobile Settings": "Assets/ShooterFoundation/Editor/ShooterProjectSetup.cs",
+      "SPF/Characters/Create Or Update Weighted BAT Scene": "Assets/SinglePlayerFoundation/CharacterValidation/Editor/BatCharacterScene.cs",
+      "SPF/Shooter/Create Or Update Scene": "Assets/ShooterFoundation/Editor/ShooterProjectSetup.cs",
+      "SPF/Survivor/Create Guard Example Scene": "Assets/SurvivorFoundation/Editor/SvGuardSceneTools.cs",
+      "SPF/Survivor/Create Flying Sword Horde Scene": "Assets/SurvivorFoundation/Editor/SvFlyingSwordSceneTools.cs",
+      "SPF/Mobile Gameplay/Create Landscape Belt Scroller Scene": "Assets/SinglePlayerFoundation/MobileExamples/Editor/BeltScrollerSceneTools.cs",
+      "SPF/Mobile Skill HUD/Create Landscape Brawler Scene": "Assets/SinglePlayerFoundation/MobileExamples/Editor/MobileSkillSceneTools.cs",
+      "SPF/Mobile Skill HUD/Create Portrait Horde Scene": "Assets/SinglePlayerFoundation/MobileExamples/Editor/MobileSkillSceneTools.cs",
+      "SPF/Characters/Create Natural Motion Showcase": "Assets/SinglePlayerFoundation/MotionValidation/Editor/NaturalMotionScene.cs"
+    },
+    "source_signature_and_contextual_excerpt_checks": 4,
+    "csharp_blocks": {
+      "architecture": 3,
+      "recipe": 5
+    },
+    "errors": [],
+    "scope": "Static source/link/menu checks and snippet generation only. Build and execution results are recorded separately."
+  },
+  "snippet_validation": {
+    "compiler": ".NET SDK 8.0.425, net8.0, LangVersion 9.0, generated actual-source projects with Unity/Jobs/Burst/graphics stubs",
+    "independent_blocks_compiled": 6,
+    "blocks": [
+      "Architecture ISimSystem signature",
+      "Architecture IGameplayModule signature",
+      "Architecture ExampleKeys layout",
+      "Recipe DriftSmoke method body",
+      "Recipe SkillSlots construction",
+      "Recipe flying-sword factory/config method body"
+    ],
+    "contextual_blocks_source_matched": 2,
+    "contextual_blocks": [
+      "DriftSmoke DeclareData/RegisterSystems",
+      "BwGameBootstrap HUD binding (unrelated Joystick assignment omitted)"
+    ],
+    "executed": [
+      "DriftSmoke 60 complete ticks and snapshot read",
+      "SkillSlots constructor",
+      "ExampleKeys 128-capacity table with extension column"
+    ],
+    "compile_only": [
+      "Interface declaration copies (also source-signature matched)",
+      "Flying-sword scene creation; no Unity scene lifecycle execution"
+    ],
+    "exit_code": 0,
+    "compiler_errors": 0,
+    "warning_count": 14,
+    "warnings": "Only NU1900 vulnerability-data cache warnings from the read-only environment cache; no C# compile warnings. This check is not a package vulnerability audit."
+  },
+  "harness_validation": {
+    "generated_projects": 76,
+    "build_exit_code": 0,
+    "build_errors": 0,
+    "build_warning_count": 26,
+    "build_warnings": "Only NU1900 vulnerability-data cache warnings; no C# compile warnings.",
+    "test_exit_code": 0,
+    "passed": 1050,
+    "failed": 0,
+    "skipped": 0,
+    "assemblies": [
+      {
+        "name": "BrawlerFoundation.Tests.EditMode.dll",
+        "passed": 103,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "name": "DefenseFoundation.Tests.EditMode.dll",
+        "passed": 8,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "name": "PlatformerFoundation.Tests.EditMode.dll",
+        "passed": 10,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "name": "PuzzleFoundation.Tests.EditMode.dll",
+        "passed": 7,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "name": "RpgFoundation.Tests.EditMode.dll",
+        "passed": 63,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "name": "SPF.Tests.EditMode.dll",
+        "passed": 694,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "name": "ShooterFoundation.Tests.EditMode.dll",
+        "passed": 16,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "name": "SlingFoundation.Tests.EditMode.dll",
+        "passed": 4,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "name": "SnakeFoundation.Tests.EditMode.dll",
+        "passed": 38,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "name": "StoryFoundation.Tests.EditMode.dll",
+        "passed": 5,
+        "failed": 0,
+        "skipped": 0
+      },
+      {
+        "name": "SurvivorFoundation.Tests.EditMode.dll",
+        "passed": 102,
+        "failed": 0,
+        "skipped": 0
+      }
+    ],
+    "playmode_scope": "PlayMode assemblies compile, but their Unity tests are not executable/discovered in the .NET harness. No native or graphics rerun is claimed."
+  },
+  "reproduction": [
+    "Provision the repository-required .NET SDK and the pinned Unity.Mathematics harness dependency; use writable DOTNET_CLI_HOME and NuGet cache locations.",
+    "python3 Tools/DotnetHarness/generate.py",
+    "python3 Docs/validation/ValidateFoundationSemanticDocs.py --snippet-output \"$VALIDATION_DIR/snippets\" --report-output \"$VALIDATION_DIR/static-checks.json\"",
+    "dotnet build Tools/DotnetHarness/.gen/Harness.proj --disable-build-servers -m:1 -nologo -v minimal -p:UseSharedCompilation=false",
+    "dotnet test Tools/DotnetHarness/.gen/Harness.proj --no-build --no-restore --disable-build-servers -m:1 -nologo -v q --logger \"console;verbosity=minimal\"",
+    "dotnet build \"$VALIDATION_DIR/snippets/DocExamples.csproj\" --disable-build-servers -m:1 -nologo -v q -p:UseSharedCompilation=false",
+    "dotnet \"$VALIDATION_DIR/snippets/bin/Debug/net8.0/DocExamples.dll\"",
+    "git diff --check"
+  ],
+  "integration_notes": [
+    "The isolated documentation worktree resolved NativePrecisionClosure-20261007.json from the main worktree at de755e1, and FoundationCompatibilityMatrix.md from the parallel compatibility worktree. Integrate both documents before running the validation without --integration-root.",
+    "The validator accepts repeatable --integration-root for this isolated-worktree check; production assets and scripts are not modified.",
+    "Initial default parallel build/restore attempts exited unsuccessfully without compiler diagnostics; serial builds completed. An initial snippet wrapper lacked SPF.Contracts; the wrapper and recipe namespace guidance were corrected before the recorded final build."
+  ],
+  "audit_notes": [
+    "Independent read-only review checked identity/pooled semantics, access/dependencies/guard, queues, snapshot/versions, ownership and physical asmdefs; the missing API name and atomic writer distinction were corrected.",
+    "A second review of the complete recipe and architecture found no substantive wrong claim or broken recipe.",
+    "Historical six-round Snake benchmark values are retained as historical, incompletely source-pinned context; no new cross-platform or mobile performance conclusion is drawn."
+  ],
+  "log_sha256": {
+    "harness-build-serial.log": "e658602a955880a5313b7305830cdb2597a6fd05919d7dde63a91fa7d45daa65",
+    "harness-tests.log": "4477aa5f7a170dd0165c94a948de451323fa893e8c6102f51e6292abc97ca0e8",
+    "snippets-build-validated.log": "547b8441e42ce53fa23e6de209b4cabe0166f3fc11905d668fc3a846c72d0fea",
+    "snippets-execution.log": "06601ecacbc2efca2652d138ecb28609c3543b5cee60d43b294a93eb80b07720"
+  },
+  "native_evidence_reference": "Docs/validation/NativePrecisionClosure-20261007.json",
+  "physical_mobile": "Not tested; Android/iOS hardware, builds, touch, backend, thermal, battery and sustained-frame-time gates remain external."
+}

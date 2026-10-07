@@ -1,762 +1,395 @@
-# SinglePlayerFoundation 架构设计方案
+# SinglePlayerFoundation 架构与语义合约
 
-> Unity 2D 单机小游戏基座：高性能计算基座（数据导向 + Jobs + Burst）、网格碰撞与大/小地图衔接、规则与配置、共享层、玩法适配与接入。首个接入玩法：贪吃蛇（SnakeFoundation）。
->
-> 目标平台：移动端（iOS / Android，IL2CPP，ARM64）。
->
-> **已确认的约束**
->
-> | 项 | 决定 |
-> | --- | --- |
-> | 碰撞 | 单机**网格碰撞**（Spatial Grid），不做联机，但保留确定性回放 |
-> | 大地图 | **7500 × 7500** 世界单位 |
-> | 地图衔接 | 大地图通过**传送点衔接小地图**（PortalLink 为主，EdgeLink 保留） |
-> | 小地图 | **面积**为大地图的 **1/4**（边长减半），即 **3750 × 3750**（30 × 30 Chunk） |
-> | AI 规模 | 每张地图 **150 条 AI 蛇** |
-> | 渲染 | **GPU 驱动渲染**（Compute 剔除 / 展开 + Indirect Draw），Metal / Vulkan / GLES 3.1+ 为主路径 |
-> | 皮肤 | 支持**半透明蛇皮肤**（整蛇统一透明度，自身重叠不叠色） |
-> | 兼容性 | **必须支持 GLES 3.0**：自动降级到「数据纹理 + 索引网格」路径，数据布局与 Shader 逻辑共用 |
-> | 引擎 | **Unity 2022.3 LTS** + URP 14（2D Renderer） |
-> | 蛇身表现 | **节点精灵**与**连续条带**两种模式都要，可按皮肤切换 |
-> | 重点指标 | 计算性能、渲染带宽、GC、合批（见 §8 专项） |
+本文说明**当前源码怎样工作**，并保留蛇身、空间查询和渲染的工程取舍。源码核对基线为 `62c5b7f`（2026-10-07）；[共享基座分层与语义扩展计划](SharedFoundationSemanticExtensionPlan.md)中的后续安装事务、manifest、保存 envelope、异步租约等仍是提案，本文没有实现它们。
 
----
+运行时验收与文档校正分开：已恢复的精确远端 `e86ee87a7691282ae7e96713c315dbec5998c414` 为 **1,050 .NET、1,084 原生 EditMode、154 graphics PlayMode 通过**。原生另有 5/1 项跳过；[精确清单](validation/NativePrecisionClosure-20261007.json)记录本地/远端树等价。范围与历史失败见[本轮验证记录](MobileFoundationFollowupValidation.md)。这些结果不等于 Android/iOS 物理设备通过，也不自动覆盖以后的源码提交。九个经典玩法和四个移动示例的差异见[兼容性矩阵](FoundationCompatibilityMatrix.md)。
 
-## 0. 设计目标与性能预算
+## 0. 设计目标与证据边界
 
-| 维度 | 目标 |
+目标是移动端 Unity 2022.3 单机基座：固定 Tick、SoA 表、Jobs/Burst、有界状态、共享能力和只读表现。经典 Snake 的 7500 × 7500 大地图、3750 × 3750 小地图、每区 150 AI 是该游戏的默认设计规模，**不是所有玩法的统一容量或手机吞吐承诺**。
+
+| 原始 Snake 预算 | 用法与限制 |
 | --- | --- |
-| 帧率 | 中端机（骁龙 7 系 / A13）稳定 60 FPS，低端机 30 FPS 可降级 |
-| 规模（贪吃蛇基准） | 全图 AI 蛇 150，活跃窗口内 ≤ 60；可见身体节点 30k；活跃食物 10k；飞行物 500 |
-| 渲染 | GPU 驱动；玩法层 Draw Call ≤ 12（固定），总计 ≤ 40；上传 Tier A ≤ 50 KB / tick、Tier B ≤ 1 MB / tick；透明 overdraw 受控 |
-| 模拟 CPU 预算 | 主线程 ≤ 3 ms，工作线程总计 ≤ 6 ms / tick |
-| GC | 进入对局后 **0 GC Alloc / 帧** |
-| 内存 | 模拟数据 ≤ 32 MB，预分配 + 池化，对局中不扩容或极少扩容 |
-| 扩展性 | 新玩法只写 L2 规则 + 表现适配，不改 L1 / Runtime |
-| 可测试 | L1 / L2 为纯数据 + 纯函数，可脱离 Scene 做 EditMode 测试与性能基准 |
+| 中端 60 FPS、低端 30 FPS | 产品目标；需按设备、图形 API、热身和持续时间验收 |
+| 可见节点约 30k、活跃食物约 10k、飞行物 500 | 负载预算；实际容量读模式配置，不是无限增长许可 |
+| 主线程 ≤ 3 ms、工作线程总计 ≤ 6 ms / tick | 初始分项预算；工作线程累计时间与墙钟 Tick/SyncWait 分开记录 |
+| Tier A 上传 ≤ 50 KB、Tier B ≤ 1 MB / tick；玩法绘制 ≤ 12、总计 ≤ 40 | 早期目标；后端、可见页、材质及 UI 会改变实际调用与上传量 |
+| 模拟数据 ≤ 32 MB；稳态热路径无新增托管分配 | 需分别测加载峰值、托管、Native、纹理/GPU 和 driver；固定容量不等于零 Native 分配 |
 
-核心原则：
+新玩法应声明自己的横竖屏、安全区、目标设备、输入、容量和 CPU/GPU/内存预算。没有本项目实测支持时，不把“ECS”“GPU 驱动”“固定 Tick”或别人的案例规模当成性能结论。
 
-1. **数据与逻辑分离**：所有模拟状态存在 SoA 的 Native 容器中，逻辑是无状态 System / Job。
-2. **表现只读模拟**：Presentation 只读取快照，永不写模拟数据；模拟可在无渲染下运行（测试、快进、服务器化预留）。
-3. **固定步长 + 可复现**：固定 tick 模拟，渲染插值；随机数全部种子化，便于回放与定位 bug。
-4. **分层单向依赖**：上层依赖下层，下层永远不知道上层存在。
-5. **结构变更延迟执行**：Job 中不创建/销毁实体，统一走命令缓冲，在同步点批量应用。
+核心约束：
 
----
+1. 模拟拥有权威位置、动作、伤害、冷却、随机、掉落与胜负；表现不反向结算。
+2. Job 使用固定容量 Native 数据；结构变更由主线程在安全窗口执行。
+3. 访问声明、阶段顺序、稳定身份、满容量行为、恢复规则都是合约，不只看类型签名。
+4. 新游戏主要增加规则、配置和适配器；公共内核不认识游戏名称。已有能力无法表达的新机制仍需写代码。
+5. 新增质量档只减少表现成本。经典 Snake 的历史 AI 质量参数是显式兼容例外，见 §8.7，不把它隐去或在本次文档修改中迁移。
 
-## 1. 分层与目录（对应现有工程结构）
+## 1. 五层责任与真实程序集
 
-```
-SinglePlayerFoundation/
-├── Contracts/            # 共享契约：ID、句柄、事件、接口、配置基类（无依赖）
-├── L1Simulation/         # 计算基座：与玩法无关的通用模拟
-│   ├── Body/             # 链式身体（轨迹环形缓冲 + 节点采样）
-│   ├── Geometry/         # 圆/胶囊/AABB/射线，Burst 数学
-│   ├── Movement/         # 转向、速度、加速、边界约束
-│   └── Spatial/          # 空间网格、宽相位、查询、区域/分块
-├── L2Gameplay/           # 规则层：可配置玩法规则
-│   ├── Buffs/            # 属性修改器
-│   ├── Collision/        # 碰撞响应矩阵与规则
-│   ├── Contracts/        # L2 对外接口（玩法模块契约）
-│   ├── Elements/         # 食物、飞行物、障碍等世界元素
-│   ├── Growth/           # 成长/质量/体型
-│   ├── Props/            # 道具
-│   └── Skills/           # 技能（冲刺、射击…）
-├── Presentation/         # 表现层：只读快照 → 渲染
-│   ├── Camera/
-│   ├── Elements/
-│   └── Snakes/
-└── Runtime/              # 运行时组装
-    ├── Composition/      # 组合根：按玩法定义装配 World 与 System
-    ├── Scheduling/       # Tick 管线、Phase、Job 依赖编排
-    ├── Session/          # 对局生命周期（加载/开始/暂停/结算/重开）
-    └── World/            # SimWorld：数据容器、实体分配、命令缓冲
-```
+### 1.1 五层是逻辑责任，不是五个现成 asmdef
 
-### 依赖规则（通过 asmdef 强制）
-
-```mermaid
-graph TD
-    Contracts
-    L1[L1Simulation] --> Contracts
-    L2[L2Gameplay] --> L1
-    L2 --> Contracts
-    RuntimeWorld[Runtime.World / Scheduling] --> L1
-    RuntimeWorld --> Contracts
-    L2 --> RuntimeWorld
-    Pres[Presentation] --> Contracts
-    Pres -.只读快照.-> RuntimeWorld
-    Comp[Runtime.Composition / Session] --> L2
-    Comp --> Pres
-    Game[SnakeFoundation.Runtime 玩法] --> Comp
-```
-
-建议 asmdef 拆分（每个都开启 `allowUnsafeCode`，L1/L2 引用 Burst、Collections、Mathematics、Jobs）：
-
-| asmdef | 内容 | 允许依赖 |
+| 逻辑层 | 当前主要落点 | 边界 |
 | --- | --- | --- |
-| `SPF.Contracts` | 契约 | Unity.Mathematics, Unity.Collections |
-| `SPF.L1Simulation` | 计算基座 | Contracts |
-| `SPF.Runtime.Core` | World / Scheduling | Contracts, L1 |
-| `SPF.L2Gameplay` | 规则 | Contracts, L1, Runtime.Core |
-| `SPF.Presentation` | 表现 | Contracts, Runtime.Core（只读 API） |
-| `SPF.Runtime` | Composition / Session | 以上全部 |
-| `SnakeFoundation.Runtime` | 贪吃蛇玩法 | 以上全部 |
-| `SPF.Tests.*` | EditMode / PlayMode / 性能测试 | 对应层 |
+| 计算与存储内核 | Contracts、L1Simulation、Runtime.Core | 句柄、SoA、几何/空间、固定 Tick、Job 依赖；不实现具体胜负或场景 UI |
+| 共享玩法能力 | L2Gameplay | 动作时间线、命中历史、技能槽、武器、统计/成长、决策选择；不增加按游戏命名的全局 enum |
+| 游戏规则模块 | 各 Foundation.Runtime | 本游戏配置、资格、结算、关卡和进度；复用 World/Session |
+| 表现与平台适配器 | 公共 Presentation、Shell、各游戏 Presentation 与 Game 中的适配代码 | 输入传意图，HUD/渲染读结果；资源与设备能力归适配侧 |
+| 应用组合根 | WorldComposer、SessionHost、游戏 Bootstrap | 选择模块、创建 Session、连接输入/View、退出；SimSession 承担执行编排 |
 
-> 说明：`Runtime` 目录物理上一个，逻辑上拆成 `Core`（World、Scheduling，被 L2 依赖）和 `Composition/Session`（装配层，依赖 L2）两个 asmdef，避免循环依赖。
+组合根创建规则与适配器；游戏规则可以使用内核和共享能力，并不要求每层只能调用紧邻下一层。配置、保存和诊断是跨层协议，不能成为任意访问状态的全局服务定位器。
 
----
+### 1.2 物理依赖由现有 asmdef 决定
 
-## 2. 计算基座：ECS 选型与 Jobs 方案
+以下列出公共 **SPF 引用**；完整 Unity 包/引擎引用以各文件为准。
 
-### 2.1 选型结论
+| 程序集与实际目录 | SPF 引用 |
+| --- | --- |
+| [SPF.Contracts](../Assets/SinglePlayerFoundation/Contracts/SPF.Contracts.asmdef) | 无其他 SPF；有 Collections、Mathematics、Burst 引用，且未禁用 UnityEngine 引用 |
+| [SPF.L1Simulation](../Assets/SinglePlayerFoundation/L1Simulation/SPF.L1Simulation.asmdef) | Contracts |
+| [SPF.Runtime.Core](../Assets/SinglePlayerFoundation/Runtime/World/SPF.Runtime.Core.asmdef) | Contracts；World 下的 asmdef 与 Scheduling 下的 [asmref](../Assets/SinglePlayerFoundation/Runtime/Scheduling/SPF.Runtime.Core.asmref) 属于同一程序集 |
+| [SPF.L2Gameplay](../Assets/SinglePlayerFoundation/L2Gameplay/SPF.L2Gameplay.asmdef) | Contracts、L1Simulation、Runtime.Core |
+| [SPF.Presentation](../Assets/SinglePlayerFoundation/Presentation/SPF.Presentation.asmdef) | Contracts、L1Simulation、Runtime.Core |
+| [SPF.Runtime](../Assets/SinglePlayerFoundation/Runtime/SPF.Runtime.asmdef) | Contracts、L1Simulation、Runtime.Core、L2Gameplay、Presentation；含 Composition、Session、Persistence、Diagnostics |
+| [SPF.Shell](../Assets/SinglePlayerFoundation/Shell/SPF.Shell.asmdef) | Contracts、Runtime.Core、Runtime、L2Gameplay；另含 UI/URP 适配 |
+| 各游戏 Runtime / Presentation / Game | 按实际使用显式引用公共层；Game 连接本游戏 Runtime / Presentation；公共层不反向引用游戏 |
 
-**采用「自研轻量 SoA ECS（Archetype 固定） + C# Job System + Burst」**，不直接使用 Unity Entities 包作为核心。
+`IGameplayModule` 与 `GameplayModuleAsset` 在 SPF.Runtime，`ISimSystem` 在 Runtime.Core。游戏 Runtime 引用 SPF.Runtime 是当前声明契约的实际需要，不授权规则调用游戏 Bootstrap。Shell 和某些适配器引用 Runtime 也不等于它们拥有模拟结算权。
 
-| 方案 | 优点 | 缺点（针对本项目） |
-| --- | --- | --- |
-| Unity Entities 1.x | 生态完整、Baking、Entities Graphics | 包体与启动开销、结构变更成本高；蛇身是「变长链」，用 Entity/DynamicBuffer 表达不自然；2D + SpriteRenderer 支持弱；学习与调试成本高 |
-| **自研 SoA + Jobs + Burst** | 数据布局完全可控（蛇身连续内存）、零结构变更开销、包小、移动端可精细调优 | 需要自己实现实体分配、调度、工具（成本可控，见下文） |
+现有 asmdef 能限制程序集反向引用，但不能自动强制 NativeArray 只读、一个程序集内部的五层职责、所有资源所有权或热路径无分配。本阶段不拆程序集、不声称 Contracts 完全无 Unity 依赖。
 
-移动端 2D 小游戏的实体种类有限（蛇、食物、飞行物、道具、障碍），固定 archetype 的「表（Table）」模型最简单也最快。
+## 2. 数据、身份与 Tick 执行
 
-> 保留兼容口：`Contracts` 中定义的 System 接口与数据结构不依赖自研 World 的实现细节，未来若切 Entities 只需替换 `Runtime.Core`。
+### 2.1 SoA 选型
 
-### 2.2 World 数据模型
+当前采用自研固定布局 SoA + C# Jobs/Burst，未引入 Unity Entities。每张 [SimTable](../Assets/SinglePlayerFoundation/Runtime/World/SimTable.cs) 有固定容量和类型化 NativeArray 列；活跃范围为 `[0, Count)`。这是现有负载的数据组织选择，不能据此宣称比所有 ECS 更快、结构变更零成本，或以后只替换 Runtime.Core 就能迁移 Entities。
 
-```
-SimWorld
-├── EntityRegistry            # 句柄分配：index + generation，稀疏→稠密映射
-├── Tables（每类实体一张 SoA 表）
-│   ├── SnakeTable            # 蛇头：Position, Heading, Speed, Radius, Mass, State, BodyRange...
-│   ├── BodyStore             # 所有蛇身轨迹点的大池（Slab 分配）
-│   ├── FoodTable             # 食物：Position, Value, Kind, Radius
-│   ├── ProjectileTable       # 飞行物：Position, Velocity, Life, Owner, Kind
-│   ├── PropTable             # 道具
-│   └── ObstacleTable         # 静态障碍（构建一次）
-├── Extension Columns         # 玩法扩展列（见 §6.3）
-├── SpatialIndex              # 空间网格（每 tick 重建或增量）
-├── EventStreams              # 碰撞/吃/死亡/生成等事件（NativeStream）
-├── CommandBuffer             # 延迟的创建/销毁/迁移
-├── ConfigDatabase            # 只读 ConfigBlob 配置
-└── RandomState               # 每实体/每系统种子化 Random
-```
+[SimWorld](../Assets/SinglePlayerFoundation/Runtime/World/SimWorld.cs) 拥有表、EntityRegistry、DestroyQueue 和由模块注册的资源；空间网格、身体池、配置、游戏状态及事件队列都由模块显式登记，World 不内置一套固定 Snake/Food 表或通用 ConfigDatabase。
 
-- **稠密存储**：每张表是若干 `NativeArray<T>` 列（SoA），`Count` 之内连续，删除用 swap-back；句柄 → 稠密下标通过 `EntityRegistry` 查找。
-- **句柄**：`struct EntityHandle { int Index; int Generation; byte Kind; }`，过期句柄可安全检测。
-- **容量预分配**：由 `ModeDefinition` 声明各表容量上限，Session 开始时一次性分配，`Allocator.Persistent`。
+### 2.2 EntityHandle、row、key 与持久身份
 
-### 2.3 Tick 管线（Runtime/Scheduling）
+真实 [EntityHandle](../Assets/SinglePlayerFoundation/Contracts/EntityHandle.cs) 只有 `Index`、`Generation` 两个 int，没有 Kind。`Generation == 0` 表示 Null；还必须在所属 World 的 Registry 中解析，才能判断存活并取得 `(tableIndex, row)`。
 
-模拟固定步长（默认 30 Hz，可配 20~60），渲染帧插值。每个 tick 按 Phase 顺序执行，Phase 内 System 声明读写集，调度器自动串联 `JobHandle`：
+- `Index` 是 Registry 槽位，不是 row。普通表删除采用 swap-back；`SortRows` 也会重排，Registry 同步更新映射，完整 handle 不因换行失效。
+- `Release` 将槽位置为不存活；下次 `Allocate` 增加 generation。`Registry.Clear` 使旧活跃句柄失效。不要只存 Index，也不要用 row 做跨 Tick 锁定目标。
+- 屏幕上的 actor 不一定是 Registry 实体：部分英雄在游戏 state resource，表现可使用 `EntityHandle(-1, 1)` 等合成 key。此类 view-instance 身份不能交给 Registry/DestroyQueue 当运行实体；接入协议要注明身份来源。
+- handle 的有效域是所属 World/Session。两个 Session 可以有完全相同的数值；新 Session、重开与快照恢复都要求外部缓存重新核对归属和时间线。handle 不是跨 World 或永久存档对象 ID。
+- `.Pooled()` 表没有 Registry 实体身份，`Handles` 为 Null。用 `Spawn/SpawnRange` 创建，Job 写自己行的 `DeadFlags`，下一 Tick 起始稳定压缩保留幸存行顺序；row 仍可能改变。需要跨 Tick 身份时采用普通表，或明确实现并验证独立 ID。
+- 容量满时 `CreateEntity` 返回 Null 且 row 为 -1，`Spawn` 返回 -1；`SpawnRange` 可能部分成功，检查 added。失败计数是诊断，不是重试/补偿政策。
+- [AccessKey.Id](../Assets/SinglePlayerFoundation/Contracts/AccessKey.cs) 是按创建顺序分配的进程内密集编号，用于调度。key 通常为 `static readonly`；名字用于诊断及部分保存标记。相同字符串创建的新 key 仍是不同 key；Id 不能充当跨进程 schema/content ID。
+- 模块默认 Id 是类型名；模块、内容、视觉、schema 版本和运行实体分别命名。长期稳定 ID/旧名迁移属于显式协议，尚无统一目录自动管理。
 
-```
-Tick N
- ├─ P0  ApplyCommands      (主线程) 应用上 tick 的结构变更、生成、销毁、迁移
- ├─ P1  Input              (主线程) 玩家输入 → 目标方向/技能请求
- ├─ P2  Decide             (Job)    AI 决策（分时切片，见 §4.2）
- ├─ P3  Steer & Move       (Job)    转向、速度、加速、边界规则
- ├─ P4  Body               (Job)    轨迹写入、身体节点采样、长度变化
- ├─ P5  SpatialBuild       (Job)    网格重建（计数排序）
- ├─ P6  Collision          (Job)    宽相位 + 窄相位 → 碰撞事件流
- ├─ P7  Resolve            (Job)    规则层：击杀、吃、拾取、伤害、Buff
- ├─ P8  Spawn & Replenish  (Job)    食物补充、死亡掉落、飞行物发射 → 写命令缓冲
- ├─ P9  Snapshot           (Job)    写表现增量包（GPU 驱动）/ 可见实例（Tier B）
- └─ Sync                   (主线程) Complete，交换快照，派发主线程事件（音效/VFX/UI）
+### 2.3 Tick 管线与访问声明
+
+[SimPhase](../Assets/SinglePlayerFoundation/Contracts/SimPhase.cs) 的顺序为：
+
+```text
+BeginTick: PlaybackDestroys → CompactPools
+ApplyCommands → Input → Decide → Move → Body → SpatialBuild
+              → Collision → Resolve → Spawn → Snapshot
+EndTick: 完成所有待执行 Job → 各 ISyncResource.OnSync
 ```
 
-关键点：
+Phase 内按 Order，再按注册次序稳定排序。Phase 是**调用顺序**，不是自动完成所有前阶段 Job 的屏障；互不冲突的访问集可以重叠。`Spawn` 名称也不自动授予安全改表权限。
 
-- **一次 Complete**：整个 tick 构成一条依赖链，只在 Sync 点 `Complete()`；主线程在此期间可做表现插值。
-- **Job 粒度**：移动端 worker 数少（4~6），`IJobParallelFor` 的 `innerloopBatchCount` 取 64~256，避免大量小 Job；小规模数据（< 512）直接 `IJob` 单线程 Burst 更快。
-- **读写声明**：`ISimSystem.Declare(ref AccessBuilder)` 声明读/写哪些列，调度器据此并行无冲突的 System，并在 Editor 下做安全检查。
-- **帧预算自适应**：若检测到连续超预算（热降频），自动降低 AI 频率 / 远景 LOD 频率，而不是降低模拟 tick。
+真实系统签名如下（声明摘录，定义位于 [ISimSystem.cs](../Assets/SinglePlayerFoundation/Runtime/Scheduling/ISimSystem.cs)，不是要在游戏里重新声明一个同名接口）：
 
 ```csharp
-// Runtime.Core（SPF.Runtime.Scheduling）
 public interface ISimSystem
 {
     SimPhase Phase { get; }
-    int Order { get; }                                         // Phase 内顺序
-    void Declare(AccessDeclaration access);                    // 读写集（构建时调用一次）
+    int Order { get; }
+    void Declare(AccessDeclaration access);
     void OnCreate(SimWorld world);
     JobHandle OnTick(in SimContext context, JobHandle dependency);
     void OnDestroy(SimWorld world);
 }
 ```
 
-> 实现说明（M1）：`ISimSystem`、`SimContext` 依赖 `SimWorld`，因此放在 `Runtime.Core`；`Contracts` 只保留无依赖的基础类型（`EntityHandle`、`TableKey / ColumnKey<T> / ResourceKey<T>`、`SimPhase`、`TickTime`、`SimRandom`、`ParallelQueue<T>`）。`IGameplayModule` 在 `Runtime.Composition`。
+[AccessDeclaration](../Assets/SinglePlayerFoundation/Runtime/Scheduling/AccessDeclaration.cs) 与 [DependencyTracker](../Assets/SinglePlayerFoundation/Runtime/Scheduling/DependencyTracker.cs) 的规则：
 
-### 2.4 Burst / 移动端注意事项
+1. Read 等最后一个 writer；Write 隐含 Read，等最后 writer 及之后的 readers。列、表和资源 key 是独立项；声明表不自动覆盖它的全部列，TableKey 用于 handles/pooled dead flags 等结构数据的约定。
+2. 把输入 dependency 传给 Schedule，并返回包含所有新工作的 handle。漏传、漏返或漏声明都会破坏依赖图。
+3. 主线程在 OnTick 中读写前序 Job 数据时，要先 `dependency.Complete()`，前提是访问集已覆盖这些数据；拿到依赖不等于它已经完成。
+4. 空声明被 [TickPipeline](../Assets/SinglePlayerFoundation/Runtime/Scheduling/TickPipeline.cs) 视作 barrier：先完成之前全部工作，后续依赖它。已有主线程 flow/生成系统使用该方式；它是正确性选择，也可能减少并行。
+5. [AccessGuard](../Assets/SinglePlayerFoundation/Runtime/World/AccessGuard.cs) 在开发期 OnTick 获取列和 `IJobData` 资源时检查是否声明；它不区分读取还是写入，也不扫描 Job 内所有内存访问、直接缓存的 NativeArray、Handles 或普通托管对象。不是完整静态/运行时权限系统。
+6. `SnapshotBuffer<T>` 当前未实现 IJobData，但写它的系统仍须显式声明其 ResourceKey；不要把“guard 没报错”当成“不必声明”。
 
-- 全部热路径 `[BurstCompile(FloatMode = FloatMode.Fast, FloatPrecision = FloatPrecision.Low)]`（需确定性回放的系统用 `Deterministic` 另行标注）。
-- 只用 `Unity.Mathematics`（`float2`、`math.*`），避免 `Vector2`。
-- 禁止在 Job 中使用托管对象；配置用自研只读 Blob（一块连续 `UnsafeUtility.Malloc` 内存 + 偏移指针，不依赖 Entities 包）或只读 `NativeArray`。
-- 数据类型压缩：颜色/种类用 `byte`，角度可用 `half`，表现快照位置用 `float2`（不压缩，避免抖动）。
-- `NativeArray` 使用 `NativeArrayOptions.UninitializedMemory` 创建临时缓冲。
-- IL2CPP + Burst AOT，Android 开 ARM64 + `Burst Target: ARMV8A_AARCH64`。
+创建、销毁、ClearLevel、排序、Slab resize 和释放只能在没有相关在途 Job 的主线程安全窗口进行；一般放在 ApplyCommands 或已 Sync 的 Tick 之间。入口没有统一 phase 锁来替调用者强制这一点。Job 删除普通实体通过 `SimWorld.DestroyQueueKey` 的 writer 申请，下一 Tick 起始播放；尚无通用结构命令缓冲自动涵盖创建/迁移/所有规则命令。
 
----
+`EndTick` 是统一汇合点，但不能说整个 Tick 只 Complete 一次：barrier、主线程访问、诊断 `SerialProfiling` 都可能提前完成。`BeginTick` 调度异常会汇合已登记工作再报告；这不是完整 Session 安装事务，见 §6.1。
 
-## 3. 空间网格碰撞与大 / 小地图衔接
+### 2.4 Session 时钟与读取边界
 
-> 需求中的「网络碰撞」按「**网格碰撞**（Spatial Grid）」理解：单机场景，核心是高效的空间划分与跨地图衔接。
+[SessionSettings.Default](../Assets/SinglePlayerFoundation/Runtime/Composition/ModeDefinition.cs) 为 30 Hz、每帧最多 3 tick、DestroyQueue 4096；模式可使用其他配置。`ManualClock` 模式只消费 `RequestTicks`，适合回合/事件驱动游戏；`Step()` 是忽略运行时钟的单步测试/回放入口。
 
-### 3.1 世界坐标与分块（按 7500 × 7500 定标）
+[SessionHost](../Assets/SinglePlayerFoundation/Runtime/Session/SessionHost.cs) 默认帧末启动下一 Tick，在下一帧 LateUpdate 开头 Sync。后续 renderer 可读取完成的数据；Update、HUD getter、测试、独立 Render 入口访问 Native 数据前仍应显式 `Session.Sync()`。不要把同一 Session 同时交给 Host 和另一套 Update 循环推进。
 
-单位约定：1 世界单位 ≈ 1 米；蛇身半径 0.5 ~ 4；镜头可视范围约 40 ~ 120 单位宽（随体型缩放）。
+只有同种子、配置、输入、消费次序和受测构建的回归证据支持可复现声明。当前不少 Job 使用 FloatMode.Fast；固定 Tick、换 FloatMode 或使用 Burst 都不自动给出跨 CPU/平台位级确定性，本文不提供“切 Deterministic 即可、代价 5–15%”的承诺。
 
-| 参数 | 取值 | 说明 |
-| --- | --- | --- |
-| ChunkSize | **125** | 7500 / 125 = **60 × 60 = 3600 个 Chunk**，整除无残块 |
-| 细网格 CellSize | **4**（2 的幂倍数可调） | ≈ 2 × 常见碰撞半径 |
-| 活跃窗口 | **1024 × 1024 单位 = 256 × 256 Cell** | 覆盖镜头 + 两侧余量；Cell 头数组 256 KB |
-| 粗网格 | 每个 Chunk 一个桶（60 × 60） | 给 Near / Dormant LOD 的远距离 AI 使用 |
+## 3. 空间查询与 Snake 大 / 小地图
 
-- **Chunk** 是加载、生成、LOD、食物补充的基本单位。
-- **坐标**：7500 量级下 float 精度约 0.0005，**不需要 Floating Origin**，直接用全局 `float2`，省掉 rebase 成本（小地图各自独立坐标系）。
-- **全图细网格不可行**：7500 / 4 = 1875² ≈ 350 万 Cell，仅头数组就 14 MB 且每帧清零昂贵，因此采用「**活跃窗口细网格 + 全图粗网格**」两级结构（见 §3.2）。
-- **食物不做全图实例化**：若全图按每 100 m² 一颗，约 56 万颗，内存与补充成本不可接受。只有 Active / Near Chunk 内实例化食物；Dormant Chunk 只保存「食物数量 + 总价值」，激活时按种子确定性地展开。
-- **AI 蛇全图存在**（如 150 条），但只有活跃窗口内的走完整模拟，其余按 LOD 降频（§3.4）。
+### 3.1 通用机制与玩法配置分开
 
-### 3.2 空间网格（L1Simulation/Spatial）
+共享 L1 提供几何、[SpatialGrid](../Assets/SinglePlayerFoundation/L1Simulation/Spatial/SpatialGrid.cs)、[CellListGrid](../Assets/SinglePlayerFoundation/L1Simulation/Spatial/CellListGrid.cs) 等有界存储/查询。网格给候选，窄相才决定接触。形状 bounds 要包含目标半径与必要移动范围；切线、负坐标、零长扫掠、相向高速、最大半径、越界和容量满都需测试。
 
-采用**两级网格：活跃窗口稠密细网格 + 全图粗网格，均用计数排序构建**：
+后端等价至少包括集合、边界、稳定平局、容量与访问次序敏感计算。查询集合相同不代表浮点分离力、有限候选或最早命中结果相同；密集全重叠也不能保证近似线性。四叉树与 AI 候选的范围见[碰撞基准](CollisionBroadphaseBenchmarks.md)，不因数据结构名称更换默认。
 
-- 细网格覆盖活跃窗口，`256 × 256` Cell，`cellSize = 4`；Cell 下标 = `(cx - originX) + (cy - originY) * 256`，越界即归入粗网格。
-- 每 tick 重建（数据量 3~5 万级，重建比增量维护更快、无碎片）：
-  1. `ComputeCellJob`（并行）：每个碰撞体算 cellIndex。
-  2. `CountJob`：直方图（每线程局部计数后归并，避免原子竞争）。
-  3. `PrefixSumJob`：前缀和得到每个 Cell 的起始偏移。
-  4. `ScatterJob`：写入 `SortedEntries`（包含 position、radius、owner、layer，**冗余存储以提升缓存命中**）。
-- 查询：`ForEachInCircle / ForEachInAABB / Raycast`（DDA 遍历网格），全部 Burst 静态函数。
-- 大物体（半径 > cellSize）写入多 Cell 或走独立的「大物体列表」。
-- 静态障碍单独一张**静态网格**，只在 Chunk 加载时构建。
-- **粗网格（全图 60 × 60 Chunk 桶）**：窗口外的蛇只以「头 + 每 N 个节点抽样」写入粗网格，供 Near LOD 做头对头 / 头对障碍的粗碰撞和 AI 远距离感知；同样用计数排序构建，数据量很小。
-- 窗口跟随玩家滚动（带迟滞，移动超过 1 个 Chunk 才滚动）。因为细网格每 tick 全量重建（256 KB 计数数组清零 < 0.02 ms），滚动只需更新窗口原点，无增量维护成本；落在窗口外的实体自动归入粗网格。
+### 3.2 当前 Snake 网格
 
-碰撞层（Layer）：`SnakeHead / SnakeBody / Food / Projectile / Prop / Obstacle / Trigger`，按层分开排序或在 entry 中带 layer mask，查询时按 mask 过滤。
+[SnakeGameModule](../Assets/SnakeFoundation/Runtime/SnakeGameModule.cs) 实际安装：
 
-### 3.3 碰撞检测流程（L1 检测，L2 响应）
+- BodyGrid：活跃窗口内的增量 CellListGrid，节点锚定轨迹点；ItemGrid：食物/道具增量 CellListGrid，使用独立 ChangeLog。
+- HeadGrid：覆盖最大 Region 的 SpatialGrid，粗格按 ChunkSize；不是所有网格每 Tick 计数排序重建。
+- 默认 ChunkSize 125，大地图 60 × 60 Chunk、小地图 30 × 30。细窗口范围和 body/item cell 尺寸由 Capacity 配置，不能由早期设计图写死。
+- 原地列写入不会自动增加 SimTable.Version；需要 `MarkChanged` 或消费者自己的更新契约。各消费者独立清理自己的 ChangeLog。
+- 窗口变化到重建之间，读者使用网格实际内容的 BuiltOrigin，不能只取尚未应用的新 Origin。
 
-```
-L1: Detect（与玩法无关）
-  for each 主动体（蛇头、飞行物）:
-      查询邻近 Cell → 圆/胶囊窄相位 → 写 CollisionEvent{A, B, LayerA, LayerB, Point}
-L2: Resolve（规则层）
-  按 CollisionMatrix[layerA, layerB] → ResponseId → 规则处理（击杀、吃、伤害、反弹…）
-```
+只让主动体发起适当查询；身体/食物作为候选数据，依照玩法过滤自己、阵营与保护状态。统一的所有玩法 CollisionMatrix/ResponseId 注册器尚不存在；Snake 在 ContactSystem/ResolveSystem 中执行自己的规则。
 
-- 只让「主动体」发起查询（蛇头 ~100、飞行物 ~500），被动体（身体、食物）只进网格，查询次数与主动体数量成正比，而非 O(n²)。
-- 自身身体过滤：entry 中存 `OwnerId`，前 K 个节点跳过（避免头撞紧邻颈部）。
-- 输出使用 `NativeStream`（并行写、无锁），L2 按事件顺序消费。
-- 同一 tick 事件的冲突解决（两蛇互撞、同一食物被多蛇吃）由 L2 规则按确定性优先级决定（如 EntityIndex 小者先）。
+### 3.3 当前地图衔接
 
-### 3.4 大 / 小地图衔接（Region & Link）
+[RegionSystem](../Assets/SnakeFoundation/Runtime/Systems/RegionSystem.cs) 在 ApplyCommands 消费 PortalRequest，平移玩家头部与整条轨迹、更新 Region/保护时间；[WindowSystem](../Assets/SnakeFoundation/Runtime/Systems/WindowSystem.cs) 按活动区域流入/流出食物和道具。
 
-```
-WorldGraph
-├── Region（一张地图：大地图 / 小地图 / 副本房间）
-│   ├── Bounds, ChunkSize, BoundaryRule: Wall | Wrap | Kill | Open
-│   ├── SpawnProfile（食物密度、AI 数量、元素表）
-│   └── Links[]
-└── Link（衔接方式）
-    ├── EdgeLink：Region A 的某条边 ↔ Region B 的某条边（无缝接壤）
-    └── PortalLink：A 中的传送点 ↔ B 中的落点（带过渡）
-```
+- 非活动 Region 的蛇保留在同一组表与 BodyStore 中，按 Region 标记冻结；食物/道具以 ChunkPopulation 保留统计，再按窗口展开。
+- 7500 × 7500 与 3750 × 3750 使用同类机制，后者面积是前者 1/4；不是小房间特例。
+- 活跃窗口外蛇的低频/简化行为由具体系统决定。不能把全部 Dormant 蛇描述为已经聚合成统计人口。
+- `WorldGraph/EdgeLink` 无缝连接、异步预加载、通用 Migrate 命令、RegionSnapshot 压缩/离线推进是早期备选设计，**不是当前公共 API**。未来需求应独立验证，不能照图直接调用。
 
-- **无缝接壤（EdgeLink）**：两个 Region 在 WorldGraph 中拼成同一坐标空间，活跃窗口跨越边界时同时加载两侧 Chunk；网格与碰撞天然连续。
-- **传送衔接（PortalLink，主方案）**：7500 大地图上分布若干传送点，连接 **3750 × 3750** 的小地图：
-  1. 预加载目标 Region 的 Chunk（异步、分帧）。
-  2. 同步点执行 `Migrate` 命令：实体（蛇头 + 身体轨迹）坐标变换到目标 Region，身体轨迹整体平移。
-  3. 相机与表现做过渡（淡入淡出 / 缩放）。
-  4. 源 Region 写入 `RegionSnapshot` 冻结，保留其状态以便返回（见下文）。
-- **模拟 LOD**（按 Chunk 到玩家的距离）：
+## 4. 规则、配置与共享能力
 
-| 等级 | 范围 | 模拟方式 |
-| --- | --- | --- |
-| Active | 活跃窗口 | 完整 tick：AI、移动、身体、碰撞 |
-| Near | 窗口外一圈 | 降频（1/2~1/4 tick）、粗碰撞（仅头对头、头对障碍） |
-| Dormant | 更远 | 统计化模拟：只维护数量与总质量，进入 Active 时按统计结果实例化 |
-| Frozen | 非当前 Region | 完全不模拟，只保存 `RegionSnapshot` |
+### 4.1 Authoring、冻结配置、运行状态
 
-**小地图不是「小房间」**：3750 × 3750 本身就远大于活跃窗口（1024），因此小地图与大地图**完全走同一套机制**（Chunk、活跃窗口细网格、粗网格、模拟 LOD），只是 Region 参数不同：
+具体游戏采用 Bake、克隆、值结构或固定定义，不能假设所有配置都已深冻结。Snake 使用 [SnakeConfig.Bake](../Assets/SnakeFoundation/Runtime/SnakeConfig.cs) 创建 [SnakeRuntimeConfig](../Assets/SnakeFoundation/Runtime/SnakeRuntimeConfig.cs)，包含按值传给 Job 的 SnakeSettings 和 NativeArray；其他模式可采用克隆或值结构。SnakeRuntimeConfig.Capacity 仍引用 source section，RpgRuntimeConfig 也保留若干源引用；运行字段可变性要逐项审计。它们不是统一自研 ConfigBlob 数据库，也没有类型层面统一强制不可变。
 
-| 参数 | 大地图 | 小地图 |
-| --- | --- | --- |
-| 尺寸 | 7500 × 7500 | 3750 × 3750 |
-| Chunk | 60 × 60 = 3600 | 30 × 30 = 900 |
-| 粗网格 | 60 × 60 桶 | 30 × 30 桶 |
-| 细网格（活跃窗口） | 256 × 256 Cell | 256 × 256 Cell（共用内存） |
-| AI 蛇 | 150 | 150 |
-| 食物密度 / 元素表 | SpawnProfile A | SpawnProfile B（可更密集、更高价值） |
+- Authoring 可以是 ScriptableObject 和资源引用；配置 owner 负责校验有限值、容量及整数乘法溢出。
+- 编译/冻结后的规则定义由模拟读取；不要在 Job 内读取可变 ScriptableObject，也不要假设修改原 SO 会更新已启动的 Session。
+- HP、冷却、动作、命中历史、计数器和 RNG 状态属于运行状态；不能当常量配置遗漏保存/重置。
+- 内容 ID 与 VisualId 各有命名空间；AccessKey.Id 和 row 不是稳定内容标识。
+- 通用 CSV/Excel 导入、Default→Mode→Region→Difficulty 合并、配置热重载到下一 Tick、全模式完整内容指纹都未作为公共协议实现。
 
-**同一时刻只运行一个 Region**，另一个冻结：
+### 4.2 AI 与规则的实际分工
 
-- 各 Region **共用同一套实体表、BodyStore、网格、渲染缓冲**（容量按两者最大值预分配），切换时不重新分配内存。
-- 离开的 Region 压缩为 `RegionSnapshot`：150 条蛇的头部状态 + 轨迹（按上限 150 × 1024 点 × 8 B ≈ 1.2 MB）+ 每 Chunk 食物统计（900~3600 × 8 B）。**食物实例不保存**，返回时按统计和种子重新展开。
-- 冻结期间可选「离线推进」：返回时按离开时长对 AI 蛇做一次粗略的统计推进（成长、死亡补员），避免世界完全静止。
-- 切换流程分帧进行：T-N 帧开始解压目标快照与预生成窗口内食物 → 切换帧只做「表数据交换 + 玩家迁移 + 相机过渡」，切换帧耗时 ≤ 1 帧预算。
+Snake 的 [AISystem](../Assets/SnakeFoundation/Runtime/Systems/AISystem.cs) 位于游戏 Runtime，使用低频效用选择与每 Tick 12 方向上下文转向，读取上一 Tick 网格；不是所有 AI 都在 L2Gameplay。共享 [DecisionTree](../Assets/SinglePlayerFoundation/L2Gameplay/AI/DecisionTree.cs) 是有界 reactive selection，不是管理长时任务的完整 BehaviorTree。
 
----
+树/评分选择不能接管攻击前摇、承诺、打断、恢复和移动状态的所有权。增加共享 AI 时保留惰性随机消费、稳定平局和失效时机，比较包括感知、构建、查询、等待与完整 Tick 的成本。
 
-## 4. 规则与配置
+### 4.3 已有能力与内容边界
 
-### 4.1 配置管线
-
-```
-ScriptableObject（策划编辑，Editor）  →  Bake  →  ConfigDatabase（ConfigBlob，只读，Burst 可读）
-         ↑ 可选：表格(CSV/Excel) 导入
-```
-
-- 所有运行时配置在 Session 开始时烘焙为自研 `ConfigBlob`（连续非托管内存 + 相对偏移，Burst 直接读），Job 中直接访问，零托管开销。
-- 配置按 ID 引用（`ConfigId<T>` 强类型整数），不在运行时用字符串。
-- 分层覆盖：`Default → Mode → Region → Difficulty`，烘焙时合并。
-- Editor 下支持热重载：修改 SO → 重新烘焙 → 下一 tick 生效（便于调参）。
-
-主要配置表：
-
-| 配置 | 内容 |
+| 当前能力 | 实际落点 / 接入边界 |
 | --- | --- |
-| `MovementConfig` | 基础速度、冲刺速度、转向速率（随体型衰减曲线）、加速度 |
-| `BodyConfig` | 节点间距、半径-质量曲线、最小/最大长度 |
-| `AIProfile` | 性格参数（贪婪、胆量、攻击性）、感知半径、决策间隔、避让探针 |
-| `FoodConfig` / `SpawnProfile` | 食物种类、价值、权重、每 Chunk 目标密度、补充速率、死亡掉落比例 |
-| `ProjectileConfig` | 速度、寿命、半径、追踪参数、命中效果 |
-| `CollisionMatrix` | Layer × Layer → ResponseId |
-| `BuffConfig` / `SkillConfig` / `PropConfig` | 修改器、冷却、消耗、效果列表 |
+| 成长、Buff、道具、基本技能参数 | L2 的 GrowthCurve、BuffSet、PropDefinition、SkillDefinition；具体拾取/伤害/冷却由游戏消费 |
+| 动作与输入窗口 | ActionTimeline、TickInputBuffer、ActionPoseClock；不自动执行动画或任意技能图 |
+| 稳定命中与形状 | HitHistory、CombatShapes、CombatSweep、GroundCombatQueries；资格/伤害/目标排序由游戏决定 |
+| 移动技能门 | SkillSlots；槽位是输入/充能门，不拥有全部技能规则 |
+| 权威武器 | WeaponProfile/WeaponRuntime 与只读 WeaponViewState；当前动作 family 与单 owner 等边界见[武器合约](AuthoritativeWeapons.md) |
+| 其他品类共用 | PlatformerMotor、StatSheet、Progression、WaveSchedule、Dialogue/Localization；按真实消费者使用 |
 
-### 4.2 AI 行为（L2Gameplay，Burst）
+Snake 飞行物由游戏系统移动、扫掠和结算；飞剑、Belt 高度/纵深、Shooter 光束有各自的显式能力。不能把“统一 ProjectileTable 支持任意追踪/抛物/回旋”和通用 EffectOp 执行器当成已经实现。
 
-两层结构，均在 Job 中运行：
+## 5. Command、Event、Query 与有界队列
 
-1. **决策层（低频，Utility AI）**：每个 AI 每 N tick 决策一次（按 `index % N == tick % N` 分时切片），评估候选意图并打分：
-   - `Wander`（漫游）、`SeekFood`（寻食，选价值/距离最优的食物簇）、`Flee`（逃离更大蛇）、`Attack/Encircle`（拦截、绕圈围杀较小蛇）、`Boost`（冲刺追击或逃跑）。
-   - 输出：`AIIntent { Kind, TargetPos, TargetEntity, WantBoost }`。
-2. **转向层（每 tick，Steering）**：
-   - 目标方向 = 意图方向 + **自动避让**：
-     - 在前方扇区放 3~5 根探针（射线/圆扫），在空间网格上查询身体、障碍、边界。
-     - 基于「危险度」的上下文导向（Context Steering）：将 8/16 个方向分别打 *兴趣值* 和 *危险值*，取兴趣 - 危险最大方向，天然避免振荡。
-   - 受 `turnRate` 约束平滑转向。
+### 5.1 语义先于容器名称
 
-感知只通过空间网格查询，AI 数量翻倍时成本近似线性。
+- Command：移动、攻击、换装、重开等意图，可以拒绝、取消或到期；UI 锁存，Tick 授权。
+- Event：已接受技能、已结算伤害、已死亡等事实，应在对应状态改变之后产生。
+- Query：读取状态或候选，不推进计时/消费模拟 RNG。空间候选不等于命中。
+- Presentation cue：从事实派生的提示，可按预算合并、丢弃或过期；不驱动权威结算。
 
-### 4.3 吃食物与补充食物
+[EventQueue<T>](../Assets/SinglePlayerFoundation/Runtime/World/EventQueue.cs) 只是运输容器，里面可以放命中申请、候选或事实；名字不自动赋予事实语义。当前使用固定容量 [ParallelQueue<T>](../Assets/SinglePlayerFoundation/Contracts/Collections/ParallelQueue.cs)，不是 NativeStream 或托管全局事件总线。
 
-- **吃**：`SnakeHead × Food` 碰撞事件 → L2 `EatRule` → 增加质量（Growth）→ 命令缓冲销毁食物，事件发给表现（吸入动画）。
-  - 优化：吸附半径（magnet）内食物向头部飞行的表现由 Presentation 做，模拟只判定进入吃半径。
-- **补充（Replenish）**：以 Chunk 为单位维护 `targetDensity` 与当前数量，每 tick 只处理少量 Chunk（轮询），不足则按 `SpawnProfile` 权重在 Chunk 内随机生成（避开障碍）。
-- **死亡掉落**：蛇死亡时沿身体节点按质量比例生成食物（可合并为大颗粒，控制上限）。
-- **冲刺掉质量**：冲刺时按速率减少质量，并在尾部生成小食物。
+### 5.2 生产、规范化、消费、清空
 
-### 4.4 飞行物（Projectile）
+每条队列需要明确生产/消费阶段、owner、容量、排序键、溢出政策、保存及清空责任：
 
-- 统一 `ProjectileTable`：直线、追踪（有限转向）、抛物/回旋（参数化轨迹）。
-- 每 tick 移动 → 以「线段 vs 网格」扫掠检测（防高速穿透）→ 命中事件 → L2 `ProjectileHitRule`（伤害、切断蛇身、减速 Buff 等）。
-- 寿命结束/命中后回池（swap-back 删除，无 GC）。
+- 多 writer 只能用 `AsWriter().TryAdd` 的原子索引路径；`EventQueue.TryAdd` 和 `Raw.TryAdd` 是单线程路径，不能混为并行 writer。容量满返回 false 并计数，不扩容。入队顺序依赖调度；容量不足时被接纳的子集也可能依赖竞争，事后排序不能补救这一点。
+- 完成生产者依赖后才读 AsArray、排序或 Clear。`Raw` 供单消费者 Job 读写；它不是独立副本。
+- EventQueue 不自动排序。需要确定性的游戏在消费/保存前自行规范化；`saved: true` 默认保存当前项/溢出，不替你选择排序键。
+- `saved: false` 不写事件 payload；恢复时清空待播项，外层资源顺序/标记仍参与 World 保存。它不是可以免去清空和生命周期处理的永久总线。
+- Clear 将本轮 overflow 累加至 TotalOverflow 再清队列；使用 Raw.Clear 的消费者需要自己理解计数责任。不要声称所有拒绝计数天然饱和、所有关键事件自动重试。
+- DestroyQueue 是特例：播放和保存前按完整 handle 排序，重复/过期请求播放时忽略；`Request` 返回 void，不能当作已接纳确认，需要结果时用 writer.TryAdd。超容量的关键终态仍由玩法决定补偿策略。
+- 多 View 不能轮流 Clear 同一公共流而期待各自收到事件；需要已有只读批次/序列游标，或明确单消费者转发。通用多订阅者事件系统仍未提供。
 
-### 4.5 Buff / 技能 / 道具
+HitHistory 的写入顺序为 **Check → 成功入队 → TryRecord**，每 scope 单 writer；队列满不提前消耗 history/穿透，history 满拒绝新目标。该顺序不是多 writer 事务。
 
-- **Buff**：每实体固定容量的修改器槽位（如 8 个，`FixedList64Bytes<BuffInstance>`），属性 = Base × Π(乘) + Σ(加)，每 tick 在一个 Job 中汇总写入 `EffectiveStats` 列，其他系统只读 `EffectiveStats`。
-- **技能**：数据驱动 `SkillConfig`（冷却、消耗、效果列表），效果是有限种类的 `EffectOp`（发射飞行物、加 Buff、瞬移、生成元素…），执行在 Job 中按 op 分派（`switch`，Burst 友好）。
-- **道具**：场景中的可拾取元素，拾取后转为 Buff 或技能充能。
+## 6. 模块接入、生命周期与所有权
 
----
+### 6.1 真实模块与组合入口
 
-## 5. 共享层（Contracts & Shared）
-
-共享层是所有玩法、所有层都能引用的最小公共集合，保持**无状态、无 Unity 场景依赖**：
-
-| 分类 | 内容 |
-| --- | --- |
-| 标识 | `EntityHandle`、`ConfigId<T>`、`LayerId`、`RegionId`、`ChunkCoord` |
-| 事件 | `CollisionEvent`、`EatEvent`、`DeathEvent`、`SpawnEvent`、`MigrateEvent` 等 blittable 结构 |
-| 接口 | `ISimSystem`、`IGameplayModule`、`IPresentationAdapter`、`IInputSource`、`IConfigBaker` |
-| 数学/几何 | 圆、胶囊、AABB、射线、线段扫掠、角度工具（Burst 兼容） |
-| 容器 | `SlabAllocator`、`RingBuffer`、`NativeBitSet`、双缓冲 `Snapshot<T>` |
-| 随机 | `SimRandom`（基于 `Unity.Mathematics.Random`，按 seed + entity + tick 派生，可复现） |
-| 服务 | 对象池、日志（条件编译）、Profiler Marker 统一命名 |
-
-共享的另一层含义是**跨玩法复用**：L1 全部、L2 中的 Collision/Buffs/Elements/Growth/Props/Skills 都设计为「贪吃蛇无关」的通用模块，其他玩法（如弹幕生存、吞噬球球）直接组合复用。
-
----
-
-## 6. 玩法适配与接入
-
-### 6.1 玩法模块契约
+[IGameplayModule](../Assets/SinglePlayerFoundation/Runtime/Composition/IGameplayModule.cs) 仅包含以下成员：
 
 ```csharp
 public interface IGameplayModule
 {
     string Id { get; }
-    void DeclareData(ref WorldLayoutBuilder layout);     // 需要的表、容量、扩展列
-    void BakeConfig(ref ConfigBakeContext ctx);          // 烘焙配置
-    void RegisterSystems(ref SystemRegistry registry);   // 注册 System 到 Phase
-    void RegisterRules(ref RuleRegistry rules);          // 注册碰撞响应、事件处理
-    void RegisterPresentation(PresentationRegistry pres);// 表现适配器
+    void DeclareData(WorldLayout layout);
+    void RegisterSystems(SystemRegistry registry);
 }
 ```
 
-- **ModeDefinition（ScriptableObject）**：一个玩法 = 一组模块 + 配置 + 地图（WorldGraph） + 胜负条件。
-- **Composition Root**（`Runtime/Composition`）：读取 ModeDefinition → 汇总 `WorldLayout` → 分配 World → 烘焙配置 → 构建 Tick 管线 → 绑定表现 → 交给 `Session`。
-- 模块可替换：例如把 `SnakeCollisionRule`（头撞身死亡）换成 `BounceRule`（反弹），不改其他代码。
+`ModeDefinition` 保存模块列表与 SessionSettings；地图、规则配置、表现选择由游戏模块/Bootstrap 管理。`WorldComposer.BuildWorld` 按列表 DeclareData，拒绝空模块和重复 Id，再分配 World；BuildPipeline 收集系统、排序并调用 OnCreate。它没有 BakeConfig、RegisterRules、RegisterPresentation、WorldLayoutBuilder 或能力依赖图接口。
 
-### 6.2 Session 生命周期
+已有校验包括非正表容量、列所属表、重复 resource key、levelScoped 资源的 reset 接口。重复声明同一 TableKey 会取容量最大值，同一 ColumnKey 合并。它不预检所有同名不同 key、冲突 schema、安装环或预算来源。
 
-```
-Create → Load(Regions/Chunks 异步) → Warmup(预分配、JIT/Burst 预热、池预填) → Running ⇄ Paused → Ending(结算) → Dispose / Restart
-```
+**失败边界：** SimSession 在 BuildPipeline 抛错时释放已完成创建的 World，但 DeclareData/构造器的部分分配、已 OnCreate 系统以及后续时钟创建的完整异常清理仍是阶段 B 的改进目标。当前不是已实现的“全事务安装、失败必回到基线”。
 
-Restart 复用已分配内存（清表而非重新分配），实现秒级重开。
+### 6.2 Session 与版本的含义
 
-### 6.3 扩展列（玩法私有数据）
+[SimSession](../Assets/SinglePlayerFoundation/Runtime/Session/SimSession.cs) 的状态只有 Created、Running、Paused、Disposed；加载、预热、结算、返回菜单是 Bootstrap/游戏 flow 的责任，尚无统一异步 Load/Warmup/Ending 状态机。
 
-玩法不修改 L1 表结构，而是在表上**挂扩展列**：
+- Restart 先完成工作与 system reset，再 world reset、重置时钟，进入 Running；复用主要存储，不自动保证任意资源的无分配重置。
+- Host 的 disable、失焦、后台暂停与游戏主动 Pause 是独立原因；恢复焦点不解除菜单暂停，恢复首帧丢弃后台墙钟积累。
+- TimelineRevision 在 Restart 或成功 ReadSnapshot 后递增，包含恢复到同 Tick。它不保存、不作为内容版本；恢复失败触发 Restart，也会失效旧时间线。
+- World.LevelVersion 只在 ClearLevel 后递增。ClearLevel 只清 level-scoped 表和 reset 对应资源，保留 session 数据；不会自动调用所有 system 的 OnReset。它未写进世界快照，World.Reset 也不增加它，不能单独用它检测所有重开/恢复。
+- 表 Version 表示结构/显式 MarkChanged，SnapshotBuffer.Version 表示缓冲轮换；都不能替代 Session 归属、TimelineRevision 或 EntityHandle.Generation。
+
+### 6.3 扩展列：使用同一 key 和布局阶段
+
+下面是可用 API 的独立声明示例，定义自己的 key，不修改一个叫 SnakeTable 的基类：
 
 ```csharp
-layout.Table<SnakeTable>().AddColumn<SnakeSkin>();      // 表现用皮肤 ID
-layout.Table<SnakeTable>().AddColumn<KillStreak>();     // 玩法私有统计
+using SPF.Contracts;
+using SPF.Runtime.World;
+using Unity.Mathematics;
+
+public static class ExampleKeys
+{
+    public static readonly TableKey Actor = new TableKey("Example.Actor");
+    public static readonly ColumnKey<float2> Position =
+        new ColumnKey<float2>(Actor, "Position");
+    public static readonly ColumnKey<int> Streak =
+        new ColumnKey<int>(Actor, "Streak");
+
+    public static void Declare(WorldLayout layout)
+    {
+        layout.Table(Actor, 128).Column(Position);
+        layout.Table(Actor, 128).Column(Streak); // 其他模块可复用同一个 Actor key
+    }
+}
 ```
 
-扩展列与主表共享稠密下标、随 swap-back 同步移动，System 通过 `ctx.Column<T>(table)` 获取 `NativeArray<T>`。
+列随普通表 swap-back、pooled 压缩和排序一起移动；读取用 `context.Column(ExampleKeys.Position)`。扩展在 World 创建前声明，不支持运行中随意增加 NativeArray 列。新增列会影响保存布局，不因叫“扩展”就自动兼容旧 fixture。
 
-### 6.4 贪吃蛇接入（SnakeFoundation.Runtime）
+### 6.4 谁创建，谁负责退出
 
-| 模块 | 使用的基座能力 | 贪吃蛇特化 |
-| --- | --- | --- |
-| `SnakeMovementModule` | L1 Movement | 恒速前进 + 冲刺、转向速率随体型下降 |
-| `SnakeBodyModule` | L1 Body | 轨迹环形缓冲，长度 = f(质量)，半径 = g(质量) |
-| `SnakeCollisionModule` | L1 Spatial + L2 Collision | 头撞他人身体 → 死亡；头对头 → 按规则判定 |
-| `SnakeGrowthModule` | L2 Growth | 吃食物增质量，冲刺掉质量 |
-| `SnakeFoodModule` | L2 Elements | Chunk 密度补充、死亡掉落 |
-| `SnakeAIModule` | L2 AI | 寻食 / 逃跑 / 围杀 / 避让 |
-| `SnakeSkillModule`（可选） | L2 Skills + Projectile | 射击、护盾、磁铁 |
-| `SnakePresentation` | Presentation/Snakes | 身体渲染、皮肤、死亡特效 |
-
-#### 蛇身数据结构（核心性能点）
-
-```
-BodyStore（全局 Slab）：NativeArray<float2> TrailPoints
-每条蛇：TrailRange{ Start, Capacity(2 的幂), Head, Count }, SegmentSpacing
-```
-
-- 蛇头每移动 `SegmentSpacing` 距离写入一个轨迹点（环形缓冲），**第 i 个身体节点 = 第 i 个轨迹点**，再用头部未满一格的剩余距离做线性插值 → 身体更新 **O(1) 写入 / 蛇**，采样可并行。
-- 长度变化只改 `Count`，无需搬移数据；容量不足时从 Slab 申请更大块（2 的幂分级，罕见）。
-- 体型变化导致间距变化时，按新间距重采样一次（低频）。
-- 碰撞节点锚定在每第 k 个轨迹点上，身体网格增量维护（每 tick 只增删头尾的节点，见 §8.8 第五轮）；窗口外的蛇不写入。
-- 轨迹点间距随半径变化（粗蛇用更稀的点），间距偏离 20% 以上时重采样。
-
----
-
-## 7. 表现层（Presentation）
-
-### 7.1 总体思路：GPU 驱动渲染
-
-**CPU 只负责「把模拟状态的增量搬到 GPU」和「发起固定数量的 Dispatch / Draw」；剔除、LOD、蛇身节点展开、插值、实例压缩、绘制参数全部在 GPU 上完成，CPU 不读回。**
-
-```
-┌──────── CPU（Burst Job，每模拟 tick 30Hz） ────────┐
-│ P9 Snapshot：写「增量包」而不是整帧实例           │
-│   · SnakeHeader[150]（头位置、朝向、半径、轨迹环形区间、皮肤…）   │
-│   · TrailDelta（本 tick 新增的轨迹点，每蛇通常 0~2 个）          │
-│   · FoodDelta / PropDelta（新增 / 删除的少量元素）                │
-│   · Projectile[≤500]（全量，量小）                               │
-└──────────────┬────────────────────────────────────┘
-               │ 1 次上传（LockBufferForWrite / SetData）
-┌──────────────▼──────────── GPU（每渲染帧 60Hz） ───────────────────┐
-│ C0 Apply Deltas   ：把增量散写进常驻 GPU 镜像（TrailMirror / FoodPool）│
-│ C1 Snake Expand   ：按插值后的头部位置，沿轨迹采样身体节点 / 条带簇     │
-│                      + 视锥剔除 + LOD（按屏幕尺寸降采样节点）          │
-│ C2 Element Cull   ：食物 / 道具 / 飞行物视锥剔除 + 压缩                │
-│ C3 Build Args     ：写 IndirectDrawIndexedArgs（实例数由 GPU 原子累加）│
-│ Draw ×N           ：RenderMeshIndirect / RenderPrimitivesIndexedIndirect│
-└──────────────────────────────────────────────────────────────────────┘
-```
-
-与 CPU 驱动相比的收益：
-
-| 项 | CPU 驱动（旧） | GPU 驱动（新） |
-| --- | --- | --- |
-| 身体节点展开 / 剔除 | CPU Job 遍历 30k 节点 | GPU 并行，CPU 为 0 |
-| 每 tick 上传 | 所有可见实例（~560 KB） | **仅增量**（头部 150 × 32 B + 新轨迹点 + 食物增删 + 飞行物 ≈ **20~30 KB**） |
-| 插值 | 上传 Prev/Curr 两份 | 只插值 150 个头部与轨迹进度，节点沿轨迹重新采样，**天然平滑** |
-| 主线程提交 | 数据纹理 Apply + 若干 Draw | 1 次上传 + 3~4 次 Dispatch + ~8 次 Indirect Draw，≤ 0.3 ms |
-| CPU 读回 | 无 | 无（仅 Debug 统计用 `AsyncGPUReadback`） |
-
-### 7.2 GPU 常驻数据（GraphicsBuffer）
-
-| Buffer | 内容 | 大小（活跃 Region） | 更新方式 |
-| --- | --- | --- | --- |
-| `SnakeHeaderBuf` | 150 × {headPrev, headCurr, dirPrev/Curr, radius, trailStart, trailCap, trailHead, trailCount, spacing, skin, flags} | ~10 KB | 每 tick 全量 |
-| `TrailMirrorBuf` | 与 CPU `BodyStore` 一一对应的轨迹点池（`float2`） | 150 × 1024 × 8 B ≈ 1.2 MB | 每 tick 只写新增点（C0 散写）；Slab 重新分配时整段重传（罕见） |
-| `FoodPoolBuf` | 活跃窗口内食物（pos, radius, kind, value） | 16k × 16 B = 256 KB | 增删增量；窗口滚动时整 Chunk 批量写 |
-| `ProjectileBuf` | 飞行物 | 500 × 16 B | 每 tick 全量 |
-| `VisibleXxxBuf` | 剔除后的实例（节点 / 食物 / 飞行物 / 头） | 按上限预分配 | GPU 写，GPU 读 |
-| `IndirectArgsBuf` | `GraphicsBuffer.IndirectDrawIndexedArgs` × 层数 | < 1 KB | GPU 写 |
-| `DeltaUploadBuf` | 本 tick 所有增量（统一格式 `{target, index, payload}`） | ≤ 64 KB | CPU 每 tick 1 次上传 |
-
-- **单次上传**：所有增量打包进 `DeltaUploadBuf`，CPU 侧用 `GraphicsBuffer.UsageFlags.LockBufferForWrite` 让 Burst Job 直接写（不支持时 `SetData(NativeArray)`），GPU 用一次 C0 Dispatch 散写到各常驻 Buffer。避免多次 `SetData` 小块调用的驱动开销。
-- **三缓冲**：上传 Buffer 按帧轮换 3 份，避免 CPU 写正在被 GPU 读的内存造成同步等待。
-- **CPU 仍是唯一真相源**：GPU 镜像只用于表现；Region 切换 / Slab 重排 / 调试时可整体重建。
-
-### 7.3 Compute Pass 设计
-
-**C1 Snake Expand（核心）**
-- 一个线程组处理一条蛇的一段（64 个节点为一个「簇」）。先用簇的包围盒（由簇首尾轨迹点 + 半径得出）做视锥剔除，整簇不可见直接跳过。
-- 节点位置：用本帧插值后的「头部行进距离」在轨迹上按固定间距采样，所以 30Hz 模拟下 60/120 FPS 身体依旧顺滑，不需要为每个节点存 Prev/Curr。
-- **节点模式**：可见节点写入 `VisibleNodeBuf`；LOD：屏幕半径 < 阈值时每 2 个节点取 1 个并放大半径，远景节点数减半。
-- **条带模式**：只输出「可见簇列表」，由条带顶点着色器直接读 `TrailMirrorBuf` 生成左右顶点（一个簇 = 固定 64 段三角带，索引网格预建），不写中间顶点缓冲。
-- 深度值 `z = f(snakeRank, nodeIndex)` 在此计算，保证大蛇 / 玩家蛇压在上面，同一批内完成排序。
-
-**C2 Element Cull**
-- 食物 / 道具 / 飞行物 / 蛇头按实例视锥剔除，写入各自 `Visible*Buf`。
-- 压缩方式：**组内 `groupshared` 原子计数 + 每组 1 次全局 `InterlockedAdd`** 取得写入偏移。不依赖 Wave Intrinsics（移动端支持不稳定），也不用 `AppendStructuredBuffer`（部分 Mali 驱动性能差）。
-
-**C3 Build Args**
-- 1 个线程把各层实例数写入 `IndirectArgsBuf`（`indexCountPerInstance`、`instanceCount`），并在需要时把节点实例数拆成多批。
-
-**移动端 Compute 约束**
-- 线程组大小 64（Mali / Adreno / Apple 通用最佳点），每帧 Dispatch ≤ 4 个，减少 Compute ↔ Graphics 屏障与管线切换。
-- 只在 **URP ScriptableRendererFeature** 中用同一个 `CommandBuffer` 顺序执行 Dispatch 与 Draw（`cmd.DispatchCompute` → `cmd.DrawMeshInstancedIndirect` / `cmd.DrawProceduralIndirect`），保证执行顺序且只插一次屏障。
-- 不使用异步 Compute（移动端普遍不支持），不使用 `AsyncGPUReadback` 参与逻辑。
-- Buffer 用 `StructuredBuffer` / `ByteAddressBuffer`，避免 `RWTexture` 格式兼容问题；所有 Buffer 在 Session Warmup 时一次性创建。
-
-### 7.4 能力分级（Tier）与 GLES 3.0 降级
-
-GPU 驱动依赖 Compute + 顶点阶段读取 SSBO + Indirect Draw，GLES 3.0 不具备，且部分 GLES 3.1 的 Mali 老驱动**顶点阶段可用 SSBO 数量为 0**。启动时按能力选择 Tier：
-
-| Tier | 判定 | 渲染路径 |
-| --- | --- | --- |
-| **A：GPU Driven** | `SystemInfo.supportsComputeShaders` && `SystemInfo.maxComputeBufferInputsVertex >= 4` && 非黑名单 | §7.1 ~ §7.3 全部 |
-| **B：Data Texture（降级）** | GLES 3.0 或 Tier A 判定失败 / 黑名单设备 | CPU Burst Job 做剔除 + 节点展开，写入数据纹理（`Texture2D.GetPixelData` 零拷贝），静态索引网格 + 顶点纹理采样（VTF），`Mesh.SetSubMesh` 控制实例数 |
-
-**共用部分，避免两套维护**：
-- 实例数据结构（16 B 紧凑格式）、轨迹数据格式、皮肤 / 图集 / 颜色编码完全一致。
-- Shader 用同一份 HLSL，数据读取封装成 `FetchInstance(id)` / `FetchTrail(i)`，Tier A 宏展开为 `StructuredBuffer` 读取，Tier B 展开为 `texelFetch`。
-- 同一套索引网格（八边形节点网格、64 段条带簇网格）。
-- 剔除 / 展开算法的 Burst 版本与 HLSL 版本共用测试用例（同一输入对比输出实例集合）。
-
-Tier B 的 CPU 成本预估：节点展开 + 剔除约 0.6 ms（工作线程），上传约 300~500 KB / tick，仍满足预算；低端 GLES 3.0 机型目标 30 FPS。
-
-### 7.5 蛇身两种表现模式（两种 Tier 均支持，按皮肤切换）
-
-| 模式 | 适用 | 实现 | 特点 |
-| --- | --- | --- | --- |
-| **节点精灵（Sprite Node）** | 糖果、珠子、分节皮肤 | 每个可见节点 1 个实例（八边形索引网格，9 顶点） | 皮肤多样；重叠节点靠不透明 + 深度前到后剔除 |
-| **连续条带（Strip）** | 平滑蛇皮、花纹贴图 | 可见簇列表 + 64 段条带簇网格，顶点着色器读轨迹点求切线并左右偏移半径 | CPU 零网格构建；无节点叠加；上传量最小 |
-
-- 两种模式共用同一份轨迹数据；**蛇头统一用节点实例绘制**。
-- 皮肤 = 图集区域索引 + 调色参数 + 模式，放在实例 / 蛇头数据里，不同皮肤**不切换材质**。
-- 条带 UV 沿身长连续累积（`pointIndex * spacing`），贴图可平铺花纹；头尾渐细半径。
-
-### 7.6 半透明蛇皮肤
-
-**目标效果**：整条蛇呈现统一的透明度（像一层半透明胶片），**自身节点重叠处不变深**；不同蛇之间、蛇与地面 / 食物之间正常透出。
-
-**难点**
-1. 节点 / 条带相互重叠，直接 Alpha 混合会在重叠处叠色变深，蛇身出现「一串珠子」的深色斑。
-2. 蛇之间需要从后往前的混合顺序，而 GPU 驱动的原子压缩输出顺序不确定。
-3. 半透明无法使用 Early-Z / HSR 剔除，overdraw 直接变成带宽成本。
-4. Stencil 方案行不通：一次 Indirect Draw 内无法按实例改 Stencil Ref（移动端基本不支持 Shader Stencil Export）。
-
-**方案：同蛇等深度 + 严格小于测试（Equal-Depth Self-Occlusion）**
-
-| 规则 | 说明 |
+| 对象 | 当前所有者和退出路径 |
 | --- | --- |
-| 同一条蛇的所有节点 / 条带顶点使用**同一个深度值 `z_s`** | `z_s` 由蛇的绘制顺序决定，越靠前越小 |
-| 半透明 Pass：`ZTest Less`、`ZWrite On`、`Blend SrcAlpha OneMinusSrcAlpha`（或预乘 Alpha） | 同一条蛇在同一像素只有**第一个**写入者通过（后续同深度 `Less` 失败），重叠处只混合一次 |
-| 蛇内顺序：**头 → 尾** | 头部节点先写，重叠处显示的是更靠前的节点，符合视觉 |
-| 蛇间顺序：**从后往前**（按 `snakeRank`，玩家蛇最后） | 后画的蛇 `z` 更小，能通过深度测试并正确混合在前一条蛇之上 |
-| 蛇头作为该蛇实例流的第一个实例（同一网格，图集取蛇头区域） | 头与身体属于同一「半透明整体」；眼睛等装饰在其后单独画 |
+| Session / World / Pipeline | Host 或直接创建它的调用者 Dispose Session；Session 先完成并销毁 Pipeline，再释放 World |
+| 表、Registry、world-owned resource | SimWorld.Dispose；注册资源若为 IDisposable 会被释放。不要把同一个独占资源同时转交多个 World |
+| System 私有 Native scratch | 创建它的 system 在 OnDestroy 释放；需要 reset/save 的跨 Tick 状态实现对应接口 |
+| Bootstrap 创建的临时 Mode/Module/Config | Bootstrap 负责释放；外部传入共享资产保留外部所有权。Host 只管理 Session，不替调用者销毁全部 ScriptableObject |
+| Renderer 的 material/mesh/buffer/私有 texture | Renderer 或创建者 Dispose/Destroy；Resources.Load 得到的共享资源与自己 new 的实例分开 |
+| 事件订阅、输入源与 View cache | 绑定侧在 disable/rebind/destroy 的相应路径取消/重置；不得消费旧 Session 的输入、插值或 cue |
 
-该方案**一次 Draw 覆盖所有半透明蛇**，不需要离屏 RT（移动端 TBDR 上切 RT 会带来整屏 load/store 带宽），也不需要 Stencil。条带模式同理：三角带按头 → 尾顺序输出，整条带同一 `z_s`，蛇盘绕自身时也不会叠色。
+`WorldLayout.Resource` 的资源登记是 ownership transfer 约定，当前没有引用计数 AssetLease/通用异步 RequestToken。跨 Session 绑定至少核对 Session 对象、时间线/关卡版本与完整实体身份；有异步适配时还需请求版本，不能假设完整 handle 已包含这些信息。
 
-**渲染顺序**
+## 7. 只读表现、渲染后端与保存
 
-```
-背景 → 地面装饰 → 食物 / 道具 → 不透明蛇（前→后，ZWrite）→ 半透明蛇（蛇间后→前，蛇内头→尾，等深度）→ 飞行物 / 特效 → UI
-```
+### 7.1 读取路径与身份
 
-**GPU 驱动下的「有序压缩」**
-- 原子累加的压缩顺序不确定，半透明层改用**有序压缩**：C1 先按簇（64 节点）做可见性判定写标志 → 单线程组对所有半透明簇（≤ 150 蛇 × 16 簇 = 2400 项）做前缀和，得到按「蛇绘制顺序 → 簇顺序」排列的写入偏移 → 再写节点实例。额外成本：1 次小 Dispatch，< 0.05 ms。
-- 蛇的绘制顺序由 CPU 每 tick 对 150 条蛇排序一次（Burst，微秒级），写入 `SnakeHeader.drawOrder`，GPU 不做排序。
-- GPU 按 API 顺序执行同一 Draw 内的图元混合与深度测试（各图形 API 均保证），因此实例顺序即混合顺序。
-- 不透明层仍用无序原子压缩（深度测试保证正确性）。
+表现可读同步完成的表，也可读模块提供的投影；不是所有游戏都经过同一种 SnapshotBuffer。`NativeArray` 类型本身不阻止写入，“只读表现”是代码与测试合约。
 
-**性能控制**
-- 半透明蛇不享受 HSR，同屏预算：**半透明可见蛇 ≤ 30 条**（可配）。超出时，离镜头较远的半透明蛇使用皮肤配置的 `OpaqueFallback`（预混背景色的不透明版本），近处保持半透明。
-- 半透明皮肤优先使用**条带模式**（节点模式重叠多，深度测试虽避免叠色，但被拒绝的片元仍消耗光栅化）。
-- 使用**预乘 Alpha**，便于与发光类皮肤（Additive）在同一 Shader 内切换，不拆材质。
-- Tier B（GLES 3.0）方案完全相同：CPU Job 本身按顺序写实例，天然有序。
-- 低端机质量档可把半透明预算降为 10 条，或整体切换为 `OpaqueFallback`。
+[SnapshotBuffer<T>](../Assets/SinglePlayerFoundation/Runtime/World/SnapshotBuffer.cs) 是 Previous/Current/Write 三缓冲，每次 OnSync 轮换，只提供前后 row 对应。排序、压缩或重建后需要 writer 同时保存稳定 ID 并由读者核对，不能把相同行号插值成同一角色。借用的数组不能跨后续轮换/释放长期持有。
 
-**皮肤配置新增字段**：`BlendMode（Opaque / Translucent / Additive）`、`Alpha`、`OpaqueFallbackColor`、`PreferStrip`。
+角色、武器、粒子应在同一表现时刻读权威状态；恢复/重开/换装清旧 backlog 和拖尾。已有 Sv/Bw renderer 的失效与武器 cursor 测试是接入参考，不等于所有历史 View 已采用统一 binding helper。
 
-### 7.7 Camera 与事件
+### 7.2 当前 Snake 渲染，而非早期理想管线
 
-- **Camera**：跟随 + 体型缩放（视野随质量对数增长）、Region 切换过渡、屏幕震动（事件驱动）。
-- **事件到表现**：Sync 点把本 tick 事件拷贝到主线程预分配数组，派发给 VFX / 音效 / UI 适配器（均对象池复用）。
+[RenderCapabilities.Detect](../Assets/SinglePlayerFoundation/Presentation/Rendering/RenderCapabilities.cs) 使用 Override 或 compute 支持、顶点 buffer 输入数 ≥ 4、非 Null 图形设备选择 GpuDriven/DataTexture。它没有内置全设备黑名单或证明每个 shader/indirect API 都成功；具体后端还需资源/精度门和实际执行验证。
 
----
-
-## 8. 性能专项：计算性能 / 渲染带宽 / GC / 合批
-
-### 8.1 预算总表（中端机 60 FPS，一帧 16.6 ms）
-
-| 项 | 预算 |
+| 部件 | 当前实现 |
 | --- | --- |
-| 模拟主线程（调度 + Sync + 命令应用） | ≤ 1.5 ms / tick |
-| 模拟工作线程总和 | ≤ 6 ms / tick（30 Hz，均摊 ≤ 3 ms / 帧） |
-| 渲染主线程（提交 + 上传） | Tier A ≤ 0.3 ms / 帧；Tier B ≤ 1.5 ms / 帧 |
-| GPU Compute（C0~C3） | ≤ 1 ms / 帧（中端机） |
-| Draw Call（含 UI） | **≤ 40**，玩法层 ≤ 12 |
-| SetPass Call | ≤ 15 |
-| 每 tick CPU→GPU 上传 | ≤ 1 MB（约 30 MB/s） |
-| GC Alloc | 对局中 **0 B / 帧** |
-| 可见实例 | 节点 ≤ 30k、食物 ≤ 5k、飞行物 ≤ 500 |
+| [ChainRenderer](../Assets/SinglePlayerFoundation/Presentation/Rendering/ChainRenderer.cs) GPU | CPU 组装有限链 header、轨迹增量并 SetData；compute 散写轨迹/展开节点，可压缩不透明节点，RenderMeshIndirect 绘节点；条带使用 GPU 轨迹与 RenderPrimitives |
+| ChainRenderer DataTexture / mesh | Burst 在 CPU 展开节点，CircleBatch 数据纹理绘制；条带用 CPU 构建的 MeshData。不是纯 GPU 蛇身展开 |
+| [PointCloudRenderer](../Assets/SinglePlayerFoundation/Presentation/Rendering/PointCloudRenderer.cs) | 常驻 GPU 实例池 + 行增量 scatter + compute 剔除 + indirect；初始化能力失败由调用者选择回退 |
+| [CircleBatch](../Assets/SinglePlayerFoundation/Presentation/Rendering/CircleBatch.cs) | 32 B InstanceData；GPU SetData/indirect，DataTexture 最多 4096 实例一页，纹理/网格按使用创建并绘实际前缀 |
+| [RenderAssets](../Assets/SinglePlayerFoundation/Presentation/Rendering/RenderAssets.cs) | Resources/Shader.Find 加载共享 shader，CreateMaterial 返回调用者拥有的新 material；直接 Dispatch/Graphics 绘制兼容当前管线接线 |
 
-### 8.2 计算性能
+GPU 镜像不拥有模拟真相。轨迹 owner/Version/Start 变化要正确失效重传；非 Tick 帧可以复用 header 等准备结果，但插值/视口和实际绘制仍有成本。首次触达纹理页可能分配，正式测稳态前要预热到声明容量。
 
-**数据布局**
-- SoA + 冷热分离：热列（Position、Heading、Speed、Radius）与冷列（皮肤、统计、名字 ID）分开，系统只触碰需要的列，提升缓存命中。
-- 位置按 `float2` 连续存储；Burst 对 SoA 连续循环可自动 SIMD（NEON 4 路）。需要时手写 `float4` 一次处理两个点。
-- 碰撞网格 `SortedEntries` 冗余存 `position/radius/owner/layer`（16~20 字节），窄相位只读这一块连续内存，不回表查询。
-- 句柄查找只在事件处理时发生，热循环中只用稠密下标。
+早期“全量合成一个 DeltaUploadBuf、每 Tick 一次 LockBufferForWrite、三上传缓冲、URP RendererFeature 内 3–4 次 Dispatch、所有剔除排序和参数都在 GPU、固定 Draw 数”的图是备选优化方向，**不是当前实现**。应逐个后端测实参、资源与真实调用，再决定是否值得改。
 
-**算法**
-- 距离比较全部用平方，避免 `sqrt`；方向归一化用 `math.rsqrt`（Low 精度）。
-- 只有主动体发起查询（蛇头、飞行物），被动体（身体、食物）只入网格。
-- 自身身体与颈部 K 个节点跳过；同一 Cell 内按 layer mask 过滤。
-- 计数排序构建网格：每线程局部直方图 + 前缀和，无原子、无 HashMap，**不使用 `NativeParallelMultiHashMap`**（移动端开销大、内存随机访问）。
-- 身体更新 O(1)：只写入新轨迹点，节点位置按需采样。
-- AI 决策分时切片（每条 AI 每 4~8 tick 决策一次）；避让探针每 tick 但只查 3~5 条射线。
-- 模拟 LOD：窗口外 Near 蛇 1/4 频率、只进粗网格；Dormant 仅统计。
+### 7.3 蛇身采样与半透明
 
-**Job 调度**
-- 每 tick Job 数控制在 ~20 个以内，合并小 Job（如 Move + Trail 写入合为一个 Job）。
-- `IJobParallelFor` 的 batch 取 64~256；数据量 < 512 用单线程 `IJob`。
-- `JobHandle.ScheduleBatchedJobs()` 尽早提交，主线程同时做渲染提交；只在 Sync 点 `Complete()`。
-- Worker 数设为大核数（通常 3~4），避免小核拖尾与渲染线程争抢。
-- Burst：`FloatMode.Fast` + `FloatPrecision.Low`；`[NoAlias]`、`[ReadOnly]`、`[WriteOnly]` 标注齐全；Release 关闭 Safety Checks / Leak Detection。
+[BodyStore](../Assets/SinglePlayerFoundation/L1Simulation/Body/BodyStore.cs) 在预分配池内按 2 的幂 Slab 管理 TrailState；Resize/Respace 可能搬移/重采样并增加 Version，容量不足返回 false 保留旧轨迹。写入成本与新增点有关，不能把整个身体维护描述为无条件 O(1)。
 
-**内存**
-- 所有表、网格、事件流、上传缓冲在 Session Warmup 时一次性按上限分配（`Allocator.Persistent`），对局中不扩容。
-- 每 tick 临时数据用复用的 Persistent 缓冲，**不在热路径使用 `Allocator.TempJob`**（避免分配器开销与 4 帧泄漏警告）。
+- 轨迹间距按半径量化，偏离阈值才重采样；视觉节点按弧长采样，不等同于每一个轨迹点。
+- 身体碰撞节点锚定每第 k 个保留轨迹点；头端移动/新增、尾端删除走增量，窗口/owner/轨迹重写等变化仍需重建。
+- 分块 TrailBounds 缓存减少重复扫描，空间索引和 GPU 镜像有各自失效/重建责任。
+- 节点与条带共用轨迹，视觉 skin/LOD 不得改变命中几何。
 
-### 8.3 渲染带宽
+半透明使用同蛇等深度、ZTest Less、ZWrite On 和预乘混合，使该蛇同像素只接纳首次覆盖；半透明蛇按后→前添加，同蛇节点按头→尾输出，不能无序压缩半透明节点。当前不透明压缩与有序透明路径分开。预算外使用不透明回退、减少装饰或降低分辨率，但透明像素/顶点成本仍要实测；不是“用了深度即无 overdraw”。
 
-带宽分两部分：**CPU → GPU 上传带宽**、**GPU 显存 / 像素填充带宽**（移动端 TBDR 架构最敏感）。
+### 7.4 其他角色与特效后端
 
-**上传带宽**
+普通 SpriteBatch、CPU/Burst 自然 cutout 与 Weighted BAT 是不同能力；两种 sprite tier 不等于 BAT 的 vertex/compute/CPU 三后端。Weighted BAT 仍是有限资产/链条/顶点的验证路径，不是任意骨架导入器。粒子 GPU compute 需要真实执行和读回/像素证据，不能把 CPU 算完后上传叫 GPU 模拟。
 
-| 手段 | 效果 |
-| --- | --- |
-| 手段（Tier A：GPU 驱动） | 效果 |
-| --- | --- |
-| **GPU 常驻镜像 + 只传增量**：轨迹只传新增点，食物只传增删 | 上传量与「变化量」成正比，而不是与实例数成正比 |
-| 所有增量打包成 1 个 `DeltaUploadBuf`，Job 经 `LockBufferForWrite` 直接写 | 1 次上传、无额外 CPU 拷贝、零 GC |
-| 身体节点由 GPU 从轨迹展开 | 30k 节点实例数据**不上传** |
-| 插值只针对 150 个蛇头 | 不需要 Prev/Curr 两份实例数据 |
-| 静态内容（背景、障碍）只上传一次 | 每帧零上传 |
+详细接线保留在[新玩法配方](NewGameplayIntegrationRecipe.md)、[自然角色](GameplayNaturalCharacters.md)、[Weighted BAT](BatCharacterValidation.md)、[compute palette](BatComputePaletteValidation.md)、[有界武器粒子](BoundedWeaponParticles.md)。
 
-| 手段（Tier B：GLES 3.0 降级） | 效果 |
-| --- | --- |
-| 紧凑实例格式 16 B（vs `Matrix4x4` 64 B） | 减少 75% |
-| 只上传可见实例（CPU Job 剔除 + 压缩） | 与地图大小无关 |
-| Job 直接写 `Texture2D.GetPixelData<T>()` 视图，再 `Apply(false)` | 省一次拷贝，零 GC |
-| 每 tick 上传一次，GPU 插值 | 60 FPS 下减半 |
+### 7.5 保存检查点不是呈现快照
 
-估算：
-- Tier A：150 × 32 B 头部 + ~300 个新轨迹点 × 8 B + 食物增删 ~200 × 16 B + 500 飞行物 × 16 B ≈ **20 KB / tick ≈ 0.6 MB/s**。
-- Tier B：30k 节点 × 16 B + 5k 食物 × 16 B ≈ 560 KB / tick ≈ 17 MB/s。
+`SimSession.WriteSnapshot/ReadSnapshot` 在同步窗口协调时钟、World 和 ISnapshotSystem；`SnapshotBuffer<T>` 不实现 ISnapshotResource，不是存档。
 
-**GPU 填充带宽**
-- **减少透明 overdraw**：圆形精灵使用**八边形紧凑网格**替代四边形，透明像素减少约 30%。
-- **身体节点默认不透明**（半透明皮肤见 §7.6）：用八边形网格近似圆形（9 顶点，30k 节点 ≈ 27 万顶点 / 帧，顶点开销可控），**不透明 + 深度写入 + 前到后**（头部在前）绘制，被遮挡像素由 Early-Z / HSR 剔除；**不用 `discard`（alpha test）**，因为它会破坏 Apple / PowerVR 的 HSR 与部分 Mali 的 Early-Z。边缘锯齿用 **MSAA 2x**（TBDR 上 MSAA 在 tile 内解析，几乎不增加带宽）。只有半透明皮肤走混合队列，并通过同蛇等深度避免自身重叠叠色（§7.6）。
-- 条带模式天然无节点叠加，是大体型蛇的首选；节点模式在蛇很长时可对屏幕外 / 被遮挡区域降采样节点（每 2 个画 1 个，半径略放大）。
-- 贴图：iOS 与支持的 Android 用 **ASTC**（6×6），GLES 3.0 设备保证支持的 **ETC2** 作为回退（Android App Bundle 按纹理压缩格式分发）；开启 mipmap，图集 ≤ 2048；背景用平铺小纹理 + UV 滚动，不用大图。
-- 渲染分辨率：URP Render Scale 0.75~0.85（GLES 3.0 低端机 0.7），发热时下调；关闭 HDR；MSAA 2x（低端机可关）。
-- 后处理：默认关闭；如需发光用预烘焙到贴图的伪 Bloom，不做全屏 Bloom。
-- 避免 Framebuffer Fetch 之外的多 Pass、避免 `Grab Pass`，减少 TBDR 的 load/store（相机 Clear 正确设置，避免 tile 回读）。
+- World 保存 live rows、Registry 和 ISnapshotResource；检查 world format、seed、表/资源顺序及相关容量/标记。Pipeline 按参与保存的系统类型名顺序读写。
+- IJobData 没实现 ISnapshotResource 会被 SnapshotGaps 拒绝；这只是诊断启发式，**不会发现未标记/未保存的全部可变状态**；例如 Signals 是 Job 使用的 Native mailbox，却没有 IJobData。例如 SnakeGameState、RegionPopulations、ReplayBuffer、SnakeQuality 和 Signals 没有完整保存资源实现，相关 system 也未实现 ISnapshotSystem；Snake 输入回放通过不等于完整中途 Session 保存成立。各游戏必须审计自己的保存清单。
+- 不可变配置通常不写入 raw snapshot；读取端必须有相同规则、布局、seed。已有 SkillSlots、飞剑/Belt/武器等选择性指纹不等于全库完整兼容校验。当前 WeaponRuntime 指纹还含 VisualId/握持定义，不能声称改视觉定义必然不影响读档兼容。
+- World format 1 不保存列 key/type 的语义身份；Pipeline 采用系统类型短名。raw Native 数据、等大小字段或列换义、系统改名/同短名、配置同 ID 不同规则都需要显式 schema/指纹策略。通用长期跨版本/跨平台迁移与外层 envelope 仍为提案。
+- 成功恢复增加 TimelineRevision 并清掉 pending ticks；非法数据时 Session Restart 后重抛，不能保证保留失败前的进行中对局。直接 World.ReadSnapshot 失败可能部分恢复，必须 Reset 后再用。
+- grid/scratch 若派生自权威状态，恢复后先重建再读取；视觉 cue、IK、粒子等按失效协议清理，不能自动重播已发生事件。
 
-### 8.4 GC（对局中 0 分配）
+## 8. 性能与证据
 
-**规则**
-- 模拟与渲染热路径只用 `NativeArray` / `UnsafeList` / 结构体；不使用 `List<T>` 扩容、LINQ、闭包 Lambda、`foreach` 接口枚举、装箱、`string` 拼接、协程、`params`。
-- 事件派发用预分配结构体数组 + 接口实现类（注册时分配一次），**不用 C# `event` / 委托链动态增删**。
-- 对象池：VFX、音效、UI 条目、飘字全部池化，Warmup 预填。
-- UI：排行榜 / 分数 2~5 Hz 刷新；数字文本用 TMP `SetText(format, value)`（无分配重载）或预生成数字字符串表；动态与静态 UI 分 Canvas。
-- `Physics2D` 不使用（碰撞完全自研），避免 Collider 与回调分配。
-- 开启 **Incremental GC** 作为兜底；Session 开始前 `GC.Collect()` 一次，清理加载期垃圾。
+### 8.1 分开测什么
 
-**保障**
-- 自动化测试：先用保留分配正对照与空窗口校准当前运行环境，再跑600 tick。仅在字节API有效的.NET环境断言其增量为0；Unity使用经校准的当前线程GC.Alloc样本计数，另保留全帧预算。未通过正对照的0读数不得算通过，见[测量校准更正](AllocationMeasurementCalibration.md)。
-- Profiler Marker 覆盖每个 Phase；CI 中出现 GC Alloc 视为失败。
+按模式/设备记录完整 Tick、主线程调度、Job 执行、SyncWait、渲染准备、上传、GPU、UI/输入和持续帧时 p50/p95/最坏值。`SerialProfiling` 会串行完成系统，适合归因，不可当正常流水线的无侵入总成本。
 
-### 8.5 合批
+### 8.2 计算与内存约束
 
-**原则：玩法层每一类可见对象 = 1 次 Draw Call，与数量无关。**
+保留 SoA 冷热分离、有界队列、空间候选筛选、按需重建与增量更新。移动端 worker/batch 取值需实测；当前各 Job 的批次不同，不存在“少于 512 必然单线程更快”或“64 线程组适合全部 GPU”的统一定律。
 
-| 层（渲染顺序） | 绘制方式 | Draw Call |
-| --- | --- | --- |
-| 背景 | 1 个平铺网格 | 1 |
-| 静态障碍 / 装饰 | Chunk 加载时合并为静态网格（每 Chunk 1 个，仅可见 Chunk） | 2~6 |
-| 食物 | Tier A：`DrawMeshInstancedIndirect`；Tier B：数据纹理 + 索引网格 | 1 |
-| 飞行物 / 道具 | 同上 | 1~2 |
-| 蛇身（节点模式，所有蛇） | Tier A：Indirect，实例数由 GPU 写入；Tier B：八边形索引网格（32 位索引，每批 ≤ 32k） | 1~2 |
-| 蛇身（半透明，所有半透明蛇，节点 + 条带各 1） | 有序压缩后的 Indirect Draw，等深度自遮挡 | 1~2 |
-| 蛇身（条带模式，所有蛇） | Tier A：`DrawProceduralIndirect`（可见簇 × 64 段）；Tier B：TrailTex + 条带索引网格 | 1 |
-| 蛇头 / 眼睛 / 名字底板 | 同食物 | 1~2 |
-| 特效 | 池化粒子，共享 1~2 个材质（图集） | 2~4 |
-| UI | UGUI，图集化，分动静 Canvas | 5~10 |
+固定容量控制峰值，不等于无任何 Native 临时分配：当前 SortRows/Permute、pooled Compact 等路径使用 TempJob scratch；要单独计量。原地列修改不会自动被所有 cache 观察到；为跳过工作增加 cache 时必须定义版本和恢复重建。
 
-- **材质统一**：每一层一个材质；皮肤、颜色、帧动画都通过「图集索引 + 实例颜色」区分，**不产生新材质实例**（禁止运行时 `renderer.material` 访问）。
-- **排序不拆批**：蛇之间的前后关系（大蛇压小蛇 / 玩家置顶）通过实例深度值 `z = f(layer, snakeRank, segmentIndex)` 在同一批内由深度测试完成，而不是按蛇拆 Draw Call。
-- **不依赖 SRP Batcher 解决数量问题**：SRP Batcher 只降低 SetPass 成本，不合并 Draw Call；大批量对象一律 GPU 驱动的 Indirect 实例化。
-- **Draw Call 数固定**：GPU 驱动下 Draw 数量在 Session 开始时就确定（每层 1 个 Indirect Draw，不可见时 `instanceCount = 0`），CPU 提交成本与场景内容无关。
-- **不使用 SpriteRenderer 动态合批**：动态合批每帧 CPU 顶点变换，数量大时反而更慢。
-- 名字文字：玩家名用 SDF 字体图集实例化（每字符一个实例）或只显示附近 N 条蛇的名字，避免每条蛇一个 TMP 对象。
-- 验证：Frame Debugger 与 `UnityStats.drawCalls` 纳入 Perf HUD，超过预算报警。
+### 8.3 上传、常驻和过度绘制
 
-### 8.6 Unity 2022.3 依赖与设置
+payload 字节、纹理页/前缀填充、API 实际上传量和硬件显存流量分开。32 B × 实例数只是部分后端的有效数据量；还包括 header、delta、args、纹理及 mesh 等。ASTC/ETC2、图集尺寸、mipmap、MSAA/render scale 按真实资产与设备选择，不能把历史估算的 20 KB/tick 或 0.3 ms 当全部后端现值。
 
-| 项 | 版本 / 设置 |
-| --- | --- |
-| Burst | 1.8.x |
-| Collections | 2.1.x（`NativeParallelMultiHashMap` 等已改名，本方案不依赖） |
-| Mathematics | 1.2.x |
-| URP | 14.x，2D Renderer；关闭 2D Lights（或只用 1 盏全局光） |
-| 渲染 API（Tier A） | `ComputeShader` + `GraphicsBuffer`（`Structured` / `IndirectArguments`，`LockBufferForWrite`）；URP `ScriptableRendererFeature` 中 `cmd.DispatchCompute` + `cmd.DrawMeshInstancedIndirect` / `cmd.DrawProceduralIndirect`；`GraphicsBuffer.IndirectDrawIndexedArgs` |
-| 渲染 API（Tier B） | `CommandBuffer.DrawMesh` + 数据纹理 VTF；`Mesh.SetSubMesh` 控制实例数；`Texture2D.GetPixelData` 零拷贝写入 |
-| Shader | 同一份 HLSL，`#pragma multi_compile _ SPF_GPU_DRIVEN`：Tier A `#pragma target 4.5`（Compute / SSBO），Tier B `#pragma target 3.0`（`texelFetch` 点采样）；不使用几何着色器、Wave Intrinsics |
-| Player | IL2CPP、ARM64 + ARMv7（如需覆盖 GLES 3.0 老设备）、Incremental GC；Graphics API：iOS Metal；Android **Vulkan + OpenGLES3**（Vulkan 黑名单设备自动回退 GLES 3.0） |
-| 纹理压缩 | ASTC + ETC2 双格式（AAB Texture Compression Targeting） |
-| Stripping | Managed Stripping Level: High；`link.xml` 保留反射用到的类型 |
-| 不引入 | Entities、Entities Graphics（2022.3 下仍可用，但本方案不需要） |
+### 8.4 托管分配与 GC
 
-### 8.7 发热与自适应
+热路径避免增长集合、LINQ、闭包/装箱、逐对象 GameObject/Animator、每击 Instantiate/Destroy 和字符串拼接；初始化/冷路径订阅委托是允许的。当前 SessionHost 等实际使用 C# event，不能写成“全库禁用 event”。
 
-检测连续帧超预算或温度等级升高（可选 `Adaptive Performance`）时，按顺序降级：
-1. 降 AI 决策频率、Near LOD 频率；
-2. 降特效数量；
-3. 降 Render Scale；
-4. 节点模式蛇身降采样。
+使用 [ManagedAllocationProbe](../Assets/SinglePlayerFoundation/Testing/ManagedAllocationProbe.cs) 保留数组阳性对照和 empty 对照；对照无效则测量不可用。`.NET ManagedBytes`、Unity 当前线程 `GC.Alloc` 样本、全帧分配、gen-0 collection 次数、Native/GPU 内存分别报告。观察器、截图/readback、编码和断言字符串放在窗口外。参见[校准更正](AllocationMeasurementCalibration.md)。本次不以手动 GC.Collect、关安全检查、缩短窗口或放宽阈值替代修复。
 
-**不降模拟 tick**，保证手感一致。
+### 8.5 绘制与可读性
 
-### 8.8 实测与优化记录
+图集和共享 batch 减少逐实体提交；DataTexture 分页、混合类别、shader、UI 和可见内容仍可能增加 Draw Call。SRP Batcher 不代替实例化；避免无意读取 renderer.material 产生新材质。除了 Frame Debugger/计数，还要检查小屏密集画面的目标/弹道/危险提示可读性。
+
+### 8.6 真实依赖与验证环境
+
+[manifest](../Packages/manifest.json) 当前固定 Burst 1.8.27、Collections 2.1.4、Mathematics 1.2.6、URP 14.0.11；Unity 版本看 [ProjectVersion](../ProjectSettings/ProjectVersion.txt)。包存在不代表所有模式都启用对应渲染管线，Editor 设置菜单也不是已构建的 Android/iOS 包。
+
+.NET harness 使用 Unity/Jobs/Burst/图形桩验证逻辑和 asmdef 编译方向；原生 EditMode、真实 graphics PlayMode、桌面 CPU/GPU、物理 Android/iOS 是不同证据。GLES/Metal/Vulkan 的能力回退和热态功耗需设备实测，当前外部设备门槛保留。
+
+### 8.7 画质隔离与经典 Snake 例外
+
+共享 [FrameGovernor](../Assets/SinglePlayerFoundation/Shell/Performance/FrameGovernor.cs) 不修改模拟 TickRate；新玩法质量档只能改变表现。**固定 TickRate 本身不保证玩法状态不变。**
+
+经典 [AdaptiveQualityController](../Assets/SnakeFoundation/Game/AdaptiveQualityController.cs) 会修改 SnakeQuality.AIDecisionIntervalTicks，AISystem 使用该值；[ReplayFrame](../Assets/SnakeFoundation/Runtime/Replay.cs) 记录/回放它。这是会影响模拟调度的历史输入，不能称为纯视觉开关。本次保持其回放语义，后续若迁移必须单列规则版本与兼容验收；不将同样做法推广给新玩法。
+
+### 8.8 历史实测与优化记录
+
+以下保留早期 Snake 的六轮工程记录用于解释取舍。原段落没有完整绑定每个数字的精确 commit/tree、原始样本和当前配置，**不是本次新测结果、当前性能基线或移动端认证**。仅能按其明确的桌面环境阅读；后续优化必须建立对应提交的可恢复 A/B 证据。容量、网格默认值与渲染实现仍以当前源码为准。
+
 
 基准：`SnakePerformanceTests.TickBenchmark`（150 AI + 默认食物，约 1.2 万食物 / 1.5 万身体点），自托管 Runner（Apple M5 Pro，Unity 2022.3.62f2，Burst 开启），报告写到 `Artifacts/perf-editmode.txt`。`TickPipeline.SerialProfiling` 让每个系统调度后立即完成，用来按系统拆分耗时。
 
-| 指标 | 优化前 | 第一轮 | 第二轮（当前） |
+| 指标 | 优化前 | 第一轮 | 第二轮（历史） |
 | --- | --- | --- | --- |
 | 流水线 tick 均值 / p95 | 0.434 / 0.475 ms | 0.270 / 0.307 ms | **0.229 / 0.259 ms**（−47%） |
 | 网格构建（串行口径） | 0.274 ms（单系统） | Body 0.132 + Item 0.110 + Head 0.011 ms | Body 0.067 + Item 0.098 + Head 0.012 ms |
 | AI | 0.042 ms | 0.028 ms | 0.030 ms |
 
-另外 `SessionHost.OverlapRendering`（默认开启）把 tick 的调度移到帧末，主线程上的 sync wait 被渲染与下一帧 Update 吸收，上表 tick 时间之外再省掉主线程等待。
+`SessionHost.OverlapRendering` 默认把 tick 调度到帧末，允许与渲染及下一帧 Update 重叠；实际隐藏多少等待取决于负载，不能把 worker 时间视作消失，也不能把串行诊断时间与流水线时间相加。
 
 已做的优化与修正：
 - `GridEntry` 20 B → 16 B（Owner / Data 各 16 位），一条缓存行正好 4 个条目。
@@ -777,11 +410,11 @@ Tier B 的 CPU 成本预估：节点展开 + 剔除约 0.6 ms（工作线程）�
 - **GPU 像素 A/B 测试**（`VisualRegressionTests`，PlayMode，自托管 Runner 的 Metal 上运行）：冻结游戏（`timeScale = 0`、固定自适应画质、相机 Snap），相机渲染到 RenderTexture，同一帧在选项关 / 开下各截一次。先断言画面有内容、同一选项两次截图逐像素一致，再比较。
 - **不透明节点可见性压缩**（`ExpandNodesCompact`）：只追加屏幕内的不透明节点（组内原子 + 每组一次全局原子写间接参数）；半透明 / 加色链保持节点顺序。测试场景放了三条横穿视口边缘的长蛇，压缩前后**0 像素差异**。
 - **圆盘 8 段**（等面积八边形）作为自适应画质 2 级以上的选项：与 16 段相比，GPU 档和数据纹理档都只有约 0.04% 像素差异 > 24/255。
-- 截图由 CI 推送到 `ci-screenshots/<分支>`（`Tools/ci/publish-screenshots.sh`，单次强推提交），可直接 `git fetch` 查看。
+- 这一轮历史截图曾通过 `ci-screenshots/<分支>` 发布；当前证据交付与恢复以 [CiEvidence](CiEvidence.md) 为准，旧发布流程不是新任务的推送授权。
 
 第四轮：
 - **物品网格增量更新**：`CellListGrid`（每格双向链表 + 行 → 节点映射，O(1) 增删）。`ItemGridSystem` 用自己的 ChangeLog（`SimTable` 支持多个独立 ChangeLog），只重插变化的行和 swap-back 空出的行；窗口移动 / 重置 / 变化超过 1/4 时整体重建。实测平均每 tick 约 5 行变化，ItemGridSystem **0.098 → 0.006 ms**，tick 均值 0.227 → **0.210 ms**。
-- **物品网格存储改为分块链表**（每格一串 4 条目块，64 B = 一条缓存行；除末块外都满，删除用末尾条目补洞）：增删仍 O(1)，遍历按块连续读。与旧的"每条目一个链表节点"在同一数据上对比（`ItemGridQueryBenchmarkWithDeathDrops`，含插入后乱序重排的 churn 场景）：M5 Pro 上两者差异在 ±10% 内、互有胜负——约 1.2–1.5 万条目的工作集（0.4–1.8 MB）完全在 M5 的大缓存里，链表的指针跳转几乎不产生缓存未命中。分块的价值在于缓存装不下时（低端手机 L2 0.5–2 MB、更大地图）：遍历的未命中次数从"每条目一次"降到"每 4 条目一次"。代价是内存 0.7 → 约 1.8 MB（按最坏情况预留块）。旧实现保留为测试内的参照副本，便于以后在真机上跑同一对比。
+- **物品网格存储改为分块链表**（每格一串 4 条目块，64 B = 一条缓存行；除末块外都满，删除用末尾条目补洞）：增删仍 O(1)，遍历按块连续读。与旧的"每条目一个链表节点"在同一数据上对比（`ItemGridQueryBenchmarkWithDeathDrops`，含插入后乱序重排的 churn 场景）：M5 Pro 上两者差异在 ±10% 内、互有胜负——约 1.2–1.5 万条目的工作集（0.4–1.8 MB）完全在 M5 的大缓存里，链表的指针跳转几乎不产生缓存未命中。分块希望在工作集超出缓存时改善局部性；这是待真机验证的假设，不能由块大小直接推出实际 cache miss 次数或手机收益。代价是内存 0.7 → 约 1.8 MB（按最坏情况预留块）。旧实现保留为测试内的参照副本，便于以后在真机上跑同一对比。
 - **大半径分层**（`SpatialGrid` 可选第二层粗网格）：实测无收益（0.210 vs 0.217 ms）——8 m 格下一次查询本来就只覆盖 1–2 格。保留在 `SpatialGrid` 中作为选项（身体网格改为增量更新后不再使用）。
 - **非 tick 帧复用渲染数据**：没有新 tick 的帧跳过裁剪 / 排序 / 头部数据构建和上传，只更新插值 alpha、视口和头部 / 眼睛。像素测试两档都 0 差异；60 fps 下渲染器主线程耗时 GPU 档 0.061 → 0.054 ms、数据纹理档 0.146 → 0.130 ms（约 −11%）。
 - 顺带修复：数据纹理档条带 Job 的顶点 / 索引数组被安全系统误判为别名（有条带皮肤蛇可见时抛异常）；`TickPipeline.BeginTick` 中途异常时会先完成已调度的 Job，避免一个异常连锁导致之后所有访问报错。
@@ -802,58 +435,31 @@ Tier B 的 CPU 成本预估：节点展开 + 剔除约 0.6 ms（工作线程）�
 - **大蛇基准**（`BigSnakeBenchmark` / `BigSnakeRendererCpu`，60 条质量 800–3000、半径约 3.9 m 的蛇）：间距随半径（平均 0.96 m）对比固定 0.4 m——存活轨迹点 53.8k → 22.5k（−58%），slab 占用 61440 → 30720 点（480 → 240 KB），每 tick 新增点（= GPU 轨迹上传量）45 → 19；GPU 档渲染器主线程 0.089 → 0.078 ms（复用开启 0.077 → 0.071 ms）。模拟 tick 本身无差别（0.132 vs 0.136 ms）：包围盒和身体网格都已是增量的，不再随点数增长。数据纹理档无收益：它每帧按身体节点（间距 ≈ 0.55 × 半径）在 CPU 上采样，与轨迹点间距无关。
 - **数据纹理档固定开销**：条带网格只在本帧或上一帧有内容时才分配 / 提交 MeshData（大多数画面没有条带皮肤）；圆盘页加前缀子网格（256 / 512 / … 个圆盘，各自一份索引，不重叠——Unity 不允许子网格共享部分索引缓冲），按已用数量画最小前缀，不再对整页（最多 4096 个零半径圆盘、约 7 万顶点）做顶点处理。代价是整页索引内存约 +90%（页按需创建）。像素 A/B 测试 0 差异。收益在 GPU 顶点负载上，CI 只测主线程时间，而且 PlayMode 渲染计时在不同 CI 运行间波动可达 2 倍（未改动的 GPU 档也从 0.06 变到 0.12 ms），需要在真机上用 GPU 计时确认。
 
-5. **跨平台确定性**：模拟 Job 目前用 `FloatMode.Fast`，同一构建 / 同一 CPU 可复现；若需要跨设备回放，改为 `FloatMode.Deterministic`（约 5–15% 代价）。
+## 9. 验证入口与文档契约
 
----
+- 最小模块用 [DriftSmoke](../Assets/SinglePlayerFoundation/Samples/DriftSmoke/DriftSmokeModule.cs)，完整可玩接入用[新玩法配方](NewGameplayIntegrationRecipe.md)。
+- 逻辑/分层运行 `Tools/DotnetHarness/run.sh`；它不能证明原生 Burst/Job 安全或像素。原生脚本见 [local-unity-tests.sh](../Tools/ci/local-unity-tests.sh)，图形测试不能用 nographics 代替。
+- 关注 EntityRegistry、WorldSnapshot、LevelScope、Pipeline、SessionHost、MobileInput、武器/粒子时间线等已有测试；从双 Session、同 Tick 恢复、row 重排、generation 回收和满容量验证身份/生命周期。
+- 本轮文档片段和相对链接的验证范围见[配方验证说明](NewGameplayIntegrationRecipe.md#11-最小验收清单逻辑unity图形设备分开)。源文件中的接口摘录不创建第二套公共 API。
 
-## 9. 可测试性与工具
+## 10. 当前实现与下一阶段
 
-- **EditMode 单元测试**：L1（网格正确性、身体采样、转向）、L2（规则矩阵、Buff 汇总）直接在无场景 World 上跑。
-- **GC 测试**：长时间 tick 断言零分配（§8.4）。
-- **确定性回放**：记录 `seed + 每 tick 输入`，同一设备 / 同一构建可复现 bug；回归测试校验若干 tick 后的状态 hash。
-- **性能基准**：`150 蛇（窗口内 60）× 300 节点 + 10k 食物` 固定场景，记录各 Phase 耗时、Draw Call、上传字节数。
-- **调试可视化**：Gizmos 绘制网格占用、AI 探针、碰撞事件、Chunk LOD 等级、活跃窗口。
-
----
-
-## 10. 迭代路线与实现状态
-
-| 里程碑 | 内容 | 状态 |
-| --- | --- | --- |
-| M1 基座骨架 | Contracts、asmdef、SimWorld、EntityRegistry、Tick 管线、命令缓冲、快照、Perf HUD | ✅ 已实现，.NET 测试通过 |
-| M2 L1 模拟 | 轨迹缓冲、转向、两级网格（计数排序）、分块 | ✅ 已实现，网格与暴力法对拍 |
-| M3 渲染基座 | GPU 驱动（Compute + Indirect）+ GLES 3.0 数据纹理降级，节点 / 条带，半透明 | ✅ 已实现；Shader 需在 Unity 中验证 |
-| M4 贪吃蛇可玩 | 输入、吃、成长、死亡掉落、补充食物、相机、UI | ✅ 已实现 |
-| M5 规则与 AI | 配置烘焙、碰撞规则、效用 AI + 上下文避让、加速 | ✅ 已实现 |
-| M6 地图衔接 | 7500 / 3750 地图、窗口流式、LOD、传送门、非活动地图冻结 | ✅ 已实现 |
-| M7 扩展玩法 | Buff、技能、道具、飞行物 | ✅ 已实现 |
-| M8 打磨 | 自适应画质、回放、性能面板、CI | ✅ 已实现；真机性能待测 |
-
-### 10.1 实现与设计的差异（有意为之）
-
-| 设计 | 实现 | 原因 |
-| --- | --- | --- |
-| `ISimSystem` 放在 Contracts | 放在 `Runtime.Core` | 它依赖 `SimWorld`，Contracts 需保持零依赖 |
-| Presentation 只依赖 Contracts / Runtime.Core | 另依赖 L1（只读 `TrailState`） | GPU 轨迹镜像直接复用模拟的轨迹布局 |
-| 实例数据 16 B（half 打包） | 32 B（float4 + float4） | 避免 GLES 3.0 上 half 解包的 HLSLcc 兼容风险；GPU 驱动档实例在 GPU 生成，不占上传带宽 |
-| URP RendererFeature 中派发 Compute | 在 `LateUpdate` 直接 `Dispatch` + `Graphics.RenderMeshIndirect` | 同时兼容内置管线与 URP，零配置 |
-| 离开的 Region 压缩成 RegionSnapshot | 蛇保留在表中、按 `Region` 字段冻结；食物只存分块计数 | 无拷贝、切换更快；内存仍按上限预分配 |
-| AI 均匀分布全图 | 约 40% 新 AI 刷在玩家周围 120–500 的环带，漫游有概率向玩家聚拢 | 均匀分布时玩家视窗内平均只有 ~5 条蛇，测试显示 20 秒零交互 |
-| 数据纹理档一次绘制 | 每 4096 实例一页（每页一次绘制） | 每帧只上传用到的页，避免整张大纹理重传 |
-| 两级网格同一格尺寸 | 物品网格 8 m 格、身体网格 4 m 格，窗口相同 | 物品小且静止、吃 / 觅食查询半径大；格子数减为 1/4 |
-| 食物 GPU 池写间接参数 | 若平台不支持（创建失败）自动回退到 CPU 网格剔除 | DX11 等 API 对 Structured+IndirectArguments 组合有限制 |
-
-## 11. 已确认决策汇总
-
-| 项 | 决定 |
+| 项目 | 当前状态 |
 | --- | --- |
-| 碰撞 | 网格碰撞（两级网格） |
-| 大地图 | 7500 × 7500，60 × 60 Chunk |
-| 小地图 | 大地图**面积**的 1/4（边长减半），3750 × 3750，通过传送点衔接，同一时刻只运行一个 Region |
-| AI 规模 | 每张地图 150 条，活跃窗口内 ≤ 60 条 |
-| 引擎 | Unity 2022.3 LTS + URP 14 2D |
-| 蛇身表现 | 节点精灵 + 连续条带，按皮肤切换 |
-| 渲染 | GPU 驱动渲染（Tier A：Compute 展开 / 剔除 + Indirect Draw） |
-| 半透明皮肤 | 同蛇等深度 + `ZTest Less`，蛇间后→前、蛇内头→尾，GPU 有序压缩；同屏半透明蛇 ≤ 30 条 |
-| 兼容 | GLES 3.0 等设备自动降级到 Tier B（数据纹理 + 索引网格 + VTF），数据布局与 Shader 共用 |
-| 计算基座 | 自研 SoA + Jobs + Burst，不引入 Entities |
+| SoA、普通/pooled 表、模块组合、Tick/依赖、SessionHost | 已有实现；实际 API 与约束见 §1–6 |
+| 空间查询、身体池、共享战斗/技能/武器、渲染回退 | 多个现有消费者；每种能力边界和模式差异见专题文档与兼容矩阵 |
+| 保存、重开、清关、输入中断 | 已有机制与模式专属测试；不是所有模式/主线程资源都可直接 raw snapshot |
+| Stage A 语义对齐 | 文档与兼容性基线；不改 Runtime/asmdef 或经典 fixture |
+| 组合 manifest/完整安装事务、统一 View binding、保存 envelope | 后续计划；不得在新游戏中当现成 API 调用 |
+| 物理移动端验收 | 外部门槛：触摸、图形 API、热态持续帧时、内存/电量仍需真实设备 |
+
+后续分阶段目标、依赖和回滚策略以[共享基座扩展计划](SharedFoundationSemanticExtensionPlan.md)为准；开源概念依据及许可边界见[调研](OpenSourceSharedFoundationSurvey.md)。不为了实现全部提案一次重写存档、实体布局、渲染或游戏枚举。
+
+## 11. 接入时优先守住的决定
+
+1. 继续自有 SoA + Jobs/Burst，不为本阶段升级 Unity 或迁移 Entities。
+2. 稳定实体引用需要所属 Session/World 与完整 handle；时间线、关卡、内容、请求版本各司其职。
+3. 命令是意图、事件是事实、查询是读取、cue 是表现提示；有界队列不会替使用者决定语义/溢出。
+4. 结构改表和资源释放在安全窗口，访问声明与 Schedule dependency 都要真实完整。
+5. 模拟配置、运行状态、呈现投影和保存检查点分开；经典保存/回放差异明确保留。
+6. 新功能先在两个真实消费者中证明复用价值，运行时收益与设备结论由精确证据支持。

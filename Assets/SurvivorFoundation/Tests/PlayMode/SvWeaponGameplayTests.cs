@@ -35,7 +35,7 @@ namespace SurvivorFoundation.Tests.PlayMode
                 capture=new CanvasCapture(game.gameObject,game.CameraRig.Camera,720,1280);var safe=new Rect(0,0,720,1280);game.Hud.MobileHud.SetPreviewViewport(720,1280,safe);game.CameraRig.Snap();Assert.AreEqual(4,game.Hud.MobileHud.Buttons.Length);
                 foreach(int id in new[]{WeaponProfiles.Blade,WeaponProfiles.Sword,WeaponProfiles.Staff,WeaponProfiles.Bow})for(int side=-1;side<=1;side+=2)
                 {
-                    world.ClearLevel();game.State.Flow=SvFlow.Playing;game.State.Hero=game.State.HeroPrev=0;game.State.Facing=new float2(side,0);game.State.Input=default;weapons.RequestEquip(id);for(int i=0;i<weapons.Profile(id).EquipTicks;i++)game.Session.Step();
+                    world.ClearLevel();game.State.Flow=SvFlow.Playing;game.State.Hero=game.State.HeroPrev=0;game.State.Facing=new float2(side,0);game.State.Input=default;Equip(game,weapons,id);
                     byte[] beforeHud=game.Session.CaptureSnapshot();game.Hud.MobileHud.Refresh();
                     int attackGlyph=id==WeaponProfiles.Bow?CombatControlGraphic.BowGlyph:id==WeaponProfiles.Staff?CombatControlGraphic.StaffGlyph:CombatControlGraphic.BladeGlyph;
                     Assert.AreEqual(CombatControlGraphic.PulseGlyph,game.Hud.MobileHud.Buttons[0].transform.Find("Icon").GetComponent<CombatControlGraphic>().Glyph);
@@ -46,9 +46,16 @@ namespace SurvivorFoundation.Tests.PlayMode
                     CollectionAssert.AreEqual(beforeHud,game.Session.CaptureSnapshot(),"HUD refresh must not rewrite persisted skill definitions or equipment state");
                     SvSpawner.SpawnEnemy(world,runtime,1,new float2(side*(id>=WeaponProfiles.Staff?5:1),0));
                     int marker=weapons.Current.Ranged?weapons.Current.ReleaseTick:weapons.Current.Active.From;
-                    // Auto-target acquisition uses the existing grid; wait for the real action and its exact sampled marker.
-                    for(int i=0;i<weapons.Current.DurationTicks*2&&(weapons.Equipment.Timeline.PulseId==0||weapons.Equipment.Timeline.Tick<marker+1);i++)game.Session.Step();
+                    // Stop retains the previous tick/pulse. Require a fresh auto-targeted action instead
+                    // of mistaking an already completed action for this target's contact marker.
+                    uint previousPulse=weapons.Equipment.Timeline.PulseId;
+                    for(int i=0;i<weapons.Current.DurationTicks*2+2;i++)
+                    {
+                        game.Session.Step();var timeline=weapons.Equipment.Timeline;
+                        if(timeline.Running&&timeline.PulseId!=previousPulse&&timeline.Tick==marker+1)break;
+                    }
                     Assert.IsTrue(weapons.Equipment.Timeline.Running);
+                    Assert.AreNotEqual(previousPulse,weapons.Equipment.Timeline.PulseId,"capture must observe a new attack against the current target");
                     var sampled=weapons.View(game.Session.InterpolationAlpha);
                     Assert.AreEqual((float)marker/weapons.Current.DurationTicks,sampled.Phase,.00001f,"fixture must sample the authored contact/release marker");
                     TestContext.WriteLine($"Horde weapon {id}, facing {side}: ticks {weapons.Equipment.Timeline.PreviousTick}/{weapons.Equipment.Timeline.Tick}, alpha {game.Session.InterpolationAlpha:R}, sampled phase {sampled.Phase:R}, marker {(float)marker/weapons.Current.DurationTicks:R}");
@@ -86,8 +93,8 @@ namespace SurvivorFoundation.Tests.PlayMode
                 Assert.Less(math.distance(pausedSocket.Muzzle,heldSocket.Muzzle),.0001f,"paused interpolation must not oscillate a skill or held weapon");game.Session.Resume();
                 if(Environment.GetEnvironmentVariable("SPF_WEAPON_GAMEPLAY_SEQUENCE")=="1")
                 {
-                    capture.Dispose();capture=new CanvasCapture(game.gameObject,game.CameraRig.Camera,360,640);game.Hud.MobileHud.SetPreviewViewport(360,640,new Rect(0,0,360,640));world.ClearLevel();game.State.Flow=SvFlow.Playing;game.State.Hero=game.State.HeroPrev=0;weapons.RequestEquip(WeaponProfiles.Staff);
-                    for(int i=0;i<weapons.Profile(WeaponProfiles.Staff).EquipTicks;i++)game.Session.Step();for(int i=0;i<24;i++){float a=i*2.399963f;SvSpawner.SpawnEnemy(world,runtime,1,new float2(math.cos(a),math.sin(a))*(4+i*.08f));}
+                    capture.Dispose();capture=new CanvasCapture(game.gameObject,game.CameraRig.Camera,360,640);game.Hud.MobileHud.SetPreviewViewport(360,640,new Rect(0,0,360,640));world.ClearLevel();game.State.Flow=SvFlow.Playing;game.State.Hero=game.State.HeroPrev=0;Equip(game,weapons,WeaponProfiles.Staff);
+                    for(int i=0;i<24;i++){float a=i*2.399963f;SvSpawner.SpawnEnemy(world,runtime,1,new float2(math.cos(a),math.sin(a))*(4+i*.08f));}
                     Canvas.ForceUpdateCanvases();yield return null;yield return null;
                     using(var frames=new BufferedFrameCapture(capture.Target,90))
                     {
@@ -104,6 +111,17 @@ namespace SurvivorFoundation.Tests.PlayMode
                 LogAssert.NoUnexpectedReceived();
             }
             finally{capture?.Dispose();RenderCapabilities.Override=null;if(Camera.main!=null)Object.Destroy(Camera.main.gameObject);Object.Destroy(game.gameObject);Object.Destroy(config);}
+        }
+
+        static void Equip(SvGameBootstrap game,WeaponRuntime weapons,int id)
+        {
+            Assert.IsTrue(weapons.RequestEquip(id));
+            // A committed attack can delay the start of equip; EquipTicks alone is not a completion bound.
+            int limit=weapons.Current.DurationTicks+weapons.Profile(id).EquipTicks+2;
+            for(int i=0;i<limit&&(weapons.Equipment.EquippedId!=id||weapons.Equipment.PendingId!=0||weapons.Equipment.EquipRemaining!=0);i++)game.Session.Step();
+            Assert.AreEqual(id,weapons.Equipment.EquippedId);
+            Assert.AreEqual(0,weapons.Equipment.PendingId);
+            Assert.AreEqual(0,weapons.Equipment.EquipRemaining);
         }
     }
 }

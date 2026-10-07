@@ -71,7 +71,15 @@ namespace Latios2022Lab
                 {
                     world.EntityManager.DestroyEntity(owner);
                     world.initializationSystemGroup.Update();
-                    // Reactive cleanup may schedule disposal. World disposal below drains it.
+                    // Pinned SyncQueries completes its disposal jobs in this update.
+                    // Do not let whole-world teardown hide a missing owner cleanup.
+                    if (output[0] != ExpectedSum || witness[0] != 1 || witness[1] != 17)
+                        throw new InvalidOperationException("Reactive collection disposal did not complete before World teardown.");
+                    if (world.EntityManager.Exists(owner))
+                        throw new InvalidOperationException("Destroyed collection owner retained a cleanup entity after the reactive update.");
+                    world.initializationSystemGroup.Update();
+                    if (witness[0] != 1)
+                        throw new InvalidOperationException("Reactive collection disposal repeated on the next update.");
                 }
                 world.Dispose();
                 world = null;

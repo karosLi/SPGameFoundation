@@ -35,6 +35,7 @@ namespace SurvivorFoundation.Game
         public FrameGovernor Governor { get; private set; }
         public FollowCamera2D CameraRig { get; private set; }
         public SvRenderer Renderer { get; private set; }
+        public SvCollisionDebugOverlay CollisionOverlay { get; private set; }
         public SvHud Hud { get; private set; }
         public SvSwordPresentation Swords { get; private set; }
         public SvAudio Audio { get; private set; }
@@ -146,6 +147,7 @@ namespace SurvivorFoundation.Game
             var view = new GameObject("SvRenderer");
             view.transform.SetParent(transform, false);
             Renderer = view.AddComponent<SvRenderer>();
+            if (m_Config.WeaponCombat) { CollisionOverlay = view.AddComponent<SvCollisionDebugOverlay>(); CollisionOverlay.Host = Host; }
             Renderer.Host = Host;
             Renderer.Camera = CameraRig;
             Renderer.ArtStyle = m_ArtStyle;

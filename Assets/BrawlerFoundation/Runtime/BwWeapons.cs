@@ -1,4 +1,5 @@
 using SPF.Contracts;
+using SPF.Contracts.Combat;
 using SPF.L1.Skeleton;
 using SPF.L1.Spatial;
 using SPF.L2.Combat;
@@ -71,7 +72,7 @@ namespace BrawlerFoundation.Systems
         public override JobHandle OnTick(in SimContext context,JobHandle dependency)
         {
             dependency.Complete();var world=context.World;var game=world.Resource(BwKeys.Game);if(game.Flow!=BwFlow.Fighting)return dependency;
-            var weapons=world.Resource(BwWeapons.Key);var belt=world.Resource(BwBeltKeys.State);belt.Rebuild(world);
+            var weapons=world.Resource(BwWeapons.Key);weapons.CollisionDebug.Begin(weapons.Tick);var belt=world.Resource(BwBeltKeys.State);belt.Rebuild(world);
             int player=-1;var info=world.Column(BwKeys.Info);for(int i=0;i<world.Table(BwKeys.Fighter).Count;i++)if(info[i].Team==0){player=i;break;}
             if(player<0||info[player].Hp<=0)return dependency;
             var visitor=new ContactVisitor{World=world,Weapons=weapons,Info=info,Ground=world.Column(BwBeltKeys.Ground),PreviousGround=world.Column(BwBeltKeys.PreviousGround),Motion=world.Column(BwBeltKeys.Motion),Handles=world.Table(BwKeys.Fighter).Handles,Player=player};
@@ -98,17 +99,53 @@ namespace BrawlerFoundation.Systems
             public WeaponProfile Profile;public float2 Start,End,Direction;public float Height,Radius,BestFraction;public int Player,Scope,BestRow;public bool Projectile;
             public bool Visit(in GridEntry e)
             {
-                int row=e.Owner;var f=Info[row];if(f.Team==0||f.State==FighterState.KO)return true;
-                bool overlaps=Projectile?CombatSweep.Circles(Start,End,Radius,PreviousGround[row],Ground[row],BwRules.BodyHalfWidth,out float fraction):CombatSweep.PointCircle(Start,End,Ground[row],Radius+BwRules.BodyHalfWidth,out fraction);
-                float targetHeight=Projectile?math.lerp(Motion[row].PreviousHeight,Motion[row].Height,fraction):Motion[row].Height;
-                if(!overlaps||Height+Radius<targetHeight+BwRules.HurtBottom||Height-Radius>targetHeight+BwRules.HurtTop||Weapons.CheckHit(Scope,Handles[row])!=HitRecordResult.Added)return true;
-                if(Projectile){if(fraction<BestFraction||(fraction==BestFraction&&(BestRow<0||Handles[row].Index<Handles[BestRow].Index))){BestFraction=fraction;BestRow=row;}}
+                int row=e.Owner;var f=Info[row];
+                var filter=CombatCollisionPolicy.Filter(Weapons.Owner,Handles[row],0,f.Team,f.State==FighterState.KO,false);
+                if(filter!=CombatContactReason.Candidate){Trace(row,filter,0);return true;}
+                float fraction;
+                bool overlaps;
+                if(Projectile)
+                {
+                    var collision=new ProjectileCollisionProfile{Radius=Radius,TargetGroundRadius=BwRules.BodyHalfWidth,HurtBottom=BwRules.HurtBottom,HurtTop=BwRules.HurtTop};
+                    overlaps=collision.SweepGroundHeight(Start,End,Height,PreviousGround[row],Ground[row],Motion[row].PreviousHeight,Motion[row].Height,out fraction);
+                }
+                else
+                {
+                    overlaps=CombatSweep.PointCircle(Start,End,Ground[row],Radius+BwRules.BodyHalfWidth,out fraction);
+                    if(overlaps&&(Height+Radius<Motion[row].Height+BwRules.HurtBottom||Height-Radius>Motion[row].Height+BwRules.HurtTop))
+                    {Trace(row,CombatContactReason.HeightMiss,fraction);return true;}
+                }
+                if(!overlaps)
+                {
+                    if(Weapons.CollisionDebug.Enabled)
+                    {
+                        bool ground=Projectile?CombatSweep.Circles(Start,End,Radius,PreviousGround[row],Ground[row],BwRules.BodyHalfWidth,out _):CombatSweep.PointCircle(Start,End,Ground[row],Radius+BwRules.BodyHalfWidth,out _);
+                        Trace(row,ground?CombatContactReason.HeightMiss:CombatContactReason.GroundMiss,0);
+                    }
+                    return true;
+                }
+                var history=Weapons.CheckHit(Scope,Handles[row]);
+                if(history!=HitRecordResult.Added){Trace(row,CombatCollisionPolicy.HistoryReason(history),fraction);return true;}
+                Trace(row,CombatContactReason.Candidate,fraction);
+                if(Projectile)
+                {
+                    if(CombatCollisionPolicy.Before(fraction,Handles[row],BestFraction,BestRow<0?default:Handles[BestRow],BestRow>=0))
+                    {BestFraction=fraction;BestRow=row;}
+                }
                 else Hit(row,Ground[row]);return true;
+            }
+            void Trace(int row,CombatContactReason reason,float fraction) => Trace(row,reason,fraction,
+                reason==CombatContactReason.Candidate?math.lerp(Start,End,fraction):Ground[row]);
+            void Trace(int row,CombatContactReason reason,float fraction,float2 point)
+            {
+                if(!Weapons.CollisionDebug.Enabled)return;
+                Weapons.CollisionDebug.Record(new CombatContactTrace{Owner=Weapons.Owner,Target=Handles[row],Scope=Scope,Reason=reason,DamageOutcome=reason==CombatContactReason.Accepted?CombatDamageOutcome.Applied:CombatDamageOutcome.None,From=Start,To=End,Contact=point,Fraction=fraction,Height=Height,Radius=Radius});
             }
             public void Hit(int row,float2 contact)
             {
                 var f=Info[row];var m=Motion[row];var anim=World.Column(BwKeys.Anim);var a=anim[row];var game=World.Resource(BwKeys.Game);var belt=World.Resource(BwBeltKeys.State);var rig=World.Resource(BwKeys.Rig);
                 if(!Weapons.RecordHit(Scope,Handles[row],contact,Height))return;
+                Trace(row,CombatContactReason.Accepted,Projectile?BestFraction:0,contact);
                 f.Hp=math.max(0,f.Hp-Profile.Damage);f.Flash=1;f.VelocityX=Direction.x*Profile.Knockback;f.StateTime=0;f.Attack=AttackKind.None;if(math.abs(Direction.x)>.0001f)f.Facing=Direction.x<0?1:-1;m.BufferedAttack.Clear();m.ComboGraceTicks=0;
                 if(f.Hp<=0){f.State=FighterState.KO;a.Play(rig.KO,.05f,restart:true);game.Kos++;game.Score+=100;belt.TryDrop(Ground[row],BwBeltDropKind.Coin,10);if((game.Kos&1)==0)belt.TryDrop(Ground[row],BwBeltDropKind.Heal,18);}
                 else{f.State=FighterState.Hit;a.Play(rig.Hit,.04f,restart:true);}

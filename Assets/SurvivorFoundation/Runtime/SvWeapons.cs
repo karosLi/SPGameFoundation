@@ -1,4 +1,5 @@
 using SPF.Contracts;
+using SPF.Contracts.Combat;
 using SPF.L1.Spatial;
 using SPF.L2.Combat;
 using SPF.L2.Skills;
@@ -66,9 +67,19 @@ namespace SurvivorFoundation.Systems
         public override JobHandle OnTick(in SimContext context,JobHandle dependency)
         {
             dependency.Complete();var w=context.World;var game=w.Resource(SvKeys.Game);if(game.Flow!=SvFlow.Playing||game.Hp<=0)return dependency;
-            var weapons=w.Resource(SvWeapons.Key);var grid=w.Resource(SvKeys.EnemyGrid).AsReader();
+            var weapons=w.Resource(SvWeapons.Key);weapons.CollisionDebug.Begin(weapons.Tick);var grid=w.Resource(SvKeys.EnemyGrid).AsReader();
             var visitor=new Contacts{Weapons=weapons,Handles=w.Table(SvKeys.Enemy).Handles,Info=w.Column(SvKeys.Info),Positions=w.Column(SvKeys.Position),Previous=w.Column(SvKeys.PrevPosition),Hits=w.Resource(SvKeys.Hits),Might=SvRules.Might(game)};
             var p=weapons.Current;
+            // One exact movement bound per collision pass, independent of projectile count.
+            // It includes crowd separation, knockback and beacon displacement, not only authored speed.
+            float movePad=0;
+            if(weapons.ActiveProjectiles>0)
+            {
+                int count=w.Table(SvKeys.Enemy).Count;
+                for(int row=0;row<count;row++)if(!visitor.Info[row].Has(EnemyFlags.Dead))
+                    movePad=math.max(movePad,math.distance(visitor.Positions[row],visitor.Previous[row]));
+                if(weapons.CollisionDebug.Enabled){weapons.CollisionDebug.MaxTargetMovement=movePad;weapons.CollisionDebug.MovementRowsExamined=count;}
+            }
             if(weapons.MeleeActive)
             {
                 visitor.Scope=0;visitor.Start=game.Hero+weapons.Equipment.Aim*p.GripOffset.x*SvWeapons.ActorScale;visitor.End=game.Hero+weapons.Equipment.Aim*p.MuzzleOffset.x*SvWeapons.ActorScale;
@@ -79,12 +90,6 @@ namespace SurvivorFoundation.Systems
             {
                 var shot=weapons.Projectiles[i];if(!shot.Active)continue;
                 visitor.Scope=i+1;visitor.Start=shot.Previous;visitor.End=shot.Position;visitor.Radius=weapons.Profile(shot.ContentId).Radius*shot.Scale;visitor.Damage=shot.Damage;visitor.Height=shot.Height;visitor.Projectile=true;visitor.BestRow=-1;visitor.BestFraction=2;
-                // Enemy motion is bounded by authored speed each tick. Expand broadphase so a target
-                // that crossed the segment and ended outside the beam still reaches swept narrowphase.
-                var config=w.Resource(SvKeys.Config);float speed=0,radius=0;
-                for(int k=0;k<config.Enemies.Length;k++){speed=math.max(speed,config.Enemies[k].Speed*1.15f);radius=math.max(radius,config.Enemies[k].Radius*1.4f);}
-                float movePad=(speed+radius*96f)/weapons.TickRate;
-                if(config.Settings.Variant==SvVariant.GuardBeacon)movePad+=2*(config.Settings.BeaconRadius+radius);
                 CombatShapes.BeamBounds(visitor.Start,visitor.End,visitor.Radius+grid.MaxEntryRadius+movePad,out var min,out var max);grid.QueryCells(min,max,ref visitor);
                 if(visitor.BestRow>=0){visitor.Hit(visitor.BestRow,math.lerp(visitor.Start,visitor.End,visitor.BestFraction));weapons.StopProjectile(i);}
             }
@@ -96,14 +101,28 @@ namespace SurvivorFoundation.Systems
             public float2 Start,End;public float Radius,Damage,Height,Might,BestFraction;public int Scope,BestRow;public bool Projectile;
             public bool Visit(in GridEntry e)
             {
-                int row=e.Owner;if(Info[row].Has(EnemyFlags.Dead))return true;
+                int row=e.Owner;var filter=CombatCollisionPolicy.Filter(Weapons.Owner,Handles[row],0,1,Info[row].Has(EnemyFlags.Dead),false);
+                if(filter!=CombatContactReason.Candidate){Trace(row,filter,0);return true;}
                 bool overlap=Projectile?CombatSweep.Circles(Start,End,Radius,Previous[row],Positions[row],Info[row].Radius,out float fraction):CombatSweep.PointCircle(Start,End,Positions[row],Radius+Info[row].Radius,out fraction);
-                if(!overlap||Weapons.CheckHit(Scope,Handles[row])!=HitRecordResult.Added)return true;
-                if(Projectile){if(fraction<BestFraction||(fraction==BestFraction&&(BestRow<0||Handles[row].Index<Handles[BestRow].Index))){BestFraction=fraction;BestRow=row;}}
+                if(!overlap){Trace(row,CombatContactReason.GroundMiss,0);return true;}
+                var history=Weapons.CheckHit(Scope,Handles[row]);if(history!=HitRecordResult.Added){Trace(row,CombatCollisionPolicy.HistoryReason(history),fraction);return true;}
+                Trace(row,CombatContactReason.Candidate,fraction);
+                if(Projectile){if(CombatCollisionPolicy.Before(fraction,Handles[row],BestFraction,BestRow<0?default:Handles[BestRow],BestRow>=0)){BestFraction=fraction;BestRow=row;}}
                 else Hit(row,Positions[row]);return true;
             }
+            void Trace(int row,CombatContactReason reason,float fraction) => Trace(row,reason,fraction,
+                reason==CombatContactReason.Candidate?math.lerp(Start,End,fraction):Positions[row]);
+            void Trace(int row,CombatContactReason reason,float fraction,float2 point)
+            {
+                if(!Weapons.CollisionDebug.Enabled)return;
+                Weapons.CollisionDebug.Record(new CombatContactTrace{Owner=Weapons.Owner,Target=Handles[row],Scope=Scope,Reason=reason,DamageOutcome=reason==CombatContactReason.Accepted?CombatDamageOutcome.Queued:CombatDamageOutcome.None,From=Start,To=End,Contact=point,Fraction=fraction,Height=Height,Radius=Radius});
+            }
             public void Hit(int row,float2 point)
-            {if(Hits.TryAdd(new SvHit{Target=row,Damage=Damage*Might}))Weapons.RecordHit(Scope,Handles[row],point,Height);else if(Weapons.RejectedHits<int.MaxValue)Weapons.RejectedHits++;}
+            {
+                if(Hits.TryAdd(new SvHit{Target=row,Damage=Damage*Might}))
+                {if(Weapons.RecordHit(Scope,Handles[row],point,Height))Trace(row,CombatContactReason.Accepted,Projectile?BestFraction:0,point);}
+                else{if(Weapons.RejectedHits<int.MaxValue)Weapons.RejectedHits++;Trace(row,CombatContactReason.QueueFull,Projectile?BestFraction:0,point);}
+            }
         }
     }
 }

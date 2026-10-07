@@ -45,6 +45,8 @@ namespace SPF.L2.Weapons
         public NativeArray<EntityHandle> History;
         public NativeArray<HitHistoryState> Scopes;
         public NativeArray<WeaponCue> Cues;
+        // Unsaved diagnostics keep the existing snapshot schema/fingerprint and classic defaults.
+        public readonly SPF.Contracts.Combat.CombatTraceBuffer CollisionDebug;
         public int CueCount, RejectedProjectiles, RejectedHits, RejectedCues, Releases, AcceptedHits;
         public long Tick;
         /// <summary>Unsaved presentation invalidation epoch; changes on reset or snapshot restore, even at the same tick.</summary>
@@ -70,7 +72,7 @@ namespace SPF.L2.Weapons
             Projectiles=new NativeArray<WeaponProjectile>(projectiles,Allocator.Persistent);
             History=new NativeArray<EntityHandle>((projectiles+1)*targetsPerAttack,Allocator.Persistent);
             Scopes=new NativeArray<HitHistoryState>(projectiles+1,Allocator.Persistent);
-            Cues=new NativeArray<WeaponCue>(cues,Allocator.Persistent);OnReset();
+            Cues=new NativeArray<WeaponCue>(cues,Allocator.Persistent);CollisionDebug=new SPF.Contracts.Combat.CombatTraceBuffer();OnReset();
         }
         static void Hash(ref uint h,uint v){unchecked{h=(h^v)*16777619u;}}
         public WeaponProfile Profile(int contentId)
@@ -169,6 +171,7 @@ namespace SPF.L2.Weapons
         void ReleaseScope(int i){var s=Scopes[i];HitHistory.Release(History,i*HistoryPerAttack,HistoryPerAttack,ref s);Scopes[i]=s;}
         public void CancelAll()
         {
+            CollisionDebug.Clear();
             Equipment.Timeline.Stop();Equipment.BufferedAttack.Clear();Equipment.PendingId=Equipment.EquipRemaining=0;Equipment.Released=false;Equipment.Cues=WeaponCueKind.None;
             for(int i=0;i<Projectiles.Length;i++)Projectiles[i]=default;for(int i=0;i<Scopes.Length;i++)ReleaseScope(i);CueCount=0;
         }
@@ -187,6 +190,7 @@ namespace SPF.L2.Weapons
         }
         public void OnReset()
         {
+            CollisionDebug.Clear();
             Revision=Revision==uint.MaxValue?1:Revision+1;
             Equipment=new WeaponEquipment{EquippedId=m_Profiles[0].ContentId,Aim=new float2(1,0)};Owner=EntityHandle.Null;Tick=0;
             for(int i=0;i<Projectiles.Length;i++)Projectiles[i]=default;for(int i=0;i<History.Length;i++)History[i]=default;for(int i=0;i<Scopes.Length;i++)Scopes[i]=default;
@@ -200,6 +204,7 @@ namespace SPF.L2.Weapons
         }
         public void ReadSnapshot(BinaryReader r)
         {
+            CollisionDebug.Clear();
             Revision=Revision==uint.MaxValue?1:Revision+1;
             if(r.ReadInt32()!=Magic||r.ReadInt32()!=2||r.ReadUInt32()!=m_Fingerprint||r.ReadInt32()!=TickRate||r.ReadInt32()!=Projectiles.Length||r.ReadInt32()!=HistoryPerAttack||r.ReadInt32()!=Cues.Length)throw new InvalidDataException("Weapon content or capacity differs from snapshot.");
             Equipment=NativeIO.ReadValue<WeaponEquipment>(r);Owner=NativeIO.ReadHandle(r);Tick=r.ReadInt64();RejectedProjectiles=r.ReadInt32();RejectedHits=r.ReadInt32();RejectedCues=0;Releases=r.ReadInt32();AcceptedHits=r.ReadInt32();
@@ -215,6 +220,6 @@ namespace SPF.L2.Weapons
                 if(!p.Active&&s.Pulse!=0)throw new InvalidDataException("Inactive projectile retains hit history.");if(p.Active&&(!HasProfile(p.ContentId)||!Profile(p.ContentId).Ranged||p.SpawnTick<1||p.SpawnTick>Tick||p.RemainingTicks<0||p.RemainingTicks>Profile(p.ContentId).ProjectileLifeTicks||p.Pulse==0||s.Pulse!=p.Pulse||!math.all(math.isfinite(p.Position))||!math.all(math.isfinite(p.Previous))||!math.all(math.isfinite(p.Direction))||math.lengthsq(p.Direction)<.999f||math.lengthsq(p.Direction)>1.001f||!math.isfinite(p.Scale)||p.Scale<=0||p.Scale>4||!math.isfinite(p.Height)||p.Height<0||!math.isfinite(p.Damage)||p.Damage<0))throw new InvalidDataException("Invalid weapon projectile.");
             }
         }
-        public void Dispose(){Projectiles.Dispose();History.Dispose();Scopes.Dispose();Cues.Dispose();}
+        public void Dispose(){Projectiles.Dispose();History.Dispose();Scopes.Dispose();Cues.Dispose();CollisionDebug.Dispose();}
     }
 }

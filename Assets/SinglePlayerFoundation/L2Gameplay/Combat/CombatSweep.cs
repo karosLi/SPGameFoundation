@@ -16,6 +16,47 @@ namespace SPF.L2.Combat
                 ((double)to.y - from.y) - ((double)targetTo.y - targetFrom.y),
                 (double)math.max(0f, radius) + math.max(0f, targetRadius), out fraction);
 
+        /// <summary>Closed relative-circle contact interval clipped to [0,1]. Finite inputs are
+        /// required; negative radii clamp to zero, matching Circles. Stationary overlap spans the
+        /// whole tick, and a tangent can have entry == exit. Keep the double endpoints until all
+        /// other contact intervals have been intersected: rounding them to float first can bridge
+        /// a real gap. False outputs are unspecified. No epsilon expands the geometry.</summary>
+        public static bool CircleContactInterval(float2 from, float2 to, float radius,
+            float2 targetFrom, float2 targetTo, float targetRadius, out double entry, out double exit)
+        {
+            entry = exit = 0d;
+            double mx = (double)from.x - targetFrom.x, my = (double)from.y - targetFrom.y;
+            double dx = ((double)to.x - from.x) - ((double)targetTo.x - targetFrom.x);
+            double dy = ((double)to.y - from.y) - ((double)targetTo.y - targetFrom.y);
+            double combined = (double)math.max(0f, radius) + math.max(0f, targetRadius);
+            double rr = combined * combined, c = mx * mx + my * my - rr;
+            double a = dx * dx + dy * dy;
+            if (a == 0d)
+            {
+                if (c > 0d) return false;
+                exit = 1d;
+                return true;
+            }
+            double b = mx * dx + my * dy;
+            if (c > 0d && b >= 0d) return false;
+            // Outside: avoid cancellation of longitudinal terms in b*b - a*c. Inside/on the
+            // circle: b*b - a*c only adds nonnegative terms and preserves initial contact.
+            double cross = mx * dy - my * dx;
+            double discriminant = c <= 0d ? b * b - a * c : a * rr - cross * cross;
+            if (discriminant < 0d) return false;
+            double root = math.sqrt(discriminant);
+            // One stable quadratic root and the product of roots give both endpoints, including
+            // initial overlap, initial tangency while moving away, and a zero-radius point contact.
+            double q = b <= 0d ? -b + root : -b - root;
+            double first = q == 0d ? 0d : c / q;
+            double last = q / a;
+            if (first > last) { double swap = first; first = last; last = swap; }
+            if (first > 1d || last < 0d) return false;
+            entry = math.max(0d, first);
+            exit = math.min(1d, last);
+            return entry <= exit;
+        }
+
         /// <summary>Point against a stationary circle, also suitable for an already combined radius.
         /// Radius must be nonnegative. Every nonzero representable displacement is considered.</summary>
         public static bool PointCircle(float2 from, float2 to, float2 center, float radius, out float fraction)

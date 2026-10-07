@@ -38,6 +38,7 @@ namespace BrawlerFoundation.Game
         public FrameGovernor Governor { get; private set; }
         public FollowCamera2D CameraRig { get; private set; }
         public BwRenderer Renderer { get; private set; }
+        public BwCollisionDebugOverlay CollisionOverlay { get; private set; }
         public InputRouter InputRouter { get; private set; }
         public SimSession Session => Host != null ? Host.Session : null;
         public bool SharedCombatEnabled => m_SharedCombat || m_MobileCombat || m_BeltScroller;
@@ -111,6 +112,7 @@ namespace BrawlerFoundation.Game
             var view = new GameObject("BwRenderer");
             view.transform.SetParent(transform, false);
             Renderer = view.AddComponent<BwRenderer>();
+            if (m_WeaponCombat) { CollisionOverlay = view.AddComponent<BwCollisionDebugOverlay>(); CollisionOverlay.Host = Host; }
             Renderer.Host = Host;
             Renderer.NaturalCharacters = m_NaturalCharacters;
             Renderer.SetQualityLevel(Governor.Level);

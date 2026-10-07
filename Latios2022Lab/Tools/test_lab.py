@@ -124,6 +124,17 @@ class LauncherTests(unittest.TestCase):
             link = Path(tmp) / 'Latios2022Lab'; link.symlink_to(lab.PROJECT, target_is_directory=True)
             with self.assertRaisesRegex(ValueError, 'symlink'): lab.validate_paths(link)
 
+    def test_each_assembly_declares_its_direct_api_dependencies(self):
+        required = {
+            'Latios2022Lab.Runtime': {'Latios.Core', 'Latios.Transforms', 'Latios.Psyshock', 'Unity.Entities', 'Unity.Collections', 'Unity.Jobs', 'Unity.Mathematics', 'Unity.Burst'},
+            'Latios2022Lab.EditorTools': {'Latios2022Lab.Runtime', 'Latios.Core', 'Unity.Entities', 'Unity.Burst'},
+            'Latios2022Lab.Editor': {'Latios2022Lab.Runtime', 'Latios2022Lab.EditorTools', 'Latios.Core', 'Unity.Entities', 'Unity.Collections', 'UnityEngine.TestRunner', 'UnityEditor.TestRunner'},
+            'Latios2022Lab.PlayMode': {'Latios2022Lab.Runtime', 'Unity.Burst', 'UnityEngine.TestRunner'},
+        }
+        for path in (lab.PROJECT / 'Assets').rglob('*.asmdef'):
+            data = json.loads(path.read_text())
+            self.assertLessEqual(required[data['name']], set(data['references']), str(path))
+
     def test_product_manifest_remains_without_latios(self):
         data = json.loads((lab.PROJECT.parent / 'Packages/manifest.json').read_text())
         self.assertNotIn('com.latios.latiosframework', data['dependencies'])

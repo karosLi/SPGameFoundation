@@ -66,6 +66,8 @@ namespace SPF.Tests.EditMode
             var pool = new DamageNumberPool(); ulong sequence = 0;
             Action run = () => { for (int i = 0; i < 1000; i++) { pool.BeginFrame(.03f, i % 4); pool.Emit(new EntityHandle(i % 8, 1), new float2(i % 8 - 4, 0), 12422, i % 3 == 0, ++sequence); batch.Clear(); pool.Draw(batch, sheet, font, new float4(-8, -5, 8, 5)); } };
             run(); using var probe = new ManagedAllocationProbe(); var before = probe.Calibrate(); var result = probe.Measure(run); var after = probe.Calibrate();
+            Assert.Zero(before.Empty.Value); Assert.Greater(before.RetainedArrays.Value, 0);
+            Assert.Zero(after.Empty.Value); Assert.Greater(after.RetainedArrays.Value, 0);
             Assert.Zero(result.Value); TestContext.WriteLine($"Smooth damage font1000 warmed pack samples: {result.Value} {result.Metric}; empty/positive={before.Empty.Value}/{before.RetainedArrays.Value}, {after.Empty.Value}/{after.RetainedArrays.Value}.");
         }
     }

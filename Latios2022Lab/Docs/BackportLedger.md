@@ -40,3 +40,9 @@ UPM will fetch the whole original package and its notices later. A player/packag
 ## Review ledger for future changes
 
 For each future compatibility fix or new capability, record upstream commit/file, concrete product need, failure/old oracle, new oracle, dependency closure, modified files, preserved notices, native/Burst/AOT result and platform limits. Keep compatibility fixes separate from feature backports. The first entry remains **pending real S1a import results**.
+
+## Source-identified control-group risk (not yet a native finding)
+
+At pinned [CollectionComponentOperations.cs, SyncQueries](https://github.com/Dreaming381/Latios-Framework/blob/381a77dbf774ff603014d5695ef6c06abaa25d96/Core/Internal/CollectionComponentOperations.cs#L150-L176), the removal path completes disposal handles but subsequently passes `context->addQuery` when removing the cleanup component. [CollectionComponentsReactiveSystem](https://github.com/Dreaming381/Latios-Framework/blob/381a77dbf774ff603014d5695ef6c06abaa25d96/Core/Systems/_Essentials/ManagedStructStorageCleanupSystems.cs) invokes that operation without a separate removal afterward. This suggests the destroyed owner's cleanup entity can remain until World teardown. That is source analysis, not a reproduced native result.
+
+`CollectionProbe` now requires the writer/read output and exactly-once disposal witness after the reactive initialization update, and requires `EntityManager.Exists(owner)` to be false **before** World disposal. A second initialization update must not dispose twice; final teardown retains its own exactly-once check. If native execution fails here, retain that failure and classify the precise upstream control-group defect. Do not loosen the oracle, silently remove the entity in the fixture, or patch the pinned package in this preparation commit. A subsequent narrowly scoped compatibility correction needs its own ledger entry and full S1a regression.

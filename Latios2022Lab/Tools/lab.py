@@ -141,6 +141,19 @@ def make_command(editor, phase, output, burst, target):
     return command
 
 
+def verify_editor_binary(project_command, output):
+    # Only after the external gate: ask identity without ever passing -projectPath.
+    version_command = project_command[:project_command.index('-batchmode')] + ['-version']
+    observed = subprocess.run(version_command, cwd=output, capture_output=True, text=True,
+                              timeout=60, check=False)
+    text = observed.stdout + '\n' + observed.stderr
+    (output / 'editor-version.txt').write_text(text)
+    require(observed.returncode == 0, 'Installed Editor version query failed; project launch blocked.')
+    versions = set(re.findall(r'(?<!\w)\d{4}\.\d+\.\d+[abfp]\d+(?!\w)', text))
+    require(versions == {EDITOR_VERSION}, 'Installed Editor is not exactly ' + EDITOR_VERSION + '; project launch blocked.')
+    return {'command': version_command, 'version': EDITOR_VERSION}
+
+
 def check_results(path, phase):
     root = ET.parse(path).getroot()
     cases = list(root.iter('test-case'))
@@ -185,10 +198,11 @@ def main(argv=None):
     launch_lock.mkdir()
     try:
         output.mkdir(parents=True, exist_ok=False)
+        installed_editor = verify_editor_binary(command, output)
         provenance = {'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=PROJECT, text=True).strip(),
                       'source_status': subprocess.check_output(['git', 'status', '--porcelain'], cwd=PROJECT, text=True),
                       'inputs_sha256': {str(p.relative_to(PROJECT)): sha(p) for folder in ('Assets', 'Packages', 'ProjectSettings', 'Tools') for p in (PROJECT / folder).rglob('*') if p.is_file() and '__pycache__' not in p.parts},
-                      'command': command, 'gate': gate, 'root_product_inputs_before': before}
+                      'command': command, 'installed_editor': installed_editor, 'gate': gate, 'root_product_inputs_before': before}
         (output / 'launch.json').write_text(json.dumps(provenance, indent=2) + '\n')
         env = os.environ.copy()
         cache = PROJECT / '.upm-cache'
@@ -217,6 +231,6 @@ def main(argv=None):
 if __name__ == '__main__':
     try:
         sys.exit(main())
-    except (ValueError, KeyError, OSError, ET.ParseError) as exc:
+    except (ValueError, KeyError, OSError, ET.ParseError, subprocess.TimeoutExpired) as exc:
         print('BLOCKED: ' + str(exc), file=sys.stderr)
         sys.exit(2)

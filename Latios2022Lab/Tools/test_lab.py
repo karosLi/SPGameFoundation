@@ -124,6 +124,32 @@ class LauncherTests(unittest.TestCase):
             link = Path(tmp) / 'Latios2022Lab'; link.symlink_to(lab.PROJECT, target_is_directory=True)
             with self.assertRaisesRegex(ValueError, 'symlink'): lab.validate_paths(link)
 
+    def test_editor_identity_check_never_receives_project_arguments(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            command = ['/usr/bin/arch', '-arm64', '/editor/Unity', '-batchmode', '-projectPath', str(lab.PROJECT)]
+            reply = lab.subprocess.CompletedProcess([], 0, '2022.3.62f2\n', '')
+            with patch.object(lab.subprocess, 'run', return_value=reply) as launch:
+                lab.verify_editor_binary(command, Path(tmp))
+                self.assertEqual(['/usr/bin/arch', '-arm64', '/editor/Unity', '-version'], launch.call_args.args[0])
+                self.assertNotIn('-projectPath', launch.call_args.args[0])
+                self.assertEqual(Path(tmp), launch.call_args.kwargs['cwd'])
+
+    def test_wrong_or_failed_editor_version_is_blocked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            for code, version in ((0, '6000.3.8f1'), (1, '2022.3.62f2'), (0, 'unknown')):
+                reply = lab.subprocess.CompletedProcess([], code, version, '')
+                with patch.object(lab.subprocess, 'run', return_value=reply):
+                    with self.assertRaises(ValueError):
+                        lab.verify_editor_binary(['/editor/Unity', '-batchmode'], Path(tmp))
+
+    def test_destroy_oracle_precedes_whole_world_teardown(self):
+        source = (lab.PROJECT / 'Assets/Latios2022Tests/Runtime/CollectionProbe.cs').read_text()
+        branch = source[source.index('else if (exit == CollectionExit.DestroyEntity)'):source.index('                world.Dispose();')]
+        self.assertIn('world.initializationSystemGroup.Update()', branch)
+        self.assertIn('witness[0] != 1', branch)
+        self.assertIn('world.EntityManager.Exists(owner)', branch)
+        self.assertIn('output[0] != ExpectedSum', branch)
+
     def test_playmode_witness_uses_requested_mode_and_shared_runtime_policy(self):
         root = lab.PROJECT / 'Assets/Latios2022Tests'
         playmode = (root / 'PlayMode/PlayModeTests.cs').read_text()

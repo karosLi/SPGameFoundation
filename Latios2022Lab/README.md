@@ -56,7 +56,7 @@ When released, add `--execute --gate /absolute/path/to/released-gate.json`. Run 
 
 Use `--target StandaloneLinux64` or `StandaloneWindows64` for those approved desktop controls with the matching installed Editor/IL2CPP modules; the default Mac target is explicit and never inferred to prove another platform. On macOS the launcher reads physical ARM64 capability and uses `arch -arm64` even if its runner is under Rosetta. It does not install software, alter signing/security, kill existing Unity processes, retry without Burst, or change Mac/Editor preferences.
 
-The launcher fixes `-projectPath`, working directory and all UPM caches under this lab, checks symlinks/project locks, records source commit, dirty state, input hashes, command and gate, and checks root product manifests/settings stayed unchanged. Run evidence is unique under ignored `Artifacts/`. A native nonzero exit stays a failure; it is not retried under a weaker configuration. Review generated lab ProjectSettings before committing them.
+After checking the external gate, the launcher first runs the selected binary with `-version` and no project path, rejecting anything except 2022.3.62f2 before it can import/normalize the lab. Every Editor test phase also checks the actual `Application.unityVersion`. The launcher fixes `-projectPath`, working directory and all UPM caches under this lab, checks symlinks/project locks, records source commit, dirty state, input hashes, command and gate, and checks root product manifests/settings stayed unchanged. Run evidence is unique under ignored `Artifacts/`. A native nonzero exit stays a failure; it is not retried under a weaker configuration. Review generated lab ProjectSettings before committing them.
 
 ## Fixtures and limits
 
@@ -69,6 +69,8 @@ The launcher fixes `-projectPath`, working directory and all UPM caches under th
 These are small correctness/lifecycle fixtures, not gameplay, performance, GPU, broad platform or full-module acceptance. Non-finite/negative-radius inputs, arbitrary shape/mesh/compound/baking behavior, hot swapping, SPF bridge semantics, solver behavior and S1b backports are not promised. No raw SPF state/EntityHandle is reinterpreted as an ECS Entity.
 
 ## Stop conditions and remaining gates
+
+Source review found a possible historical reactive-cleanup defect in the pinned package: its removal branch targets the add-query when removing the cleanup component. The destroy fixture requires the owner entity to cease existing and the disposal witness to complete before whole-world teardown. This deliberately remains a strict native gate; no upstream fix or waived assertion is included. See the ledger for exact source.
 
 Classify a failure as UPM/dependency, package/internal API, generator, native safety/lifecycle, query oracle or build/AOT. Preserve the exact failing input and log. A fix may target a specifically diagnosed compatibility issue within the approved scope. Stop and reassess before upgrading Editor, editing Entities internals/layout, disabling safety, broad package splitting, or rewriting renderer/audio/generators.
 

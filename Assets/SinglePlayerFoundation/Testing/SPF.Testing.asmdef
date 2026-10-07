@@ -4,7 +4,10 @@
     "references": [
         "UnityEngine.UI",
         "Unity.Collections",
-        "SPF.L2Gameplay"
+        "SPF.L2Gameplay",
+        "SPF.Contracts",
+        "SPF.Runtime.Core",
+        "SPF.Runtime"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

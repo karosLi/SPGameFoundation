@@ -1,0 +1,10 @@
+{
+  "name": "FoundationAcceptance.Tests.EditMode",
+  "rootNamespace": "ExternalAcceptance.Tests",
+  "references": ["UnityEngine.TestRunner", "UnityEditor.TestRunner", "SPF.Contracts", "SPF.Runtime.Core", "SPF.Runtime", "SPF.Testing", "Unity.Collections", "Unity.Mathematics", "Unity.Burst"],
+  "includePlatforms": ["Editor"],
+  "overrideReferences": true,
+  "precompiledReferences": ["nunit.framework.dll"],
+  "autoReferenced": false,
+  "defineConstraints": ["UNITY_INCLUDE_TESTS"]
+}

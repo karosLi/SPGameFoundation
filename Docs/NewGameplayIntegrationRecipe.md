@@ -427,3 +427,7 @@ Tools/DotnetHarness/run.sh
 ## 可选的规则组合接入（Stage E）
 
 [两种真实玩法的规则组合](ComposedAbilityRules.md)展示 Survivor 范围脉冲的数据变体/推开规则，以及 Brawler 踢击/治疗的数据变体/命中赚取治疗额度。显式新工厂复用现有移动 HUD、动作和武器；旧工厂保持控制组。新状态有独立完整保存配方，不借用旧武器配方冒称覆盖。原生连续影像和真机状态以该文档链接的精确验证记录为准。
+
+## Stage G 公共验收夹具与移动预算
+
+[公共验收与预算报告](SharedAcceptanceAndMobileBudgets.md)提供复用既有 NUnit/SPF.Testing 的真实工厂夹具、Shooter/Platformer 两个消费者和独立的测试模块。测试模块只证明外部规则接入，不是成品可玩 demo。报告区分配置目标、软件实测和 Unknown/null；保留分配阳性/空对照与现有门槛，Android/iOS 真机验收仍为 Pending。

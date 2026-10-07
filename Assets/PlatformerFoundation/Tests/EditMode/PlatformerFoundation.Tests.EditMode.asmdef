@@ -14,7 +14,8 @@
         "Unity.Burst",
         "PlatformerFoundation.Runtime",
         "SPF.Presentation",
-        "PlatformerFoundation.Presentation"
+        "PlatformerFoundation.Presentation",
+        "SPF.Testing"
     ],
     "includePlatforms": [
         "Editor"

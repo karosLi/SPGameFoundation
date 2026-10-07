@@ -1,0 +1,45 @@
+{
+  "base_commit": "65aeb397aa4420253d830448d0f69666cbc11d10",
+  "failed_remote": "3ac697",
+  "failed_source": "5f86119",
+  "native_run": 37617046417,
+  "failed_xml_sha256": "2c2a0854f235291b9294ec4cc676d82b318f9ba2dcdd90db425cc5d15014542e",
+  "failure_name": "SPF.Audio.Tests.PlayMode.NativeAudioPlaybackTests.ActualSourcesLoopPauseResumeCrossfadeAndRemainBounded",
+  "failure_message": "  the real source output contains signal; this is not a speaker-quality judgment\n  Expected: greater than 9.99999975E-05f\n  But was:  0.0f\n",
+  "fix_scope": "native test fixture and diagnostic documentation only",
+  "api_compile": {
+    "net8.0": {
+      "errors": 0,
+      "warnings": 7
+    },
+    "netstandard2.1": {
+      "errors": 0,
+      "warnings": 7
+    }
+  },
+  "new_native_result": "pending execution; not replaced by API compile",
+  "production_sources_changed": false,
+  "sound_signal_threshold_unchanged": 0.0001,
+  "silent_control_threshold": 1e-08,
+  "controls": [
+    "known-sine before",
+    "known-zero PCM on same source",
+    "known-sine after"
+  ],
+  "logs_sha256": {
+    "net8.0": "6099cfa2045d92674efeb18bd0e46b0ecd30d265100db8f8cd973924c73bba3f",
+    "netstandard2.1": "9ac9fa6476098d8d27be0ae4a4e42a725ed6359f310cb0b4b5563c404fe96825"
+  },
+  "fixture_sha256": "0306dfa37154546704524cfac86bedcab224f827c9459aa84ede2326cd062907",
+  "primary_api_reference": "https://docs.unity3d.com/2022.3/Documentation/ScriptReference/AudioSource.GetOutputData.html",
+  "probe_clip_samples": 24060,
+  "probe_sample_rate": 24000,
+  "retained_windows_per_phase": 8,
+  "phase_timeout_seconds": 3,
+  "retained_spacing": "at least one frame AND max(configured DSP buffer frames,512)/output sample rate",
+  "independent_source_review": {
+    "verdict": "PASS; no remaining blocker in the final timing/control delta",
+    "reviewed_fixture_sha256": "0306dfa37154546704524cfac86bedcab224f827c9459aa84ede2326cd062907",
+    "scope": "source review only; exact-commit native execution pending"
+  }
+}

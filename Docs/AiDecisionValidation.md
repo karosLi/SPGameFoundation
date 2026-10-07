@@ -86,3 +86,5 @@ Belt 树的 p50 在四个场景中慢 2.13–4.79%；RPG 中位数变化为 -1.6
 ### 精确分离候选的算术定位（2026-10-07，原生复验待完成）
 
 后续 `677611a` 的 Strict/High 仍出现原两项 dense 精度失败。现已用 Unity 自带 Mono 的 float32 / extended scalar 两种求值模式逐位复现两列结果，新增 test-only 显式舍入候选、独立未改生产 reference、原生逐贡献/累加/clamp 原始位轨迹与对抗用例；200,000 pair 和 160 dense row 在两种 managed 模式均匹配。完整原始精确断言保留，生产仍不采用候选。详见[诊断、指纹、复现命令和验收边界](SeparationArithmeticParity.md)；本地通过不代替这次补丁的真实 Burst 复验。
+
+最新原生闭环：`e86ee87` 已通过1,084 EditMode、154 graphics PlayMode 和1,050 .NET 用例，两项 dense 精度失败均解决。Mac 实际选择 ExtendedScalar，候选 backend=1；原始精确断言、逐行/逐贡献比对均保留。生产 ordered 路径与直接 AI 默认不变，未把实验候选投入生产。详见[精度原因与修复](SeparationArithmeticParity.md)及[完整闭环](MobileFoundationFollowupValidation.md)。

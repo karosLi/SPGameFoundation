@@ -2,7 +2,19 @@
 
 This page tracks the finite collision/AI, art, gait and projectile follow-up to the green [weapon checkpoint](WeaponMotionStage5Validation.md). It does not replace the detailed implementation contracts or claim physical Android/iOS validation.
 
-## Latest runtime checkpoint: 3f6362f
+## Closed native checkpoint: e86ee87
+
+Exact remote `e86ee87a7691282ae7e96713c315dbec5998c414`, local `62c5b7f5765a879aaf8ec9fa69bc7601ae3fa969`, tree `04435658d8b1c2e95e286b093405141b5fd6040b`: **both CI jobs are terminal success**. [.NET](https://github.com/karosLi/SPGameFoundation/actions/runs/37585283320): **1,050 passed**. [Native Unity](https://github.com/karosLi/SPGameFoundation/actions/runs/37585283378): **1,084 EditMode passed / 0 failed / 5 skipped**, **154 graphics PlayMode passed / 0 failed / 1 explicit diagnostic skip**.
+
+All **19 parts / 1,674 files / 306,025,159 archive bytes** are fully restored and hash-verified; archive SHA-256 `958641b10b3aa0efb7f6b2ef48c78a1a2c3d37ac27a86974f1821582ae0b6652`. [Machine-readable closure, all arithmetic CSV results and source-equivalence hashes](validation/NativePrecisionClosure-20261007.json).
+
+The two dense precision failures are resolved without changing production or relaxing equality. The Mac selected **ExtendedScalar**; actual candidate Burst backend is **1** and the independent managed reference is **0**. All 17 diagnostic CSVs verify **4,096 exact pair cases, 736 exact row pairs and 59,598 exact contribution-stage pairs**, with zero differences and instrumented/uninstrumented identity. [Diagnosis and contract](SeparationArithmeticParity.md). The experimental parallel candidate remains unadopted: exact arithmetic is necessary, but does not prove whole-Tick or mobile performance benefit.
+
+All 408 production asset files, 60 PlayMode fixtures, CI capture tools, packages and settings are byte-identical to the reviewed `3f6362f` source. Its actual 1× gait/weapon/collision videos and compact-HUD/arrow-tip review remain explicitly labeled `3f6362f`, rather than being relabeled as newly viewed pixels. Native graphics regressions also pass on this new head. Current physics evidence retains the unchanged gate: mean **0.395 ms**, worst **0.504 ms**, with actual Burst in 60/60 warmup and 300/300 measured steps on this Mac; this is not a universal device budget.
+
+This closes the requested software/native collision/AI/art/action follow-up checkpoint. Existing visibility limits and physical Android/iOS touch, sustained frame pacing, memory, thermal and battery gates remain explicit. The user subsequently authorized execution of the [layered semantic extension plan](SharedFoundationSemanticExtensionPlan.md); that is the next staged work, beginning with its compatibility baseline, not an unreviewed replacement of the current foundation.
+
+## Earlier runtime checkpoint: 3f6362f
 
 Exact remote `3f6362f659cc5bc72955e019cca14010744784e2`, local `677611a85aab71eb33561aeb479f032c7188c113`, tree `1cb7401216d679de2d091a5e1a998755eede574d`. [Native run](https://github.com/karosLi/SPGameFoundation/actions/runs/37581211270): **1,077 EditMode passed / 2 failed / 5 skipped**, **154 graphics PlayMode passed / 0 failed / 1 explicit diagnostic skip**. [.NET CI](https://github.com/karosLi/SPGameFoundation/actions/runs/37581211300) passes **1,045 tests**, zero build errors. This runtime checkpoint is **not fully green**.
 

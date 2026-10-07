@@ -1,0 +1,221 @@
+{
+  "source_remote": "e86ee87a7691282ae7e96713c315dbec5998c414",
+  "source_local": "62c5b7f5765a879aaf8ec9fa69bc7601ae3fa969",
+  "tree": "04435658d8b1c2e95e286b093405141b5fd6040b",
+  "native_run": "https://github.com/karosLi/SPGameFoundation/actions/runs/37585283378",
+  "harness_run": "https://github.com/karosLi/SPGameFoundation/actions/runs/37585283320",
+  "ci_conclusion": "success",
+  "dotnet_passed": 1050,
+  "native_editmode": {
+    "passed": 1084,
+    "failed": 0,
+    "skipped": 5
+  },
+  "native_playmode": {
+    "passed": 154,
+    "failed": 0,
+    "skipped": 1
+  },
+  "archive": {
+    "parts": 19,
+    "files": 1674,
+    "bytes": 306025159,
+    "sha256": "958641b10b3aa0efb7f6b2ef48c78a1a2c3d37ac27a86974f1821582ae0b6652",
+    "verified": "all parts, archive, inventory and extracted file hashes"
+  },
+  "arithmetic": {
+    "manifest_declared_csv_count": 17,
+    "verified_files": {
+      "separation-arithmetic-128-adversarial-0-rows.csv": {
+        "csv_rows": 256,
+        "profiles": [
+          "ExtendedScalar"
+        ],
+        "matched_source_pairs": 128,
+        "difference_count": 0,
+        "first_differences": []
+      },
+      "separation-arithmetic-128-adversarial-1-rows.csv": {
+        "csv_rows": 256,
+        "profiles": [
+          "ExtendedScalar"
+        ],
+        "matched_source_pairs": 128,
+        "difference_count": 0,
+        "first_differences": []
+      },
+      "separation-arithmetic-128-adversarial-2-rows.csv": {
+        "csv_rows": 256,
+        "profiles": [
+          "ExtendedScalar"
+        ],
+        "matched_source_pairs": 128,
+        "difference_count": 0,
+        "first_differences": []
+      },
+      "separation-arithmetic-128-original-False-contributions.csv": {
+        "csv_rows": 384,
+        "profiles": [
+          "ExtendedScalar"
+        ],
+        "matched_source_pairs": 192,
+        "difference_count": 0,
+        "first_differences": []
+      },
+      "separation-arithmetic-128-original-False-rows.csv": {
+        "csv_rows": 256,
+        "profiles": [
+          "ExtendedScalar"
+        ],
+        "matched_source_pairs": 128,
+        "difference_count": 0,
+        "first_differences": []
+      },
+      "separation-arithmetic-128-original-True-rows.csv": {
+        "csv_rows": 256,
+        "profiles": [
+          "ExtendedScalar"
+        ],
+        "matched_source_pairs": 128,
+        "difference_count": 0,
+        "first_differences": []
+      },
+      "separation-arithmetic-32-adversarial-0-contributions.csv": {
+        "csv_rows": 1860,
+        "profiles": [
+          "ExtendedScalar"
+        ],
+        "matched_source_pairs": 930,
+        "difference_count": 0,
+        "first_differences": []
+      },
+      "separation-arithmetic-32-adversarial-0-rows.csv": {
+        "csv_rows": 64,
+        "profiles": [
+          "ExtendedScalar"
+        ],
+        "matched_source_pairs": 32,
+        "difference_count": 0,
+        "first_differences": []
+      },
+      "separation-arithmetic-32-original-False-contributions.csv": {
+        "csv_rows": 56,
+        "profiles": [
+          "ExtendedScalar"
+        ],
+        "matched_source_pairs": 28,
+        "difference_count": 0,
+        "first_differences": []
+      },
+      "separation-arithmetic-32-original-False-rows.csv": {
+        "csv_rows": 64,
+        "profiles": [
+          "ExtendedScalar"
+        ],
+        "matched_source_pairs": 32,
+        "difference_count": 0,
+        "first_differences": []
+      },
+      "separation-arithmetic-32-original-True-contributions.csv": {
+        "csv_rows": 1740,
+        "profiles": [
+          "ExtendedScalar"
+        ],
+        "matched_source_pairs": 870,
+        "difference_count": 0,
+        "first_differences": []
+      },
+      "separation-arithmetic-32-original-True-rows.csv": {
+        "csv_rows": 64,
+        "profiles": [
+          "ExtendedScalar"
+        ],
+        "matched_source_pairs": 32,
+        "difference_count": 0,
+        "first_differences": []
+      },
+      "separation-arithmetic-pairs.csv": {
+        "csv_rows": 4096,
+        "profiles": [
+          "ExtendedScalar"
+        ],
+        "native_pairs": 4096,
+        "difference_count": 0,
+        "first_differences": []
+      },
+      "separation-arithmetic-128-adversarial-0-contributions.csv": {
+        "csv_rows": 29040,
+        "profiles": [
+          "ExtendedScalar"
+        ],
+        "matched_source_pairs": 14520,
+        "difference_count": 0,
+        "first_differences": []
+      },
+      "separation-arithmetic-128-adversarial-1-contributions.csv": {
+        "csv_rows": 29040,
+        "profiles": [
+          "ExtendedScalar"
+        ],
+        "matched_source_pairs": 14520,
+        "difference_count": 0,
+        "first_differences": []
+      },
+      "separation-arithmetic-128-adversarial-2-contributions.csv": {
+        "csv_rows": 29016,
+        "profiles": [
+          "ExtendedScalar"
+        ],
+        "matched_source_pairs": 14508,
+        "difference_count": 0,
+        "first_differences": []
+      },
+      "separation-arithmetic-128-original-True-contributions.csv": {
+        "csv_rows": 28060,
+        "profiles": [
+          "ExtendedScalar"
+        ],
+        "matched_source_pairs": 14030,
+        "difference_count": 0,
+        "first_differences": []
+      }
+    },
+    "missing": [],
+    "all_profiles": [
+      "ExtendedScalar"
+    ],
+    "all_candidate_backends": [
+      "1"
+    ],
+    "all_available_csvs_exact": true,
+    "complete": true
+  },
+  "source_equivalence_to_3f6362f": {
+    "production_assets": {
+      "count": 408,
+      "changed": [],
+      "unchanged": true,
+      "inventory_sha256": "13c9ad3ec872c61530629e1f3c256a675685cf4237783bcbb99f3803e62e28d4"
+    },
+    "playmode_fixtures": {
+      "count": 60,
+      "changed": [],
+      "unchanged": true,
+      "inventory_sha256": "9090457a5afdac2ce0d784aee0125e60779998901bb954e7e9b3ef024552bb6b"
+    },
+    "ci_tools": {
+      "count": 8,
+      "changed": [],
+      "unchanged": true,
+      "inventory_sha256": "9732c870afba2a795716d9778d9e53032e2eada3ae7eabd9e145284187c51644"
+    },
+    "packages_settings": {
+      "count": 2,
+      "changed": [],
+      "unchanged": true,
+      "inventory_sha256": "c6266cb499fe1ff449fc3632a7fa0d836e7d081cd1934c84e562172b7c4b9368"
+    }
+  },
+  "visual_scope": "3f6362f actual clips and PNG review retained at that source; production and fixture hashes unchanged on e86ee87",
+  "physical_mobile": "Not measured; desktop pass is not physical Android/iOS acceptance"
+}

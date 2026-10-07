@@ -2,7 +2,7 @@
 
 日期：2026-10-07。面向 SPGameFoundation 的后续演进，基于 `9a95654247f066ee9ff9164381bdd30ade4c9309` 源码和[开源共享基座调研](OpenSourceSharedFoundationSurvey.md)。本文交付的是计划，没有实施下述运行时改造，也没有产生新的性能或设备验收结果。当前实现与验证状态继续以[能力清单](RequestedCapabilityChecklist.md)和[精确提交验证记录](MobileFoundationFollowupValidation.md)为准。
 
-实施状态：本计划的文档发布不等于运行时验收通过。当前精确运行时 `3f6362f` 为 1,077 EditMode 通过、2 个试验分离候选精度失败，154 graphics PlayMode 通过；该失败继续单独修复，不因本计划发布变为绿色。
+实施状态：计划发布时的两项试验候选精度失败现已在精确 `e86ee87` 原生闭环解决（1,084 EditMode、154 graphics PlayMode、1,050 .NET 通过）。用户已授权在该闭环后执行本计划；当前开始 P0 兼容/语义基线，后续阶段仍按各自门槛实施和验证。见[证据与剩余设备门槛](MobileFoundationFollowupValidation.md)。
 
 ## 1 推荐方向与完成标准
 

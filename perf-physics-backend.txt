@@ -1,0 +1,12 @@
+=== Physics Burst backend diagnostics ===
+Unity 2022.3.62f2; processor Apple M5 Pro
+BurstCompiler.IsEnabled=True; Options.IsEnabled=True; EnableBurstCompilation=True
+JobsUtility.JobCompilerEnabled=True; compiler service initialized=True
+compile synchronously=True; safety checks=True; force safety checks=False; debug=False
+EditorPrefs BurstCompilation: exists=True, value=True
+UNITY_BURST_DISABLE_COMPILATION=<unset>
+command-line disable=False; command-line force-sync=False
+physics assembly=SPF.L1Simulation; MVID=7f8b0dab-e860-4dbf-9f43-0a9f89848fe2; job synchronous attribute=True
+editor-disabled assemblies file: <absent>
+trivial synchronous control: direct managed Execute=0; Run Burst=1; Schedule Burst=1 (expected 0/1/1)
+actual physics first step Burst=True

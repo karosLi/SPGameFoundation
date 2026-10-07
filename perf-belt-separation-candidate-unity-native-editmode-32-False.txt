@@ -1,0 +1,5 @@
+Belt separation candidate ONLY; runtime=unity-native-editmode; count=32; clustered=False
+Frozen completed grid; independent unchanged production reference; explicit arithmetic=ExtendedScalar; Burst Strict/High; per-row positions/counts, no atomics; exact outputs=PASS.
+Ordered main-thread: mean=0.04328; p50=0.04313; p95=0.04586 ms/pass
+Scheduled parallel including Complete: mean=0.00810; p50=0.00819; p95=0.00996 ms/pass
+20 alternating-order samples x 30 repeated passes; excludes grid build, copyback, rest of tick/render. Not retained in production pending native whole-tick benefit; stub job scheduling is synchronous and cannot establish a Burst speedup.

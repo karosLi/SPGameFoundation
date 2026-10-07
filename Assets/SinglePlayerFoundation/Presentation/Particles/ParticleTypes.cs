@@ -12,7 +12,7 @@ namespace SPF.Presentation.Particles
     public static class ParticleLimits
     {
         public const int HighCapacity = 1024, LowCapacity = 256, Emitters = 32, SpawnsPerFrame = 64, GroupSize = 64;
-        public const int ReservedSpawns = 16, ReservedParticles = 64;
+        public const int ReservedSpawns = 16, ReservedParticles = 64, CueOwners = 128;
         public const float MaxDeltaTime = .05f, MaxLife = 1.5f;
         public static float Delta(float dt) => math.isfinite(dt) ? math.clamp(dt, 0, MaxDeltaTime) : 0;
     }
@@ -52,6 +52,13 @@ namespace SPF.Presentation.Particles
         public bool Compute, Kernels, Graphics, SupportedApi, Shader, Instancing, AtlasFormat;
         public int ShaderLevel, ComputeBuffers, VertexBuffers, GroupSize;
         public long MaxBufferBytes;
+        public RenderTier SelectRenderTier(RenderTier requested, int capacity)
+        {
+            if (capacity < 1 || capacity > ParticleLimits.HighCapacity) throw new ArgumentOutOfRangeException(nameof(capacity));
+            return requested == RenderTier.GpuDriven && Graphics && SupportedApi && Shader && Instancing &&
+                ShaderLevel >= 45 && VertexBuffers >= 1 && MaxBufferBytes >= capacity * PackedSprite.Stride
+                ? RenderTier.GpuDriven : RenderTier.DataTexture;
+        }
         public ParticleBackend Select(bool forceCpu, int capacity)
         {
             if (capacity < 1 || capacity > ParticleLimits.HighCapacity) throw new ArgumentOutOfRangeException(nameof(capacity));

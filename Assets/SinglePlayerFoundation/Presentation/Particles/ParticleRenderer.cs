@@ -33,18 +33,19 @@ namespace SPF.Presentation.Particles
         static readonly int StatesId=Shader.PropertyToID("_States"),SpawnsId=Shader.PropertyToID("_Spawns"),SocketsId=Shader.PropertyToID("_Sockets"),SpritesId=Shader.PropertyToID("_Sprites");
         static readonly int CountId=Shader.PropertyToID("_Count"),SpawnCountId=Shader.PropertyToID("_SpawnCount"),DtId=Shader.PropertyToID("_Dt"),ScaleId=Shader.PropertyToID("_DrawScale");
 #endif
-        public ParticleRenderer(RenderTier tier, bool lowQuality=false, bool forceCpu=false, bool disableComputeAsset=false)
+        public ParticleRenderer(RenderTier tier, bool lowQuality=false, bool forceCpu=false, bool disableComputeAsset=false, bool disableGpuShader=false)
         {
             Tier=tier; Pool=new ParticlePool(lowQuality); Backend=ParticleBackend.CpuBurst;
             try
             {
 #if !SPF_DOTNET_HARNESS
                 var compute=disableComputeAsset?null:Resources.Load<ComputeShader>("SPF/Particles/WeaponParticles");
-                var shader=Resources.Load<Shader>("SPF/SpriteGPU");
+                var shader=disableGpuShader?null:Resources.Load<Shader>("SPF/SpriteGPU");
                 var capability=Capabilities(compute,shader); m_Graphics=capability.Graphics;
+                Tier=capability.SelectRenderTier(tier,Pool.Capacity);
                 // Compute simulation can be selected only when its SSBO draw route exists. A requested
                 // lower renderer remains CPU even on desktop, making GLES fallback directly testable.
-                Backend=capability.Select(forceCpu || tier!=RenderTier.GpuDriven,Pool.Capacity);
+                Backend=capability.Select(forceCpu || Tier!=RenderTier.GpuDriven,Pool.Capacity);
                 if(!m_Graphics)return;
 #endif
                 m_Atlas=CreateAtlas();
@@ -71,7 +72,7 @@ namespace SPF.Presentation.Particles
                 else
 #endif
                 {
-                    m_CpuBatch=new SpriteBatch(tier,m_Atlas,BlendKind.Additive,Pool.Capacity,3);m_CpuBatch.Warmup(Pool.Capacity);
+                    m_CpuBatch=new SpriteBatch(Tier,m_Atlas,BlendKind.Additive,Pool.Capacity,3);m_CpuBatch.Warmup(Pool.Capacity);
                 }
             }
             catch { Dispose(); throw; }

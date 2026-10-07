@@ -57,6 +57,8 @@ namespace SPF.Particles.Tests.PlayMode
                 {
                     var a=read[i];var b=cpu.Pool.CpuStates[i];Assert.That(a.Alive,Is.EqualTo(b.Alive));
                     maximum=math.max(maximum,math.cmax(math.abs(a.PositionAge-b.PositionAge)));maximum=math.max(maximum,math.cmax(math.abs(a.VelocityDrag-b.VelocityDrag)));
+                    maximum=math.max(maximum,math.cmax(math.abs(a.Shape-b.Shape)));maximum=math.max(maximum,math.cmax(math.abs(a.Color-b.Color)));
+                    maximum=math.max(maximum,math.cmax(math.abs(a.Visual-b.Visual)));Assert.That(a.Attachment,Is.EqualTo(b.Attachment));
                     Assert.That(maximum,Is.LessThan(1e-4f));
                 }
                 Assert.That(gpu.BytesUploaded,Is.LessThanOrEqualTo(64*112+32*32));Assert.That(gpu.DispatchCalls,Is.InRange(1,2));
@@ -82,9 +84,16 @@ namespace SPF.Particles.Tests.PlayMode
         }
         [UnityTest]
         public IEnumerator ProductionDrawMatchesCpuPackedSpritesAndDataTextureFallback([Values(false,true)]bool dataTexture)
+            => ProductionDrawParity(dataTexture,false);
+        [UnityTest]
+        public IEnumerator MissingGpuShaderStillDrawsThroughDataTextureFallback()
+            => ProductionDrawParity(false,true);
+        IEnumerator ProductionDrawParity(bool dataTexture,bool missingGpuShader)
         {
             RequireGraphics();using var gpu=new ParticleRenderer(RenderTier.GpuDriven);RequireCompute(gpu);
-            using var cpu=new ParticleRenderer(dataTexture?RenderTier.DataTexture:RenderTier.GpuDriven,forceCpu:true);
+            using var cpu=new ParticleRenderer(dataTexture?RenderTier.DataTexture:RenderTier.GpuDriven,forceCpu:true,disableGpuShader:missingGpuShader);
+            Assert.That(cpu.Backend,Is.EqualTo(ParticleBackend.CpuBurst));
+            Assert.That(cpu.Tier,Is.EqualTo(dataTexture||missingGpuShader?RenderTier.DataTexture:RenderTier.GpuDriven));
             var go=new GameObject("Particle production parity camera");var camera=go.AddComponent<Camera>();camera.enabled=false;camera.orthographic=true;camera.orthographicSize=4;
             camera.transform.position=new Vector3(0,0,-10);camera.cullingMask=1<<30;camera.clearFlags=CameraClearFlags.SolidColor;camera.backgroundColor=Color.clear;
             var target=new RenderTexture(512,512,24,RenderTextureFormat.ARGB32,RenderTextureReadWrite.Linear){antiAliasing=1};target.Create();camera.targetTexture=target;
@@ -93,7 +102,7 @@ namespace SPF.Particles.Tests.PlayMode
             {
                 for(int frame=0;frame<4;frame++){Fill(gpu,frame);Fill(cpu,frame);}
                 yield return null;gpu.Draw(Bounds,30);camera.Render();Read(target,read);var pixels=read.GetPixels32();Save(read,"particles-production-gpu.png");
-                yield return null;cpu.Draw(Bounds,30);camera.Render();Read(target,read);var expected=read.GetPixels32();Save(read,dataTexture?"particles-production-cpu-texture.png":"particles-production-cpu-buffer.png");
+                yield return null;cpu.Draw(Bounds,30);camera.Render();Read(target,read);var expected=read.GetPixels32();Save(read,missingGpuShader?"particles-production-shader-fallback.png":dataTexture?"particles-production-cpu-texture.png":"particles-production-cpu-buffer.png");
                 int occupied=0,union=0,mismatch=0,magenta=0;
                 for(int i=0;i<pixels.Length;i++)
                 {

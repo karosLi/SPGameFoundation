@@ -18,18 +18,21 @@ namespace SPF.Presentation.Particles
             public WeaponStage Stage;
             public float2 Tip, Muzzle, Direction;
             public float Depth, ChargeClock, RuneClock;
-            public bool Hero, HasTip;
+            public bool Hero, HasTip, Charging;
         }
+        struct CueCursor { public EntityHandle Owner; public uint Sequence; }
         readonly Emitter[] m_Emitters = new Emitter[ParticleLimits.Emitters];
+        readonly CueCursor[] m_Cues = new CueCursor[ParticleLimits.CueOwners];
         int m_Frame;
-        uint m_Token, m_LastCue;
-        bool m_HasCue, m_Disposed;
+        uint m_Token;
+        bool m_Disposed;
         public ParticleRenderer Renderer { get; }
         public int DroppedEmitters { get; private set; }
+        public int DroppedCueOwners { get; private set; }
         public WeaponParticlePresenter(RenderTier tier, bool lowQuality=false, bool forceCpu=false) => Renderer=new ParticleRenderer(tier,lowQuality,forceCpu);
         public void BeginFrame(float dt,float4 viewRect)
         {
-            Check();m_Frame++;DroppedEmitters=0;Renderer.Pool.BeginFrame(dt,viewRect);
+            Check();m_Frame++;DroppedEmitters=0;DroppedCueOwners=0;Renderer.Pool.BeginFrame(dt,viewRect);
         }
         public void UpdateEmitter(EntityHandle owner,in WeaponViewState state,float2 tip,float2 muzzle,float2 direction,float depth=0,bool hero=false)
         {
@@ -62,7 +65,8 @@ namespace SPF.Presentation.Particles
                 Segment(e.Tip,tip,depth, state.Family==WeaponActionFamily.Thrust ? new float4(.50f,.88f,1,.76f) : new float4(.74f,.91f,1,.72f),
                     state.Family==WeaponActionFamily.Thrust?.025f:.048f,.105f,seed,hero);
             }
-            bool charging=state.Stage==WeaponStage.Windup && (state.Family==WeaponActionFamily.Cast || state.Family==WeaponActionFamily.Draw);
+            bool charging=(state.Stage==WeaponStage.Windup || state.Stage==WeaponStage.Active) && state.Phase<state.ReleasePhase &&
+                (state.Family==WeaponActionFamily.Cast || state.Family==WeaponActionFamily.Draw);
             if(charging)
             {
                 e.ChargeClock+=Renderer.Pool.DeltaTime;e.RuneClock+=Renderer.Pool.DeltaTime;
@@ -92,7 +96,7 @@ namespace SPF.Presentation.Particles
             }
             else
             {
-                if(e.Stage==WeaponStage.Windup && (e.Family==WeaponActionFamily.Cast || e.Family==WeaponActionFamily.Draw))
+                if(e.Charging)
                 {
                     // Cancel/release resets attached charge particles immediately; bursts remain in world space.
                     e.Token=NextToken();Renderer.Pool.SetSocket(slot,new ParticleSocket{Pose=new float4(muzzle,aim),Identity=new uint4(e.Token,1,0,0)});
@@ -100,12 +104,11 @@ namespace SPF.Presentation.Particles
                 e.ChargeClock=0;e.RuneClock=0;
             }
             e.Tip=tip;e.Muzzle=muzzle;e.Direction=aim;e.Depth=depth;e.Family=state.Family;e.Stage=state.Stage;e.Action=state.ActionPulse;e.VisualId=state.VisualId;
-            e.Hero=hero;e.HasTip=true;e.Frame=m_Frame;
+            e.Hero=hero;e.HasTip=true;e.Charging=charging;e.Frame=m_Frame;
         }
         public void SubmitCue(in WeaponCue cue,float depth=0,bool hero=false)
         {
-            Check();if(cue.Sequence==0 || (m_HasCue && unchecked((int)(cue.Sequence-m_LastCue))<=0))return;
-            m_LastCue=cue.Sequence;m_HasCue=true;
+            Check();if(!AcceptCue(cue))return;
             if((cue.Kind&(WeaponCueKind.Equip|WeaponCueKind.Cancel))!=0){ResetOwner(cue.Owner);return;}
             int slot=Find(cue.Owner);var emitter=slot>=0?m_Emitters[slot]:default;
             var direction=math.normalizesafe(cue.Direction,new float2(1,0));
@@ -118,6 +121,27 @@ namespace SPF.Presentation.Particles
                 var family=slot>=0?emitter.Family:WeaponActionFamily.Thrust;
                 Burst(origin,direction,depth,seed,hero?ParticlePriority.Hero:ParticlePriority.Release,family,false);
             }
+        }
+        bool AcceptCue(in WeaponCue cue)
+        {
+            if(cue.Owner.IsNull || cue.Sequence==0)return false;
+            int free=-1;
+            for(int i=0;i<m_Cues.Length;i++)
+            {
+                var cursor=m_Cues[i];
+                if(cursor.Owner.IsNull){if(free<0)free=i;continue;}
+                if(cursor.Owner.Index!=cue.Owner.Index)continue;
+                if(cursor.Owner==cue.Owner)
+                {
+                    if(unchecked((int)(cue.Sequence-cursor.Sequence))<=0)return false;
+                }
+                else if(unchecked(cue.Owner.Generation-cursor.Owner.Generation)<=0)return false;
+                m_Cues[i]=new CueCursor{Owner=cue.Owner,Sequence=cue.Sequence};return true;
+            }
+            // Keep admitted cursors across emitter resets. Eviction would allow old cue replay.
+            // A new generation reuses its index above; a new index at capacity waits for Clear.
+            if(free<0){DroppedCueOwners++;return false;}
+            m_Cues[free]=new CueCursor{Owner=cue.Owner,Sequence=cue.Sequence};return true;
         }
         void Burst(float2 origin,float2 aim,float depth,uint seed,ParticlePriority priority,WeaponActionFamily family,bool impact)
         {
@@ -172,7 +196,7 @@ namespace SPF.Presentation.Particles
         void ResetSlot(int slot) { Renderer.Pool.SetSocket(slot,default);m_Emitters[slot]=default; }
         int Find(EntityHandle owner) { for(int i=0;i<m_Emitters.Length;i++)if(m_Emitters[i].Owner==owner && !owner.IsNull)return i;return -1; }
         uint NextToken() { m_Token++;if(m_Token==0)m_Token++;return m_Token; }
-        public void Clear() { Check();Array.Clear(m_Emitters,0,m_Emitters.Length);m_HasCue=false;m_LastCue=0;Renderer.Clear(); }
+        public void Clear() { Check();Array.Clear(m_Emitters,0,m_Emitters.Length);Array.Clear(m_Cues,0,m_Cues.Length);DroppedEmitters=0;DroppedCueOwners=0;Renderer.Clear(); }
         public void Dispose(){if(m_Disposed)return;m_Disposed=true;Renderer.Dispose();}
         void Check(){if(m_Disposed)throw new ObjectDisposedException(nameof(WeaponParticlePresenter));}
     }

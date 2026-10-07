@@ -90,11 +90,28 @@ namespace SPF.Tests.EditMode
             switch(missing){case "compute":c.Compute=false;break;case "kernel":c.Kernels=false;break;case "format":c.AtlasFormat=false;break;case "api":c.SupportedApi=false;break;case "buffer":c.MaxBufferBytes=1024*96-1;break;case "shader":c.Shader=false;break;case "threads":c.GroupSize=32;break;}
             Assert.That(c.Select(false,1024),Is.EqualTo(ParticleBackend.CpuBurst));Assert.That(Supported().Select(true,1024),Is.EqualTo(ParticleBackend.CpuBurst));
         }
+        [TestCase("shader")][TestCase("instancing")][TestCase("vertexBuffers")][TestCase("shaderLevel")][TestCase("buffer")][TestCase("api")]
+        public void UnusableGpuDrawSelectsDataTextureWhileComputeFailurePreservesHealthyDraw(string missing)
+        {
+            var c=Supported();
+            Assert.That(c.SelectRenderTier(RenderTier.GpuDriven,1024),Is.EqualTo(RenderTier.GpuDriven));
+            Assert.That(c.SelectRenderTier(RenderTier.DataTexture,1024),Is.EqualTo(RenderTier.DataTexture));
+            c.Compute=false;c.Kernels=false;c.ComputeBuffers=0;c.GroupSize=0;
+            Assert.That(c.Select(false,1024),Is.EqualTo(ParticleBackend.CpuBurst));
+            Assert.That(c.SelectRenderTier(RenderTier.GpuDriven,1024),Is.EqualTo(RenderTier.GpuDriven));
+            switch(missing)
+            {
+                case "shader":c.Shader=false;break;case "instancing":c.Instancing=false;break;
+                case "vertexBuffers":c.VertexBuffers=0;break;case "shaderLevel":c.ShaderLevel=30;break;
+                case "buffer":c.MaxBufferBytes=1024*32-1;break;case "api":c.SupportedApi=false;break;
+            }
+            Assert.That(c.SelectRenderTier(RenderTier.GpuDriven,1024),Is.EqualTo(RenderTier.DataTexture));
+        }
         [Test]
         public void PresenterDeduplicatesConfirmedCuesAndResetsMissingRecycledAndSwappedOwners()
         {
             using var view=new WeaponParticlePresenter(RenderTier.DataTexture,true,true);
-            var owner=new EntityHandle(3,1);var state=new WeaponViewState{ContentId=1,VisualId=1,Family=WeaponActionFamily.Cast,Stage=WeaponStage.Windup,ActionPulse=1};
+            var owner=new EntityHandle(3,1);var state=new WeaponViewState{ContentId=1,VisualId=1,Family=WeaponActionFamily.Cast,Stage=WeaponStage.Windup,ReleasePhase=.6f,ActionPulse=1};
             for(int f=0;f<6;f++){view.BeginFrame(.05f,View);view.UpdateEmitter(owner,state,new float2(.3f,0),float2.zero,new float2(1,0));view.EndFrame(new Bounds(Vector3.zero,Vector3.one*10));}
             Assert.That(view.Renderer.Pool.ReservedCount,Is.GreaterThan(0));
             view.BeginFrame(.02f,View);view.EndFrame(new Bounds());Assert.That(view.Renderer.Pool.ReservedCount,Is.Zero,"Missing owner retires attached charge.");
@@ -102,6 +119,82 @@ namespace SPF.Tests.EditMode
             var cue=new WeaponCue{Owner=new EntityHandle(3,2),Sequence=7,ActionPulse=1,Kind=WeaponCueKind.Impact,Position=new float2(.5f,0),Direction=new float2(1,0)};
             view.SubmitCue(cue);int count=view.Renderer.Pool.SpawnCount;Assert.That(count,Is.GreaterThan(0));view.SubmitCue(cue);Assert.That(view.Renderer.Pool.SpawnCount,Is.EqualTo(count));
             view.Clear();Assert.That(view.Renderer.Pool.ReservedCount,Is.Zero);view.SubmitCue(cue);Assert.That(view.Renderer.Pool.SpawnCount,Is.GreaterThan(0));
+        }
+        static WeaponCue Impact(EntityHandle owner,uint sequence) => new WeaponCue{Owner=owner,Sequence=sequence,Kind=WeaponCueKind.Impact,Direction=new float2(1,0)};
+        [TestCase(WeaponActionFamily.Cast)][TestCase(WeaponActionFamily.Draw)]
+        public void ChargePersistsPastContactUntilAuthoritativeReleaseAndResetsOnCancelOrEquip(WeaponActionFamily family)
+        {
+            // The valid authored profile has Duration=60, Active=[20,40), Release=30.
+            // Exercise its public view contract so presentation tests do not depend on gameplay.
+            const int duration=60,contact=20,activeEnd=40,release=30;
+            using var view=new WeaponParticlePresenter(RenderTier.DataTexture,true,true);
+            var owner=new EntityHandle(3,1);
+            var state=new WeaponViewState{ContentId=1,VisualId=1,Family=family,ActionPulse=1,ContactPhase=(float)contact/duration,ActiveEndPhase=(float)activeEnd/duration,ReleasePhase=(float)release/duration};
+            foreach(var stop in new[]{WeaponCueKind.Release,WeaponCueKind.Cancel,WeaponCueKind.Equip})
+            {
+                view.Clear();
+                for(int tick=16;tick<release;tick++)
+                {
+                    state.Stage=tick<contact?WeaponStage.Windup:WeaponStage.Active;state.Phase=(float)tick/duration;
+                    view.BeginFrame(1f/duration,View);view.UpdateEmitter(owner,state,float2.zero,float2.zero,new float2(1,0));view.EndFrame(new Bounds());
+                    if(tick==contact-1 || tick==release-1)Assert.That(AttachedCount(view),Is.GreaterThan(0),"Charge must remain visible through the pre-release Active subphase.");
+                }
+                view.BeginFrame(1f/duration,View);
+                if(stop==WeaponCueKind.Release)state.Phase=(float)release/duration;
+                view.UpdateEmitter(owner,state,float2.zero,float2.zero,new float2(1,0));
+                if(stop!=WeaponCueKind.Release){var cue=Impact(owner,1);cue.Kind=stop;view.SubmitCue(cue);}
+                view.EndFrame(new Bounds());Assert.That(AttachedCount(view),Is.Zero,"Authoritative release, cancel and equip must retire attached charge.");
+            }
+        }
+        static int AttachedCount(WeaponParticlePresenter view)
+        {
+            int count=0;var states=view.Renderer.Pool.CpuStates;
+            for(int i=0;i<states.Length;i++)if(states[i].Alive && states[i].Attachment.x!=0)count++;
+            return count;
+        }
+        [Test]
+        public void CueSequencesAreIndependentPerOwnerAndSurviveEmitterResets()
+        {
+            using var view=new WeaponParticlePresenter(RenderTier.DataTexture,true,true);
+            var a=new EntityHandle(3,1);var b=new EntityHandle(4,1);
+            view.BeginFrame(.02f,View);view.SubmitCue(Impact(a,1));int burst=view.Renderer.Pool.SpawnCount;
+            Assert.That(burst,Is.GreaterThan(0));view.SubmitCue(Impact(b,1));Assert.That(view.Renderer.Pool.SpawnCount,Is.EqualTo(burst*2));
+            view.SubmitCue(Impact(a,1));view.SubmitCue(Impact(b,1));Assert.That(view.Renderer.Pool.SpawnCount,Is.EqualTo(burst*2));
+            foreach(var reset in new[]{WeaponCueKind.Cancel,WeaponCueKind.Equip})
+            {
+                view.BeginFrame(.02f,View);
+                uint sequence=reset==WeaponCueKind.Cancel?2u:4u;
+                var cue=Impact(a,sequence);cue.Kind=reset;view.SubmitCue(cue);view.ResetOwner(a);
+                view.SubmitCue(Impact(a,sequence));view.SubmitCue(Impact(a,1));Assert.That(view.Renderer.Pool.SpawnCount,Is.Zero);
+                view.SubmitCue(Impact(a,sequence+1));Assert.That(view.Renderer.Pool.SpawnCount,Is.EqualTo(burst));
+            }
+        }
+        [Test]
+        public void CueDedupHandlesSequenceWrapRecycledOwnersAndExplicitClear()
+        {
+            using var view=new WeaponParticlePresenter(RenderTier.DataTexture,true,true);
+            var owner=new EntityHandle(3,1);view.BeginFrame(.02f,View);
+            view.SubmitCue(Impact(owner,uint.MaxValue));int burst=view.Renderer.Pool.SpawnCount;
+            view.BeginFrame(.02f,View);view.SubmitCue(Impact(owner,1));Assert.That(view.Renderer.Pool.SpawnCount,Is.EqualTo(burst));
+            view.SubmitCue(Impact(owner,uint.MaxValue));view.SubmitCue(Impact(owner,1));Assert.That(view.Renderer.Pool.SpawnCount,Is.EqualTo(burst));
+            view.BeginFrame(.02f,View);var recycled=new EntityHandle(3,2);view.SubmitCue(Impact(recycled,1));Assert.That(view.Renderer.Pool.SpawnCount,Is.EqualTo(burst));
+            view.SubmitCue(Impact(owner,2));view.SubmitCue(Impact(recycled,1));Assert.That(view.Renderer.Pool.SpawnCount,Is.EqualTo(burst));
+            view.Clear();view.BeginFrame(.02f,View);view.SubmitCue(Impact(recycled,1));Assert.That(view.Renderer.Pool.SpawnCount,Is.EqualTo(burst));
+            view.BeginFrame(.02f,View);view.SubmitCue(Impact(recycled,0));view.SubmitCue(Impact(EntityHandle.Null,1));Assert.That(view.Renderer.Pool.SpawnCount,Is.Zero);
+            view.Clear();view.BeginFrame(.02f,View);view.SubmitCue(Impact(new EntityHandle(3,int.MaxValue),1));
+            view.BeginFrame(.02f,View);view.SubmitCue(Impact(new EntityHandle(3,int.MinValue),1));Assert.That(view.Renderer.Pool.SpawnCount,Is.EqualTo(burst));
+            view.SubmitCue(Impact(new EntityHandle(3,int.MaxValue),2));Assert.That(view.Renderer.Pool.SpawnCount,Is.EqualTo(burst),"Signed generation wrap must still reject the previous owner.");
+        }
+        [Test]
+        public void CueCursorCapacityRejectsUntrackedOwnersWithoutEvictingDedupHistory()
+        {
+            using var view=new WeaponParticlePresenter(RenderTier.DataTexture,true,true);view.BeginFrame(.02f,View);
+            for(int i=0;i<ParticleLimits.CueOwners;i++){var cue=Impact(new EntityHandle(i,1),1);cue.Kind=WeaponCueKind.Begin;view.SubmitCue(cue);}
+            view.SubmitCue(Impact(new EntityHandle(ParticleLimits.CueOwners,1),1));Assert.That(view.DroppedCueOwners,Is.EqualTo(1));
+            view.SubmitCue(Impact(new EntityHandle(0,1),1));Assert.That(view.Renderer.Pool.SpawnCount,Is.Zero,"Capacity pressure must not permit duplicate replay.");
+            view.SubmitCue(Impact(new EntityHandle(0,2),1));Assert.That(view.Renderer.Pool.SpawnCount,Is.GreaterThan(0),"A recycled index reuses its bounded cursor.");
+            view.Clear();view.BeginFrame(.02f,View);view.SubmitCue(Impact(new EntityHandle(ParticleLimits.CueOwners,1),1));
+            Assert.That(view.DroppedCueOwners,Is.Zero);Assert.That(view.Renderer.Pool.SpawnCount,Is.GreaterThan(0));
         }
         [TestCase(false)][TestCase(true)]
         public void MixedSpawnRetirementAndCameraChangesNeverUnderestimateLiveQuads(bool low)

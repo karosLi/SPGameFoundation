@@ -6,7 +6,7 @@ name: Unity tests (self-hosted runner)
 # → Actions → Variables). Optional variable UNITY_EDITOR_PATH if Unity is not in the default Hub location.
 on:
   push:
-    branches-ignore: [dot/ci-burst-setup-approved-20261007, dot/ci-burst-persist-approved-20261007]
+    branches-ignore: [dot/ci-burst-setup-approved-20261007, dot/ci-burst-persist-approved-20261007, dot/ci-burst-verify-20261007]
   pull_request:
   workflow_dispatch:
 

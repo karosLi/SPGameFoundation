@@ -1,0 +1,44 @@
+name: Mac Burst verification and full suites
+
+# Verification only. The separately approved setup already persisted the preference.
+on:
+  push:
+    branches: [dot/ci-burst-verify-20261007]
+
+jobs:
+  verify:
+    if: vars.UNITY_SELF_HOSTED == 'true' && github.event.created == true
+    runs-on: [self-hosted, unity, macOS]
+    permissions:
+      contents: read
+    timeout-minutes: 120
+    env:
+      UNITY_EDITOR_PATH: ${{ vars.UNITY_EDITOR_PATH }}
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Evidence parser regressions
+        shell: bash
+        run: python3 -m unittest discover -s Tools/ci/tests -v
+      - name: Read persisted preferences and verify actual native execution
+        shell: bash
+        run: Tools/ci/verify-mac-burst.sh
+      - name: Unchanged full EditMode and PlayMode suites
+        shell: bash
+        run: Tools/ci/local-unity-tests.sh
+      - name: Require complete native full-suite evidence
+        shell: bash
+        run: python3 Tools/ci/verify-approved-burst-results.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mac-burst-verification-and-tests
+          path: |
+            BurstSetupArtifacts
+            Artifacts/*.xml
+            Artifacts/*.log
+            Artifacts/*.txt
+            Artifacts/Screenshots
+          if-no-files-found: error

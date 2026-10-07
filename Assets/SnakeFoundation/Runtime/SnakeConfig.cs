@@ -133,6 +133,9 @@ namespace SnakeFoundation
         [Serializable]
         public sealed class CapacitySection
         {
+            // All fields are values; nested mutable fields require an explicit deep copy.
+            internal CapacitySection Snapshot() => (CapacitySection)MemberwiseClone();
+
             public int Snakes = 320;
             [Tooltip("Worst case: small map, density 1.4 x 150 per chunk over ~100 window chunks = 21k")]
             public int Food = 24000;

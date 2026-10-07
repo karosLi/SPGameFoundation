@@ -28,6 +28,9 @@ namespace RpgFoundation
         [Serializable]
         public sealed class DungeonSection
         {
+            // All fields are values; nested mutable fields require an explicit deep copy.
+            internal DungeonSection Snapshot() => (DungeonSection)MemberwiseClone();
+
             public int Width = 64;
             public int Height = 64;
             public float TileSize = 1f;
@@ -174,6 +177,9 @@ namespace RpgFoundation
         [Serializable]
         public sealed class LootSection
         {
+            // All fields are values; nested mutable fields require an explicit deep copy.
+            internal LootSection Snapshot() => (LootSection)MemberwiseClone();
+
             [Tooltip("Chance a monster drops anything")] public float DropChance = 0.55f;
             public float GoldWeight = 6f, PotionWeight = 2f, GearWeight = 1.2f;
             public int GoldMin = 3, GoldMax = 12;
@@ -186,6 +192,9 @@ namespace RpgFoundation
         [Serializable]
         public sealed class CapacitySection
         {
+            // All fields are values; nested mutable fields require an explicit deep copy.
+            internal CapacitySection Snapshot() => (CapacitySection)MemberwiseClone();
+
             public int Actors = 512;
             public int Projectiles = 256;
             public int Items = 512;

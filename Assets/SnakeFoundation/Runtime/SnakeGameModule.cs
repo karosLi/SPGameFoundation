@@ -37,6 +37,10 @@ namespace SnakeFoundation
             if (m_Config == null)
                 m_Config = SnakeConfig.CreateDefault();
             var runtime = m_Config.Bake();
+            // Transfer ownership before any later declaration can fail. Rejected registration
+            // retains caller ownership, so this runtime must clean up its own native arrays.
+            try { layout.Resource(SnakeKeys.Config, runtime); }
+            catch { runtime.Dispose(); throw; }
             var cap = runtime.Capacity;
 
             layout.Table(SnakeKeys.Snake, cap.Snakes)
@@ -53,7 +57,6 @@ namespace SnakeFoundation
                 .Column(SnakeKeys.ProjectilePosition).Column(SnakeKeys.ProjectileState);
             layout.DestroyQueueCapacity = math.max(layout.DestroyQueueCapacity, cap.EventQueue);
 
-            layout.Resource(SnakeKeys.Config, runtime);
             layout.Resource(SnakeKeys.Game, new SnakeGameState());
             layout.Resource(SnakeKeys.Quality, new SnakeQuality());
             layout.Resource(SnakeKeys.Populations, new RegionPopulations(runtime));

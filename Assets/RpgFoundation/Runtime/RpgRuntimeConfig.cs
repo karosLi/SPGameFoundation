@@ -61,8 +61,8 @@ namespace RpgFoundation
         public LevelCurve Levels;
     }
 
-    /// <summary>Config baked for the session: settings, monster / weapon / skill / gear tables, names.</summary>
-    public sealed class RpgRuntimeConfig : IDisposable
+    /// <summary>Session-owned source snapshot: settings, definition tables and names. Public runtime fields remain mutable.</summary>
+    public sealed partial class RpgRuntimeConfig : IDisposable
     {
         public RpgSettings Settings;
         public bool UseDecisionTree;
@@ -79,8 +79,12 @@ namespace RpgFoundation
         public RpgConfig.CapacitySection Capacity;
         public int StartPotions;
 
-        public static RpgRuntimeConfig Bake(RpgConfig source)
+        public static RpgRuntimeConfig Bake(RpgConfig source) => Bake(source, null);
+
+        // The private checkpoint is used by failure-path tests; production never supplies one.
+        static RpgRuntimeConfig Bake(RpgConfig source, Action<RpgRuntimeConfig> allocated)
         {
+            Validate(source);
             var h = source.Hero;
             var config = new RpgRuntimeConfig
             {
@@ -96,77 +100,89 @@ namespace RpgFoundation
                     Levels = new LevelCurve { Base = h.XpBase, Growth = h.XpGrowth, MaxLevel = h.MaxLevel },
                 },
                 UseDecisionTree = source.UseDecisionTree,
-                Dungeon = source.Dungeon,
-                Loot = source.Loot,
-                Capacity = source.Capacity,
+                Dungeon = source.Dungeon.Snapshot(),
+                Loot = source.Loot.Snapshot(),
+                Capacity = source.Capacity.Snapshot(),
                 StartPotions = h.StartPotions,
-                CombatDecisionProgram = RpgDecisions.CreateProgram(),
-                HeroSkillSlots = h.SkillSlots ?? new int[0],
+                HeroSkillSlots = h.SkillSlots == null ? Array.Empty<int>() : (int[])h.SkillSlots.Clone(),
             };
 
-            int n = source.Monsters.Count;
-            config.Monsters = new NativeArray<MonsterDef>(math.max(n, 1), Allocator.Persistent);
-            config.MonsterNames = new string[n];
-            for (int i = 0; i < n; i++)
+            try
             {
-                var m = source.Monsters[i];
-                config.MonsterNames[i] = m.Name;
-                config.Monsters[i] = new MonsterDef
+                config.CombatDecisionProgram = RpgDecisions.CreateProgram();
+                allocated?.Invoke(config);
+                int n = source.Monsters.Count;
+                config.Monsters = new NativeArray<MonsterDef>(math.max(n, 1), Allocator.Persistent);
+                allocated?.Invoke(config);
+                config.MonsterNames = new string[n];
+                for (int i = 0; i < n; i++)
                 {
-                    Color = new float4(m.Color.r, m.Color.g, m.Color.b, 1f),
-                    Radius = m.Radius, Health = m.Health, Attack = m.Attack, Armour = m.Armour, Speed = m.Speed,
-                    AttackRate = m.AttackRate, Range = m.Range, Aggro = m.Aggro, Xp = m.Xp, ProjectileSpeed = m.ProjectileSpeed,
-                    SpawnWeight = m.SpawnWeight, Ranged = m.Ranged, Boss = m.Boss, Weapon = m.Weapon, Skill = (byte)math.max(m.Skill, 0),
-                    Status = m.Status, StatusPower = m.StatusPower, StatusDuration = m.StatusDuration,
-                };
-            }
+                    var m = source.Monsters[i];
+                    config.MonsterNames[i] = m.Name;
+                    config.Monsters[i] = new MonsterDef
+                    {
+                        Color = new float4(m.Color.r, m.Color.g, m.Color.b, 1f),
+                        Radius = m.Radius, Health = m.Health, Attack = m.Attack, Armour = m.Armour, Speed = m.Speed,
+                        AttackRate = m.AttackRate, Range = m.Range, Aggro = m.Aggro, Xp = m.Xp, ProjectileSpeed = m.ProjectileSpeed,
+                        SpawnWeight = m.SpawnWeight, Ranged = m.Ranged, Boss = m.Boss, Weapon = m.Weapon, Skill = (byte)math.max(m.Skill, 0),
+                        Status = m.Status, StatusPower = m.StatusPower, StatusDuration = m.StatusDuration,
+                    };
+                }
 
-            int kinds = Enum.GetValues(typeof(WeaponKind)).Length;
-            config.Weapons = new NativeArray<WeaponDef>(kinds, Allocator.Persistent);
-            config.WeaponNames = new string[kinds];
-            var loot = new List<WeaponKind>();
-            foreach (var w in source.Weapons)
-            {
-                int k = (int)w.Kind;
-                config.WeaponNames[k] = w.Name;
-                config.Weapons[k] = new WeaponDef
+                int kinds = Enum.GetValues(typeof(WeaponKind)).Length;
+                config.Weapons = new NativeArray<WeaponDef>(kinds, Allocator.Persistent);
+                allocated?.Invoke(config);
+                config.WeaponNames = new string[kinds];
+                var loot = new List<WeaponKind>();
+                foreach (var w in source.Weapons)
                 {
-                    Kind = w.Kind, DamageMul = w.DamageMul, AttackRate = w.AttackRate, Range = w.Range, ArcCos = w.ArcCos,
-                    Windup = w.Windup, Recover = w.Recover, Knockback = w.Knockback, Stagger = w.Stagger, Ranged = w.Ranged,
-                    ProjectileSpeed = w.ProjectileSpeed, ProjectileRadius = w.ProjectileRadius, Pierce = w.Pierce, Visual = w.Visual,
-                };
-                if (w.Lootable) loot.Add(w.Kind);
-            }
-            config.LootWeapons = loot.ToArray();
+                    int k = (int)w.Kind;
+                    config.WeaponNames[k] = w.Name;
+                    config.Weapons[k] = new WeaponDef
+                    {
+                        Kind = w.Kind, DamageMul = w.DamageMul, AttackRate = w.AttackRate, Range = w.Range, ArcCos = w.ArcCos,
+                        Windup = w.Windup, Recover = w.Recover, Knockback = w.Knockback, Stagger = w.Stagger, Ranged = w.Ranged,
+                        ProjectileSpeed = w.ProjectileSpeed, ProjectileRadius = w.ProjectileRadius, Pierce = w.Pierce, Visual = w.Visual,
+                    };
+                    if (w.Lootable) loot.Add(w.Kind);
+                }
+                config.LootWeapons = loot.ToArray();
 
-            int skills = source.Skills.Count;
-            config.Skills = new NativeArray<SkillDef>(math.max(skills, 1), Allocator.Persistent);
-            config.SkillNames = new string[skills];
-            for (int i = 0; i < skills; i++)
-            {
-                var s = source.Skills[i];
-                config.SkillNames[i] = s.Name;
-                config.Skills[i] = new SkillDef
+                int skills = source.Skills.Count;
+                config.Skills = new NativeArray<SkillDef>(math.max(skills, 1), Allocator.Persistent);
+                allocated?.Invoke(config);
+                config.SkillNames = new string[skills];
+                for (int i = 0; i < skills; i++)
                 {
-                    Kind = s.Kind, ManaCost = s.ManaCost, Cooldown = s.Cooldown, CastTime = s.CastTime, Power = s.Power, Radius = s.Radius,
-                    Duration = s.Duration, Speed = s.Speed, Knockback = s.Knockback, Slow = s.Slow, SlowDuration = s.SlowDuration,
-                    Status = s.Status, StatusPower = s.StatusPower, StatusDuration = s.StatusDuration,
-                    UnlockLevel = s.UnlockLevel,
-                };
-            }
+                    var s = source.Skills[i];
+                    config.SkillNames[i] = s.Name;
+                    config.Skills[i] = new SkillDef
+                    {
+                        Kind = s.Kind, ManaCost = s.ManaCost, Cooldown = s.Cooldown, CastTime = s.CastTime, Power = s.Power, Radius = s.Radius,
+                        Duration = s.Duration, Speed = s.Speed, Knockback = s.Knockback, Slow = s.Slow, SlowDuration = s.SlowDuration,
+                        Status = s.Status, StatusPower = s.StatusPower, StatusDuration = s.StatusDuration,
+                        UnlockLevel = s.UnlockLevel,
+                    };
+                }
 
-            // Gear ids: 0 = none; per tier: one id per lootable weapon family, then the armour.
-            var l = source.Loot;
-            int perTier = config.LootWeapons.Length + 1;
-            config.Gear = new GearDef[1 + perTier * l.GearTiers];
-            for (int t = 1; t <= l.GearTiers; t++)
-            {
-                int baseId = 1 + (t - 1) * perTier;
-                for (int k = 0; k < config.LootWeapons.Length; k++)
-                    config.Gear[baseId + k] = new GearDef { Slot = GearSlot.Weapon, Tier = t, Weapon = config.LootWeapons[k], Attack = l.WeaponAttackPerTier * t };
-                config.Gear[baseId + perTier - 1] = new GearDef { Slot = GearSlot.Armour, Tier = t, Armour = l.ArmourPerTier * t, Health = l.HealthPerTier * t };
+                // Gear ids: 0 = none; per tier: one id per lootable weapon family, then the armour.
+                var l = config.Loot;
+                int perTier = config.LootWeapons.Length + 1;
+                config.Gear = new GearDef[1 + perTier * l.GearTiers];
+                for (int t = 1; t <= l.GearTiers; t++)
+                {
+                    int baseId = 1 + (t - 1) * perTier;
+                    for (int k = 0; k < config.LootWeapons.Length; k++)
+                        config.Gear[baseId + k] = new GearDef { Slot = GearSlot.Weapon, Tier = t, Weapon = config.LootWeapons[k], Attack = l.WeaponAttackPerTier * t };
+                    config.Gear[baseId + perTier - 1] = new GearDef { Slot = GearSlot.Armour, Tier = t, Armour = l.ArmourPerTier * t, Health = l.HealthPerTier * t };
+                }
+                return config;
             }
-            return config;
+            catch
+            {
+                config.Dispose();
+                throw;
+            }
         }
 
         /// <summary>Gear id of a sword (weapon slot) or armour of a tier.</summary>

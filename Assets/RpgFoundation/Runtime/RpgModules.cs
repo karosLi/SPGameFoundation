@@ -32,11 +32,13 @@ namespace RpgFoundation
     {
         public override void DeclareData(WorldLayout layout)
         {
-            int events = Config.Capacity.EventQueue;
-            layout.Resource(RpgKeys.Config, RpgRuntimeConfig.Bake(Config));
+            var runtime = RpgRuntimeConfig.Bake(Config);
+            try { layout.Resource(RpgKeys.Config, runtime); }
+            catch { runtime.Dispose(); throw; }
+            int events = runtime.Capacity.EventQueue;
             layout.Resource(RpgKeys.Game, new RpgGameState());
             layout.Resource(RpgKeys.Feedback, new EventQueue<FeedbackEvent>(events, saved: false));
-            layout.Resource(RpgKeys.Deaths, new EventQueue<DeathEvent>(Config.Capacity.Actors), levelScoped: true);
+            layout.Resource(RpgKeys.Deaths, new EventQueue<DeathEvent>(runtime.Capacity.Actors), levelScoped: true);
         }
 
         public override void RegisterSystems(SystemRegistry registry) { }

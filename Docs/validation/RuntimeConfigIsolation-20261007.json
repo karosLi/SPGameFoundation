@@ -1,0 +1,151 @@
+{
+  "date": "2026-10-07",
+  "baseline_runtime_config_commit": "9fc4e2b7e20a17e5586a68f756e92f8102f99339",
+  "candidate_source_sha256": {
+    "Assets/RpgFoundation/Runtime/RpgConfig.cs": "30a9c4c3eb7039bb17a7cbdb89dc85889eb487ecf6209d0c0fd6aacf224256e5",
+    "Assets/RpgFoundation/Runtime/RpgConfigContent.cs": "2f1bb78c97e99e70efb5bf43373d354b9f1d4065ec3bbbbb221de92c12029f13",
+    "Assets/RpgFoundation/Runtime/RpgConfigValidation.cs": "2079036de7e8dcef58aa2dd331e71c9ed8ace26f6bacce00ec70e71b7592dad0",
+    "Assets/RpgFoundation/Runtime/RpgModules.cs": "5d44bd31063e64ee0a66ac6da5d1ef279a40f4fda238cdb7a266c342c6ef7baa",
+    "Assets/RpgFoundation/Runtime/RpgRuntimeConfig.cs": "3a720c25815ba3d3ecd89fd577a692aabe7e2fe3d83a98b0c7b9af155af058c5",
+    "Assets/RpgFoundation/Tests/EditMode/RpgConfigIsolationTests.cs": "2a22318261bbc31ca68d08b666a82e6af5c53f43e3b2b192490fec2f4c2427c2",
+    "Assets/SinglePlayerFoundation/Runtime/Configuration/RuntimeConfigValidation.cs": "d5bcc6c2b24bf7a5b40490296e4fc07c4b83f5e249d6553c050148fdb654d103",
+    "Assets/SnakeFoundation/Runtime/SnakeConfig.cs": "93d254c4394dac11b84598027b2deaa91911a7ef472a831d9528fe0270855957",
+    "Assets/SnakeFoundation/Runtime/SnakeConfigContent.cs": "a4ea5c3c762b385c46c107325bc0e74efc0df2f3bac12faa34bd0f0a27c4019d",
+    "Assets/SnakeFoundation/Runtime/SnakeConfigValidation.cs": "2309f10d7479de54b0b6af12bb27457b0c89d7718fc1e18f666105c3d321063b",
+    "Assets/SnakeFoundation/Runtime/SnakeGameModule.cs": "25c81d8810acac31dbd2ce0a5079f5a7c1f4609b37ed0a19feb537a610ee6869",
+    "Assets/SnakeFoundation/Runtime/SnakeRuntimeConfig.cs": "e4f876846238b05cb25c13992f2e78717c82e94f0568e34959a18c5fc7c0db29",
+    "Assets/SnakeFoundation/Tests/EditMode/SnakeConfigIsolationTests.cs": "53bc847fb14b08c29e3ff08469b7e3500a2cb04bcb820e5968535116a74dbdcd",
+    "Assets/SnakeFoundation/Tests/EditMode/SnakeFoundation.Tests.EditMode.asmdef": "1b90bf727aa09ecfabac64b654a294dcca324586418b439785e08bdd7daf5324"
+  },
+  "environment": {
+    "platform": "Linux x86_64",
+    "dotnet_sdk": "8.0.425",
+    "api": "Unity harness stubs, pinned Mathematics source",
+    "scope": "config-only bake measurement; no native Unity or mobile peak-memory claim"
+  },
+  "red_tests": {
+    "Snake": {
+      "passed": 0,
+      "failed": 1,
+      "expected_chunk_size": 125,
+      "observed_chunk_size": 1
+    },
+    "Rpg": {
+      "passed": 0,
+      "failed": 1,
+      "expected_monster_density": 0.028,
+      "observed_monster_density": 0
+    }
+  },
+  "final_focused_tests": {
+    "Snake": {
+      "passed": 43,
+      "failed": 0,
+      "new_config_cases": 22
+    },
+    "Rpg": {
+      "passed": 58,
+      "failed": 0,
+      "new_config_cases": 21
+    }
+  },
+  "diagnostics": {
+    "baseline": {
+      "Snake": {
+        "memory": {
+          "count": "128",
+          "managedAllocatedBytes": "103424",
+          "managedLiveDeltaBeforeCollectionBytes": "115136",
+          "managedRetainedDeltaBytes": "103112",
+          "nativePayloadBytesPerConfig": "208"
+        },
+        "calibration": {
+          "metric": "ManagedBytes",
+          "gen0": "0",
+          "positiveBefore": "33536",
+          "emptyBefore": "0",
+          "positiveAfter": "33536",
+          "emptyAfter": "0"
+        },
+        "raw": {
+          "length": "6588656",
+          "sha256": "4d499319c7c956058da7b65e18e37b5ecfcfddd4b8d6d67fd2f41818a03829b5"
+        }
+      },
+      "Rpg": {
+        "memory": {
+          "count": "128",
+          "managedAllocatedBytes": "244968",
+          "managedLiveDeltaBeforeCollectionBytes": "254944",
+          "managedRetainedDeltaBytes": "180224",
+          "nativePayloadBytesPerConfig": "1460"
+        },
+        "calibration": {
+          "metric": "ManagedBytes",
+          "gen0": "0",
+          "positiveBefore": "33536",
+          "emptyBefore": "0",
+          "positiveAfter": "33536",
+          "emptyAfter": "0"
+        },
+        "raw": {
+          "length": "23771",
+          "sha256": "7253b7d82c74b8c49a8d0d7d12f710a1abbef9f4a6d0b8c96009277b7c1f06c3"
+        }
+      }
+    },
+    "candidate": {
+      "Snake": {
+        "memory": {
+          "count": "128",
+          "managedAllocatedBytes": "392192",
+          "managedLiveDeltaBeforeCollectionBytes": "402976",
+          "managedRetainedDeltaBytes": "112640",
+          "nativePayloadBytesPerConfig": "208"
+        },
+        "calibration": {
+          "metric": "ManagedBytes",
+          "gen0": "0",
+          "positiveBefore": "33536",
+          "emptyBefore": "0",
+          "positiveAfter": "33536",
+          "emptyAfter": "0"
+        },
+        "raw": {
+          "length": "6588656",
+          "sha256": "4d499319c7c956058da7b65e18e37b5ecfcfddd4b8d6d67fd2f41818a03829b5"
+        }
+      },
+      "Rpg": {
+        "memory": {
+          "count": "128",
+          "managedAllocatedBytes": "567528",
+          "managedLiveDeltaBeforeCollectionBytes": "583904",
+          "managedRetainedDeltaBytes": "212992",
+          "nativePayloadBytesPerConfig": "1460"
+        },
+        "calibration": {
+          "metric": "ManagedBytes",
+          "gen0": "0",
+          "positiveBefore": "33536",
+          "emptyBefore": "0",
+          "positiveAfter": "33536",
+          "emptyAfter": "0"
+        },
+        "raw": {
+          "length": "23771",
+          "sha256": "7253b7d82c74b8c49a8d0d7d12f710a1abbef9f4a6d0b8c96009277b7c1f06c3"
+        }
+      }
+    }
+  },
+  "limits": [
+    "Single retained batch of 128 runtime configs; prewarmed code, source/observer excluded.",
+    "Managed allocation uses project calibrated current-thread bytes; retained/live are heap deltas, not exact object costs or peaks.",
+    "Native bytes are payload sums; allocator metadata/safety and full Session/renderer/GPU excluded.",
+    "Allocation checkpoints prove owner cleanup after successful prefixes, not real allocator failure.",
+    "A/B substitutes old RuntimeConfig implementation text plus partial keyword; added helper/diagnostic code is otherwise shared.",
+    "No old raw fixture rewritten; no default save descriptor or raw-body change.",
+    "Aggregate/native/IL2CPP/device validation belongs to integration checkpoint."
+  ]
+}

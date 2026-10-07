@@ -73,7 +73,9 @@ namespace SPF.Runtime.World
                 throw new InvalidOperationException("A world layout can only transfer its resources once.");
         }
 
-        internal void TransferOwnership() => m_Consumed = true;
+        // A table-only layout is a reusable allocation recipe: there are no resource objects to
+        // transfer. Preserve that historical direct-builder use while preventing shared owners.
+        internal void TransferOwnership() => m_Consumed = Resources.Count != 0;
 
         /// <summary>Releases accepted resources if construction has not transferred them to a world.
         /// Use a scope when declaring a layout directly. Disposal after successful world creation is a no-op.</summary>

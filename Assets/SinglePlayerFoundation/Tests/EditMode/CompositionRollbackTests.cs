@@ -194,6 +194,20 @@ namespace SPF.Tests.EditMode
         }
 
         [Test]
+        public void ResourceFreeLayoutCanBeReusedForIndependentWorlds()
+        {
+            using var layout = new WorldLayout(); layout.Table(Things, 4).Column(Values);
+            using var first = new SimWorld(layout, 1);
+            using var second = new SimWorld(layout, 2);
+            first.CreateEntity(Things, out int row);
+            var values = first.Column(Values); values[row] = 17;
+            Assert.AreEqual(0, second.Table(Things).Count);
+            Assert.AreEqual(0, second.Column(Values)[row]);
+            first.Dispose();
+            Assert.IsTrue(second.Table(Things).Handles.IsCreated);
+        }
+
+        [Test]
         public void SuccessfulTransferLeavesLayoutDisposalHarmlessAndAliasesDisposeOnce()
         {
             var resource = Resource("aliased");

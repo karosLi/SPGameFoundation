@@ -12,7 +12,7 @@ namespace SPF.Runtime.World
     /// swap-back so rows stay contiguous for jobs. Capacity is fixed at creation (no growth in a session).
     /// Structural changes (Add / RemoveAtSwapBack / Clear) are main-thread only, while no jobs run.
     /// </summary>
-    public sealed unsafe class SimTable : IDisposable
+    public sealed unsafe partial class SimTable : IDisposable
     {
         readonly Dictionary<int, IColumn> m_Columns = new Dictionary<int, IColumn>();
         readonly List<IColumn> m_ColumnList = new List<IColumn>();

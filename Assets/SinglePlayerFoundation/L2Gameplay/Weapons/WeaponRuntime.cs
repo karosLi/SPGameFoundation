@@ -52,6 +52,10 @@ namespace SPF.L2.Weapons
         /// <summary>Unsaved presentation invalidation epoch; changes on reset or snapshot restore, even at the same tick.</summary>
         public uint Revision { get; private set; }
         public int Count => m_Profiles.Length;
+        /// <summary>Cold save compatibility access to the already validated, cloned authored order.</summary>
+        public WeaponProfile ProfileAt(int index) => m_Profiles[index];
+        /// <summary>Existing raw-v2 compatibility fingerprint, including legacy visual/socket fields.</summary>
+        public uint SnapshotContentFingerprint => m_Fingerprint;
         public int ActiveProjectiles { get { int n=0;for(int i=0;i<Projectiles.Length;i++)if(Projectiles[i].Active)n++;return n; } }
         public WeaponProfile Current => Profile(Equipment.EquippedId);
         public WeaponRuntime(WeaponProfile[] profiles,int tickRate,int projectiles=32,int targetsPerAttack=128,int cues=32)

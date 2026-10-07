@@ -10,7 +10,7 @@ namespace SPF.Runtime.World
     /// Owns all simulation state of a session: entity tables, the handle registry, the deferred destroy
     /// queue and shared resources. Everything is allocated once from a <see cref="WorldLayout"/>.
     /// </summary>
-    public sealed class SimWorld : IDisposable
+    public sealed partial class SimWorld : IDisposable
     {
         /// <summary>Destroy requests written by jobs during a tick, applied at the next ApplyCommands.</summary>
         public static readonly ResourceKey<DestroyQueue> DestroyQueueKey = new ResourceKey<DestroyQueue>("World.DestroyQueue");

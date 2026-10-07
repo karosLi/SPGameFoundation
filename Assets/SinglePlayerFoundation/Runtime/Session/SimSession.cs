@@ -18,7 +18,7 @@ namespace SPF.Runtime.Session
     /// One play session: world + pipeline + fixed-step clock. Drive it with <see cref="Update"/> every
     /// frame and call <see cref="Sync"/> before presentation reads snapshots (see SessionHost).
     /// </summary>
-    public sealed class SimSession : IDisposable
+    public sealed partial class SimSession : IDisposable
     {
         readonly FixedStepClock m_Clock;
         SessionState m_State;

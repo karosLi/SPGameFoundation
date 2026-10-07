@@ -17,6 +17,8 @@ namespace SurvivorFoundation
         const int ExtensionMagic = 0x53564758;
         const byte ExtensionVersion = 1;
         readonly bool m_ExtendedSnapshots;
+        /// <summary>Cold compatibility descriptor for the existing optional raw extension.</summary>
+        public bool UsesExtendedSnapshots => m_ExtendedSnapshots;
 
         /// <summary>Classic keeps the exact 97a2b34 payload. Opt-in new rules append a versioned extension.</summary>
         public SvGameState(bool extendedSnapshots = false) => m_ExtendedSnapshots = extendedSnapshots;

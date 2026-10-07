@@ -2,7 +2,8 @@
     "name": "SPF.Testing",
     "rootNamespace": "SPF.Testing",
     "references": [
-        "UnityEngine.UI"
+        "UnityEngine.UI",
+        "Unity.Collections"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

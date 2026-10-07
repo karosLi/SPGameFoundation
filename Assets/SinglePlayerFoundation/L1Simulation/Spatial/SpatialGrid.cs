@@ -67,8 +67,8 @@ namespace SPF.L1.Spatial
         public SpatialGrid(int2 dimensions, float cellSize, int capacity, float largeRadius = 0f, int largeCellScale = 4)
         {
             if (math.any(dimensions <= 0)) throw new ArgumentOutOfRangeException(nameof(dimensions));
-            if (cellSize <= 0f) throw new ArgumentOutOfRangeException(nameof(cellSize));
-            if (capacity > GridEntry.MaxOwner + 1) throw new ArgumentOutOfRangeException(nameof(capacity), "entry owners are 16-bit");
+            if (!math.isfinite(cellSize) || cellSize <= 0f) throw new ArgumentOutOfRangeException(nameof(cellSize));
+            if (capacity < 0 || capacity > GridEntry.MaxOwner + 1) throw new ArgumentOutOfRangeException(nameof(capacity), "entry owners are 16-bit");
             if (largeCellScale < 1) throw new ArgumentOutOfRangeException(nameof(largeCellScale));
             Dimensions = dimensions;
             CellSize = cellSize;
@@ -115,6 +115,7 @@ namespace SPF.L1.Spatial
 
         /// <summary>Valid after the build job completed.</summary>
         public int EntryCount => m_Stats[StatEntryCount];
+        /// <summary>Requested entries beyond capacity plus entries outside the fine window.</summary>
         public int DroppedLastBuild => m_Stats[StatDropped];
         public int LargeEntryCount => m_Stats[StatLargeCount];
 
@@ -157,6 +158,7 @@ namespace SPF.L1.Spatial
                 LargeCellStart = m_LargeCellStart,
                 Stats = m_Stats,
                 Origin = Origin,
+                WindowMax = Origin + Size,
                 InvCellSize = 1f / CellSize,
                 Dimensions = Dimensions,
                 LargeRadius = LargeRadius > 0f ? LargeRadius : float.MaxValue,
@@ -232,7 +234,7 @@ namespace SPF.L1.Spatial
             public NativeArray<GridEntry> LargeEntries;
             public NativeArray<int> LargeCellStart;
             public NativeArray<int> Stats;
-            public float2 Origin;
+            public float2 Origin, WindowMax;
             public float InvCellSize;
             public int2 Dimensions;
             public float LargeRadius;
@@ -241,14 +243,15 @@ namespace SPF.L1.Spatial
 
             public void Execute()
             {
-                int count = math.min(StagingCount[0], Staging.Length);
+                int requested = math.max(0, StagingCount[0]);
+                int count = math.min(requested, Staging.Length);
                 int cells = Dimensions.x * Dimensions.y;
                 int largeCells = LargeDimensions.x * LargeDimensions.y;
                 for (int c = 0; c < cells; c++) CellStart[c] = 0;
                 for (int c = 0; c < largeCells; c++) LargeCellStart[c] = 0;
 
                 // Pass 1: per-cell counts.
-                int dropped = 0, large = 0;
+                int dropped = requested - count, large = 0;
                 float maxRadius = 0f, maxLarge = 0f;
                 for (int i = 0; i < count; i++)
                 {
@@ -283,6 +286,7 @@ namespace SPF.L1.Spatial
                     for (int i = count - 1; i >= 0; i--)
                     {
                         var e = Staging[i];
+                        if (e.Radius > LargeRadius) continue; // no large entries survived the counting pass
                         int index = CellIndex(e.Position, InvCellSize, Dimensions);
                         if (index >= 0) Entries[--CellStart[index]] = e;
                     }
@@ -305,7 +309,7 @@ namespace SPF.L1.Spatial
                     }
                 }
 
-                Stats[StatEntryCount] = count - dropped;
+                Stats[StatEntryCount] = CellStart[cells] + LargeCellStart[largeCells];
                 Stats[StatDropped] = dropped;
                 Stats[StatMaxRadiusBits] = math.asint(maxRadius);
                 Stats[StatLargeCount] = large;
@@ -316,12 +320,40 @@ namespace SPF.L1.Spatial
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             int CellIndex(float2 position, float invCellSize, int2 dimensions)
             {
-                int2 cell = (int2)math.floor((position - Origin) * invCellSize);
-                if (math.any(cell < 0) || math.any(cell >= dimensions))
-                    return -1;
+                // The coarse layer may round its dimensions up; it must not extend the accepted window.
+                if (!math.all(position >= Origin) || !math.all(position < WindowMax)) return -1;
+                // Reciprocal multiplication can round an accepted upper-edge point to dimensions.
+                // Once the world-window check passed, keep that point in the last valid cell.
+                int2 cell = math.clamp((int2)math.floor((position - Origin) * invCellSize), 0, dimensions - 1);
                 return cell.y * dimensions.x + cell.x;
             }
         }
+    }
+
+    /// <summary>Optional diagnostic counters. EntriesExamined precedes the circle filter; VisitorCalls follows it.</summary>
+    public struct GridQueryStats
+    {
+        public long CellsVisited, CellsPruned, EntriesExamined, VisitorCalls;
+    }
+
+    interface IGridQueryMetrics
+    {
+        void Cell(bool pruned);
+        void Entry();
+        void Visit();
+    }
+    struct NoGridQueryMetrics : IGridQueryMetrics
+    {
+        public void Cell(bool pruned) { }
+        public void Entry() { }
+        public void Visit() { }
+    }
+    struct CountGridQueryMetrics : IGridQueryMetrics
+    {
+        public GridQueryStats Value;
+        public void Cell(bool pruned) { Value.CellsVisited++; if (pruned) Value.CellsPruned++; }
+        public void Entry() { Value.EntriesExamined++; }
+        public void Visit() { Value.VisitorCalls++; }
     }
 
     /// <summary>Read-only view of a built grid for use in jobs.</summary>
@@ -380,6 +412,7 @@ namespace SPF.L1.Spatial
             float reach, float2 center, float radius, ref TVisitor visitor) where TVisitor : struct, IGridVisitor
         {
             int2 min = math.max((int2)math.floor((center - reach - m_Origin) * invCellSize), 0);
+            min = ClampAcceptedLowerCell(min, center - reach, dimensions);
             int2 max = math.min((int2)math.floor((center + reach - m_Origin) * invCellSize), dimensions - 1);
             for (int y = min.y; y <= max.y; y++)
             {
@@ -400,6 +433,96 @@ namespace SPF.L1.Spatial
             return true;
         }
 
+        /// <summary>Opt-in conservative cell pruning; same visits/order as Query. Benchmark before adoption.
+        /// Existing callers retain Query and do not enable this experimental optimization.</summary>
+        public void QueryPruned<TVisitor>(float2 center, float radius, ref TVisitor visitor) where TVisitor : struct, IGridVisitor
+        {
+            var metrics = new NoGridQueryMetrics();
+            QueryCore(center, radius, ref visitor, true, ref metrics);
+        }
+
+        /// <summary>Separate diagnostic pass; counters are not required by the uninstrumented timing path.</summary>
+        public void QueryMeasured<TVisitor>(float2 center, float radius, ref TVisitor visitor, ref GridQueryStats stats, bool pruneCells = false)
+            where TVisitor : struct, IGridVisitor
+        {
+            var metrics = new CountGridQueryMetrics { Value = stats };
+            QueryCore(center, radius, ref visitor, pruneCells, ref metrics);
+            stats = metrics.Value;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void QueryCore<TVisitor, TMetrics>(float2 center, float radius, ref TVisitor visitor, bool pruneCells, ref TMetrics metrics)
+            where TVisitor : struct, IGridVisitor where TMetrics : struct, IGridQueryMetrics
+        {
+            if (!QueryLayer(m_Entries, m_CellStart, m_InvCellSize, m_Dimensions,
+                    radius + math.asfloat(m_Stats[SpatialGrid.StatMaxRadiusBits]), center, radius, ref visitor, pruneCells, ref metrics))
+                return;
+            if (m_Stats[SpatialGrid.StatLargeCount] > 0)
+                QueryLayer(m_LargeEntries, m_LargeCellStart, m_InvLargeCellSize, m_LargeDimensions,
+                    radius + math.asfloat(m_Stats[SpatialGrid.StatLargeMaxRadiusBits]), center, radius, ref visitor, pruneCells, ref metrics);
+        }
+
+        bool QueryLayer<TVisitor, TMetrics>(NativeArray<GridEntry> entries, NativeArray<int> cellStart, float invCellSize, int2 dimensions,
+            float reach, float2 center, float radius, ref TVisitor visitor, bool pruneCells, ref TMetrics metrics)
+            where TVisitor : struct, IGridVisitor where TMetrics : struct, IGridQueryMetrics
+        {
+            int2 min = math.max((int2)math.floor((center - reach - m_Origin) * invCellSize), 0);
+            min = ClampAcceptedLowerCell(min, center - reach, dimensions);
+            int2 max = math.min((int2)math.floor((center + reach - m_Origin) * invCellSize), dimensions - 1);
+            for (int y = min.y; y <= max.y; y++)
+            {
+                int row = y * dimensions.x;
+                for (int x = min.x; x <= max.x; x++)
+                {
+                    int cell = row + x;
+                    int start = cellStart[cell], end = cellStart[cell + 1];
+                    // Empty cells need no geometry. Expand by several ulps of world coordinates so
+                    // reciprocal/floor and FMA rounding cannot make a boundary cell disappear.
+                    bool pruned = pruneCells && start < end && CellOutsideCircle(x, y, invCellSize, center, reach);
+                    metrics.Cell(pruned);
+                    if (pruned) continue;
+                    for (int i = start; i < end; i++)
+                    {
+                        metrics.Entry();
+                        var e = entries[i];
+                        float r = radius + e.Radius;
+                        if (math.distancesq(center, e.Position) < r * r)
+                        {
+                            metrics.Visit();
+                            if (!visitor.Visit(e)) return false;
+                        }
+                    }
+                }
+            }
+            return true;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        int2 ClampAcceptedLowerCell(int2 cell, float2 point, int2 dimensions)
+        {
+            // Match the builder's upper-edge clamp only when the query bound is inside the
+            // accepted window. A rectangle wholly beyond the window still has an empty range.
+            return math.select(cell, math.min(cell, dimensions - 1), point < Max);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        bool CellOutsideCircle(int x, int y, float invCellSize, float2 center, float reach)
+        {
+            float cellSize = 1f / invCellSize;
+            float2 offset = new float2(x, y) * cellSize;
+            float2 lower = m_Origin + offset;
+            float2 upper = lower + cellSize;
+            // Include the large operands too: origin + offset may cancel near world zero.
+            float2 scale = math.max(math.abs(m_Origin), math.abs(offset));
+            scale = math.max(scale, math.max(math.abs(lower), math.max(math.abs(upper), math.abs(center))));
+            float magnitude = math.max(1f, math.cmax(scale));
+            float padding = magnitude * 0.000001f + math.abs(cellSize) * 0.000001f;
+            float2 nearest = math.clamp(center, lower - padding, upper + padding);
+            float conservativeReach = reach + padding;
+            // NaN/overflow disables pruning rather than rejecting an entry.
+            return math.distancesq(center, nearest) > conservativeReach * conservativeReach;
+        }
+
         /// <summary>Visits every entry whose centre lies in the cells touched by the rectangle (no distance test).</summary>
         public void QueryCells<TVisitor>(float2 rectMin, float2 rectMax, ref TVisitor visitor) where TVisitor : struct, IGridVisitor
         {
@@ -413,6 +536,7 @@ namespace SPF.L1.Spatial
             float2 rectMin, float2 rectMax, ref TVisitor visitor) where TVisitor : struct, IGridVisitor
         {
             int2 min = math.max((int2)math.floor((rectMin - m_Origin) * invCellSize), 0);
+            min = ClampAcceptedLowerCell(min, rectMin, dimensions);
             int2 max = math.min((int2)math.floor((rectMax - m_Origin) * invCellSize), dimensions - 1);
             for (int y = min.y; y <= max.y; y++)
             {

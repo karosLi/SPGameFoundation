@@ -23,6 +23,8 @@
 
 Latios [package.json L4–13](https://github.com/Dreaming381/Latios-Framework/blob/ae2262afd5c80ac4850fef23c9e7d4a971fabf53/package.json#L4-L13) 要求 Unity **6000.3.8f1**、Entities **1.4.8**、Entities Graphics **1.4.21**、Burst **1.8.30**。[兼容指南](https://github.com/Dreaming381/Latios-Framework-Documentation/blob/626d1a37f432cd31e4a3faf44fc3cb07c928cc17/Installation%20and%20Compatibility%20Guide.md#L70-L74) 明确当前支持 Unity 6.3 LTS/Entities 1.4.x。对 SPF 的 Unity 2022.3 来说，这涉及引擎、包、数据模型、生命周期和工具链迁移，不是新增一个 asmdef 即可。
 
+**后续兼容性核查补充：** 上段描述的是当前上游整包的直接接入成本，不表示 Unity 2022 无法使用或适配 Latios。v0.11.5 官方最低版本是 2022.3.36f1，存在可供 2022.3.62f2 验证的历史基线，也有 Kinemation 旧渲染路径可作为新版回迁参照。三条路线、真实 API 差异与最小验证计划见[Unity 2022 回迁评估](LatiosUnity2022BackportAssessment.md)；当前保留 SPF 架构是项目范围选择，不能替代对兼容 fork 的技术评估。
+
 [LICENSE.md](https://github.com/Dreaming381/Latios-Framework/blob/ae2262afd5c80ac4850fef23c9e7d4a971fabf53/LICENSE.md) 指向 Unity Companion License；[第三方 notices](https://github.com/Dreaming381/Latios-Framework/blob/ae2262afd5c80ac4850fef23c9e7d4a971fabf53/THIRD%20PARTY%20NOTICES.md) 还列出不同来源的许可。它不是 MIT/Apache 式通用移植许可。[Unity 当前许可原文](https://unity.com/legal/licenses/unity-companion-license) 对 Unity 使用范围、作品衍生修改及第三方 notices 有约束。本文仅做概念分析，不复制实现；未来若摘取代码、shader、资源或原生插件，应按实际文件再次核对许可。这里不对具体商用/衍生归属作法律结论。
 
 ## 2. 先扣掉我们已经完成的能力

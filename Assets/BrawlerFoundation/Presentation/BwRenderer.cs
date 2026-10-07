@@ -174,8 +174,14 @@ namespace BrawlerFoundation.Presentation
         void LateUpdate() => RenderFrame();
 
         /// <summary>Same live presentation path; exposed for calibrated synchronous probes.</summary>
-        public void RenderFrame()
+        public void RenderFrame() => RenderFrame(Time.deltaTime);
+
+        /// <summary>Same read-only presentation path with an explicit visual timestep for synchronous
+        /// probes. Normal LateUpdate keeps Unity's unmodified delta; this never advances simulation.</summary>
+        public void RenderFrame(float presentationDeltaTime)
         {
+            if (!math.isfinite(presentationDeltaTime) || presentationDeltaTime < 0f)
+                throw new System.ArgumentOutOfRangeException(nameof(presentationDeltaTime));
             if (!isActiveAndEnabled) return;
             var session = Host != null ? Host.Session : null;
             if (session == null || session.State == SessionState.Disposed)
@@ -226,7 +232,7 @@ namespace BrawlerFoundation.Presentation
             DrainFeedback(world);
             PartsDrawn = 0;
             int count = game.Flow == BwFlow.Menu ? 0 : math.min(world.Table(BwKeys.Fighter).Count, NaturalCharacters ? m_Characters.Capacity : MaxFighters);
-            if (NaturalCharacters) DrawNatural(world, game, rig, alpha, count);
+            if (NaturalCharacters) DrawNatural(world, game, rig, alpha, count, presentationDeltaTime);
             else if (count > 0)
             {
                 var pos = world.Column(BwKeys.Position);
@@ -273,22 +279,22 @@ namespace BrawlerFoundation.Presentation
                 else m_Fighters.Trim(m_Fighters.Count - output.Length);
             }
             if(world.HasResource(BwWeapons.Key))DrawWeaponProjectiles(world.Resource(BwWeapons.Key),alpha);
-            m_Fx.UpdateAndDraw(Time.deltaTime, m_Effects, m_Art.Sheet, null);
+            m_Fx.UpdateAndDraw(presentationDeltaTime, m_Effects, m_Art.Sheet, null);
             if(m_Sanctuary!=null&&m_Sanctuary.Ready)m_Sanctuary.Draw(Camera!=null?Camera.ViewRect:new float4(-12,-3,12,7),bounds);
             else m_Arena.Draw(bounds, dirty: false);
             m_NaturalShadows?.Draw(bounds);
             m_Fighters.Draw(bounds);
             m_Characters?.Draw(bounds);
             m_Effects.Draw(bounds);
-            if(m_WeaponParticles!=null){UpdateWeaponParticles(world,game,alpha);m_WeaponParticles.EndFrame(bounds);}
+            if(m_WeaponParticles!=null){UpdateWeaponParticles(world,game,alpha,presentationDeltaTime);m_WeaponParticles.EndFrame(bounds);}
             SpritesDrawn = (m_Sanctuary!=null&&m_Sanctuary.Ready?m_Sanctuary.SpritesDrawn:m_Arena.Count) + m_Fighters.Count + m_Effects.Count + (m_Characters?.PartsDrawn ?? 0) + (m_NaturalShadows?.Count ?? 0);
         }
 
-        void UpdateWeaponParticles(SPF.Runtime.World.SimWorld world,BwGameState game,float alpha)
+        void UpdateWeaponParticles(SPF.Runtime.World.SimWorld world,BwGameState game,float alpha,float presentationDeltaTime)
         {
             var weapons=world.Resource(BwWeapons.Key);
             if(!ReferenceEquals(m_WeaponRuntime,weapons)||m_WeaponRevision!=weapons.Revision||weapons.Tick<m_WeaponTick||game.Flow==BwFlow.Menu){m_WeaponParticles.Clear();m_HasWeaponCue=false;System.Array.Clear(m_WeaponTrailValid,0,m_WeaponTrailValid.Length);}
-            m_WeaponParticles.BeginFrame(m_Session.State==SessionState.Running&&game.Flow==BwFlow.Fighting?Time.deltaTime:0,Camera!=null?Camera.ViewRect:new float4(-12,-5,12,8));
+            m_WeaponParticles.BeginFrame(m_Session.State==SessionState.Running&&game.Flow==BwFlow.Fighting?presentationDeltaTime:0,Camera!=null?Camera.ViewRect:new float4(-12,-5,12,8));
             var view=weapons.View(alpha);view.AimDirection=new float2(view.AimDirection.x,view.AimDirection.y*BwBeltRules.DepthProjection);
             if(m_Characters.TryReadWeapon(weapons.Owner,out var socket))m_WeaponParticles.UpdateEmitter(weapons.Owner,view,socket.Tip,socket.Muzzle,socket.Direction,FxDepth,true);
             for(int i=0;i<weapons.CueCount;i++)
@@ -343,12 +349,12 @@ namespace BrawlerFoundation.Presentation
             m_Arena.Draw(new Bounds(Vector3.zero, new Vector3(1e5f, 1e5f, 100f)), dirty: true);
         }
 
-        void DrawNatural(SPF.Runtime.World.SimWorld world, BwGameState game, BwRig rig, float alpha, int count)
+        void DrawNatural(SPF.Runtime.World.SimWorld world, BwGameState game, BwRig rig, float alpha, int count, float presentationDeltaTime)
         {
             bool belt=world.HasResource(BwBeltKeys.State);
             var position=world.Column(BwKeys.Position);var previous=world.Column(BwKeys.Prev);var info=world.Column(BwKeys.Info);
             var handles=world.Table(BwKeys.Fighter).Handles;
-            m_Characters.Begin(m_Session.State==SessionState.Running ? Time.deltaTime : 0,QualityLevel);
+            m_Characters.Begin(m_Session.State==SessionState.Running ? presentationDeltaTime : 0,QualityLevel);
             if(game.Flow==BwFlow.Menu)m_Characters.Clear();
             for(int i=0;i<count;i++)
             {

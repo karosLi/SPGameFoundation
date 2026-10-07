@@ -72,12 +72,31 @@ namespace SurvivorFoundation.Tests
         {
             using var t = World(); using var view = new View(t, natural);
             var snapshot = t.Session.CaptureSnapshot(); uint tick = t.Session.Clock.NextTickIndex;
-            QueueFeedback(t); view.Renderer.RenderFrame();
+            TestContext.WriteLine("Ambient Unity delta=" + Time.deltaTime + "; lifecycle probe delta=0; effect lifetimes unchanged.");
+            QueueFeedback(t); view.Renderer.RenderFrame(0f);
             Assert.Greater(view.Field<SpriteEffects>("m_Fx").Active, 0);
+            view.Renderer.RenderFrame(0f);
+            Assert.Greater(view.Field<SpriteEffects>("m_Fx").Active, 0, "Without restore, the same-tick transient must survive another controlled presentation read.");
+            CollectionAssert.AreEqual(snapshot, t.Session.CaptureSnapshot());
             t.Session.RestoreSnapshot(snapshot);
             Assert.AreEqual(tick, t.Session.Clock.NextTickIndex);
-            view.Renderer.RenderFrame();
+            view.Renderer.RenderFrame(0f);
             Assert.Zero(view.Field<SpriteEffects>("m_Fx").Active, "Transient feedback belongs to the old timeline even when the numeric tick is unchanged.");
+            CollectionAssert.AreEqual(snapshot, t.Session.CaptureSnapshot());
+        }
+
+
+        [TestCase(false)] [TestCase(true)]
+        public void ExplicitLargeVisualDeltaCanExpireFeedbackWithoutRestore(bool natural)
+        {
+            using var t = World(); using var view = new View(t, natural);
+            uint revision = t.Session.TimelineRevision;
+            var snapshot = t.Session.CaptureSnapshot();
+            QueueFeedback(t); view.Renderer.RenderFrame(0f);
+            Assert.Greater(view.Field<SpriteEffects>("m_Fx").Active, 0);
+            view.Renderer.RenderFrame(1f);
+            Assert.Zero(view.Field<SpriteEffects>("m_Fx").Active, "A normal large visual step still ages effects; the production delta is not clamped and lifetimes are not extended.");
+            Assert.AreEqual(revision, t.Session.TimelineRevision);
             CollectionAssert.AreEqual(snapshot, t.Session.CaptureSnapshot());
         }
 

@@ -1,0 +1,41 @@
+{
+  "baselineRemote": "b75d4234a4b6547f30ba4e44e3aaf9d7bf7e4c43",
+  "observedNative": {
+    "editPassed": 1164,
+    "editFailed": 2,
+    "editSkipped": 5,
+    "playPassed": 154,
+    "playFailed": 0,
+    "playSkipped": 1,
+    "scope": "individually hash-verified preliminary XML; full archive reconciliation pending",
+    "ambientDeltaRecorded": false
+  },
+  "fix": "Explicit visual-timestep overload; no-arg path still passes Unity Time.deltaTime. No lifetime or budget changes.",
+  "focused": {
+    "Brawler": 12,
+    "Survivor": 14,
+    "total": 26,
+    "afterRestoringMutation": true
+  },
+  "negativeControl": {
+    "mutation": "Only omit timeline-driven ClearTransientState in both renderers",
+    "failed": 4,
+    "passed": 0,
+    "location": "post-restore zero assertion",
+    "remainingEffects": {
+      "Brawler": 2,
+      "Survivor": 1
+    },
+    "fixedSourceRestoredByHash": true
+  },
+  "newExpiryCases": 4,
+  "nativeFixedExecution": "pending",
+  "hashes": {
+    "Survivor-restored-green.log": "d5e312f576575d60b1300354bd24268be4790830dae17cf87972e4097e21d66a",
+    "Brawler-restored-green.log": "cf12c2dbbec48be07977f54fdd48b371603440521db92765287e051e074bf961"
+  },
+  "mutationLogHashes": {
+    "Survivor-mutant-red.log": "a6aff77691424e855876ed779af9cc861fe47c3f36c8d4e7e1b0908d3d4d10f9",
+    "Brawler-mutant-red.log": "e6b62d438a23ca959242714a46a06c864dcc40ed4d434a2442d49d1359d64ffe"
+  }
+}

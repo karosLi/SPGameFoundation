@@ -221,8 +221,14 @@ namespace SurvivorFoundation.Presentation
         void LateUpdate() => RenderFrame();
 
         /// <summary>Same live presentation path; exposed for calibrated synchronous probes.</summary>
-        public void RenderFrame()
+        public void RenderFrame() => RenderFrame(Time.deltaTime);
+
+        /// <summary>Same read-only presentation path with an explicit visual timestep for synchronous
+        /// probes. Normal LateUpdate keeps Unity's unmodified delta; this never advances simulation.</summary>
+        public void RenderFrame(float presentationDeltaTime)
         {
+            if (!math.isfinite(presentationDeltaTime) || presentationDeltaTime < 0f)
+                throw new System.ArgumentOutOfRangeException(nameof(presentationDeltaTime));
             if (!isActiveAndEnabled) return;
             var session = Host != null ? Host.Session : null;
             if (session == null || session.State == SessionState.Disposed)
@@ -261,7 +267,7 @@ namespace SurvivorFoundation.Presentation
             }
             float requestedAlpha = session.State == SessionState.Running && game.Flow == SvFlow.Playing ? session.InterpolationAlpha : 1f;
             float alpha = m_Interpolation.Resolve(session.Clock.NextTickIndex, session.TimelineRevision, requestedAlpha, interpolationDiscontinuity);
-            float dt = Time.deltaTime;
+            float dt = presentationDeltaTime;
             float time = Time.time;
             float2 hero = math.lerp(game.HeroPrev, game.Hero, alpha);
             BindCamera();
@@ -340,17 +346,17 @@ namespace SurvivorFoundation.Presentation
             m_Characters?.Draw(bounds);
             m_Additive.Draw(bounds);
             m_Effects.Draw(bounds); m_Health.Draw(bounds);
-            if(m_WeaponParticles!=null){UpdateWeaponParticles(world,game,alpha,effectView);m_WeaponParticles.EndFrame(bounds);}
+            if(m_WeaponParticles!=null){UpdateWeaponParticles(world,game,alpha,effectView,presentationDeltaTime);m_WeaponParticles.EndFrame(bounds);}
             SpritesDrawn = (m_Sanctuary!=null&&m_Sanctuary.Ready?m_Sanctuary.SpritesDrawn:m_Ground.Count) + m_Opaque.Count + m_Additive.Count + m_Effects.Count + m_Shadows.Count + m_Health.Count + (m_Characters?.PartsDrawn ?? 0);
             // API payload includes full data textures / indirect arguments, not just live packed sprites.
             BytesUploaded = (m_Sanctuary!=null&&m_Sanctuary.Ready?m_Sanctuary.BytesUploaded:m_Ground.BytesUploaded) + m_Opaque.BytesUploaded + m_Additive.BytesUploaded + m_Effects.BytesUploaded + m_Shadows.BytesUploaded + m_Health.BytesUploaded + (m_Characters?.BytesUploaded ?? 0);
         }
 
-        void UpdateWeaponParticles(SimWorld world,SvGameState game,float alpha,float4 viewRect)
+        void UpdateWeaponParticles(SimWorld world,SvGameState game,float alpha,float4 viewRect,float presentationDeltaTime)
         {
             var weapons=world.Resource(SvWeapons.Key);
             if(!ReferenceEquals(m_WeaponRuntime,weapons)||m_WeaponRevision!=weapons.Revision||weapons.Tick<m_WeaponTick||game.Flow==SvFlow.Menu){m_WeaponParticles.Clear();m_HasWeaponCue=false;System.Array.Clear(m_WeaponTrailValid,0,m_WeaponTrailValid.Length);}
-            m_WeaponParticles.BeginFrame(m_Session.State==SessionState.Running&&game.Flow==SvFlow.Playing?Time.deltaTime:0,viewRect);
+            m_WeaponParticles.BeginFrame(m_Session.State==SessionState.Running&&game.Flow==SvFlow.Playing?presentationDeltaTime:0,viewRect);
             var view=weapons.View(alpha);
             if(game.Hp>0&&m_Characters.TryReadWeapon(weapons.Owner,out var socket))m_WeaponParticles.UpdateEmitter(weapons.Owner,view,socket.Tip,socket.Muzzle,socket.Direction,BulletDepth,true);
             for(int i=0;i<weapons.CueCount;i++)

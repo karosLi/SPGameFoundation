@@ -367,6 +367,21 @@ namespace RpgFoundation.Systems
     /// </summary>
     sealed class CombatSystem : SimSystemBase
     {
+        // Private transient workspace. Every active row flag is overwritten before gather; no
+        // simulation-relevant value survives a tick, reset or snapshot restore. One owner/job chain.
+        NativeArray<ProjectileRequest> m_RequestScratch;
+        NativeArray<byte> m_RequestPending;
+        public override void OnCreate(SimWorld world)
+        {
+            int capacity = world.Table(RpgKeys.Actor).Capacity;
+            m_RequestScratch = new NativeArray<ProjectileRequest>(capacity, Allocator.Persistent);
+            m_RequestPending = new NativeArray<byte>(capacity, Allocator.Persistent);
+        }
+        public override void OnDestroy(SimWorld world)
+        {
+            if (m_RequestScratch.IsCreated) m_RequestScratch.Dispose();
+            if (m_RequestPending.IsCreated) m_RequestPending.Dispose();
+        }
         public override SimPhase Phase => SimPhase.Collision;
 
         public override void Declare(AccessDeclaration access) => access
@@ -395,12 +410,18 @@ namespace RpgFoundation.Systems
                 Grid = grid,
                 Hits = hits,
                 Feedback = feedback,
-                Requests = world.Resource(RpgKeys.ProjectileRequests).AsWriter(),
+                Requests = m_RequestScratch, RequestPending = m_RequestPending,
                 Weapons = config.Weapons,
                 Skills = config.Skills,
                 Settings = config.Settings,
                 DeltaTime = context.Time.DeltaTime,
             }.Schedule(context.Count(RpgKeys.Actor), 16, dependency);
+
+            var gathered = new GatherProjectileRequestsJob
+            {
+                Scratch = m_RequestScratch, Pending = m_RequestPending,
+                Queue = world.Resource(RpgKeys.ProjectileRequests).AsWriter(), Actors = context.Count(RpgKeys.Actor),
+            }.Schedule(actions);
 
             var projectiles = new ProjectileJob
             {
@@ -414,7 +435,7 @@ namespace RpgFoundation.Systems
                 Feedback = feedback,
                 Destroy = world.Resource(SimWorld.DestroyQueueKey).AsWriter(),
                 DeltaTime = context.Time.DeltaTime,
-            }.Schedule(context.Count(RpgKeys.Projectile), 16, actions);   // both write the hit queue: chained
+            }.Schedule(context.Count(RpgKeys.Projectile), 16, gathered);   // both write the hit queue: chained
             return projectiles;
         }
 
@@ -476,7 +497,8 @@ namespace RpgFoundation.Systems
             public GridReader Grid;
             public ParallelQueue<HitEvent>.Writer Hits;
             public ParallelQueue<FeedbackEvent>.Writer Feedback;
-            public ParallelQueue<ProjectileRequest>.Writer Requests;
+            public NativeArray<ProjectileRequest> Requests;
+            public NativeArray<byte> RequestPending;
             [ReadOnly] public NativeArray<WeaponDef> Weapons;
             [ReadOnly] public NativeArray<SkillDef> Skills;
             public RpgSettings Settings;
@@ -484,6 +506,7 @@ namespace RpgFoundation.Systems
 
             public void Execute(int i)
             {
+                RequestPending[i] = 0;
                 var info = Info[i];
                 if (info.Has(ActorFlags.Dead)) return;
                 var c = Combat[i];
@@ -502,14 +525,14 @@ namespace RpgFoundation.Systems
                         case ActionPhase.Windup:
                             if (c.PhaseTime >= c.PhaseDuration)
                             {
-                                Strike(info, stats, weapon, p, c.Aim, Status[i]);
+                                Strike(i, info, stats, weapon, p, c.Aim, Status[i]);
                                 Enter(ref c, ActionPhase.Recover, weapon.Recover);
                             }
                             break;
                         case ActionPhase.Cast:
                             if (c.PhaseTime >= c.PhaseDuration)
                             {
-                                Release(info, stats, c.PhaseSkill, p, c.Aim);
+                                Release(i, info, stats, c.PhaseSkill, p, c.Aim);
                                 Enter(ref c, ActionPhase.Recover, 0.15f);
                             }
                             break;
@@ -597,38 +620,40 @@ namespace RpgFoundation.Systems
                 c.PhaseSkill = id;
             }
 
-            void Strike(in ActorInfo info, in StatBlock stats, in WeaponDef weapon, float2 p, float2 aim, in StatusState status)
+            void Strike(int row, in ActorInfo info, in StatBlock stats, in WeaponDef weapon, float2 p, float2 aim, in StatusState status)
             {
                 float damage = stats[Stat.Attack] * weapon.DamageMul;
                 var onHit = status.HitStatus(damage);
                 if (weapon.Ranged)
                 {
-                    Requests.TryAdd(new ProjectileRequest
+                    Requests[row] = new ProjectileRequest
                     {
                         Position = p + aim * (info.Radius + 0.15f), Direction = aim, Speed = weapon.ProjectileSpeed, Radius = weapon.ProjectileRadius,
                         Damage = damage, CritChance = stats[Stat.Crit], Knockback = weapon.Knockback, Pierce = weapon.Pierce,
                         Life = weapon.Range / math.max(weapon.ProjectileSpeed, 0.1f), Team = info.Team, OwnerId = info.Id, Visual = weapon.Visual, Status = onHit,
-                    });
+                    };
+                    RequestPending[row] = 1;
                     return;
                 }
                 float cos = info.Has(ActorFlags.Hero) ? weapon.ArcCos : math.max(weapon.ArcCos, 0f);
                 Area(info, stats, p, aim, stats[Stat.Range] + info.Radius, cos, damage, weapon.Knockback, weapon.Stagger, default, HitSource.Weapon, onHit);
             }
 
-            void Release(in ActorInfo info, in StatBlock stats, byte id, float2 p, float2 aim)
+            void Release(int row, in ActorInfo info, in StatBlock stats, byte id, float2 p, float2 aim)
             {
                 var skill = Skills[id - 1];
                 float damage = stats[Stat.Attack] * stats[Stat.SkillPower] * skill.Power;
                 switch (skill.Kind)
                 {
                     case SkillKind.Projectile:
-                        Requests.TryAdd(new ProjectileRequest
+                        Requests[row] = new ProjectileRequest
                         {
                             Position = p + aim * (info.Radius + 0.2f), Direction = aim, Speed = skill.Speed, Radius = 0.3f, Damage = damage,
                             CritChance = stats[Stat.Crit], Knockback = skill.Knockback, ExplodeRadius = skill.Radius, Life = 2f,
                             Team = info.Team, OwnerId = info.Id, Visual = ProjectileVisual.Fireball,
                             Status = StatusHit.From(skill.Status, damage, skill.StatusPower, skill.StatusDuration),
-                        });
+                        };
+                        RequestPending[row] = 1;
                         break;
                     case SkillKind.Nova:
                         Area(info, stats, p, aim, skill.Radius, -1f, damage, skill.Knockback, 0.2f,

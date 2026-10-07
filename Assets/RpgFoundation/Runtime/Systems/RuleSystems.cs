@@ -172,6 +172,8 @@ namespace RpgFoundation.Systems
         {
             var world = context.World;
             var requests = world.Resource(RpgKeys.ProjectileRequests);
+            // Also canonicalize an older snapshot whose pending queue used worker arrival order.
+            requests.AsArray().Sort(new RpgProjectileRequestOrder());
             for (int i = 0; i < requests.Count; i++)
                 RpgSpawner.SpawnProjectile(world, requests[i]);
             requests.Clear();

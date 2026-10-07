@@ -241,7 +241,7 @@ namespace SPF.Runtime.World
             m_DestroyQueue.RecordAndClear();
         }
 
-        struct HandleOrder : IComparer<EntityHandle>
+        internal struct HandleOrder : IComparer<EntityHandle>
         {
             public int Compare(EntityHandle a, EntityHandle b) =>
                 a.Index != b.Index ? a.Index.CompareTo(b.Index) : a.Generation.CompareTo(b.Generation);
@@ -397,6 +397,10 @@ namespace SPF.Runtime.World
 
         public void WriteSnapshot(System.IO.BinaryWriter writer)
         {
+            // Called between synchronized ticks, just like world snapshot serialization. Playback
+            // already applies this same order. Normalize pending bytes without consuming/deduplicating
+            // entries, reallocating storage, or changing which accepted handles will be destroyed.
+            m_Queue.AsArray().Sort(new SimWorld.HandleOrder());
             writer.Write(TotalOverflow);
             m_Queue.WriteSnapshot(writer);
         }

@@ -1,0 +1,189 @@
+{
+  "format_version": 1,
+  "date_utc": "2026-10-07",
+  "scope": "Stage F bounded test-only backend conformance; isolated branch from source_base; not native execution or a backend performance adoption",
+  "source_base": "40a432345d0970a1911cd668d20c78ab76b6d331",
+  "verified_assets_git_tree": "788b65909689c08c82702e2b0968cddd834066d0",
+  "asset_cs_count": 513,
+  "asset_cs_and_asmdef_manifest_sha256": "22ef1d476418712b0e70672ee826956bab6529ecc7fe8c2f3d888a3bea441e25",
+  "changed_asset_sha256": {
+    "Assets/BrawlerFoundation/Tests/EditMode/BwBeltAiTests.cs": "9fa1b4b3a3f73dc7e6bf8bd928e6bfe784c711ea0d68a2e4462bbe976a61cdab",
+    "Assets/BrawlerFoundation/Tests/PlayMode/BwWeaponGameplayTests.cs": "66b8e05af0f369c24c02a24d6e0687b5ced1bc647a22361b7e17f9530372931e",
+    "Assets/RpgFoundation/Tests/EditMode/RpgAiDecisionTests.cs": "77eee194f41cdecbf59f1f874601f2b96a998e5f8ec5222054348938e5b4baa8",
+    "Assets/RpgFoundation/Tests/EditMode/RpgFoundation.Tests.EditMode.asmdef": "f07bb0b1efeceaabe007b3a361012de110f8f8dd4c4cc3a4c7d5a1dd8dea0852",
+    "Assets/SinglePlayerFoundation/Testing/ReactiveDecisionConformance.cs": "439b93afeccb98e9552de73a40c0e08af1f1fd52f445950911828e9101d1a844",
+    "Assets/SinglePlayerFoundation/Testing/SPF.Testing.asmdef": "230a96ec0869b505af477f48fcfcc27961f8cc25fdda024db8d411ed10d55dfd",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/DecisionTreeTests.cs": "a9f3e124c2ae938bb48bd7b7ed448234b2fca71326aaa41b9204f44c99a0429a",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/SpatialBackendContractTests.cs": "8f9032e6ba0479e72e0204c4e87631f410b2c59cab480d9e0595be054f0d629b",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/SpatialBackendFixture.cs": "7c0028c737aba1178498cd1a5e220198b970688dbf25f1cd2714a0e1b6680ccf",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/SpatialBroadphaseComparisonTests.cs": "68fb7b6bacd27ad687ef468c1169eebaa22137851d5d8f8a3c782b6519c961e9",
+    "Assets/SurvivorFoundation/Tests/PlayMode/SvWeaponGameplayTests.cs": "4ff7e8dd7a1eed1aa32585a9630f8a28dccf0f79c3bc215501b9a652cd81acce"
+  },
+  "production_sources_unchanged": true,
+  "tools_packages_projectsettings_ci_unchanged": true,
+  "focused_dotnet": {
+    "passed": 42,
+    "failed": 0,
+    "assemblies": {
+      "SPF.Tests.EditMode": 30,
+      "RpgFoundation.Tests.EditMode": 5,
+      "BrawlerFoundation.Tests.EditMode": 7
+    },
+    "filter": "FullyQualifiedName~SpatialBackendContractTests|FullyQualifiedName~AllBackendsMatchEveryBruteForceHitWithoutDuplicates|FullyQualifiedName~DecisionTreeTests|FullyQualifiedName~RpgAiDecisionTests|FullyQualifiedName~BwBeltAiTests"
+  },
+  "full_dotnet": {
+    "build_projects": 76,
+    "build_errors": 0,
+    "build_warnings": 0,
+    "passed": 1210,
+    "failed": 0,
+    "per_assembly": [
+      {
+        "assembly": "BrawlerFoundation.Tests.EditMode.dll",
+        "passed": 120,
+        "failed": 0,
+        "skipped_counter": 0,
+        "total_counter": 120
+      },
+      {
+        "assembly": "DefenseFoundation.Tests.EditMode.dll",
+        "passed": 8,
+        "failed": 0,
+        "skipped_counter": 0,
+        "total_counter": 8
+      },
+      {
+        "assembly": "PlatformerFoundation.Tests.EditMode.dll",
+        "passed": 10,
+        "failed": 0,
+        "skipped_counter": 0,
+        "total_counter": 10
+      },
+      {
+        "assembly": "PuzzleFoundation.Tests.EditMode.dll",
+        "passed": 7,
+        "failed": 0,
+        "skipped_counter": 0,
+        "total_counter": 7
+      },
+      {
+        "assembly": "RpgFoundation.Tests.EditMode.dll",
+        "passed": 63,
+        "failed": 0,
+        "skipped_counter": 0,
+        "total_counter": 63
+      },
+      {
+        "assembly": "SPF.Tests.EditMode.dll",
+        "passed": 817,
+        "failed": 0,
+        "skipped_counter": 0,
+        "total_counter": 817
+      },
+      {
+        "assembly": "ShooterFoundation.Tests.EditMode.dll",
+        "passed": 16,
+        "failed": 0,
+        "skipped_counter": 0,
+        "total_counter": 16
+      },
+      {
+        "assembly": "SlingFoundation.Tests.EditMode.dll",
+        "passed": 4,
+        "failed": 0,
+        "skipped_counter": 0,
+        "total_counter": 4
+      },
+      {
+        "assembly": "SnakeFoundation.Tests.EditMode.dll",
+        "passed": 40,
+        "failed": 0,
+        "skipped_counter": 0,
+        "total_counter": 40
+      },
+      {
+        "assembly": "StoryFoundation.Tests.EditMode.dll",
+        "passed": 5,
+        "failed": 0,
+        "skipped_counter": 0,
+        "total_counter": 5
+      },
+      {
+        "assembly": "SurvivorFoundation.Tests.EditMode.dll",
+        "passed": 120,
+        "failed": 0,
+        "skipped_counter": 0,
+        "total_counter": 120
+      }
+    ],
+    "existing_explicit_tools_not_run": [
+      "Sling SearchShots",
+      "Snake ExportFrames"
+    ],
+    "graphics_playmode_executed": false
+  },
+  "real_unity_api_compile": {
+    "recipe": "Docs/validation/GenerateCompositionApiCompile.py --all-assets",
+    "unity_version": "2022.3.62f2",
+    "sources": 513,
+    "references": 95,
+    "errors": 0,
+    "warnings": 7,
+    "warning_scope": "Existing unused/serialized fields: StRenderer.m_Version; SnakeWorldRenderer.m_ForceTier; SvGameBootstrap.m_GuardExample/m_FlyingSwordExample/m_MobileCombatExample/m_WeaponCombatExample; DriftGizmoView.m_Host",
+    "execution": false
+  },
+  "cold_compositions": {
+    "count": 19,
+    "independent_processes": 2,
+    "repeat_byte_equal": true,
+    "committed_baseline_byte_hash_equal": true,
+    "sha256": "a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30",
+    "baseline": "Docs/validation/FoundationCompatibilityInventory-20261007.json"
+  },
+  "review": {
+    "source_findings": 0,
+    "documentation_nits": 2,
+    "documentation_nits_fixed": true,
+    "diff_check": "passed",
+    "local_links": "passed"
+  },
+  "native_pending": {
+    "editmode_burst": "not_run_on_this_patch",
+    "graphics": "not_run_on_this_patch",
+    "expected_new_pngs": 12,
+    "expected_matching_sidecars": 12,
+    "new_capture_kind": "three lifecycle point images per actual game/tier, not continuous transition video",
+    "fixtures": [
+      "BrawlerFoundation.Tests.PlayMode.BwWeaponGameplayTests.FourWeaponsUseActualBeltLoopAndSockets(GpuDriven)",
+      "BrawlerFoundation.Tests.PlayMode.BwWeaponGameplayTests.FourWeaponsUseActualBeltLoopAndSockets(DataTexture)",
+      "SurvivorFoundation.Tests.PlayMode.SvWeaponGameplayTests.FourWeaponsDrivePortraitHordeAndKeepSkillHud(GpuDriven)",
+      "SurvivorFoundation.Tests.PlayMode.SvWeaponGameplayTests.FourWeaponsDrivePortraitHordeAndKeepSkillHud(DataTexture)"
+    ],
+    "artifact_retrieval_and_pixel_review": "pending",
+    "physical_android_ios": "external"
+  },
+  "retained_historical_native_evidence": [
+    "Docs/CollisionBroadphaseBenchmarks.md",
+    "Docs/AiDecisionValidation.md",
+    "Docs/SeparationArithmeticParity.md",
+    "Docs/MobileFoundationFollowupValidation.md"
+  ],
+  "logs_sha256": {
+    "build-final.log": "2d1ca4efc55a17a2fc036425a506f5dc18732e95d58b72ee184a69dc5ca9d8af",
+    "tests-final.log": "2d3ec199c9ec78f90a2c155161c4ba862774aca56d1c612cfe6e759d3ee890bc",
+    "api-build.log": "84cff62f63baef5c46c3475f935d2a6c87c3b59c9c75555829939be591e8bf1c",
+    "probe/build.log": "e72887c0e9efa4da7c31f1238f10a32e7dc87d846b7aa2fafcede33fa02d0c81",
+    "focused-BrawlerFoundation.Tests.EditMode.log": "89ef323c3c41571980e23d8838776795e2b29053045a87b9698632d1d553d8ac",
+    "focused-RpgFoundation.Tests.EditMode.log": "d742c74bc553b867fc1e334457c3acf4d3e39d23738218b66be0d362adb9f79a",
+    "focused-SPF.Tests.EditMode.log": "1c220c7dab11b68ba3c07d8a4cf151e75fc4dfb8607b6d60049b83bbfbbf19e5"
+  },
+  "commands": [
+    "python3 Tools/DotnetHarness/generate.py",
+    "dotnet build Tools/DotnetHarness/.gen/Harness.proj --no-restore -m:1 -p:NuGetAudit=false -p:UseSharedCompilation=false -nologo -v q",
+    "dotnet test Tools/DotnetHarness/.gen/Harness.proj --no-build --no-restore -m:1 -p:NuGetAudit=false -nologo -v q --logger console;verbosity=minimal",
+    "python3 Docs/validation/GenerateCompositionApiCompile.py --repo REPO --unity-data UNITY_DATA --nunit NUNIT_DLL --out OUTPUT --all-assets",
+    "dotnet build OUTPUT/Compile.csproj -m:1 -p:NuGetAudit=false -p:UseSharedCompilation=false -nologo -v q",
+    "Cold-19: existing Docs/validation/FoundationCompatibilityProbe-20261007.md; run exported executable in two independent processes and compare outputs plus committed cold_output_sha256"
+  ],
+  "initial_setup_failure": "First build lacked the untracked pinned Mathematics sources. Copied existing exact f110c8c230d253654afed153569030a587cc7557 cache; regenerated and reran. No dependency version changed."
+}

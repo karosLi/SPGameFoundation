@@ -3,7 +3,8 @@
     "rootNamespace": "SPF.Testing",
     "references": [
         "UnityEngine.UI",
-        "Unity.Collections"
+        "Unity.Collections",
+        "SPF.L2Gameplay"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

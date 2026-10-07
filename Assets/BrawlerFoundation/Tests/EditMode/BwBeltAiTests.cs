@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using SPF.Contracts;
 using SPF.L2.AI;
+using SPF.Testing;
 using Unity.Mathematics;
 
 namespace BrawlerFoundation.Tests
@@ -21,14 +22,10 @@ namespace BrawlerFoundation.Tests
         [Test] public void AllFactsAndExactLaneReachCooldownBoundariesMatchLegacy()
         {
             using var nodes = BwBeltDecisions.CreateProgram();
-            var seen = new bool[nodes.Length];
-            for (uint facts = 0; facts < 8; facts++)
-            {
-                var selected = BwBeltDecisions.Select(nodes, facts, out var trace);
-                Assert.AreEqual((facts & 1) == 0 ? BwBeltIntent.Hold : (facts & 2) != 0 ? BwBeltIntent.Approach : (facts & 4) != 0 ? BwBeltIntent.Attack : BwBeltIntent.Hold, selected);
-                Assert.IsTrue(trace.Succeeded); seen[trace.Leaf] = true;
-            }
-            for (int i = 0; i < nodes.Length; i++) if (nodes[i].Kind == DecisionNodeKind.Leaf) Assert.IsTrue(seen[i]);
+            ReactiveDecisionConformance.Verify(nodes, 3,
+                facts => (int)((facts & 1) == 0 ? BwBeltIntent.Hold : (facts & 2) != 0 ? BwBeltIntent.Approach :
+                    (facts & 4) != 0 ? BwBeltIntent.Attack : BwBeltIntent.Hold),
+                (uint facts, out DecisionResult trace) => (int)BwBeltDecisions.Select(nodes, facts, out trace));
             foreach (float reach in new[] { .92f, 1.2f })
             foreach (float x in new[] { -reach-.00001f, -reach, 0, reach, reach+.00001f })
             foreach (float y in new[] { -.38001f, -.38f, 0, .38f, .38001f })

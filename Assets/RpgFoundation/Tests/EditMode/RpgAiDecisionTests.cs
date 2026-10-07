@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using SPF.Contracts;
 using SPF.L2.AI;
+using SPF.Testing;
 using Unity.Mathematics;
 
 namespace RpgFoundation.Tests
@@ -25,14 +26,9 @@ namespace RpgFoundation.Tests
         [Test] public void AllTacticalFactsPreserveSkillPriorityAndConcurrentRetreatAttack()
         {
             using var program = RpgDecisions.CreateProgram();
-            var leaves = new bool[program.Length];
-            for (uint facts = 0; facts < 32; facts++)
-            {
-                var actual = RpgDecisions.Select(program, facts, out var trace);
-                var expected = Legacy((facts & 1) != 0, (facts & 2) != 0, (facts & 16) != 0, (facts & 8) != 0, (facts & 4) != 0);
-                Assert.AreEqual(expected, actual, "facts=" + facts); Assert.IsTrue(trace.Succeeded); leaves[trace.Leaf] = true;
-            }
-            for (int i = 0; i < program.Length; i++) if (program[i].Kind == DecisionNodeKind.Leaf) Assert.IsTrue(leaves[i], "uncovered leaf=" + i);
+            ReactiveDecisionConformance.Verify(program, 5,
+                facts => (int)Legacy((facts & 1) != 0, (facts & 2) != 0, (facts & 16) != 0, (facts & 8) != 0, (facts & 4) != 0),
+                (uint facts, out DecisionResult trace) => (int)RpgDecisions.Select(program, facts, out trace));
         }
         [Test] public void PerceptionBoundaryFactsMatchTheOriginalStrictComparisons()
         {

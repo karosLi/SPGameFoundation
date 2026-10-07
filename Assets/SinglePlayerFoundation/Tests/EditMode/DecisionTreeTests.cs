@@ -27,6 +27,17 @@ namespace SPF.Tests.EditMode
             }
             Assert.IsTrue(visited[1] && visited[3] && visited[4], "every leaf reached");
         }
+        [Test] public void SharedConformanceRejectsWrongActionsAndFabricatedTraces()
+        {
+            using var nodes = DecisionTree.Create(Policy(), 7);
+            ReactiveDecisionConformance.Select actual = (uint facts, out DecisionResult trace) =>
+            { trace = DecisionTree.Evaluate(nodes, facts); return trace.Action; };
+            Assert.DoesNotThrow(() => ReactiveDecisionConformance.Verify(nodes, 3, Legacy, actual));
+            Assert.Throws<InvalidOperationException>(() => ReactiveDecisionConformance.Verify(nodes, 3, _ => 999, actual));
+            ReactiveDecisionConformance.Select fabricated = (uint facts, out DecisionResult trace) =>
+            { trace = DecisionTree.Evaluate(nodes, facts); trace.Visits++; return trace.Action; };
+            Assert.Throws<InvalidOperationException>(() => ReactiveDecisionConformance.Verify(nodes, 3, Legacy, fabricated));
+        }
         [Test] public void StartupRejectsInvalidProgramsBeforeNativeAllocation()
         {
             Assert.Throws<ArgumentException>(() => DecisionTree.Create(null, 7));

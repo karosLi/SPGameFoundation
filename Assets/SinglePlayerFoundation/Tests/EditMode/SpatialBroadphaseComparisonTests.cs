@@ -133,23 +133,18 @@ namespace SPF.Tests.EditMode
         {
             foreach (uint seed in new uint[] { 721, 1234, 9173 })
             using (var data = new Data(distribution, 192, 64, seed))
-            using (var grid = new SpatialGrid(data.Dimensions, data.Cell, data.Entries.Length) { Origin = data.Origin })
-            using (var layered = new SpatialGrid(data.Dimensions, data.Cell, data.Entries.Length, .75f) { Origin = data.Origin })
-            using (var tree = new BoundedQuadtreeReference(data.Origin, data.Size, data.Entries.Length))
             using (var seen = new NativeArray<int>(data.Entries.Length, Allocator.TempJob))
+            for (int mode = 0; mode < 4; mode++)
+            using (var backend = new SpatialBackendFixture((SpatialTestBackend)mode, data.Dimensions, data.Cell, data.Origin, data.Entries.Length))
             {
-                Fill(grid, data); grid.ScheduleBuild(default).Complete(); Fill(layered, data); layered.ScheduleBuild(default).Complete();
-                Fill(tree, data); tree.AsBuilder().Build(data.Entries.Length);
-                Assert.AreEqual(data.Entries.Length, tree.EntryCount); Assert.AreEqual(0, tree.RejectedCount);
+                for (int i = 0; i < data.Entries.Length; i++) backend.Set(i, data.Entries[i]);
+                backend.Build(data.Entries.Length);
+                Assert.AreEqual(data.Entries.Length, backend.EntryCount); Assert.AreEqual(0, backend.Dropped);
                 for (int q = 0; q < data.Queries.Length; q++)
-                for (int mode = 0; mode < 4; mode++)
                 {
                     for (int i = 0; i < seen.Length; i++) seen.Set(i, 0);
                     var probe = data.Queries[q]; var visitor = new ExactVisitor { Seen = seen, Hit = Visitor(data, probe) };
-                    if (mode == 0) grid.AsReader().Query(probe.Center, probe.Radius, ref visitor);
-                    else if (mode == 1) grid.AsReader().QueryPruned(probe.Center, probe.Radius, ref visitor);
-                    else if (mode == 2) layered.AsReader().Query(probe.Center, probe.Radius, ref visitor);
-                    else tree.AsReader().Query(probe.Center, probe.Radius, ref visitor);
+                    backend.Query(probe.Center, probe.Radius, ref visitor);
                     Assert.AreEqual(0, visitor.Duplicates);
                     for (int i = 0; i < seen.Length; i++)
                         if ((seen[i] != 0) != Expected(data, probe, i))

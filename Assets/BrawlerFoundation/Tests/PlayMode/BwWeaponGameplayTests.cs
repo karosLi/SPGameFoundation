@@ -1,6 +1,7 @@
 #if !SPF_DOTNET_HARNESS
 using System;
 using System.Collections;
+using System.IO;
 using BrawlerFoundation.Game;
 using NUnit.Framework;
 using SPF.Contracts;
@@ -8,6 +9,7 @@ using SPF.Contracts.Weapons;
 using SPF.L2.Weapons;
 using SPF.Presentation;
 using SPF.Presentation.Animation;
+using SPF.Presentation.Particles;
 using SPF.Shell.UI;
 using SPF.Testing;
 using Unity.Mathematics;
@@ -106,6 +108,8 @@ namespace BrawlerFoundation.Tests.PlayMode
                 weapons.RequestEquip(WeaponProfiles.Staff);
                 for(int i=0;i<weapons.Profile(WeaponProfiles.Staff).EquipTicks;i++)game.Session.Step();
                 Assert.AreEqual(WeaponProfiles.Staff,weapons.Current.ContentId);
+                // Three bounded point images of this lifecycle fixture, before later live clips reset it.
+                yield return CaptureLifecyclePoint(game,capture,safe,tier,"before-disable");
                 int hiddenReleases=weapons.Releases;
                 var warmParticles=game.Renderer.WeaponParticles;
                 uint hiddenHead=weapons.Equipment.CueSequence;
@@ -122,10 +126,17 @@ namespace BrawlerFoundation.Tests.PlayMode
                 Assert.AreEqual(weapons.Equipment.CueSequence,game.Renderer.LastWeaponCueSequence);
                 Assert.Zero(warmParticles.Renderer.Pool.ReservedCount,"reenable must skip hidden releases and old attachments");
                 Assert.IsNotNull(game.CameraRig.UpdateTarget);
+                yield return CaptureLifecyclePoint(game,capture,safe,tier,"after-reenable");
+                Assert.Zero(warmParticles.Renderer.Pool.ReservedCount,"hidden releases must remain suppressed through the captured frame");
+                CollectionAssert.AreEqual(lifecycleSnapshot,game.Session.CaptureSnapshot());
                 uint restoreTick=game.Session.Clock.NextTickIndex;
                 game.Session.RestoreSnapshot(lifecycleSnapshot);game.Renderer.RenderFrame();
                 Assert.AreEqual(restoreTick,game.Session.Clock.NextTickIndex);
                 Assert.Zero(warmParticles.Renderer.Pool.ReservedCount);
+                CollectionAssert.AreEqual(lifecycleSnapshot,game.Session.CaptureSnapshot());
+                yield return CaptureLifecyclePoint(game,capture,safe,tier,"after-same-tick-restore");
+                Assert.AreEqual(restoreTick,game.Session.Clock.NextTickIndex);
+                Assert.Zero(warmParticles.Renderer.Pool.ReservedCount,"restored cues must remain suppressed through the captured frame");
                 CollectionAssert.AreEqual(lifecycleSnapshot,game.Session.CaptureSnapshot());
                 game.Session.Resume();
                 if(Environment.GetEnvironmentVariable("SPF_WEAPON_GAMEPLAY_SEQUENCE")=="1")
@@ -175,6 +186,32 @@ namespace BrawlerFoundation.Tests.PlayMode
                 LogAssert.NoUnexpectedReceived();
             }
             finally{capture?.Dispose();RenderCapabilities.Override=null;if(Camera.main!=null)Object.Destroy(Camera.main.gameObject);Object.Destroy(game.gameObject);}
+        }
+
+        static IEnumerator CaptureLifecyclePoint(BwGameBootstrap game,CanvasCapture capture,Rect safe,RenderTier requestedTier,string stage)
+        {
+            Assert.IsTrue(game.Session.ManualClock,"point capture must not advance the simulation");
+            byte[] snapshot=game.Session.CaptureSnapshot();uint tick=game.Session.Clock.NextTickIndex;
+            game.Renderer.RenderFrame();
+            Assert.AreEqual(requestedTier,game.Renderer.Tier,"requested world rendering tier must actually be bound");
+            Assert.IsNotNull(game.Renderer.WeaponParticles);
+            var particles=game.Renderer.WeaponParticles.Renderer;
+            if(requestedTier==RenderTier.DataTexture)
+            {
+                Assert.AreEqual(RenderTier.DataTexture,particles.Tier,"fallback point image must use data-texture particle rendering");
+                Assert.AreEqual(ParticleBackend.CpuBurst,particles.Backend,"data-texture fallback must use CPU/Burst particle simulation");
+            }
+            // Particle capability selection is independent of the requested world tier. Record its
+            // actual result: a GPU-labelled world capture is not proof of compute particle execution.
+            string name="weapon-belt-lifecycle-point-"+stage+"-"+(requestedTier==RenderTier.GpuDriven?"gpu":"fallback");
+            yield return capture.Save(name,safe);
+            Assert.AreEqual(tick,game.Session.Clock.NextTickIndex,"point capture cannot add a simulation tick");
+            CollectionAssert.AreEqual(snapshot,game.Session.CaptureSnapshot(),"point capture must leave the authoritative snapshot unchanged");
+            string evidence=$"Point image only; not continuous-motion proof. Transition: {stage}.\n"+
+                $"Requested world tier: {requestedTier}; active world tier: {game.Renderer.Tier}; active particle render tier: {particles.Tier}; active particle simulation backend: {particles.Backend}.\n"+
+                $"Graphics API: {SystemInfo.graphicsDeviceType}; next simulation tick: {tick}; acquisition realtime: {capture.CaptureRealtime:R}; reserved particles: {particles.Pool.ReservedCount}.\n";
+            File.AppendAllText(Path.Combine(Application.dataPath,"..","Artifacts","Screenshots","MobileHud",name+".txt"),evidence);
+            TestContext.WriteLine(evidence);
         }
 
         // Test-only, fixed-capacity samples. Serialization happens after image acquisition.

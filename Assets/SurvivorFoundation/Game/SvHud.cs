@@ -13,6 +13,12 @@ namespace SurvivorFoundation.Game
         SvGameBootstrap m_Game;
         int m_Version = -1;
         Text[] m_ChoiceLabels;
+        RectTransform m_MobileTelemetry;
+        int m_StatusLines;
+        bool m_LastDebugTelemetry;
+        /// <summary>Development-only counters. Mobile gameplay keeps these hidden by default.
+        /// Set from the Inspector or a development tool; no input or simulation state is changed.</summary>
+        public bool ShowDebugTelemetry;
         /// <summary>Every choice label (upgrade × current level), built once: the level-up screen then allocates nothing.</summary>
         static readonly string[,] s_ChoiceText = BuildChoiceText(SvRules.Names);
         static readonly string[,] s_SwordChoiceText = BuildChoiceText(SvSwordRules.Names);
@@ -69,10 +75,9 @@ namespace SurvivorFoundation.Game
                 new Vector2(0f, 0.86f), Vector2.one, raycast: false);
             if (mobile)
             {
-                var telemetry = UIFactory.Card(HudPanel, "MobileStatsBackdrop", SanctuaryUiTheme.Ink,
-                    new Vector2(.015f, .972f), new Vector2(.75f, .972f), raycast: false);
-                telemetry.offsetMin = new Vector2(0f, -204f);
-                telemetry.offsetMax = Vector2.zero;
+                m_MobileTelemetry = UIFactory.Card(HudPanel, "MobileStatsBackdrop", SanctuaryUiTheme.Ink,
+                    new Vector2(.015f, 1f), new Vector2(.75f, 1f), raycast: false);
+                m_StatusLines = 1 + (guard ? 1 : 0) + (swords ? 1 : 0) + (game.Session.World.HasResource(SvWeapons.Key) ? 1 : 0);
             }
             XpFill = UIFactory.Bar(HudPanel, "XpBar", SanctuaryUiTheme.Ink, SanctuaryUiTheme.Spirit, new Vector2(0f, mobile ? .992f : .975f), new Vector2(1f, 1f));
             HealthFill = UIFactory.Bar(HudPanel, "HealthBar", SanctuaryUiTheme.Surface, SanctuaryUiTheme.Coral, new Vector2(mobile ? .035f : .02f, mobile ? .943f : .93f), new Vector2(mobile ? .32f : .3f, mobile ? .955f : .96f));
@@ -80,15 +85,27 @@ namespace SurvivorFoundation.Game
             BeaconFill.transform.parent.gameObject.SetActive(guard);
             if (mobile)
             {
+                // Fixed reference-pixel offsets from the safe top prevent tall phones from
+                // spreading bars and status apart while their compact panel stays fixed-height.
+                HeaderRect((RectTransform)HealthFill.transform.parent, .035f, .32f, 44, 54);
+                HeaderRect((RectTransform)BeaconFill.transform.parent, .38f, .72f, 44, 54);
                 var vitality = UIFactory.Label(HudPanel, "HealthLabel", "VITALITY", 13, TextAnchor.MiddleLeft, new Vector2(.035f, .955f), new Vector2(.32f, .976f));
-                vitality.rectTransform.offsetMin = vitality.rectTransform.offsetMax = Vector2.zero; vitality.color = SanctuaryUiTheme.Muted;
+                HeaderRect(vitality.rectTransform, .035f, .32f, 24, 40); vitality.color = SanctuaryUiTheme.Muted;
                 var sanctuary = UIFactory.Label(HudPanel, "BeaconLabel", "SANCTUARY", 13, TextAnchor.MiddleLeft, new Vector2(.38f, .955f), new Vector2(.72f, .976f));
-                sanctuary.rectTransform.offsetMin = sanctuary.rectTransform.offsetMax = Vector2.zero; sanctuary.color = SanctuaryUiTheme.Muted;
+                HeaderRect(sanctuary.rectTransform, .38f, .72f, 24, 40); sanctuary.color = SanctuaryUiTheme.Muted;
                 sanctuary.gameObject.SetActive(guard);
             }
             HudMenuButton = UIFactory.Button(HudPanel, "MenuButton", "MENU", new Vector2(-72, mobile ? -65 : -78), new Vector2(124, mobile ? 56 : 70), SanctuaryUiTheme.Surface, new Vector2(1f, 1f), mobile ? 19 : 24);
             HudMenuButton.onClick.AddListener(() => m_Game.BackToMenu());
-            StatsText = BufferText.Create(HudPanel, "StatsText", mobile ? 22 : 30, TextAnchor.UpperLeft, new Vector2(0.015f, 0.75f), new Vector2(mobile ? .74f : .6f, 0.93f));
+            StatsText = BufferText.Create(HudPanel, "StatsText", mobile ? 21 : 30, TextAnchor.UpperLeft, new Vector2(0.015f, 0.75f), new Vector2(mobile ? .74f : .6f, 0.93f));
+            if (mobile)
+            {
+                // Reserve ordinary and optional diagnostic text during setup, not the first
+                // mid-run counter digit or explicit developer toggle.
+                var warm = StatsText.Begin(); for (int i = 0; i < 256; i++) warm.Append(' ');
+                StatsText.Commit(); StatsText.Begin(); StatsText.Commit();
+                RefreshMobileTelemetryLayout();
+            }
             if (mobile) Joystick = MobileHud.Joystick;
             else
             {
@@ -131,6 +148,23 @@ namespace SurvivorFoundation.Game
                 button.onClick.AddListener(() => m_Game.Audio?.Player.Play(m_Game.Audio.Click));
         }
 
+        static void HeaderRect(RectTransform rect, float minX, float maxX, float top, float bottom)
+        {
+            rect.anchorMin = new Vector2(minX, 1f); rect.anchorMax = new Vector2(maxX, 1f);
+            rect.offsetMin = new Vector2(0f, -bottom); rect.offsetMax = new Vector2(0f, -top);
+        }
+
+        void RefreshMobileTelemetryLayout()
+        {
+            m_LastDebugTelemetry = ShowDebugTelemetry;
+            if (m_MobileTelemetry == null || StatsText == null) return;
+            int lines = m_StatusLines + (ShowDebugTelemetry ? 1 : 0);
+            // Reserve just the bars/labels plus the live status lines. The old 204px card
+            // obscured enemies even though most of its lower half contained no information.
+            HeaderRect(m_MobileTelemetry, .015f, .75f, 20f, 20f + 62f + lines * 24f);
+            HeaderRect(StatsText.rectTransform, .035f, .72f, 62f, 62f + lines * 24f + 4f);
+        }
+
         void Update()
         {
             var state = m_Game != null ? m_Game.State : null;
@@ -150,9 +184,12 @@ namespace SurvivorFoundation.Game
             UIFactory.SetFill(XpFill, state.Xp / (float)Mathf.Max(SvRules.XpToNext(s, state.Level), 1));
             var world = m_Game.Session.World;
             int seconds = (int)state.Time;
-            // Rebuilt every frame without allocating; a string is made only when a shown number changes.
-            var stats = StatsText.Begin().Append(seconds / 60, 2).Append(':').Append(seconds % 60, 2).Append("   Lv ").Append(state.Level).Append("   Kills ").Append(state.Kills)
-                .Append("\nEnemies ").Append(world.Table(SvKeys.Enemy).Count).Append("   Bullets ").Append(world.Table(SvKeys.Bullet).Count);
+            if (m_LastDebugTelemetry != ShowDebugTelemetry) RefreshMobileTelemetryLayout();
+            // Player-facing timer/level/objective stay visible; engine counters are optional on mobile.
+            // BufferText compares its retained chars, so unchanged status does not rebuild a mesh.
+            var stats = StatsText.Begin().Append(seconds / 60, 2).Append(':').Append(seconds % 60, 2).Append("   Lv ").Append(state.Level).Append("   Kills ").Append(state.Kills);
+            if (MobileHud == null || ShowDebugTelemetry)
+                stats.Append("\nEnemies ").Append(world.Table(SvKeys.Enemy).Count).Append("   Bullets ").Append(world.Table(SvKeys.Bullet).Count);
             if (s.Variant == SvVariant.GuardBeacon)
                 stats.Append("\nBEACON ").Append((int)state.BeaconHp).Append(" / ").Append((int)state.BeaconMaxHp)
                     .Append(state.RunTicks < s.GuardDurationTicks ? "   HOLD " : "   CLEAR THE HORDE ")

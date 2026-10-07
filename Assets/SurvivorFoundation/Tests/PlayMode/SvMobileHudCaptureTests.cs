@@ -14,10 +14,10 @@ namespace SurvivorFoundation.Tests.PlayMode
 {
     public class SvMobileHudCaptureTests
     {
-        static void CheckViewport(SvGameBootstrap game, CanvasCapture capture, Rect safe)
+        static void CheckViewport(SvGameBootstrap game, CanvasCapture capture, Rect safe, int expectedHeight = 1280)
         {
             var hud = game.Hud.MobileHud;
-            Assert.AreEqual(720, hud.ViewportWidth); Assert.AreEqual(1280, hud.ViewportHeight);
+            Assert.AreEqual(720, hud.ViewportWidth); Assert.AreEqual(expectedHeight, hud.ViewportHeight);
             var actual = capture.RectOf(hud.SafeRoot.gameObject);
             Assert.AreEqual(safe.x, actual.x, 1); Assert.AreEqual(safe.y, actual.y, 1);
             Assert.AreEqual(safe.width, actual.width, 1); Assert.AreEqual(safe.height, actual.height, 1);
@@ -36,6 +36,34 @@ namespace SurvivorFoundation.Tests.PlayMode
             Assert.LessOrEqual(beacon.xMax, menuBounds.xMin, "beacon status bar never overlaps the menu hit target");
             Assert.AreSame(game.Hud.HudMenuButton.gameObject, capture.FirstHit(game.Hud.HudMenuButton.gameObject));
             Assert.Greater(capture.BrightPixels(capture.RectOf(game.Hud.StatsText.gameObject)), 50, "the real telemetry canvas is present");
+            var cardObject = game.Hud.HudPanel.Find("MobileStatsBackdrop").gameObject;
+            var card = capture.RectOf(cardObject);
+            var status = capture.RectOf(game.Hud.StatsText.gameObject);
+            Assert.IsFalse(game.Hud.ShowDebugTelemetry, "ordinary mobile play must not show engine counters");
+            Assert.LessOrEqual(card.height, 112f, "two-row objective card replaces the 204px panel");
+            Assert.AreEqual(safe.yMax - 20f, card.yMax, 1f, "header uses a fixed offset from the actual safe top");
+            Assert.GreaterOrEqual(card.yMin, safe.yMax - 132f);
+            Assert.GreaterOrEqual(status.yMin, card.yMin); Assert.LessOrEqual(status.yMax, card.yMax);
+            Assert.LessOrEqual(status.xMax, menuBounds.xMin, "status text does not extend into the menu hit target");
+            Assert.AreEqual(2, StatusLines(game.Hud.StatsText), "timer and objective remain visible without the debug line");
+            Assert.IsFalse(StatusContains(game.Hud.StatsText, "Enemies"));
+            Assert.IsFalse(StatusContains(game.Hud.StatsText, "Bullets"));
+        }
+
+        static int StatusLines(SPF.Shell.UI.BufferText text)
+        {
+            int lines = 1; for (int i = 0; i < text.Length; i++) if (text[i] == '\n') lines++;
+            return lines;
+        }
+        static bool StatusContains(SPF.Shell.UI.BufferText text, string token)
+        {
+            for (int i = 0; i <= text.Length - token.Length; i++)
+            {
+                bool same = true;
+                for (int j = 0; j < token.Length && same; j++) same = text[i + j] == token[j];
+                if (same) return true;
+            }
+            return false;
         }
 
         static void Pulse(SvGameBootstrap game, CanvasCapture capture)
@@ -79,6 +107,15 @@ namespace SurvivorFoundation.Tests.PlayMode
                 CollectionAssert.AreEqual(beforeViewport, game.Session.CaptureSnapshot()); Assert.Greater(capture.CanvasCount, 0);
                 yield return capture.Save("survivor-portrait-ready-" + suffix, safe, hud.Joystick.gameObject, hud.Buttons[0].gameObject, hud.Buttons[1].gameObject, game.Hud.HudMenuButton.gameObject);
                 CheckViewport(game, capture, safe); Assert.Greater(game.Renderer.EnemiesDrawn, 30);
+                var beforeDiagnostics = game.Session.CaptureSnapshot();
+                game.Hud.ShowDebugTelemetry = true; yield return null;
+                Assert.IsTrue(StatusContains(game.Hud.StatsText, "Enemies"));
+                Assert.IsTrue(StatusContains(game.Hud.StatsText, "Bullets"));
+                Assert.AreEqual(3, StatusLines(game.Hud.StatsText));
+                CollectionAssert.AreEqual(beforeDiagnostics, game.Session.CaptureSnapshot(), "diagnostics are presentation-only");
+                game.Hud.ShowDebugTelemetry = false; yield return null;
+                yield return capture.Save("survivor-portrait-compact-restored-" + suffix, safe, hud.Joystick.gameObject, hud.Buttons[0].gameObject, hud.Buttons[1].gameObject, game.Hud.HudMenuButton.gameObject);
+                CheckViewport(game, capture, safe);
                 Pulse(game, capture); Pulse(game, capture);
                 var pulse = world.Resource(SvMobileSkills.Key).GetSnapshot(0);
                 Assert.AreEqual(0, pulse.Charges); Assert.Greater(pulse.RechargeTicks, 0);
@@ -101,6 +138,14 @@ namespace SurvivorFoundation.Tests.PlayMode
                 CheckViewport(game, capture, notched);
                 var hero = game.State.Hero; ExecuteEvents.Execute(target, pointer, ExecuteEvents.pointerUpHandler); game.Session.Step();
                 Assert.AreEqual(2, world.Resource(SvMobileSkills.Key).GetSnapshot(1).Charges); Assert.AreEqual(hero, game.State.Hero, "canceled preview never executes blink");
+                // A taller mobile viewport must not pull status below the compact fixed-height card.
+                beforeViewport = game.Session.CaptureSnapshot();
+                capture.Dispose(); capture = new CanvasCapture(game.gameObject, game.CameraRig.Camera, 720, 1600);
+                var tallSafe = new Rect(0, 64, 720, 1472);
+                hud.SetPreviewViewport(720, 1600, tallSafe); hud.Refresh();
+                CollectionAssert.AreEqual(beforeViewport, game.Session.CaptureSnapshot());
+                yield return capture.Save("survivor-portrait-compact-tall-" + suffix, tallSafe, hud.Joystick.gameObject, hud.Buttons[0].gameObject, hud.Buttons[1].gameObject, game.Hud.HudMenuButton.gameObject);
+                CheckViewport(game, capture, tallSafe, 1600);
                 LogAssert.NoUnexpectedReceived();
             }
             finally

@@ -1,10 +1,8 @@
 using System;
-using SPF.Contracts;
 using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
-using SPF.Presentation.Sprites;
 
 namespace SPF.Presentation.Particles
 {
@@ -146,7 +144,7 @@ namespace SPF.Presentation.Particles
         }
         public void Dispose() { if(m_Disposed)return; m_Disposed=true; m_Cpu.Dispose(); m_Spawns.Dispose(); m_Sockets.Dispose(); }
         void Check() { if(m_Disposed)throw new ObjectDisposedException(nameof(ParticlePool)); }
-        [BurstCompile]
+        [BurstCompile(FloatMode = FloatMode.Strict, FloatPrecision = FloatPrecision.Standard)]
         struct SimulateJob : IJobParallelFor
         {
             public NativeArray<ParticleState> States;

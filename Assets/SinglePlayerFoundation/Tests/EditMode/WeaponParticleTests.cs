@@ -103,6 +103,35 @@ namespace SPF.Tests.EditMode
             view.SubmitCue(cue);int count=view.Renderer.Pool.SpawnCount;Assert.That(count,Is.GreaterThan(0));view.SubmitCue(cue);Assert.That(view.Renderer.Pool.SpawnCount,Is.EqualTo(count));
             view.Clear();Assert.That(view.Renderer.Pool.ReservedCount,Is.Zero);view.SubmitCue(cue);Assert.That(view.Renderer.Pool.SpawnCount,Is.GreaterThan(0));
         }
+        [TestCase(false)][TestCase(true)]
+        public void MixedSpawnRetirementAndCameraChangesNeverUnderestimateLiveQuads(bool low)
+        {
+            using var pool=new ParticlePool(low);uint seed=8145;
+            for(int frame=0;frame<350;frame++)
+            {
+                float extent=frame%40<20?4:1.3f;var view=new float4(-extent,-extent,extent,extent);
+                pool.BeginFrame(.005f+.045f*ParticleMath.Random01(ref seed),view);
+                uint generation=(uint)(1+frame/17);
+                pool.SetSocket(0,new ParticleSocket{Pose=new float4(.1f,0,1,0),Identity=new uint4(generation,1,0,0)});
+                for(int spawn=0;spawn<80;spawn++)
+                {
+                    var p=P((ParticlePriority)(spawn%5),.02f+1.4f*ParticleMath.Random01(ref seed));
+                    p.PositionAge.xy=new float2((ParticleMath.Random01(ref seed)-.5f)*extent,(ParticleMath.Random01(ref seed)-.5f)*extent);
+                    p.Shape.xy=new float2(.03f+.10f*ParticleMath.Random01(ref seed),.02f+.10f*ParticleMath.Random01(ref seed));
+                    if(spawn%3==0){p.Attachment.x=1;p.Attachment.y=generation;}
+                    pool.Spawn(p);
+                }
+                AssertUnique(pool);pool.SimulateCpu();int alive=0;float area=0;
+                for(int i=0;i<pool.Capacity;i++)
+                {
+                    var p=pool.CpuStates[i];if(!p.Alive)continue;alive++;
+                    float scale=math.max(1,p.Visual.z)*pool.DrawScale;area+=p.Shape.x*p.Shape.y*scale*scale;
+                }
+                Assert.That(alive,Is.LessThanOrEqualTo(pool.ReservedCount));
+                Assert.That(area/(4*extent*extent),Is.LessThanOrEqualTo(pool.CoverageLimit+.00002f));
+                Assert.That(pool.SpawnCount,Is.LessThanOrEqualTo(64));
+            }
+        }
         static ParticleCapabilities Supported()=>new ParticleCapabilities{Compute=true,Kernels=true,Graphics=true,SupportedApi=true,Shader=true,Instancing=true,AtlasFormat=true,ShaderLevel=45,ComputeBuffers=4,VertexBuffers=1,GroupSize=64,MaxBufferBytes=1024*96};
         static void AssertUnique(ParticlePool pool){for(int i=0;i<pool.SpawnCount;i++)for(int j=i+1;j<pool.SpawnCount;j++)Assert.That(pool.Spawns[i].Target.x,Is.Not.EqualTo(pool.Spawns[j].Target.x));}
     }

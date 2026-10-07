@@ -162,8 +162,13 @@ namespace SPF.Presentation.Combat
                 int glyphs = DigitCount(value) + (e.Critical ? 1 : 0) + (clipped ? 1 : 0);
                 float t = e.Age / Lifetime(e.Critical);
                 float settle = math.max(0, 1f - e.Age / .18f);
-                float punch = 1f + (e.Critical ? 1.15f : .18f) * settle * settle;
-                float height = viewHeight * (e.Critical ? .028f : .025f) * punch;
+                float punchAmplitude = e.Critical ? 1.15f : .18f;
+                float punch = 1f + punchAmplitude * settle * settle;
+                float baseHeight = viewHeight * (e.Critical ? .028f : .025f);
+                float height = baseHeight * punch;
+                // Layout reserves the fixed peak size, not the shrinking glyph size. A stable lane
+                // or fallback attempt must keep rising throughout the pop's settling phase.
+                float layoutHeight = baseHeight * (1f + punchAmplitude);
                 float glyphWidth = height * (3f * font.Scale + 2f) / (5f * font.Scale + 2f);
                 float width = glyphWidth * (1f + .8f * (glyphs - 1));
                 float area = glyphs * glyphWidth * height / viewArea;
@@ -171,12 +176,12 @@ namespace SPF.Presentation.Combat
                 { Stats.GlyphDrops++; continue; }
                 float side = (e.Target.Index & 1) == 0 ? -1f : 1f;
                 float2 center = e.Anchor + new float2(side * e.Age * .12f,
-                    viewHeight * .025f + height * e.Lane * 1.25f + e.Age * (e.Critical ? 2.2f - .85f * e.Age : 1.1f));
+                    viewHeight * .025f + layoutHeight * e.Lane * 1.25f + e.Age * (e.Critical ? 2.2f - .85f * e.Age : 1.1f));
                 if (center.x + width * .5f < view.x || center.x - width * .5f > view.z || center.y + height * .5f < view.y || center.y - height * .5f > view.w) continue;
                 bool placed = false; float4 rectangle = default;
                 for (int attempt = 0; attempt < 3 && !placed; attempt++)
                 {
-                    float2 adjusted = center + new float2(0, height * 1.15f * attempt);
+                    float2 adjusted = center + new float2(0, layoutHeight * 1.15f * attempt);
                     rectangle = new float4(adjusted - new float2(width, height) * .55f, adjusted + new float2(width, height) * .55f);
                     if (rectangle.x < view.x || rectangle.z > view.z || rectangle.y < view.y || rectangle.w > view.w) continue;
                     bool overlaps = false;

@@ -58,6 +58,76 @@ namespace SPF.Tests.EditMode
             Assert.AreEqual(24422d, pool.Read(0).Amount); Assert.IsTrue(pool.Read(0).Critical);
             pool.BeginFrame(.48f, 0); Assert.Zero(pool.Active);
         }
+        [TestCase(false)]
+        [TestCase(true)]
+        public void StackLanesRiseMonotonicallyWhileGlyphPopShrinks(bool critical)
+        {
+            var atlas = new SpriteAtlasBuilder(); var font = SpriteFont.CreateSmooth(atlas); using var sheet = atlas.Build(128);
+            using var batch = new SpriteBatch(RenderTier.DataTexture, sheet.Texture, BlendKind.Translucent, 192);
+            var pool = new DamageNumberPool(); var target = new EntityHandle(2, 1); var view = new float4(-8, -5, 8, 5);
+            var previousY = new float[4]; float previousAge = 0;
+            // Authoritative tick gaps prevent merge; spatially separated accepted anchors prevent
+            // overlap reflow. Only the target identity is shared, exercising its actual four lanes.
+            for (int lane = 0; lane < 4; lane++)
+            {
+                pool.Emit(target, new float2(-6 + lane * 4, 0), 1, critical, (ulong)lane + 1, lane * 8, 1d / 60);
+                Assert.AreEqual(lane, pool.Read(lane).Lane);
+            }
+            int glyphsPerLabel = critical ? 2 : 1;
+            var ages = new[] { 0f, .03f, .09f, .18f, .32f, .50f, .64f };
+            for (int sample = 0; sample < ages.Length; sample++)
+            {
+                pool.BeginFrame(ages[sample] - previousAge, 0); batch.Clear(); pool.Draw(batch, sheet, font, view);
+                Assert.AreEqual(4, pool.Stats.Visible); Assert.Zero(pool.Stats.OverlapDrops);
+                Assert.AreEqual(4 * glyphsPerLabel, batch.Count);
+                float layoutHeight = 10f * (critical ? .028f * 2.15f : .025f * 1.18f);
+                float rise = ages[sample] * (critical ? 2.2f - .85f * ages[sample] : 1.1f);
+                for (int lane = 0; lane < 4; lane++)
+                {
+                    float y = batch.Instances[lane * glyphsPerLabel].Center.y;
+                    Assert.That(y, Is.EqualTo(.25f + layoutHeight * lane * 1.25f + rise).Within(1e-5),
+                        "fixed peak-size lane placement confirms overlap reflow did not affect this sample");
+                    if (sample > 0) Assert.Greater(y, previousY[lane], "shrinking glyphs must not pull an anchored stack lane downward");
+                    Assert.AreEqual(new float2(-6 + lane * 4, 0), pool.Read(lane).Anchor);
+                    previousY[lane] = y;
+                }
+                previousAge = ages[sample];
+            }
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void FixedOverlapAttemptsRiseMonotonicallyWhileGlyphPopShrinks(bool critical)
+        {
+            var atlas = new SpriteAtlasBuilder(); var font = SpriteFont.CreateSmooth(atlas); using var sheet = atlas.Build(128);
+            using var batch = new SpriteBatch(RenderTier.DataTexture, sheet.Texture, BlendKind.Translucent, 192);
+            var pool = new DamageNumberPool(); var view = new float4(-8, -5, 8, 5);
+            var previousY = new float[3]; float previousAge = 0;
+            // Equal anchors and side drift keep the three distinct targets on attempts 0, 1, 2.
+            // This is fixed-attempt placement, not a claim that intentional reflow is monotonic.
+            for (int label = 0; label < 3; label++)
+                pool.Emit(new EntityHandle(2 + label * 2, 1), float2.zero, 1, critical, (ulong)label + 1);
+            int glyphsPerLabel = critical ? 2 : 1;
+            var ages = new[] { 0f, .03f, .09f, .18f, .32f, .50f, .64f };
+            for (int sample = 0; sample < ages.Length; sample++)
+            {
+                pool.BeginFrame(ages[sample] - previousAge, 0); batch.Clear(); pool.Draw(batch, sheet, font, view);
+                Assert.AreEqual(3, pool.Stats.Visible); Assert.Zero(pool.Stats.OverlapDrops);
+                Assert.AreEqual(3 * glyphsPerLabel, batch.Count);
+                float layoutHeight = 10f * (critical ? .028f * 2.15f : .025f * 1.18f);
+                float rise = ages[sample] * (critical ? 2.2f - .85f * ages[sample] : 1.1f);
+                for (int label = 0; label < 3; label++)
+                {
+                    float y = batch.Instances[label * glyphsPerLabel].Center.y;
+                    Assert.That(y, Is.EqualTo(.25f + layoutHeight * label * 1.15f + rise).Within(1e-5),
+                        "the same bounded placement attempt stays selected throughout shrinking");
+                    if (sample > 0) Assert.Greater(y, previousY[label], "shrinking glyphs must not lower a fixed fallback attempt");
+                    previousY[label] = y;
+                }
+                previousAge = ages[sample];
+            }
+        }
+
         [Test]
         public void SmoothGlyphPackingKeepsZeroManagedAllocationAfterWarmup()
         {

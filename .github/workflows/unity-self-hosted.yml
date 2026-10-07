@@ -44,12 +44,68 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: Tools/ci/publish-screenshots.sh || echo "::warning::screenshot publish failed"
-      - uses: actions/upload-artifact@v4
+      - name: Package bounded evidence parts
+        # Restore all downloaded parts with Tools/ci/evidence_parts.py; see Docs/CiEvidence.md.
+        id: evidence
         if: always()
+        shell: bash
+        run: |
+          parts="$RUNNER_TEMP/spf-unity-evidence-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          python3 Tools/ci/evidence_parts.py package --source Artifacts --output "$parts"
+          echo "directory=$parts" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted
-          path: |
-            Artifacts/*.xml
-            Artifacts/*.log
-            Artifacts/*.txt
-            Artifacts/Screenshots
+          name: unity-test-results-self-hosted-part00
+          path: ${{ steps.evidence.outputs.directory }}/part00/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part01
+          path: ${{ steps.evidence.outputs.directory }}/part01/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part02
+          path: ${{ steps.evidence.outputs.directory }}/part02/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part03
+          path: ${{ steps.evidence.outputs.directory }}/part03/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part04
+          path: ${{ steps.evidence.outputs.directory }}/part04/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part05
+          path: ${{ steps.evidence.outputs.directory }}/part05/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part06
+          path: ${{ steps.evidence.outputs.directory }}/part06/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part07
+          path: ${{ steps.evidence.outputs.directory }}/part07/
+          compression-level: 0
+          if-no-files-found: ignore

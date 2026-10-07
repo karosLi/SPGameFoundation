@@ -4,7 +4,7 @@
 
 This change addresses the shared hero/enemy gait in the actual Brawler and Survivor presenters. It changes presentation only: world movement, fixed-tick damage, skill clocks, weapon release sockets, art meshes/sprites and cameras are unchanged.
 
-The controller has passed the focused .NET contact, role, weapon and skill regressions. Native Unity compilation, execution and continuous-video acceptance must be reported separately for the final integrated commit. Numeric tests alone do not establish that the movement looks natural.
+Controller commit `b504c05` passed the full 76-project .NET build (zero warnings/errors), all 857 .NET tests, and a separate 54-test focused contact/role/weapon/skill pass. The capture-fixture regression also passed independently. Native Unity execution and continuous-video acceptance must be reported separately for the final integrated commit. Numeric tests alone do not establish that the movement looks natural.
 
 ## Confirmed baseline failure
 

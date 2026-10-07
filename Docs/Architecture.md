@@ -228,11 +228,11 @@ public interface IGameplayModule
 }
 ```
 
-`ModeDefinition` 保存模块列表与 SessionSettings；地图、规则配置、表现选择由游戏模块/Bootstrap 管理。`WorldComposer.BuildWorld` 按列表 DeclareData，拒绝空模块和重复 Id，再分配 World；BuildPipeline 收集系统、排序并调用 OnCreate。它没有 BakeConfig、RegisterRules、RegisterPresentation、WorldLayoutBuilder 或能力依赖图接口。
+`ModeDefinition` 保存模块列表与 SessionSettings；地图、规则配置、表现选择由游戏模块/Bootstrap 管理。`WorldComposer.BuildWorld` 按列表 DeclareData，拒绝空模块和重复 Id，再分配 World；BuildPipeline 收集系统、排序并调用 OnCreate。它没有 BakeConfig、RegisterRules、RegisterPresentation 或 WorldLayoutBuilder。可选 ICompositionManifestProvider/ModuleManifest 在 DeclareData 前运行只读描述预检，检查声明的精确版本能力与依赖环，不改变显式安装顺序。
 
-已有校验包括非正表容量、列所属表、重复 resource key、levelScoped 资源的 reset 接口。重复声明同一 TableKey 会取容量最大值，同一 ColumnKey 合并。它不预检所有同名不同 key、冲突 schema、安装环或预算来源。
+已有校验包括非正表容量、列所属表、重复 resource key、levelScoped 资源的 reset 接口。重复声明同一 TableKey 会取容量最大值，同一 ColumnKey 合并。可选清单会检查已声明切片的同名不同 key、schema/scope、能力依赖环、owner 与预算来源；未声明的旧数据/配置不被推断为完整覆盖。两个武器模式已接入，[具体边界与冷路径开销](OptionalCompositionPreflightValidation.md)单列。
 
-**失败边界（阶段 B 首批实现）：** SessionSettings/时钟在模块分配前校验；WorldLayout 暂时拥有已接受登记的资源，World 完成后才接管；World 构造失败回收已分配表/列，Pipeline 初始化失败只逆序退出已成功 OnCreate 的系统。清理错误不阻止其他 owner 的清理，原始异常保持主因。拒绝登记的资源、尚未交接的部分构造与 OnCreate 私有工作仍由创建者异常清理，不能盲调未初始化系统的 OnDestroy。直接 BuildPipeline 借用 World，不回滚任意初始化状态写入；完整 SimSession 才是该拥有关系的发布边界。详见[回滚合约与红测试](CompositionRollbackValidation.md)，原生与设备验证按精确提交记录。
+**失败边界（阶段 B 首批实现）：** SessionSettings/时钟在模块分配前校验；WorldLayout 暂时拥有已接受登记的资源，World 完成后才接管；World 构造失败回收已分配表/列，Pipeline 初始化失败只逆序退出已成功 OnCreate 的系统。清理错误不阻止其他 owner 的清理，原始异常保持主因。拒绝登记的资源、尚未交接的部分构造与 OnCreate 私有工作仍由创建者异常清理，不能盲调未初始化系统的 OnDestroy。直接 BuildPipeline 借用 World，不回滚任意初始化状态写入；完整 SimSession 才是该拥有关系的发布边界。详见[回滚合约与红测试](CompositionRollbackValidation.md)及[调度失败拥有关系](TickFailureOwnershipValidation.md)，原生与设备验证按精确提交记录。失败 Tick 不回滚已发生的模拟写入；系统必须完成未返回给管线的私有 Job。
 
 ### 6.2 Session 与版本的含义
 

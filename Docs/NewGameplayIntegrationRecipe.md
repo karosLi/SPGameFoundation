@@ -135,7 +135,7 @@ public override void RegisterSystems(SystemRegistry registry)
 4. 新增 Job 资源标记 `IJobData`，让开发期获取资源的检查覆盖它。AccessGuard 只检查声明存在，不区分 R/W，也不扫描所有字段/Job 指针；现有 SnapshotBuffer 未带此标记，写它仍必须声明 ResourceKey。配置和普通主线程 flow 不因此自动线程安全。
 5. 热路径不增加 LINQ、闭包、每对象 List、每击 Instantiate / Destroy 或无上限循环。先预分配，再明确满容量的行为。
 
-**组合失败合约：** 基座在分配前校验 SessionSettings/时钟，负责回收已成功交接到布局/World 的资源及已成功初始化的系统。新模块仍须清理尚未登记的构造中间值，失败的 OnCreate 自行完成私有工作并释放部分分配；不能假定会收到正常 OnDestroy。资源登记被拒绝时仍由调用者拥有。清理抛错不阻断其他 owner，保留原始异常与附加诊断；直接借用 World 建 Pipeline 不撤销任意状态写入。见[实际回滚与失败测试](CompositionRollbackValidation.md)。可选能力/内容清单仍分阶段接入，不把本次清理改进称为全量配置预检。
+**组合失败合约：** 基座在分配前校验 SessionSettings/时钟，负责回收已成功交接到布局/World 的资源及已成功初始化的系统。新模块仍须清理尚未登记的构造中间值，失败的 OnCreate 自行完成私有工作并释放部分分配；不能假定会收到正常 OnDestroy。资源登记被拒绝时仍由调用者拥有。清理抛错不阻断其他 owner，保留原始异常与附加诊断；直接借用 World 建 Pipeline 不撤销任意状态写入。见[实际回滚与失败测试](CompositionRollbackValidation.md)。可选 ModuleManifest 已在两个武器模式接入，[预检记录](OptionalCompositionPreflightValidation.md)只描述实际声明的能力/布局切片，不是全量配置冻结或保存 schema。
 
 详细实现：[WorldComposer](../Assets/SinglePlayerFoundation/Runtime/Composition/WorldComposer.cs)、[WorldLayout](../Assets/SinglePlayerFoundation/Runtime/World/WorldLayout.cs)、[TickPipeline](../Assets/SinglePlayerFoundation/Runtime/Scheduling/TickPipeline.cs)、[SimWorld](../Assets/SinglePlayerFoundation/Runtime/World/SimWorld.cs)。
 

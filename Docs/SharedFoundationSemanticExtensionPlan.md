@@ -2,7 +2,7 @@
 
 日期：2026-10-07。面向 SPGameFoundation 的后续演进，基于 `9a95654247f066ee9ff9164381bdd30ade4c9309` 源码和[开源共享基座调研](OpenSourceSharedFoundationSurvey.md)。本文最初交付为计划；下列实施状态记录后续独立提交，不把拟议能力当作已完成，也不产生未经测量的性能或设备结论。当前实现与验证状态继续以[能力清单](RequestedCapabilityChecklist.md)和[精确提交验证记录](MobileFoundationFollowupValidation.md)为准。
 
-实施状态：计划发布时的两项试验候选精度失败现已在精确 `e86ee87` 原生闭环解决（1,084 EditMode、154 graphics PlayMode、1,050 .NET 通过）。用户已授权在该闭环后执行本计划；P0 兼容/语义基线现已完成；P1 首批已实现有界[组合回滚](CompositionRollbackValidation.md)及[Session/View 生命周期修复](validation/SessionViewLifecycle-20261007.md)，本次集成的原生执行状态待独立闭环。可选描述清单、调度异常恢复和后续阶段仍按各自门槛实施和验证。见[证据与剩余设备门槛](MobileFoundationFollowupValidation.md)。
+实施状态：计划发布时的两项试验候选精度失败现已在精确 `e86ee87` 原生闭环解决（1,084 EditMode、154 graphics PlayMode、1,050 .NET 通过）。用户已授权在该闭环后执行本计划；P0 兼容/语义基线现已完成；P1 首批已实现有界[组合回滚](CompositionRollbackValidation.md)及[Session/View 生命周期修复](validation/SessionViewLifecycle-20261007.md)，本次集成的原生执行状态待独立闭环。可选[描述清单](OptionalCompositionPreflightValidation.md)和[调度异常恢复](TickFailureOwnershipValidation.md)已各自完成红测试与本地验证，集成/原生验收按[阶段记录](FoundationStageBAndCValidation.md)推进；后续阶段继续按门槛实施。见[证据与剩余设备门槛](MobileFoundationFollowupValidation.md)。
 
 ## 1 推荐方向与完成标准
 
@@ -371,7 +371,7 @@
 
 ## 10 本计划的证据范围
 
-本次检查了组合、布局、调度、Session、句柄、保存、共享武器/技能、两个玩法表现绑定、粒子、AI、预算和程序集引用的实际代码，并对照固定版本的开源源码与现有调研。文档中的新增类型、路径和阶段均为提案。没有修改运行时、引入外部包、运行外部框架、重写存档，也没有把历史测试/桌面性能套用于这些尚未实施的方案。
+本段记录最初计划发布时的证据：检查了组合、布局、调度、Session、句柄、保存、共享武器/技能、两个玩法表现绑定、粒子、AI、预算和程序集引用的实际代码，并对照固定版本的开源源码与现有调研。原始调研没有修改运行时、引入外部包、运行外部框架或重写存档。后续独立实施以文首状态和各阶段验证记录为准；尚未实施的提案不得套用历史测试或桌面性能。
 
 ## 阶段 A 完成记录
 

@@ -1,0 +1,59 @@
+#pragma kernel Scatter
+#pragma kernel Simulate
+
+struct Particle { float4 positionAge; float4 velocityDrag; float4 shape; float4 color; float4 visual; uint4 attachment; };
+struct Spawn { uint4 target; Particle state; };
+struct Socket { float4 pose; uint4 identity; };
+struct PackedSprite { uint4 a; uint4 b; };
+RWStructuredBuffer<Particle> _States;
+StructuredBuffer<Spawn> _Spawns;
+StructuredBuffer<Socket> _Sockets;
+RWStructuredBuffer<PackedSprite> _Sprites;
+uint _Count, _SpawnCount;
+float _Dt, _DrawScale;
+
+[numthreads(64,1,1)]
+void Scatter(uint3 id : SV_DispatchThreadID)
+{
+    if(id.x>=_SpawnCount)return;
+    Spawn spawn=_Spawns[id.x];
+    if(spawn.target.x<_Count)_States[spawn.target.x]=spawn.state;
+}
+
+[numthreads(64,1,1)]
+void Simulate(uint3 id : SV_DispatchThreadID)
+{
+    if(id.x>=_Count)return;
+    Particle p=_States[id.x];
+    PackedSprite packed=(PackedSprite)0;
+    if(p.positionAge.w<=0 || p.positionAge.z>=p.positionAge.w){_Sprites[id.x]=packed;return;}
+    float4 socket=float4(0,0,1,0);
+    if(p.attachment.x!=0)
+    {
+        Socket s=_Sockets[p.attachment.x-1];socket=s.pose;
+        if(s.identity.y==0 || s.identity.x!=p.attachment.y){p.positionAge.z=p.positionAge.w;_States[id.x]=p;_Sprites[id.x]=packed;return;}
+    }
+    p.positionAge.z+=_Dt;
+    if(p.positionAge.z>=p.positionAge.w){_States[id.x]=p;_Sprites[id.x]=packed;return;}
+    p.velocityDrag.xy=(p.velocityDrag.xy+float2(0,p.velocityDrag.w*_Dt))/(1+p.velocityDrag.z*_Dt);
+    p.positionAge.xy+=p.velocityDrag.xy*_Dt;
+    p.shape.z+=p.shape.w*_Dt;
+    _States[id.x]=p;
+    float t=saturate(p.positionAge.z/p.positionAge.w);
+    float2 size=p.shape.xy*lerp(1,p.visual.z,t)*_DrawScale;
+    float4 color=p.color;color.a*=min(1,p.positionAge.z/max(.001,p.visual.w))*(1-t)*(1-t);
+    float2 position=p.positionAge.xy;
+    float angle=p.shape.z;
+    if(p.attachment.x!=0)
+    {
+        position=socket.xy+float2(position.x*socket.z-position.y*socket.w,position.x*socket.w+position.y*socket.z);
+        angle+=atan2(socket.w,socket.z);
+    }
+    float4 uv=float4((p.visual.y*32+1)/128,1.0/32,30.0/128,30.0/32);
+    uint4 uv16=(uint4)round(saturate(uv)*65535);
+    uint4 c8=(uint4)round(saturate(color*float4(.5,.5,.5,1))*255);
+    if(angle>3.141592653589793 || angle< -3.141592653589793)angle-=6.283185307179586*floor((angle+3.141592653589793)/6.283185307179586);
+    packed.a=uint4(asuint(position.x),asuint(position.y),f32tof16(size.x)|(f32tof16(size.y)<<16),asuint(p.visual.x));
+    packed.b=uint4(uv16.x|(uv16.y<<16),uv16.z|(uv16.w<<16),c8.x|(c8.y<<8)|(c8.z<<16)|(c8.w<<24),f32tof16(angle));
+    _Sprites[id.x]=packed;
+}

@@ -8,6 +8,11 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      story_gc_capture:
+        description: Capture intrusive allocation stacks for the original Story test window
+        type: boolean
+        default: false
 
 jobs:
   unity-tests:
@@ -21,8 +26,9 @@ jobs:
       # This review branch records bounded raw frames after its normal gameplay assertions.
       # Encoding occurs after acquisition; timestamps retain the actual Editor capture cadence.
       SPF_WEAPON_GAMEPLAY_SEQUENCE: ${{ github.ref == 'refs/heads/dot/weapon-motion-stage5' && '1' || '0' }}
-      # Bounded diagnostic for the original Story allocation window; its budget stays unchanged.
-      SPF_STORY_GC_CAPTURE: ${{ github.ref == 'refs/heads/dot/weapon-motion-stage5' && '1' || '0' }}
+      # Diagnostic profiling changes allocation/timing. Ordinary CI must remain uninstrumented.
+      # Manually enable only to attribute the original window; the normal budget stays unchanged.
+      SPF_STORY_GC_CAPTURE: ${{ github.event_name == 'workflow_dispatch' && inputs.story_gc_capture && '1' || '0' }}
     steps:
       - uses: actions/checkout@v4
         with:

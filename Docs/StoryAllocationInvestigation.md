@@ -36,3 +36,11 @@ CPU and Memory profiler areas are enabled; allocation callstacks are on, deep pr
 Callstack capture is intrusive. A diagnostic run can change timing and measured allocation counts; it is evidence for attribution, not a substitute for the normal uninstrumented budget test. Observer-scope allocations remain in exported totals. Unresolved addresses are retained, not declared engine-owned. Native source lines may identify method definitions rather than the exact allocation statement.
 
 Inspect allocating-frame stacks together with Typing/Choices transitions and body rebuild/quality changes. Fix a confirmed application source, then validate the same uninstrumented fixture with its original budget and normal presentation. If the stacks only demonstrate external one-time work, report that evidence and its limits; do not invent a production optimization or treat a passing rerun as attribution.
+
+## Native diagnostic result and normal-validation boundary
+
+Remote head `0b0dd6d` (local tree-equivalent `d3f4fcf`), Unity run `37565476883`, captured all 30 original measurement frames with unique mappings. Its recorded PlayerLoop allocations total 1,200 bytes, all in Unity Test Framework `LogScope.EvaluateLogScope` (40 bytes per frame), with no allocation inside the diagnostic observer marker. The governor reports 3,250 bytes; the default capture does not include EditorLoop, so the difference is not attributed. This capture does not establish that Story production code allocates, nor prove complete zero allocation. The intrusive profiler run failed the unchanged budget with 30 allocating frames.
+
+Both weapon belt rebind fixtures passed this run. Full suites: EditMode 878 passed/0 failed/5 skipped; PlayMode 140 passed/1 failed/1 skipped. The sole failure was the profiled Story budget. These figures describe this exact run, not a successful final acceptance.
+
+Normal push/PR CI now leaves allocation-stack capture disabled. `workflow_dispatch` exposes an explicit `story_gc_capture` boolean (default false) for diagnostic reproduction. The test window and allocation threshold remain unchanged. The next full native run must evaluate the original fixture without intrusive profiling before any production optimization is claimed.

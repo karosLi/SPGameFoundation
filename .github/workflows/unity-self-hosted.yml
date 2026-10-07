@@ -20,7 +20,7 @@ jobs:
     runs-on: [self-hosted, unity]
     permissions:
       contents: write   # publish-screenshots.sh pushes to the ci-screenshots/<branch> branch only
-    timeout-minutes: 120
+    timeout-minutes: 240
     env:
       UNITY_EDITOR_PATH: ${{ vars.UNITY_EDITOR_PATH }}
       # This review branch records bounded raw frames after its normal gameplay assertions.

@@ -1,0 +1,6 @@
+runtime=dotnet-stubs
+Scheduled completed kernel; 4096 agents x 16 evaluations/sample; 12 samples, all 32 fact patterns balanced and varied each repeat; digest retains every result; identical decision work/cached facts for selectors.
+Legacy branches: mean=1.80087 p50=1.76143 p95=1.99927 worst=1.99927 ms
+Tree selection: mean=7.93756 p50=7.75845 p95=9.93550 worst=9.93550 ms
+Separate 32x32 tile LOS/distance/perception: mean=98.22599 p50=97.74247 p95=105.65354 worst=105.65354 ms
+Selection outputs exact=PASS. Perception is measured separately, not subtracted from tick timing. Includes schedule/Complete overhead; no gameplay cadence reduction. Stub scheduling is synchronous and is not native Burst evidence.

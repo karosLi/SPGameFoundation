@@ -18,3 +18,7 @@ The four same-tick probes use zero visual time, require Active>0, require it rem
 - Independent source review confirms the same delta consumers/flow gates and unchanged production lifetimes. Full final integration and exact-head native execution remain separate gates; this record does not turn the failed old native run green.
 
 [Machine record and log hashes](LifecycleProbeClock-20261007.json). Reproduce through the ordinary harness Brawler/Survivor EditMode projects with FullyQualifiedName~ViewLifecycleTests. Mutation control uses the same tests and removes only the named clearing calls temporarily, then restores the exact fixed source and rebuilds.
+
+## Aggregate adapter-fixture follow-up
+
+The first all-stage aggregate build passed, then five existing BwNaturalAdapterTests failed with TargetParameterCountException: their private-reflection helper still supplied the old DrawNatural argument count. The helper now passes the same ambient Unity delta it previously consumed implicitly. No expected gait/position value or threshold changed. These five fixture integration failures and the subsequent exact-source aggregate are recorded separately from the native b75 issue.

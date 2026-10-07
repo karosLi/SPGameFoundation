@@ -30,7 +30,7 @@ namespace BrawlerFoundation.Tests
             void Call(string name, params object[] args) => typeof(BwRenderer).GetMethod(name, Private).Invoke(Renderer, args);
             public GameplayCharacterInput Draw(BwTestWorld t, float alpha = 1)
             {
-                Call("DrawNatural", t.World, t.Game, t.World.Resource(BwKeys.Rig), alpha, t.Count);
+                Call("DrawNatural", t.World, t.Game, t.World.Resource(BwKeys.Rig), alpha, t.Count, Time.deltaTime);
                 var inputs = (NativeArray<GameplayCharacterInput>)typeof(GameplayCharacterPresenter).GetField("m_Inputs", Private).GetValue(Renderer.Characters);
                 var handle = t.World.Table(BwKeys.Fighter).Handles[0];
                 for (int i = 0; i < Renderer.Characters.Count; i++) if (inputs[i].Handle == handle) return inputs[i];

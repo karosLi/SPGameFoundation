@@ -232,7 +232,7 @@ public interface IGameplayModule
 
 已有校验包括非正表容量、列所属表、重复 resource key、levelScoped 资源的 reset 接口。重复声明同一 TableKey 会取容量最大值，同一 ColumnKey 合并。它不预检所有同名不同 key、冲突 schema、安装环或预算来源。
 
-**失败边界：** SimSession 在 BuildPipeline 抛错时释放已完成创建的 World，但 DeclareData/构造器的部分分配、已 OnCreate 系统以及后续时钟创建的完整异常清理仍是阶段 B 的改进目标。当前不是已实现的“全事务安装、失败必回到基线”。
+**失败边界（阶段 B 首批实现）：** SessionSettings/时钟在模块分配前校验；WorldLayout 暂时拥有已接受登记的资源，World 完成后才接管；World 构造失败回收已分配表/列，Pipeline 初始化失败只逆序退出已成功 OnCreate 的系统。清理错误不阻止其他 owner 的清理，原始异常保持主因。拒绝登记的资源、尚未交接的部分构造与 OnCreate 私有工作仍由创建者异常清理，不能盲调未初始化系统的 OnDestroy。直接 BuildPipeline 借用 World，不回滚任意初始化状态写入；完整 SimSession 才是该拥有关系的发布边界。详见[回滚合约与红测试](CompositionRollbackValidation.md)，原生与设备验证按精确提交记录。
 
 ### 6.2 Session 与版本的含义
 
@@ -282,7 +282,7 @@ public static class ExampleKeys
 | Renderer 的 material/mesh/buffer/私有 texture | Renderer 或创建者 Dispose/Destroy；Resources.Load 得到的共享资源与自己 new 的实例分开 |
 | 事件订阅、输入源与 View cache | 绑定侧在 disable/rebind/destroy 的相应路径取消/重置；不得消费旧 Session 的输入、插值或 cue |
 
-`WorldLayout.Resource` 的资源登记是 ownership transfer 约定，当前没有引用计数 AssetLease/通用异步 RequestToken。跨 Session 绑定至少核对 Session 对象、时间线/关卡版本与完整实体身份；有异步适配时还需请求版本，不能假设完整 handle 已包含这些信息。
+`WorldLayout.Resource` 的资源登记是 ownership transfer 约定，当前没有引用计数 AssetLease/通用异步 RequestToken。跨 Session 绑定至少核对 Session 对象、时间线/关卡版本与完整实体身份；有异步适配时还需请求版本，不能假设完整 handle 已包含这些信息。Sv/Bw 两个适配器复用小型 ViewTimelineStamp，禁用时解绑镜头并丢弃隐藏期间的旧武器反馈，恢复时读取当前权威状态；私有缓冲和共享资产的退出责任仍归各 owner。[生命周期验证](validation/SessionViewLifecycle-20261007.md)覆盖同 Tick 恢复与双 Session；这不是所有历史 View 的统一重写。
 
 ## 7. 只读表现、渲染后端与保存
 

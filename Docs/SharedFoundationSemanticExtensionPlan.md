@@ -1,8 +1,8 @@
 # 共享基座语义与扩展优化计划
 
-日期：2026-10-07。面向 SPGameFoundation 的后续演进，基于 `9a95654247f066ee9ff9164381bdd30ade4c9309` 源码和[开源共享基座调研](OpenSourceSharedFoundationSurvey.md)。本文交付的是计划，没有实施下述运行时改造，也没有产生新的性能或设备验收结果。当前实现与验证状态继续以[能力清单](RequestedCapabilityChecklist.md)和[精确提交验证记录](MobileFoundationFollowupValidation.md)为准。
+日期：2026-10-07。面向 SPGameFoundation 的后续演进，基于 `9a95654247f066ee9ff9164381bdd30ade4c9309` 源码和[开源共享基座调研](OpenSourceSharedFoundationSurvey.md)。本文最初交付为计划；下列实施状态记录后续独立提交，不把拟议能力当作已完成，也不产生未经测量的性能或设备结论。当前实现与验证状态继续以[能力清单](RequestedCapabilityChecklist.md)和[精确提交验证记录](MobileFoundationFollowupValidation.md)为准。
 
-实施状态：计划发布时的两项试验候选精度失败现已在精确 `e86ee87` 原生闭环解决（1,084 EditMode、154 graphics PlayMode、1,050 .NET 通过）。用户已授权在该闭环后执行本计划；P0 兼容/语义基线现已完成，进入 P1 的失败回滚与生命周期红测试；后续阶段仍按各自门槛实施和验证。见[证据与剩余设备门槛](MobileFoundationFollowupValidation.md)。
+实施状态：计划发布时的两项试验候选精度失败现已在精确 `e86ee87` 原生闭环解决（1,084 EditMode、154 graphics PlayMode、1,050 .NET 通过）。用户已授权在该闭环后执行本计划；P0 兼容/语义基线现已完成；P1 首批已实现有界[组合回滚](CompositionRollbackValidation.md)及[Session/View 生命周期修复](validation/SessionViewLifecycle-20261007.md)，本次集成的原生执行状态待独立闭环。可选描述清单、调度异常恢复和后续阶段仍按各自门槛实施和验证。见[证据与剩余设备门槛](MobileFoundationFollowupValidation.md)。
 
 ## 1 推荐方向与完成标准
 

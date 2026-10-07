@@ -14,6 +14,8 @@ parser.add_argument('--repo', type=Path, required=True)
 parser.add_argument('--unity-data', type=Path, required=True)
 parser.add_argument('--nunit', type=Path, required=True)
 parser.add_argument('--out', type=Path, required=True)
+parser.add_argument('--all-assets', action='store_true',
+                    help='Compile every Assets C# file, including all native test fixtures.')
 args = parser.parse_args()
 repo, unity, out = args.repo.resolve(), args.unity_data.resolve(), args.out.resolve()
 out.mkdir(parents=True, exist_ok=True)
@@ -27,6 +29,8 @@ for test in (
     'Assets/SnakeFoundation/Tests/EditMode/SystemCreationRollbackTests.cs',
 ):
     sources.add(str(repo / test))
+if args.all_assets:
+    sources = {str(path) for path in (repo / 'Assets').rglob('*.cs')}
 refs = list((unity / 'Managed/UnityEngine').glob('*.dll'))
 # Use modular Editor assemblies; adding the monolithic UnityEditor.dll alongside
 # these duplicates EditorWindow/MenuItem definitions in this compile-only setup.

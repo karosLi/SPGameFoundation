@@ -1,0 +1,141 @@
+{
+  "recorded_utc": "2026-10-07",
+  "mechanics": {
+    "commit": "1ecf36d1f37392818ebc6c6e0ea61540f5304d01",
+    "tree": "0301cb1af4b33e8d33a1fc03c3e51f7d05aa0032",
+    "assets_tree": "00e6e4eb337763ed06ca4508ce3ad8fbba65e23a",
+    "full_dotnet": {
+      "passed": 1387,
+      "failed": 0,
+      "skipped": 0
+    },
+    "harness_build": {
+      "warnings": 0,
+      "errors": 0
+    },
+    "real_unity_api_net8": "passed",
+    "real_unity_api_netstandard2_1": "passed",
+    "real_api_compile_notes": "553 source files; 95 real API references; seven existing unused/unassigned field warnings; not Unity execution",
+    "cold_compositions": {
+      "count": 19,
+      "repeat_identical": true,
+      "architecture_baseline_identical": true,
+      "sha256": "a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30"
+    },
+    "independent_review": {
+      "rebuilt_all_assemblies": true,
+      "focused_passed": 95,
+      "correctness_blockers": 0
+    }
+  },
+  "style": {
+    "commit": "d46c71b570c6ec8e2894e21d85625b5f7737145b",
+    "tree": "420b4495ea0ca16074093b15336a568d3a985a02",
+    "assets_tree": "81248d9c71c806249bfe49ab0b1fae852929082a",
+    "focused": {
+      "SPF": 54,
+      "Survivor": 18,
+      "Brawler": 15,
+      "failed": 0
+    },
+    "real_unity_api_net8": "passed",
+    "real_unity_api_netstandard2_1": "passed",
+    "full_combined_harness": "pending_main_integration",
+    "independent_review": "pending"
+  },
+  "allocation": {
+    "scope": "current-thread warmed .NET stub harness only",
+    "pool_samples": 1000,
+    "measured_managed_bytes": 0,
+    "empty_before_after": [
+      0,
+      0
+    ],
+    "retained_positive_before_after": [
+      33536,
+      33536
+    ],
+    "native_renderer_probe": "implemented; pending native execution"
+  },
+  "actual_runtime_fixture_probe": {
+    "Brawler_1": {
+      "normal": 1,
+      "critical": 0,
+      "actual_sum": 22
+    },
+    "Brawler_2": {
+      "normal": 1,
+      "critical": 1,
+      "actual_sum": 66
+    },
+    "Brawler_24": {
+      "normal": 12,
+      "critical": 12,
+      "actual_sum": 792
+    },
+    "Survivor_1": {
+      "normal": 1,
+      "critical": 0,
+      "actual_sum": 20
+    },
+    "Survivor_8": {
+      "normal": 6,
+      "critical": 2,
+      "actual_sum": 200
+    },
+    "Survivor_128": {
+      "normal": 96,
+      "critical": 32,
+      "actual_sum": 3200
+    }
+  },
+  "pending": [
+    "Native EditMode and graphics PlayMode on final integrated commit",
+    "Actual single/mixed/dense and high/low quality screenshots in both render tiers",
+    "Four 90-frame live automatic-clock sequences with acquisition timestamps and trace CSV",
+    "Visual comparison to supplied reference; offline glyph raster is not native evidence",
+    "Physical Android/iOS touch, graphics, native memory and thermal sustained-frame validation"
+  ],
+  "logs": {
+    "damage-number-validation/build.log": {
+      "sha256": "54e9b43ddd6d84404ddfad9f4c1dccafc87fa7596f81a1026c34c7ee6bd07a12",
+      "bytes": 76
+    },
+    "damage-number-validation/tests.log": {
+      "sha256": "48f95a12490f8b4b118e74c0b4769024cfabf1800c9b9f54b848213ce4110b57",
+      "bytes": 344313
+    },
+    "damage-number-validation/api-net8.0-build.log": {
+      "sha256": "704e88f576c76cafc371f3244d5d92afdf256eada7086892dccf6c55cabfae71",
+      "bytes": 4687
+    },
+    "damage-number-validation/api-netstandard2.1-build.log": {
+      "sha256": "8f0971da7e6cebfbee97745cbfbe2e3eb64721a75f3809ed1ae293401a8d564a",
+      "bytes": 4799
+    },
+    "damage-number-validation/fixture-probe.log": {
+      "sha256": "981723d28cf40315da1cb857c29b4a22b8ae7c1ad86dd4adfa798a9e61cd9d53",
+      "bytes": 260
+    },
+    "damage-number-style-validation/focused.log": {
+      "sha256": "db47c0aaa8f07a398aaf96b13013afc27c8ca22779003ddae805eca66ead642e",
+      "bytes": 441
+    },
+    "damage-number-style-validation/survivor-focused.log": {
+      "sha256": "a2bc9387063b2ba87c2a6e35f47b9ac716c17111a04c93bf81b38b02b81a75b5",
+      "bytes": 484
+    },
+    "damage-number-style-validation/brawler-focused.log": {
+      "sha256": "9bfbbaea174955cb1b73ba22ee90417154966239ee41d321fed66df6c3986a2c",
+      "bytes": 481
+    },
+    "damage-number-style-validation/api-net8.0-build.log": {
+      "sha256": "da1dc98b922e2d4122aeff9a4ca381e0173ba7143e6981f7097ffbbe13f04463",
+      "bytes": 4841
+    },
+    "damage-number-style-validation/api-netstandard2.1-build.log": {
+      "sha256": "e75340b85de4fe2e87133769fb88457c0fa80e8a3f58aa0c9a3c85151fb0d0b5",
+      "bytes": 4953
+    }
+  }
+}

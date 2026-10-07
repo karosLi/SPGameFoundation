@@ -33,6 +33,12 @@ namespace SPF.Tests.EditMode
         [TestCase(1, false)]
         [TestCase(2, false)]
         [TestCase(3, false)]
+        [TestCase(CombatControlGraphic.HealGlyph, false)]
+        [TestCase(CombatControlGraphic.JumpGlyph, false)]
+        [TestCase(CombatControlGraphic.SwitchGlyph, false)]
+        [TestCase(CombatControlGraphic.BladeGlyph, false)]
+        [TestCase(CombatControlGraphic.StaffGlyph, false)]
+        [TestCase(CombatControlGraphic.BowGlyph, false)]
         public void DirectAddInstallsRendererAndSubmitsEveryVectorShape(int glyph, bool disc)
         {
             var root = new GameObject("DirectGraphicCanvas");
@@ -48,6 +54,32 @@ namespace SPF.Tests.EditMode
                 graphic.Glyph = glyph; graphic.Disc = disc; graphic.color = Color.white;
                 graphic.SetAllDirty(); Canvas.ForceUpdateCanvases();
                 Assert.Greater(SubmittedVertices(graphic), 0, "required components must result in real CanvasRenderer mesh submission");
+            }
+            finally { Object.DestroyImmediate(root); }
+        }
+
+        [TestCase(CombatControlGraphic.HealGlyph, CombatControlGraphic.BlinkGlyph)]
+        [TestCase(CombatControlGraphic.JumpGlyph, CombatControlGraphic.PulseGlyph)]
+        [TestCase(CombatControlGraphic.SwitchGlyph, CombatControlGraphic.KickGlyph)]
+        [TestCase(CombatControlGraphic.BladeGlyph, CombatControlGraphic.FistGlyph)]
+        [TestCase(CombatControlGraphic.StaffGlyph, CombatControlGraphic.FistGlyph)]
+        [TestCase(CombatControlGraphic.BowGlyph, CombatControlGraphic.FistGlyph)]
+        public void NewGlyphSubmitsDistinctGeometryFromPreviousSlotFallback(int glyph, int previous)
+        {
+            var root = new GameObject("DistinctGlyphCanvas");
+            try
+            {
+                var canvas = UIFactory.CreateCanvas(root.transform);
+                var go = new GameObject("Glyph", typeof(RectTransform)); go.transform.SetParent(canvas.transform, false);
+                var graphic = go.AddComponent<CombatControlGraphic>(); graphic.rectTransform.sizeDelta = new Vector2(84, 84);
+                graphic.Glyph = previous; graphic.SetAllDirty(); Canvas.ForceUpdateCanvases();
+                var oldVertices = go.GetComponent<CanvasRenderer>().GetMesh().vertices;
+                graphic.Glyph = glyph; graphic.SetVerticesDirty(); Canvas.ForceUpdateCanvases();
+                var mesh = go.GetComponent<CanvasRenderer>().GetMesh();
+                Assert.Greater(mesh.vertexCount, 0);
+                CollectionAssert.AreNotEqual(oldVertices, mesh.vertices, "the new skill must not silently fall through to its old unrelated symbol");
+                foreach (var vertex in mesh.vertices)
+                    Assert.IsTrue(graphic.rectTransform.rect.Contains(new Vector2(vertex.x, vertex.y)), "fallback stays inside its icon rectangle");
             }
             finally { Object.DestroyImmediate(root); }
         }

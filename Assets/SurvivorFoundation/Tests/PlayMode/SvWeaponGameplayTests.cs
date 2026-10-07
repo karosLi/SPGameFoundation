@@ -5,6 +5,7 @@ using NUnit.Framework;
 using SPF.Contracts;
 using SPF.L2.Weapons;
 using SPF.Presentation;
+using SPF.Shell.UI;
 using SPF.Testing;
 using SurvivorFoundation.Game;
 using Unity.Mathematics;
@@ -35,6 +36,14 @@ namespace SurvivorFoundation.Tests.PlayMode
                 foreach(int id in new[]{WeaponProfiles.Blade,WeaponProfiles.Sword,WeaponProfiles.Staff,WeaponProfiles.Bow})for(int side=-1;side<=1;side+=2)
                 {
                     world.ClearLevel();game.State.Flow=SvFlow.Playing;game.State.Hero=game.State.HeroPrev=0;game.State.Facing=new float2(side,0);game.State.Input=default;weapons.RequestEquip(id);for(int i=0;i<weapons.Profile(id).EquipTicks;i++)game.Session.Step();
+                    byte[] beforeHud=game.Session.CaptureSnapshot();game.Hud.MobileHud.Refresh();
+                    int attackGlyph=id==WeaponProfiles.Bow?CombatControlGraphic.BowGlyph:id==WeaponProfiles.Staff?CombatControlGraphic.StaffGlyph:CombatControlGraphic.BladeGlyph;
+                    Assert.AreEqual(CombatControlGraphic.PulseGlyph,game.Hud.MobileHud.Buttons[0].transform.Find("Icon").GetComponent<CombatControlGraphic>().Glyph);
+                    Assert.AreEqual(CombatControlGraphic.BlinkGlyph,game.Hud.MobileHud.Buttons[1].transform.Find("Icon").GetComponent<CombatControlGraphic>().Glyph);
+                    Assert.AreEqual(attackGlyph,game.Hud.MobileHud.Buttons[2].transform.Find("Icon").GetComponent<CombatControlGraphic>().Glyph);
+                    Assert.AreEqual(CombatControlGraphic.SwitchGlyph,game.Hud.MobileHud.Buttons[3].transform.Find("Icon").GetComponent<CombatControlGraphic>().Glyph);
+                    for(int slot=0;slot<4;slot++)Assert.AreEqual(world.Resource(SvMobileSkills.Key).GetSnapshot(slot).Definition,game.Hud.MobileHud.Buttons[slot].Snapshot.Definition,"fallback art must preserve authored asset keys and skill rules");
+                    CollectionAssert.AreEqual(beforeHud,game.Session.CaptureSnapshot(),"HUD refresh must not rewrite persisted skill definitions or equipment state");
                     SvSpawner.SpawnEnemy(world,runtime,1,new float2(side*(id>=WeaponProfiles.Staff?5:1),0));
                     int marker=weapons.Current.Ranged?weapons.Current.ReleaseTick:weapons.Current.Active.From;
                     // Auto-target acquisition uses the existing grid; wait for the real action and its exact sampled marker.

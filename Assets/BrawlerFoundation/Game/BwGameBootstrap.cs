@@ -230,7 +230,7 @@ namespace BrawlerFoundation.Game
             if (end) EndText.text = state.Flow == BwFlow.Won ? "VICTORY" : "DOWN AND OUT";
         }
 
-        sealed class MobileSource : IMobileCombatHudSource
+        sealed class MobileSource : IMobileCombatHudSource, IMobileCombatHudGlyphSource
         {
             readonly BwGameBootstrap m_Game;
             public MobileSource(BwGameBootstrap game) => m_Game = game;
@@ -243,6 +243,13 @@ namespace BrawlerFoundation.Game
                 m_Game.Session.Sync();
                 var world = m_Game.Session.World;
                 return world.Resource(BwMobileSkills.Key).GetSnapshot(slot, Playing && (m_Game.m_BeltScroller ? BwBeltRules.CanUseSlot(world, slot) : BwMobileSkills.CanAct(world)));
+            }
+            public int ReadFallbackGlyph(int slot, in SkillSlotSnapshot snapshot)
+            {
+                if (slot == 0 && m_Game.m_WeaponCombat) return CombatControlGraphic.WeaponGlyph(m_Game.Session.World.Resource(BwWeapons.Key).Current.Family);
+                if (slot == 2 && m_Game.m_BeltScroller) return CombatControlGraphic.JumpGlyph;
+                if (slot == 3 && m_Game.m_BeltScroller) return CombatControlGraphic.HealGlyph;
+                return snapshot.Definition.IconId;
             }
         }
 

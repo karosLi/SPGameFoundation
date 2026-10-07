@@ -119,7 +119,8 @@ namespace SPF.Shell.UI
                 { m_BoundSkills[i] = snapshot.Definition.Id; m_Labels[i].text = m_Source.SlotLabel(i); }
                 Color tint = !snapshot.Enabled ? new Color(.42f, .47f, .50f, .6f) : snapshot.Charges > 0 ? new Color(.45f, .89f, .96f, .95f) : new Color(.57f, .67f, .73f, .72f);
                 if (Buttons[i].AimingCanceled) tint = new Color(1f, .3f, .25f, 1);
-                if (m_Icons[i].Glyph != snapshot.Definition.IconId) { m_Icons[i].Glyph = snapshot.Definition.IconId; m_Icons[i].SetVerticesDirty(); }
+                int glyph = m_Source is IMobileCombatHudGlyphSource glyphSource ? glyphSource.ReadFallbackGlyph(i, snapshot) : snapshot.Definition.IconId;
+                if (m_Icons[i].Glyph != glyph) { m_Icons[i].Glyph = glyph; m_Icons[i].SetVerticesDirty(); }
                 if (m_BoundIcons[i] != snapshot.Definition.IconId)
                 {
                     m_BoundIcons[i] = snapshot.Definition.IconId;

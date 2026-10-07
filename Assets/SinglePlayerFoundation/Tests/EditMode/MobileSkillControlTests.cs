@@ -1,6 +1,7 @@
 using System.Reflection;
 using NUnit.Framework;
 using SPF.Contracts;
+using SPF.Contracts.Weapons;
 using SPF.Shell.UI;
 using Unity.Mathematics;
 using UnityEngine;
@@ -18,6 +19,16 @@ namespace SPF.Tests.EditMode
         void Snapshot(SkillActivation activation, int charges = 1, bool enabled = true) => m_Control.SetSnapshot(new SkillSlotSnapshot(new SkillSlotDefinition(1, 0, activation, 30), charges, charges > 0 ? 0 : 30, enabled));
         InputFrame Read() { var f = default(InputFrame); m_Control.Read(ref f, 0); return f; }
         void Lifecycle(string name, object value) => typeof(SkillControl).GetMethod(name, BindingFlags.NonPublic | BindingFlags.Instance).Invoke(m_Control, new[] { value });
+
+        [TestCase(WeaponActionFamily.Slash, CombatControlGraphic.BladeGlyph)]
+        [TestCase(WeaponActionFamily.Thrust, CombatControlGraphic.BladeGlyph)]
+        [TestCase(WeaponActionFamily.Cast, CombatControlGraphic.StaffGlyph)]
+        [TestCase(WeaponActionFamily.Draw, CombatControlGraphic.BowGlyph)]
+        [TestCase(WeaponActionFamily.None, CombatControlGraphic.FistGlyph)]
+        public void WeaponFallbackUsesActionFamilyInsteadOfInventoryId(WeaponActionFamily family, int expected)
+        {
+            Assert.AreEqual(expected, CombatControlGraphic.WeaponGlyph(family));
+        }
 
         [Test]
         public void HoldRetainsOwnerAcrossCooldownButForeignUpCannotRelease()
@@ -89,13 +100,43 @@ namespace SPF.Tests.EditMode
         }
 
 #if !SPF_DOTNET_HARNESS
-        sealed class AssetSource : IMobileCombatHudSource
+        sealed class AssetSource : IMobileCombatHudSource, IMobileCombatHudGlyphSource
         {
+            public int FallbackGlyph = CombatControlGraphic.BowGlyph;
             public int SlotCount => 1;
             public int TickRate => 30;
             public bool Playing => true;
             public SkillSlotSnapshot ReadSlot(int slot) => new SkillSlotSnapshot(new SkillSlotDefinition(7, 3, SkillActivation.AimRelease, int.MaxValue, 2), 1, int.MaxValue, true);
             public string SlotLabel(int slot) => "AIM";
+            public int ReadFallbackGlyph(int slot, in SkillSlotSnapshot snapshot) => FallbackGlyph;
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void FallbackChangesKeepAuthoritativeAssetKeyAndCustomSpritePrecedence(bool hasAsset)
+        {
+            var canvas = UIFactory.CreateCanvas(m_Object.transform);
+            var hud = m_Object.AddComponent<MobileCombatHud>();
+            var source = new AssetSource();
+            var texture = new Texture2D(4, 4);
+            var sprite = Sprite.Create(texture, new Rect(0, 0, 4, 4), new Vector2(.5f, .5f));
+            int lookupCount = 0, lookupId = -1;
+            try
+            {
+                hud.IconResolver = id => { lookupCount++; lookupId = id; return hasAsset ? sprite : null; };
+                hud.Build(canvas.transform, source, false);
+                var button = hud.Buttons[0];
+                var asset = button.transform.Find("AssetIcon").GetComponent<UnityEngine.UI.Image>();
+                var fallback = button.transform.Find("Icon").GetComponent<CombatControlGraphic>();
+                Assert.AreEqual(CombatControlGraphic.BowGlyph, fallback.Glyph);
+                source.FallbackGlyph = CombatControlGraphic.StaffGlyph; hud.Refresh();
+                Assert.AreEqual(CombatControlGraphic.StaffGlyph, fallback.Glyph, "equipment changes update the vector fallback even when IconId is unchanged");
+                Assert.AreEqual(3, lookupId, "project assets keep the authoritative IconId");
+                Assert.AreEqual(1, lookupCount, "a fallback-only change must not rebind or discard an existing custom asset");
+                Assert.AreEqual(hasAsset, asset.enabled); Assert.AreEqual(!hasAsset, fallback.enabled);
+                Assert.AreEqual(source.ReadSlot(0), button.Snapshot, "presentation must not rewrite any input, cooldown or definition fields");
+            }
+            finally { Object.DestroyImmediate(sprite); Object.DestroyImmediate(texture); }
         }
 
         [Test]

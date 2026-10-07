@@ -173,7 +173,7 @@ namespace SurvivorFoundation.Game
             if (state.Flow == SvFlow.Dead) DeadText.text = (state.LossReason == SvLossReason.BeaconLost ? "BEACON LOST" : "YOU FELL") + $"\nsurvived {seconds / 60:00}:{seconds % 60:00}, {state.Kills} kills";
             if (state.Flow == SvFlow.Won) DeadText.text = (s.FlyingSwords.Enabled ? "HORDE CLEARED" : "BEACON SAVED") + $"\n{state.Kills} enemies cleared";
         }
-        sealed class MobileSource : IMobileCombatHudSource
+        sealed class MobileSource : IMobileCombatHudSource, IMobileCombatHudGlyphSource
         {
             readonly SvGameBootstrap m_Game;
             public MobileSource(SvGameBootstrap game) => m_Game = game;
@@ -181,7 +181,20 @@ namespace SurvivorFoundation.Game
             public int TickRate => 30;
             public bool Playing => m_Game.Session != null && m_Game.Session.State == SessionState.Running && m_Game.State.Flow == SvFlow.Playing && !m_Game.InputRouter.Scripted.Active && !m_Game.AutoPlay;
             public string SlotLabel(int slot) => slot == 0 ? "PULSE / J" : slot == 1 ? "BLINK / K" : slot == 2 ? "ATTACK / F" : "SWITCH / Q";
-            public SkillSlotSnapshot ReadSlot(int slot) => m_Game.Session.World.Resource(SvMobileSkills.Key).GetSnapshot(slot, Playing && m_Game.State.Hp > 0);
+            public SkillSlotSnapshot ReadSlot(int slot)
+            {
+                m_Game.Session.Sync();
+                var world = m_Game.Session.World;
+                return world.Resource(SvMobileSkills.Key).GetSnapshot(slot, Playing && m_Game.State.Hp > 0);
+            }
+            public int ReadFallbackGlyph(int slot, in SkillSlotSnapshot snapshot)
+            {
+                var world = m_Game.Session.World;
+                if (!world.HasResource(SvWeapons.Key)) return snapshot.Definition.IconId;
+                if (slot == SvWeapons.AttackButton) return CombatControlGraphic.WeaponGlyph(world.Resource(SvWeapons.Key).Current.Family);
+                if (slot == SvWeapons.SwitchButton) return CombatControlGraphic.SwitchGlyph;
+                return snapshot.Definition.IconId;
+            }
         }
     }
 }

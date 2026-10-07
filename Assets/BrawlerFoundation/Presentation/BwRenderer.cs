@@ -98,7 +98,7 @@ namespace BrawlerFoundation.Presentation
             m_Session = session; m_BoundNatural = NaturalCharacters;
             var rig = session.World.Resource(BwKeys.Rig);
             m_Assets = new RenderAssets(RenderCapabilities.Detect());
-            m_Art = BwArt.Build(rig, NaturalCharacters);
+            m_Art = BwArt.Build(rig, NaturalCharacters, session.World.HasResource(BwWeapons.Key));
             if(NaturalCharacters)m_Sanctuary=new SanctuaryBackdrop(m_Assets.Tier,SanctuaryScene.Terrace);
             if (NaturalCharacters) m_Characters = new GameplayCharacterPresenter(m_Assets.Tier, math.clamp(session.World.Table(BwKeys.Fighter).Capacity, 1, 128), includeWeapons: session.World.HasResource(BwWeapons.Key));
             if(NaturalCharacters&&session.World.HasResource(BwWeapons.Key))m_WeaponParticles=new WeaponParticlePresenter(m_Assets.Tier, lowQuality: m_Assets.Tier!=RenderTier.GpuDriven);
@@ -260,7 +260,7 @@ namespace BrawlerFoundation.Presentation
                 var shot=weapons.Projectiles[i];if(!weapons.ProjectileVisible(i,alpha))continue;bool arrow=weapons.Profile(shot.ContentId).Family==WeaponActionFamily.Draw;
                 float2 point=BwBeltRules.Project(math.lerp(shot.Previous,shot.Position,alpha),shot.Height);
                 float2 direction=new float2(shot.Direction.x,shot.Direction.y*BwBeltRules.DepthProjection);
-                m_Effects.Add(point,arrow?new float2(.66f,.055f):new float2(.28f),m_Art.Sheet[m_Art.Bar].Uv,FxDepth,arrow?new float4(1,.86f,.47f,1):new float4(.36f,.84f,1,1),math.atan2(direction.y,direction.x));
+                m_Effects.Add(point,arrow?new float2(.66f,.22f):new float2(.28f),m_Art.Sheet[arrow?m_Art.WeaponProjectiles.Arrow:m_Art.WeaponProjectiles.Spell].Uv,FxDepth,new float4(1),math.atan2(direction.y,direction.x));
             }
         }
 

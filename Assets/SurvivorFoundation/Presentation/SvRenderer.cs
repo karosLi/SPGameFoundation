@@ -130,7 +130,7 @@ namespace SurvivorFoundation.Presentation
             var world = session.World;
             var config = world.Resource(SvKeys.Config);
             m_Assets = new RenderAssets(RenderCapabilities.Detect());
-            m_Art = SvArt.Build(config.EnemyKinds, k => { var c = config.Enemies[k].Color; return new Color(c.x, c.y, c.z, 1f); }, NaturalCharacters ? SvArtStyle.SmoothOutline : ArtStyle);
+            m_Art = SvArt.Build(config.EnemyKinds, k => { var c = config.Enemies[k].Color; return new Color(c.x, c.y, c.z, 1f); }, NaturalCharacters ? SvArtStyle.SmoothOutline : ArtStyle, world.HasResource(SvWeapons.Key));
             var tier = m_Assets.Tier;
             if(StableTranslucentActors)m_Sanctuary=new SanctuaryBackdrop(tier,SanctuaryScene.Courtyard);
             if(NaturalCharacters&&world.HasResource(SvWeapons.Key))m_WeaponParticles=new WeaponParticlePresenter(tier, lowQuality: tier!=RenderTier.GpuDriven);
@@ -320,7 +320,7 @@ namespace SurvivorFoundation.Presentation
             {
                 var shot=weapons.Projectiles[i];if(!weapons.ProjectileVisible(i,alpha))continue;bool arrow=weapons.Profile(shot.ContentId).Family==WeaponActionFamily.Draw;
                 float2 point=math.lerp(shot.Previous,shot.Position,alpha)+new float2(0,shot.Height);
-                m_Effects.Add(point,arrow?new float2(.5f,.045f):new float2(.23f),m_Art.Sheet[m_Art.White].Uv,BulletDepth,arrow?new float4(1,.85f,.42f,1):new float4(.34f,.80f,1,1),math.atan2(shot.Direction.y,shot.Direction.x));
+                m_Effects.Add(point,arrow?new float2(.5f,.167f):new float2(.23f),m_Art.Sheet[arrow?m_Art.WeaponProjectiles.Arrow:m_Art.WeaponProjectiles.Spell].Uv,BulletDepth,new float4(1),math.atan2(shot.Direction.y,shot.Direction.x));
             }
         }
 

@@ -20,6 +20,7 @@ namespace SurvivorFoundation.Presentation
         public int Gem, Blade, Ground, Glow, Ring, White, Shadow, Beacon;
         public SpriteClip Puff;
         public CombatVfxArt CombatFx;
+        public WeaponProjectileArt WeaponProjectiles;
 
         /// <summary>Atlas rects of every enemy frame (kind - 1) * 2 + frame, for Burst draw jobs.</summary>
         public NativeArray<float4> EnemyUv;
@@ -28,9 +29,9 @@ namespace SurvivorFoundation.Presentation
         static Color32 C(byte r, byte g, byte b, byte a = 255) => new Color32(r, g, b, a);
         static readonly Color32 Outline = C(20, 16, 28);
 
-        public static SvArt Build(int enemyKinds, Func<int, Color> enemyColor, SvArtStyle style = SvArtStyle.Pixel)
+        public static SvArt Build(int enemyKinds, Func<int, Color> enemyColor, SvArtStyle style = SvArtStyle.Pixel, bool includeWeaponProjectiles = false)
         {
-            if (style == SvArtStyle.SmoothOutline) return SvSmoothArt.Build(enemyKinds, enemyColor);
+            if (style == SvArtStyle.SmoothOutline) return SvSmoothArt.Build(enemyKinds, enemyColor, includeWeaponProjectiles);
             var art = new SvArt();
             var atlas = new SpriteAtlasBuilder();
             art.Font = new SpriteFont(atlas, 2);
@@ -107,6 +108,7 @@ namespace SurvivorFoundation.Presentation
                 c.Rect(17, 7, 4, 18, C(158, 168, 143)); c.Ellipse(12, 18, 4, 10, C(169, 238, 118)); c.Outline(Outline);
             });
             art.CombatFx = CombatVfxArt.AddTo(atlas);
+            if (includeWeaponProjectiles) art.WeaponProjectiles = WeaponProjectileArt.AddTo(atlas);
             art.Sheet = atlas.Build();
             art.EnemyUv = new NativeArray<float4>(math.max(enemyKinds, 1) * 2, Allocator.Persistent);
             for (int k = 0; k < enemyKinds; k++)

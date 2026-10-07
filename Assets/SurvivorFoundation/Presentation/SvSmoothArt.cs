@@ -49,7 +49,7 @@ namespace SurvivorFoundation.Presentation
             return atlas.Add(SmoothSpriteArt.Downsample(pen.Canvas, Super));
         }
 
-        public static SvArt Build(int enemyKinds, Func<int, Color> enemyColor)
+        public static SvArt Build(int enemyKinds, Func<int, Color> enemyColor, bool includeWeaponProjectiles = false)
         {
             var art = new SvArt(); var atlas = new SpriteAtlasBuilder();
             art.Font = new SpriteFont(atlas, 2);
@@ -178,6 +178,7 @@ namespace SurvivorFoundation.Presentation
             }
             art.Puff = new SpriteClip(puff, 4, 14, false);
             art.CombatFx = CombatVfxArt.AddTo(atlas);
+            if (includeWeaponProjectiles) art.WeaponProjectiles = WeaponProjectileArt.AddTo(atlas);
             art.Sheet = atlas.Build(filterMode: FilterMode.Bilinear, padding: 2, extrudeEdges: true);
             art.EnemyUv = new NativeArray<float4>(math.max(enemyKinds, 1) * 2, Allocator.Persistent);
             for (int k = 0; k < enemyKinds; k++) for (int f = 0; f < 2; f++) art.EnemyUv[k * 2 + f] = art.Sheet[art.Enemies[k].First + f].Uv;

@@ -6,7 +6,7 @@
 
 本文按 `62c5b7f`（2026-10-07）的实际源码核对入口和调用；其代码树与已恢复的远端 `e86ee87a7691282ae7e96713c315dbec5998c414` 相同。[精确验证清单](validation/NativePrecisionClosure-20261007.json)记录 1,050 .NET、1,084 原生 EditMode、154 graphics PlayMode 通过，另有 5/1 项原生跳过；不是物理 Android/iOS 验收。本文的文档检查也不等于重新运行这些原生测试。
 
-[架构与真实 API](Architecture.md)、[九个经典玩法和四个移动示例兼容矩阵](FoundationCompatibilityMatrix.md)说明现状；[分层与语义扩展计划](SharedFoundationSemanticExtensionPlan.md)中的 manifest、全安装事务、统一 binding helper、保存 envelope 与异步资源租约仍为提案，不是下面可直接调用的新接口。
+[架构与真实 API](Architecture.md)、[九个经典玩法和四个移动示例兼容矩阵](FoundationCompatibilityMatrix.md)说明现状。本文下方的历史接入示例仍可使用；后续已实现的[可选 manifest 预检](OptionalCompositionPreflightValidation.md)、[安装回滚](CompositionRollbackValidation.md)、[视图时间线生命周期](validation/SessionViewLifecycle-20261007.md)和[保存 envelope](VersionedSaveEnvelope.md)各有独立接口与验证范围。通用异步资产租约仍是潜在需求，不能将其当作现有 API。新的执行计划、访问窗口和配置隔离进度见 [Latios 实施记录](LatiosImplementationProgress.md)。
 
 - 只想跑通最小模块：看第 1 节
 - 新建独立玩法：按第 2–4 节接入

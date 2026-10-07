@@ -1,6 +1,6 @@
 # SPGameFoundation
 
-> 最新软件/原生检查点 `e86ee87` 已全绿：1,050 .NET、1,084 EditMode、154 graphics PlayMode 通过，完整19份证据分片已校验恢复。见[精确范围与限制](Docs/MobileFoundationFollowupValidation.md)。碰撞/AI、美术、连续步态、紧凑 HUD、武器/命中特效的本轮验证已闭环；物理 Android/iOS 仍需真机验收。现在按用户授权推进[共享基座分层与语义扩展计划](Docs/SharedFoundationSemanticExtensionPlan.md)，从兼容基线开始。
+> 历史原生检查点 `e86ee87` 的完整结果见[精确范围与限制](Docs/MobileFoundationFollowupValidation.md)，不覆盖后续音频、伤害字和参考视频步态修改。修正原生音频观察器的 `d7f357a` 已通过 1,432 项 .NET 检查，完整原生验收仍待闭环。现按用户授权分阶段实施 [Latios 综合方案](Docs/LatiosUnity2022IntegrationBlueprint.md)，进度、隔离边界及门槛见[实施记录](Docs/LatiosImplementationProgress.md)。Android/iOS 物理设备验收仍待完成。
 
 Unity 2022.3 2D 单机小游戏基座（面向移动端），保留贪吃蛇、ARPG、幸存者、平台跳跃、塔防、三消、弹弓、格斗、剧情九个验证玩法，新增非像素竖屏射击、守点怪潮、飞剑怪潮与横屏纵深动作变体，用于验证共享能力接入。
 

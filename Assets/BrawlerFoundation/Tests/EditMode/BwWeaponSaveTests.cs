@@ -22,12 +22,14 @@ namespace BrawlerFoundation.Tests
             var weapon=a.World.Resource(BwWeapons.Key);weapon.RequestEquip(WeaponProfiles.Bow);a.Step(20);
             a.Press(BwButton.Punch);a.Step(weapon.Current.ReleaseTick+2);
             byte[] raw=a.Session.CaptureSnapshot();byte[] bytes=BwWeaponSave.Capture(a.Session,Runtime);
-            var cursor=new MonotonicInterpolation();uint revision=a.Session.TimelineRevision;uint weaponRevision=weapon.Revision;
-            uint tick=a.Session.Clock.NextTickIndex;cursor.Resolve(tick,revision,.8f);
-            using(var stream=new MemoryStream(bytes))BwWeaponSave.Restore(stream,a.Session,Runtime);
-            Assert.AreEqual(tick,a.Session.Clock.NextTickIndex);Assert.AreNotEqual(revision,a.Session.TimelineRevision);Assert.AreNotEqual(weaponRevision,weapon.Revision);
-            Assert.AreEqual(0,cursor.Resolve(tick,a.Session.TimelineRevision,a.Session.InterpolationAlpha));CollectionAssert.AreEqual(raw,a.Session.CaptureSnapshot());
             using(var stream=new MemoryStream(bytes))BwWeaponSave.Restore(stream,b.Session,Runtime);
+            var cursor=new MonotonicInterpolation();uint revision=b.Session.TimelineRevision;var restoredWeapon=b.World.Resource(BwWeapons.Key);uint weaponRevision=restoredWeapon.Revision;
+            uint tick=b.Session.Clock.NextTickIndex;cursor.Resolve(tick,revision,.8f);
+            using(var stream=new MemoryStream(bytes))BwWeaponSave.Restore(stream,b.Session,Runtime);
+            Assert.AreEqual(tick,b.Session.Clock.NextTickIndex);Assert.AreNotEqual(revision,b.Session.TimelineRevision);Assert.AreNotEqual(weaponRevision,restoredWeapon.Revision);
+            Assert.AreEqual(0,cursor.Resolve(tick,b.Session.TimelineRevision,b.Session.InterpolationAlpha));CollectionAssert.AreEqual(raw,b.Session.CaptureSnapshot());
+            // a remains the uninterrupted control, b is restored at the exact same checkpoint.
+            CollectionAssert.AreEqual(raw,a.Session.CaptureSnapshot());
             for(int i=0;i<80;i++){a.Game.Input=b.Game.Input=new InputFrame{Move=new float2(.1f,0),Held=1};a.Step();b.Step();}
             CollectionAssert.AreEqual(a.Session.CaptureSnapshot(),b.Session.CaptureSnapshot());
         }

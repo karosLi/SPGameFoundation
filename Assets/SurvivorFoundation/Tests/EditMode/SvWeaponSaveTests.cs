@@ -26,11 +26,13 @@ namespace SurvivorFoundation.Tests
         {
             using var a=Create();using var b=Create(false);var weapons=a.World.Resource(SvWeapons.Key);
             weapons.RequestEquip(WeaponProfiles.Bow);a.Step(12);a.Spawn(1,new float2(5,0));a.Step(weapons.Current.ReleaseTick+2);
-            byte[] raw=a.Session.CaptureSnapshot();byte[] bytes=SvWeaponSave.Capture(a.Session,Runtime);uint revision=a.Session.TimelineRevision;uint weaponRevision=weapons.Revision;
-            using(var s=new MemoryStream(bytes))SvWeaponSave.Restore(s,a.Session,Runtime);
-            Assert.AreNotEqual(revision,a.Session.TimelineRevision);Assert.AreNotEqual(weaponRevision,weapons.Revision);CollectionAssert.AreEqual(raw,a.Session.CaptureSnapshot());
+            byte[] raw=a.Session.CaptureSnapshot();byte[] bytes=SvWeaponSave.Capture(a.Session,Runtime);
             using(var s=new MemoryStream(bytes))SvWeaponSave.Restore(s,b.Session,Runtime);
-            a.Step(50);b.Step(50);CollectionAssert.AreEqual(a.Session.CaptureSnapshot(),b.Session.CaptureSnapshot());Assert.Greater(a.World.Resource(SvWeapons.Key).AcceptedHits,0);
+            uint revision=b.Session.TimelineRevision;var restoredWeapons=b.World.Resource(SvWeapons.Key);uint weaponRevision=restoredWeapons.Revision;uint tick=b.Session.Clock.NextTickIndex;
+            using(var s=new MemoryStream(bytes))SvWeaponSave.Restore(s,b.Session,Runtime);
+            Assert.AreNotEqual(revision,b.Session.TimelineRevision);Assert.AreNotEqual(weaponRevision,restoredWeapons.Revision);Assert.AreEqual(tick,b.Session.Clock.NextTickIndex);CollectionAssert.AreEqual(raw,b.Session.CaptureSnapshot());
+            // a is never restored: compare the resumed result to uninterrupted gameplay.
+            CollectionAssert.AreEqual(raw,a.Session.CaptureSnapshot());a.Step(50);b.Step(50);CollectionAssert.AreEqual(a.Session.CaptureSnapshot(),b.Session.CaptureSnapshot());Assert.Greater(a.World.Resource(SvWeapons.Key).AcceptedHits,0);
         }
         [Test] public void AuthoritativeSettingsAndSameIdEnemyRulesRejectBeforeMutation()
         {
@@ -97,7 +99,14 @@ namespace SurvivorFoundation.Tests
                 using var a=SimSession.Create(mode,71);a.World.Resource(SvKeys.Game).Send(SvCommandKind.Start);a.Step();a.Step();
                 var d=SvWeaponSave.Describe(a,Runtime);byte[] raw=a.CaptureSnapshot();byte[] bytes;
                 using(var stream=new MemoryStream(raw,false))bytes=SaveEnvelope.ImportKnownLegacy(stream,new KnownLegacySaveDescriptor("known.guard-weapons.raw-v1",d),mode,71,t=>SvWeaponSave.Describe(t,Runtime));
-                uint rev=a.TimelineRevision;CollectionAssert.AreEqual(raw,a.CaptureSnapshot());using(var stream=new MemoryStream(bytes))SvWeaponSave.Restore(stream,a,Runtime);Assert.AreEqual(rev+1,a.TimelineRevision);CollectionAssert.AreEqual(raw,a.CaptureSnapshot());
+                uint rev=a.TimelineRevision;CollectionAssert.AreEqual(raw,a.CaptureSnapshot());
+                using var resumed=SimSession.Create(mode,71);using(var stream=new MemoryStream(bytes))SvWeaponSave.Restore(stream,resumed,Runtime);
+                Assert.AreEqual(rev,a.TimelineRevision);CollectionAssert.AreEqual(raw,resumed.CaptureSnapshot());
+                for(int i=0;i<40;i++){
+                    var input=new InputFrame{Move=new float2(.1f,0),Held=1u<<SvWeapons.AttackButton};
+                    a.World.Resource(SvKeys.Game).Input=resumed.World.Resource(SvKeys.Game).Input=input;a.Step();resumed.Step();
+                }
+                CollectionAssert.AreEqual(a.CaptureSnapshot(),resumed.CaptureSnapshot(),"known legacy import matches uninterrupted fixed-input continuation");
             }finally{UnityEngine.Object.DestroyImmediate(module);UnityEngine.Object.DestroyImmediate(mode);UnityEngine.Object.DestroyImmediate(config);}
         }
         [Test] public void UnsupportedMixedModeAndClassicCompositionAreNotLabeledCompatible()

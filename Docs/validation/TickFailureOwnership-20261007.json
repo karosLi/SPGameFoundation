@@ -1,0 +1,500 @@
+{
+  "date_utc": "2026-10-07",
+  "base_commit": "02e9b916ccbbe15bd82b1e59c92c9f46f70fee87",
+  "implementation_commit": "e27fb5eb01eb4ada369aa26f21408aa663f0cbbe",
+  "implementation_files": [
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/Scheduling/TickPipeline.cs",
+      "sha256": "30bf30543c7c1d1a1df45bace461c267e637af74828edbe2b10c053d2bdb5ac4"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Tests/EditMode/TickFailureOwnershipTests.cs",
+      "sha256": "31e87a63ccd3deb5bb50c3947f75153e3edb5fc1728c689be995d708cdf0eda5"
+    }
+  ],
+  "focused_runs": [
+    {
+      "run": "callback-red",
+      "description": "Unchanged production baseline; real callback failures",
+      "total": 21,
+      "passed": 5,
+      "failed": 16,
+      "trx_sha256": "6c3cf2cbab0aabb00f471ebcbda7d2886b3e3643cb6d9b660536336c9abb440c"
+    },
+    {
+      "run": "callback-green",
+      "description": "Initial callback cases plus existing rollback suite",
+      "total": 57,
+      "passed": 57,
+      "failed": 0,
+      "trx_sha256": "0e7959544d2739f5a9fb73f1695f6315a743a603a1b7749aaf2407a4a7715147"
+    },
+    {
+      "run": "simulated-red",
+      "description": "Baseline ownership logic, completion calls instrumented with harness-only pre-completion hook",
+      "total": 4,
+      "passed": 1,
+      "failed": 3,
+      "trx_sha256": "e598726de109d2c63bf2898f5615e810fe768fd0002f5232c54ca491b8549bd5"
+    },
+    {
+      "run": "focused-green",
+      "description": "Intermediate 25-case suite before the native receiver-mutation correction: 21 callback cases plus 4 harness-only simulated rejections",
+      "total": 25,
+      "passed": 25,
+      "failed": 0,
+      "trx_sha256": "4b9adef676b3eb1c55a422643b989cdf14304b21587a2de3c4abd286b0c412f4",
+      "implementation_commit": "84cb48c405e3390fee09eef22ad9255908740163"
+    },
+    {
+      "run": "final-focused",
+      "description": "Final corrected 28-case suite: 21 original callback cases, 3 native-compilable completed-dependency controls, 4 harness-only pre-completion rejections",
+      "total": 28,
+      "passed": 28,
+      "failed": 0,
+      "trx_sha256": "af710044a33ab1164c9260768620fdc493d69ccb5c7412ffd13c106695d33ee6",
+      "implementation_commit": "e27fb5eb01eb4ada369aa26f21408aa663f0cbbe"
+    }
+  ],
+  "full_harness": {
+    "status": "passed",
+    "generated_projects": 76,
+    "build_warnings": 0,
+    "build_errors": 0,
+    "validated_commit": "e27fb5eb01eb4ada369aa26f21408aa663f0cbbe",
+    "counters": {
+      "total": 1148,
+      "executed": 1146,
+      "passed": 1146,
+      "failed": 0
+    },
+    "existing_explicit_exports_not_run": [
+      "SearchShots",
+      "ExportFrames"
+    ],
+    "native_or_graphics_execution": false,
+    "trx_reports": [
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_22_22.trx",
+        "sha256": "56e3e79f0ba777443a1abb60f99a31cffc965450e963c8dca4870ba1df7f28d0",
+        "total": 113,
+        "executed": 113,
+        "passed": 113,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_23_09.trx",
+        "sha256": "17d492bcca656710b988ad5181893424168d2121c0412935eb91ed8687f223d9",
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_23_10.trx",
+        "sha256": "8d7a681a1889ca5e09fb49ac81f340d2652337dabe9e6a00f7991c24fa18516f",
+        "total": 8,
+        "executed": 8,
+        "passed": 8,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_23_11.trx",
+        "sha256": "9e61bb04c8be1a100cb144701204ea717adb5c115aa01aa59adadf3912383852",
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_23_12.trx",
+        "sha256": "963e91ef7d89d85b62dcd505fc0319e135a676625d7205b7cae58988c62fbf71",
+        "total": 10,
+        "executed": 10,
+        "passed": 10,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_23_13.trx",
+        "sha256": "6772a540be35a57f5e7453b3d93e0fcd0e2cd0be20be659038d57d8d782ff715",
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_23_14.trx",
+        "sha256": "e9ca0b6f5e51ad6b2591e5ffbcd2d48954af7ab35320e9fe8f85680f89b1d435",
+        "total": 7,
+        "executed": 7,
+        "passed": 7,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_23_14[1].trx",
+        "sha256": "d0e88cbee2196e956ac016d866299fe6a4875aa352135fd0074148d1d8283b27",
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_23_17.trx",
+        "sha256": "075904bfbf8efa53a7a48e44db4f29f562294fe0f60c1f0a404eb1d5207e38f5",
+        "total": 63,
+        "executed": 63,
+        "passed": 63,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_23_45.trx",
+        "sha256": "34593bf9313ba07c396fbc19b633c212b38cb645503b041550f3685a194c1d14",
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_23_46.trx",
+        "sha256": "2ce6f86c057324735110173a70c6cf5721cc71d05cb750cc8c605a82f0acca1e",
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_23_47.trx",
+        "sha256": "81ea47cd8a73a72b5429faf2b8bd914c90eddee340a74db7856918b2e90eb449",
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_23_47[1].trx",
+        "sha256": "6fef5a404d67e7a1d67728cf4529d0cc4c22f7eee55d66c5447adf26c10af052",
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_23_48.trx",
+        "sha256": "572de5c7aeaca04e316081cdfa0b7bed81474820b0113fd693b5f82fb4361c1f",
+        "total": 766,
+        "executed": 766,
+        "passed": 766,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_27_20.trx",
+        "sha256": "e4f9dd19fc3a8788af66d5bad1f3d30690a271b8b52bf10e14ee5df3f5dec4c7",
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_27_21.trx",
+        "sha256": "7981b0783c349f38f44a19729febefaea910556503561e0ce5591940d89f6763",
+        "total": 16,
+        "executed": 16,
+        "passed": 16,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_27_22.trx",
+        "sha256": "cc54fdb197807cc5dd2b89fce70cd425d22f19def968776bb841d0deb8e033e9",
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_27_24.trx",
+        "sha256": "7a6caef357b4ef2b8fb5d405512792045625f9fa244bf0ec65c75faf0b18ca73",
+        "total": 5,
+        "executed": 4,
+        "passed": 4,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_27_24[1].trx",
+        "sha256": "7ec40aca9e60944b6761f751d2b64a380e79b9401d4864a2b20d81e4fff44a16",
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_27_25.trx",
+        "sha256": "69d6f9309e79c916c7102f21931f48d3d1e45c3f166098c1eddf4cdd0138d607",
+        "total": 41,
+        "executed": 40,
+        "passed": 40,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_27_56.trx",
+        "sha256": "5f0445f1dd59afc5b9495c7794c583b8bc1ddc802c257f9e649e394c32deb6f3",
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_27_57.trx",
+        "sha256": "97935b644ee654dd5fd9780bb3c47a41fcf28141bf0e7d0bfc0651f2d9b5d4df",
+        "total": 5,
+        "executed": 5,
+        "passed": 5,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_27_57[1].trx",
+        "sha256": "b660d9b6f4524408cef9558c53007b29ae3c713b5357b8fe1a96dd93d3265457",
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_27_58.trx",
+        "sha256": "e4486ff28852512ea62dab634dbc490ea2a983c067c484f303f22955a4a9df2e",
+        "total": 114,
+        "executed": 114,
+        "passed": 114,
+        "failed": 0
+      },
+      {
+        "artifact": "final-full-results/_5e9498f43725_2026-10-07_17_29_04.trx",
+        "sha256": "6b1b0035f892352bdb8c1e8b18cce02a42aa64b6cae8bbb67e03edc070ecdce1",
+        "total": 0,
+        "executed": 0,
+        "passed": 0,
+        "failed": 0
+      }
+    ]
+  },
+  "real_unity_api_compile": {
+    "status": "passed",
+    "production_sources": 329,
+    "total_sources": 332,
+    "real_references": 95,
+    "warnings": 7,
+    "errors": 0,
+    "unity_version": "2022.3.62f2",
+    "native_execution": false,
+    "harness_symbol_defined": false,
+    "synthetic_hook_and_tests_present": false,
+    "native_callback_and_positive_control_cases": 24,
+    "native_completed_dependency_positive_controls": "compiled but not executed; eager default-handle stubs cannot distinguish native receiver mutation",
+    "validated_commit": "e27fb5eb01eb4ada369aa26f21408aa663f0cbbe"
+  },
+  "cold_probe": {
+    "compositions": 19,
+    "pinned_sources": 154,
+    "unchanged_sources": 136,
+    "changed_sources": [
+      {
+        "path": "Assets/BrawlerFoundation/Presentation/BwRenderer.cs",
+        "baseline_sha256": "690fe981d2f265380e8add74c6f3c930abc1342d3ab8648cea67c2a18dead239",
+        "current_sha256": "0541f6d267f850a663293a738b5917631992051f984db393098c4d0367963659"
+      },
+      {
+        "path": "Assets/BrawlerFoundation/Runtime/Systems/BwBeltSystems.cs",
+        "baseline_sha256": "0d6b880da4ba4c954940c9cf15abcf47ae4510d18a8ba8c321876e79cef65182",
+        "current_sha256": "7fedede7d5e4ed730187dd70490f3b0c793166dfbfb48fe40840507dab967fd2"
+      },
+      {
+        "path": "Assets/RpgFoundation/Runtime/Systems/ActorSystems.cs",
+        "baseline_sha256": "7da2ffee2912b21c3989abc487b2b78125ea5df62468d2ed7cbd29954411fed9",
+        "current_sha256": "decaab11093fd307da873d36d65b1ffd81bb8d5550cfe2da75e9490f2e992963"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/Runtime/Composition/IGameplayModule.cs",
+        "baseline_sha256": "392f9cdf1b20a5309a0d9aa8803b3f0e72eb9edd570782d56b9ce37224a82d85",
+        "current_sha256": "de4c0d1681ef846a63a82c86d9feaceb4128e41c08c7241071475df0439cd4be"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/Runtime/Composition/ModeDefinition.cs",
+        "baseline_sha256": "1152a158ef7a48308196eb3227887568b91792b010f2f09ff8a0b57b5f608d77",
+        "current_sha256": "f09c3fbe593bb0414b95c037f66920278463541d8447c60c89bf1dcd76b3dae3"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/Runtime/Composition/WorldComposer.cs",
+        "baseline_sha256": "a95999e58b4d7c3b736ffcbcdd81e218d4b38b715912bd4f4af0ec9cdd69bdb8",
+        "current_sha256": "911c8ad68d3ee4160b523af50caf3040087924eea8377d041fa9a75eef376529"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/Runtime/Scheduling/TickPipeline.cs",
+        "baseline_sha256": "40b835f9a51ebbbbd66ef2e61ee4a9cb88b251de66f1c289b60fa427f020f428",
+        "current_sha256": "30bf30543c7c1d1a1df45bace461c267e637af74828edbe2b10c053d2bdb5ac4"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/Runtime/Session/SessionHost.cs",
+        "baseline_sha256": "13ca34477ed31e6372b3c8fabf7ab7489b248251ae61ee67423a91abe0939682",
+        "current_sha256": "f5c52a3b9af229926abf68d2ad5d3a9fd73d91a56ebdf75e7d41619fdbaeb292"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/Runtime/Session/SimSession.cs",
+        "baseline_sha256": "789737ee148f57b2658e160254f3b09aff66a8fbf491dd6ffeb1d7805c70c40f",
+        "current_sha256": "531842b1786d2bb06e678b2a735c415d15ec3e7c5761cf0cd53ac572cbffae07"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/Runtime/World/EntityRegistry.cs",
+        "baseline_sha256": "a6c7679051510f659ecc2332fafb43c8186a9d7b607aab3302c8810307ff4057",
+        "current_sha256": "dced172286a260fe42e770df6cf5b9fea8d50782d3c2635e314eaf23f78bdd18"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/Runtime/World/SimTable.cs",
+        "baseline_sha256": "8c78262e70a58d576c10c79cafe87505442f1cfa69e7a74ec2c74e2146c78586",
+        "current_sha256": "261906dd3b8f797e0b9da72ec7bd11e23e89c0cc14079e8421fcde129d685914"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/Runtime/World/SimWorld.cs",
+        "baseline_sha256": "b0186c0e9c34994b0dcbf91b4a06a5937c7e4fe39b70af883c0b92748ba5b143",
+        "current_sha256": "fb100ef9e1acf718848b54deaaf031043f05062f5e56ec32c410162954649f99"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/Runtime/World/WorldLayout.cs",
+        "baseline_sha256": "c51cfc47e7f8d704f7c29183d894b08ef72c05dffa907c77ca31f592f1c740bb",
+        "current_sha256": "cf8c5aff08842bdff438965fe8a27ac09a317ed7dc2a990c21d5c671870f58c8"
+      },
+      {
+        "path": "Assets/SinglePlayerFoundation/Tests/EditMode/SessionHostTests.cs",
+        "baseline_sha256": "274d7de536f399ee1476e9f3ae05e72c3b3416da185fe41f7e81d6a7812bd25e",
+        "current_sha256": "4cdcc9ebfd70c5d2791ef8596000dd0541b12ffd0880d1e8871a0ccd6554e828"
+      },
+      {
+        "path": "Assets/SnakeFoundation/Runtime/Systems/GridSystems.cs",
+        "baseline_sha256": "4e2ef09f143d2e840755a9f0c151be279eee1c40e8b3efdd7f59d813f11dbfd8",
+        "current_sha256": "1635e39842f442f1965aca81fd6a46d277d17260834583a69392e695ea1915e4"
+      },
+      {
+        "path": "Assets/SnakeFoundation/Runtime/Systems/PopulationSystem.cs",
+        "baseline_sha256": "d1133d461aad13235be00cec535322b4a1719995db89331431cee4967dc2c217",
+        "current_sha256": "c224f3f47499846e833d874475518dd7b9b64f00a4c75a003d844127f3c702aa"
+      },
+      {
+        "path": "Assets/SnakeFoundation/Runtime/Systems/ResolveSystem.cs",
+        "baseline_sha256": "1e62a34690bf55295ca6a6dcb09ee2b7592caa2dfe775210fe195b0a60358984",
+        "current_sha256": "33fbae5fa20f7b1c79cd3a8c7167f509df053be20a679f1375aa1831efee1e76"
+      },
+      {
+        "path": "Assets/SurvivorFoundation/Presentation/SvRenderer.cs",
+        "baseline_sha256": "ad5edeb5fa9ba8d701fab8fbeea2619368ed961cd0811ed3efaec506b442b305",
+        "current_sha256": "5db5dbab2c4747ffa71681a370cc5eb366958e2168d6df2629e01a39ca35667c"
+      }
+    ],
+    "fixture_methods": 65,
+    "output_sha256": "a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30",
+    "output_byte_identical_to_stage_a": true
+  },
+  "independent_review": {
+    "result": "no blocker found",
+    "reviewed_commit": "e27fb5eb01eb4ada369aa26f21408aa663f0cbbe",
+    "scope": "Ref completion wrapper preserves successful native receiver mutation; serial profiling records the completed local value only after completion while m_Unrecorded retains ownership on failure. Recovery retains the previous graph plus returned handle. Earlier review checked exception preservation, reentry and finally balance. Native positive-control execution remains pending."
+  },
+  "limits": [
+    "OnTick owns and must complete private handles not returned to the pipeline.",
+    "Failed ticks are not state/clock transactions; prior mutations are not rolled back.",
+    "World.Sync is fail-fast; notifications can have partially run before one throws.",
+    "Harness completion injection rejects before Complete, with eagerly executed stub jobs. It is not native engine Complete failure injection or a native handle-identity/worker-timing proof.",
+    "Dependency registration and batch-submission failure ownership are code-reviewed, not fault-injected.",
+    "Native EditMode, graphics PlayMode, Burst and physical Android/iOS execution are not performed by this local checkpoint.",
+    "Profiler marker balance is finally-structure review; stub markers are no-ops."
+  ],
+  "artifact_hashes": [
+    {
+      "artifact": "callback-red.log",
+      "sha256": "bff0675681d53f04879ee7651d413af2309851d06fa9c0154beb1204a7f22f23"
+    },
+    {
+      "artifact": "callback-green.log",
+      "sha256": "260238f5776cbb74d803ef24b400b7507500bc6c58854adb85473967e234298d"
+    },
+    {
+      "artifact": "simulated-red.log",
+      "sha256": "06a251e3c15b62d1ce9fe107bbfd18820af954af8e7fca75dcb51d5329c4f879"
+    },
+    {
+      "artifact": "focused-green.log",
+      "sha256": "036c9f0dd7b6607b7b8cad7c6864db7dc307ea533ed221f280276d8dcc8bd41e"
+    },
+    {
+      "artifact": "seam-baseline-TickPipeline.cs",
+      "sha256": "159610584c3d4e0ed401aeb730389450c3f350251bc334132848d451f059e202"
+    },
+    {
+      "artifact": "full-build.log",
+      "sha256": "a06a211d198ceade4ffdc2127c2ad1f0fdc4a78e24f0d658f4999f0597a6ec8e"
+    },
+    {
+      "artifact": "native-api.log",
+      "sha256": "8df05f3c6e27b444de0ed9125ff53d209e52656730f78ccee07e665e1fe46f35"
+    },
+    {
+      "artifact": "probe-premature-build.log",
+      "sha256": "65c62e09b266b2dd3c019ea8814bf230fe1f8c16fb7a128a06338f14f9fbc7b9"
+    },
+    {
+      "artifact": "probe-build.log",
+      "sha256": "1c0da3a9b8e1d256bb5ecdb68ac3a9d1b29e0c5ab408e6077b3d000837ce95fb"
+    },
+    {
+      "artifact": "final-focused.log",
+      "sha256": "405ce83f66175a17b40a67527abb4fe9bebba475004a8aba151df9bf785a7b8f"
+    },
+    {
+      "artifact": "final-native-api.log",
+      "sha256": "d75bf5525a007761f2075c32eff5951d087ca893174feb60ab41122f50c76255"
+    },
+    {
+      "artifact": "final-probe-build.log",
+      "sha256": "c7633812a48575ebf55b05e6f5dc35259b7a74488007e64b5d7a0236860ff797"
+    },
+    {
+      "artifact": "final-full-build.log",
+      "sha256": "adf317f879e9908fbf36f199ab18cd4e4feca05f42a96e0fbc6761dae30101e3"
+    },
+    {
+      "artifact": "final-full-test.log",
+      "sha256": "e6ceb2dc4c7c1fc23fe5e802f206eba2717b3b24aa2d6a51de80dd034ed2a48f"
+    },
+    {
+      "artifact": "probe/final-compositions.json",
+      "sha256": "a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30"
+    },
+    {
+      "artifact": "probe/final-compositions-repeat.json",
+      "sha256": "a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30"
+    },
+    {
+      "artifact": "native-api/Compile.csproj",
+      "sha256": "80955fc724cd449f22ccb45a318f755daa6c459b300e6300c63ab7427a7503af"
+    }
+  ],
+  "implementation_commits": [
+    "84cb48c405e3390fee09eef22ad9255908740163",
+    "e27fb5eb01eb4ada369aa26f21408aa663f0cbbe"
+  ],
+  "primary_source_review": {
+    "url": "https://github.com/Unity-Technologies/UnityCsReference/blob/2022.3/Runtime/Jobs/ScriptBindings/JobHandle.bindings.cs",
+    "finding": "Complete passes its receiver to native code by ref. The wrapper retains a stored original on failure and propagates the successful local receiver value.",
+    "date_utc": "2026-10-07"
+  },
+  "intermediate_full_run": {
+    "implementation_commit": "84cb48c405e3390fee09eef22ad9255908740163",
+    "passed": 1143,
+    "failed": 0,
+    "final_acceptance": false,
+    "reason": "Superseded by the completion-receiver and serial-success dependency correction."
+  },
+  "baseline_tick_pipeline_sha256": "17c9b0c9541405f253155c700421f0d60bdd9a07e792dd12c1dea40e2080ef8b",
+  "reproduction_notes": [
+    "Use Tools/DotnetHarness/generate.py and standard full Harness.proj build/test.",
+    "Native API compilation used GenerateCompositionApiCompile.py plus the new TickFailureOwnershipTests.cs Compile item, without SPF_DOTNET_HARNESS.",
+    "Cold probe outputs were produced twice after e27fb5e and compared byte-for-byte to the retained Stage A hash; pinned source differences remain separate."
+  ]
+}

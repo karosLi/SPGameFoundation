@@ -24,6 +24,16 @@ namespace SPF.Runtime.Scheduling
         readonly DependencyTracker m_Tracker;
         readonly PipelineStats m_Stats;
         JobHandle m_Pending;
+        // Own the returned handle even if dependency registration itself throws.
+        JobHandle m_Unrecorded;
+        bool m_HasUnrecorded;
+        bool m_BeginningTick;
+        bool m_RecordPendingStats;
+#if SPF_DOTNET_HARNESS
+        // Harness-only simulated pre-completion rejection; never a native Complete failure claim.
+        // No public API or player hot-path delegate in ordinary non-test builds.
+        Action<JobHandle> m_BeforeCompleteForTesting;
+#endif
         long m_BeginTimestamp;
         int m_InitializedSystems;
         bool m_Disposed;
@@ -96,39 +106,46 @@ namespace SPF.Runtime.Scheduling
         public void BeginTick(TickTime time)
         {
             ThrowIfDisposed();
+            if (m_BeginningTick || m_EndingTick)
+                throw new InvalidOperationException("BeginTick cannot be reentered while scheduling or syncing.");
             if (HasPendingTick)
                 throw new InvalidOperationException("EndTick must be called before the next BeginTick.");
 
+            m_BeginningTick = true;
             m_BeginTimestamp = Stopwatch.GetTimestamp();
             s_BeginMarker.Begin();
-
-            s_PlaybackMarker.Begin();
-            m_World.PlaybackDestroys();
-            m_World.CompactPools();
-            s_PlaybackMarker.End();
-
-            var context = new SimContext(m_World, time);
             try
             {
-                ScheduleSystems(context);
-            }
-            catch
-            {
-                // A system threw mid-schedule: finish what was already scheduled so no job is left running
-                // unowned (it would make every later access to its data throw), then report the error.
-                m_Tracker.All.Complete();
-                m_Tracker.Reset();
-                m_World.Sync();
-                s_BeginMarker.End();
-                throw;
-            }
+                s_PlaybackMarker.Begin();
+                try
+                {
+                    m_World.PlaybackDestroys();
+                    m_World.CompactPools();
+                }
+                finally { s_PlaybackMarker.End(); }
 
-            m_Pending = m_Tracker.All;
-            JobHandle.ScheduleBatchedJobs();
-            HasPendingTick = true;
-            LastTickTime = time;
-
-            s_BeginMarker.End();
+                var context = new SimContext(m_World, time);
+                try
+                {
+                    ScheduleSystems(context);
+                    m_Pending = m_Tracker.All;
+                    HasPendingTick = true;
+                    JobHandle.ScheduleBatchedJobs();
+                    LastTickTime = time;
+                    m_RecordPendingStats = true;
+                }
+                catch (Exception failure)
+                {
+                    // Publish known work before recovery. A failed Complete must leave the handles
+                    // owned for EndTick/Dispose to retry, without touching resources or storage.
+                    m_Pending = m_Tracker.All;
+                    HasPendingTick = true;
+                    m_RecordPendingStats = false;
+                    CleanupErrors.Try(CompletePendingTick, ref failure);
+                    throw;
+                }
+            }
+            finally { m_BeginningTick = false; s_BeginMarker.End(); }
             m_Stats.RecordScheduleTotal(Stopwatch.GetTimestamp() - m_BeginTimestamp);
         }
 
@@ -139,53 +156,82 @@ namespace SPF.Runtime.Scheduling
                 ref var entry = ref m_Systems[i];
                 long start = Stopwatch.GetTimestamp();
                 entry.Marker.Begin();
-                var dependency = m_Tracker.GetDependency(entry.Access);
-                // A system that declares nothing is a barrier, typically main-thread work (spawning,
-                // rules, flow) that touches arbitrary data directly: finish everything scheduled before it
-                // so it never reads a container a job is still writing.
-                if (entry.Access.IsBarrier)
-                    dependency.Complete();
-                JobHandle handle;
-                m_World.Guard.Begin(entry.Allowed, entry.Name);
-                try { handle = entry.System.OnTick(context, dependency); }
-                finally { m_World.Guard.End(); }
-                if (SerialProfiling)
+                try
                 {
-                    // Attribute worker time to this system: its jobs (still internally parallel) run now.
-                    handle.Complete();
-                    m_Stats.RecordExecute(i, Stopwatch.GetTimestamp() - start);
+                    var dependency = m_Tracker.GetDependency(entry.Access);
+                    // Undeclared systems are main-thread barriers; finish earlier work first.
+                    if (entry.Access.IsBarrier)
+                        Complete(dependency);
+                    m_World.Guard.Begin(entry.Allowed, entry.Name);
+                    try
+                    {
+                        // An OnTick that throws must complete its own unreturned private work.
+                        // Once returned, ownership is ours before registration or profiling can fail.
+                        m_Unrecorded = entry.System.OnTick(context, dependency);
+                        m_HasUnrecorded = true;
+                    }
+                    finally { m_World.Guard.End(); }
+                    var handle = m_Unrecorded;
+                    m_Tracker.Record(entry.Access, handle);
+                    m_Unrecorded = default;
+                    m_HasUnrecorded = false;
+                    if (SerialProfiling)
+                    {
+                        Complete(handle);
+                        m_Stats.RecordExecute(i, Stopwatch.GetTimestamp() - start);
+                    }
                 }
-                m_Tracker.Record(entry.Access, handle);
-                entry.Marker.End();
+                finally { entry.Marker.End(); }
                 m_Stats.RecordSchedule(i, entry.System.Phase, Stopwatch.GetTimestamp() - start);
             }
         }
 
         public void EndTick()
         {
+            if (m_BeginningTick)
+                throw new InvalidOperationException("EndTick cannot run while BeginTick is scheduling or recovering.");
             if (!HasPendingTick)
                 return;
+            CompletePendingTick();
+        }
 
+        void CompletePendingTick()
+        {
             if (m_EndingTick) throw new InvalidOperationException("EndTick cannot be reentered during resource sync.");
             m_EndingTick = true;
             s_EndMarker.Begin();
             long waitStart = Stopwatch.GetTimestamp();
             try
             {
-                m_Pending.Complete();
+                if (m_HasUnrecorded)
+                {
+                    Complete(m_Unrecorded);
+                    m_Unrecorded = default;
+                    m_HasUnrecorded = false;
+                }
+                Complete(m_Pending);
                 long waitEnd = Stopwatch.GetTimestamp();
                 m_Pending = default;
                 m_Tracker.Reset();
                 try
                 {
                     m_World.Sync();
-                    m_Stats.RecordSync(waitEnd - waitStart, Stopwatch.GetTimestamp() - m_BeginTimestamp);
+                    if (m_RecordPendingStats)
+                        m_Stats.RecordSync(waitEnd - waitStart, Stopwatch.GetTimestamp() - m_BeginTimestamp);
                 }
-                // Keep BeginTick blocked throughout OnSync, but distinguish callback failure from
-                // failed job completion so final cleanup can safely release native storage.
-                finally { HasPendingTick = false; }
+                // Block BeginTick throughout OnSync, but a notification failure after completion
+                // does not prevent final cleanup. Failed scheduling never counts as a successful tick.
+                finally { HasPendingTick = false; m_RecordPendingStats = false; }
             }
             finally { m_EndingTick = false; s_EndMarker.End(); }
+        }
+
+        void Complete(JobHandle handle)
+        {
+#if SPF_DOTNET_HARNESS
+            m_BeforeCompleteForTesting?.Invoke(handle);
+#endif
+            handle.Complete();
         }
 
         /// <summary>Completes outstanding work and resets systems that support it.</summary>
@@ -232,6 +278,8 @@ namespace SPF.Runtime.Scheduling
         public void Dispose()
         {
             if (m_Disposed || m_Disposing) return;
+            if (m_BeginningTick || m_EndingTick)
+                throw new InvalidOperationException("Pipeline cannot be disposed while scheduling or syncing.");
             m_Disposing = true;
             try
             {

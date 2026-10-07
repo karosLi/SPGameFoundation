@@ -7,6 +7,7 @@ using SPF.Contracts;
 using SPF.Contracts.Weapons;
 using SPF.L2.Weapons;
 using SPF.Presentation;
+using SPF.Presentation.Animation;
 using SPF.Shell.UI;
 using SPF.Testing;
 using Unity.Mathematics;
@@ -104,18 +105,24 @@ namespace BrawlerFoundation.Tests.PlayMode
                 {
                     capture.Dispose();capture=new CanvasCapture(game.gameObject,game.CameraRig.Camera,640,360);game.MobileHud.SetPreviewViewport(640,360,new Rect(0,0,640,360));
                     world.ClearLevel();game.State.Flow=BwFlow.Fighting;BwSpawner.Spawn(world,0,new float2(-2,0),1,0);BwSpawner.Spawn(world,1,new float2(4,0),-1,1);var target=world.Column(BwKeys.Info)[1];target.Hp=target.MaxHp=10000;world.Column(BwKeys.Info).Set(1,target);
-                    weapons.RequestEquip(WeaponProfiles.Bow);for(int i=0;i<weapons.Profile(WeaponProfiles.Bow).EquipTicks;i++)game.Session.Step();
+                    weapons.RequestEquip(WeaponProfiles.Blade);for(int i=0;i<weapons.Profile(WeaponProfiles.Blade).EquipTicks;i++)game.Session.Step();
                     Canvas.ForceUpdateCanvases();yield return null;yield return null;
                     using(var frames=new BufferedFrameCapture(capture.Target,90))
                     {
-                        game.Session.ManualClock=false;double next=Time.realtimeSinceStartupAsDouble;
+                        game.Session.ManualClock=false;double next=Time.realtimeSinceStartupAsDouble;uint locomotionStates=0;
                         for(int i=0;i<90;i++)
                         {
                             while(Time.realtimeSinceStartupAsDouble<next)yield return null;
-                            game.State.Input=InputFrame.Latch(game.State.Input,new InputFrame{Move=i<30?new float2(1f,.5f):i<60?new float2(-.3f,-.25f):float2.zero,Held=1,Pressed=i==44?1u<<BwWeapons.SwitchButton:0});
+                            // Belt attacks commit movement. Show real run/walk first, then the two
+                            // melee families; the portrait sequence separately shows staff and bow.
+                            game.State.Input=InputFrame.Latch(game.State.Input,new InputFrame{Move=i<15?new float2(1f,.5f):i<30?new float2(.3f,-.25f):float2.zero,Held=i>=30?1u:0u,Pressed=i==45?1u<<BwWeapons.SwitchButton:0});
+                            if(game.Renderer.Characters.TryRead(weapons.Owner,out var motion))locomotionStates|=1u<<(int)motion.Locomotion;
                             double acquiredAt=Time.realtimeSinceStartupAsDouble;frames.Capture(weapons.Tick/60d);next=acquiredAt+1d/30;
                         }
-                        game.Session.ManualClock=true;frames.Write("weapon-belt-live-"+suffix,"Actual automatic-clock belt gameplay: run, walk, idle, kick/jump/heal in contact captures, bow draw/release, switch into blade, continuing attacks. Target30Hz, measured acquisition timestamps retained.");
+                        game.Session.ManualClock=true;frames.Write("weapon-belt-live-"+suffix,"Actual automatic-clock belt gameplay: run, walk, idle, blade slash and switch into sword thrust. Kick/jump/heal have separate contact captures. Target30Hz, measured acquisition timestamps retained.");
+                        uint required=(1u<<(int)GameplayLocomotionState.Idle)|(1u<<(int)GameplayLocomotionState.Walk)|(1u<<(int)GameplayLocomotionState.Run);
+                        Assert.AreEqual(required,locomotionStates&required,"the live hero recording must actually include idle, walk and run");
+                        Assert.AreEqual(WeaponProfiles.Sword,weapons.Equipment.EquippedId);
                     }
                 }
                 LogAssert.NoUnexpectedReceived();

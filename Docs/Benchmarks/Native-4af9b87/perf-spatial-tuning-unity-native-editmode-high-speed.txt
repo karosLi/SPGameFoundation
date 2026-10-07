@@ -1,0 +1,12 @@
+Quadtree sensitivity; runtime=unity-native-editmode; distribution=high-speed; seed=1234; entries=512; queries=512; warmup=4; samples=16
+Same arrays; rotated configuration order; full scheduled build+query+completion; instrumentation separate. Compare configurations only within this fixture, not against the different-size primary grid matrix.
+bucket=8; maxDepth=8; total_ms=p50=0.5658;p95=0.6783;worst=0.6783; nodes=194; depth=4; saturated=0; raw_entries=86019; visits=54510; hits=1565; bytes=34876; queryBurst=1; buildBurst=1
+bucket=8; maxDepth=12; total_ms=p50=0.5233;p95=0.6804;worst=0.6804; nodes=194; depth=4; saturated=0; raw_entries=86019; visits=54510; hits=1565; bytes=34876; queryBurst=1; buildBurst=1
+bucket=8; maxDepth=16; total_ms=p50=0.5135;p95=0.6933;worst=0.6933; nodes=194; depth=4; saturated=0; raw_entries=86019; visits=54510; hits=1565; bytes=34876; queryBurst=1; buildBurst=1
+bucket=16; maxDepth=8; total_ms=p50=0.5305;p95=0.6071;worst=0.6071; nodes=85; depth=3; saturated=0; raw_entries=97520; visits=54510; hits=1565; bytes=29756; queryBurst=1; buildBurst=1
+bucket=16; maxDepth=12; total_ms=p50=0.4860;p95=0.5997;worst=0.5997; nodes=85; depth=3; saturated=0; raw_entries=97520; visits=54510; hits=1565; bytes=29756; queryBurst=1; buildBurst=1
+bucket=16; maxDepth=16; total_ms=p50=0.4683;p95=0.5855;worst=0.5855; nodes=85; depth=3; saturated=0; raw_entries=97520; visits=54510; hits=1565; bytes=29756; queryBurst=1; buildBurst=1
+bucket=32; maxDepth=8; total_ms=p50=0.5258;p95=0.5843;worst=0.5843; nodes=45; depth=3; saturated=0; raw_entries=116286; visits=54510; hits=1565; bytes=27196; queryBurst=1; buildBurst=1
+bucket=32; maxDepth=12; total_ms=p50=0.4925;p95=0.5236;worst=0.5236; nodes=45; depth=3; saturated=0; raw_entries=116286; visits=54510; hits=1565; bytes=27196; queryBurst=1; buildBurst=1
+bucket=32; maxDepth=16; total_ms=p50=0.4697;p95=0.4942;worst=0.4942; nodes=45; depth=3; saturated=0; raw_entries=116286; visits=54510; hits=1565; bytes=27196; queryBurst=1; buildBurst=1
+Report-only; no runtime tree adoption and no native/mobile claim from stubs. Primary matrix parameters were fixed in advance, not selected from this tuning pass.

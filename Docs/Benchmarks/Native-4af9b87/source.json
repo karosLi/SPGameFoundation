@@ -1,0 +1,161 @@
+{
+  "remote_commit": "4af9b87cc32fcd1a5f10a4bd2817848044ad4649",
+  "local_commit": "cf45385ba0f3e13d2576542d1a35fbc4e50151ef",
+  "tree": "c0173dec0f2cbda34c5734b496d0915f5bd38d1e",
+  "run_url": "https://github.com/karosLi/SPGameFoundation/actions/runs/37574715913",
+  "archive_sha256": "2a62d8ad4776279f77b9a170ab4a4725c1134909d00c0eb1e3305557b6b6232d",
+  "runtime": "Unity 2022.3.62f2 / Apple M5 Pro / native EditMode / actual Burst verified",
+  "scope": "Unmodified text reports recovered from complete manifest-verified artifact. Two dense test-only separation candidate cases failed exact float parity, so no dense timing reports exist. This run is not globally green. No mobile-device inference.",
+  "files": [
+    {
+      "path": "perf-belt-ai-abba-unity-native-editmode-128-False.txt",
+      "bytes": 615,
+      "sha256": "4b48a1cc461badfbf5c77919b8800f49c88eac49dfa2a223516db8c10bb583d8"
+    },
+    {
+      "path": "perf-belt-ai-abba-unity-native-editmode-128-True.txt",
+      "bytes": 614,
+      "sha256": "18821abbb2551259ff72336be671f5ed49df84b9ff8e3c0137f07072427fce52"
+    },
+    {
+      "path": "perf-belt-ai-abba-unity-native-editmode-32-False.txt",
+      "bytes": 614,
+      "sha256": "ef5391780bbc2ecd6d125a94d0ade7f25f218a633ce8bda23451c3880d8b4c9a"
+    },
+    {
+      "path": "perf-belt-ai-abba-unity-native-editmode-32-True.txt",
+      "bytes": 613,
+      "sha256": "9c96f8b784c0538a2a918d224541450326233bfe34a6ffceb99ffc7d7bc5293a"
+    },
+    {
+      "path": "perf-belt-separation-candidate-unity-native-editmode-128-False.txt",
+      "bytes": 599,
+      "sha256": "7e34c51c222816dea30ea8502a076a25e0d9c72a90186d3e1a6f9d2f2035c4d6"
+    },
+    {
+      "path": "perf-belt-separation-candidate-unity-native-editmode-32-False.txt",
+      "bytes": 598,
+      "sha256": "0a28a7e0e69a03147ec9d876a654dc12b7c02090aa926e88aada52a9b0830aef"
+    },
+    {
+      "path": "perf-rpg-ai-kernels-unity-native-editmode.txt",
+      "bytes": 712,
+      "sha256": "e98794da19ba319c5f3b07e48e6737776ccfbfbebd2e0371f3ebe73d0ed9fad6"
+    },
+    {
+      "path": "perf-rpg-ai-tick-256-False-unity-native-editmode.txt",
+      "bytes": 736,
+      "sha256": "d7146873e0d88701624c82e83661d4e3b2d189ecb1e103036ce2c3770aad66b3"
+    },
+    {
+      "path": "perf-rpg-ai-tick-256-True-unity-native-editmode.txt",
+      "bytes": 735,
+      "sha256": "6cf736798310b0b023318de2e06eb21f0ed93305fdb535b26ecfb90e9f3317e6"
+    },
+    {
+      "path": "perf-rpg-ai-tick-32-False-unity-native-editmode.txt",
+      "bytes": 735,
+      "sha256": "01bbb757d08824a85d3111c1109ca3b40295b35f4d5f987a070fd169db45f49c"
+    },
+    {
+      "path": "perf-rpg-ai-tick-32-True-unity-native-editmode.txt",
+      "bytes": 734,
+      "sha256": "7701569d491526777f0fe7e1a30a7c062cdfa6c837deaebbb921ae1a0572e98a"
+    },
+    {
+      "path": "perf-spatial-tuning-unity-native-editmode-clustered.txt",
+      "bytes": 2179,
+      "sha256": "31a2408d42436f7c0462e49be2362f87734a5d4adfec260daf6b4c3a4e812114"
+    },
+    {
+      "path": "perf-spatial-tuning-unity-native-editmode-dense.txt",
+      "bytes": 2199,
+      "sha256": "8c78788254427e716424d0133bbee7a393f85e4a07e26ac77f6d3a8f01fba146"
+    },
+    {
+      "path": "perf-spatial-tuning-unity-native-editmode-high-speed.txt",
+      "bytes": 2171,
+      "sha256": "9d8880773de59f54fa244a260ae8a6b1a7a3cfeb93c71b94d846cfe9404cc302"
+    },
+    {
+      "path": "perf-spatial-tuning-unity-native-editmode-mixed.txt",
+      "bytes": 2154,
+      "sha256": "5851255a1ebf5fe6a3febfb0ff23a473524a38c579b3a96818bd2aa3fbde1d19"
+    },
+    {
+      "path": "perf-spatial-tuning-unity-native-editmode-sparse-huge.txt",
+      "bytes": 2154,
+      "sha256": "75315ab1a4274a8cea82c6076498f2df15fb3c0d55e883e3ca696a764ee7c684"
+    },
+    {
+      "path": "perf-spatial-tuning-unity-native-editmode-uniform.txt",
+      "bytes": 2156,
+      "sha256": "771345a724befc7922907c6e494771bed18e6eef0568168b86516cd6d20c50b3"
+    },
+    {
+      "path": "perf-spatial-unity-native-editmode-belt-clustered-128.txt",
+      "bytes": 2694,
+      "sha256": "09f36838907aa7c03f5452ad9549cd8501fc9e449d66c6d4d58dd16a84e732c5"
+    },
+    {
+      "path": "perf-spatial-unity-native-editmode-belt-clustered-32.txt",
+      "bytes": 2673,
+      "sha256": "20bd67b5fe9fe862b8d8925f47e045114392cbdbc79ddfe137c0a8e7fbd9fcf0"
+    },
+    {
+      "path": "perf-spatial-unity-native-editmode-belt-clustered-64.txt",
+      "bytes": 2679,
+      "sha256": "d50f46206a84d14d6740a7a22301ca634c20b6b186e241f80109b19eaeaecf67"
+    },
+    {
+      "path": "perf-spatial-unity-native-editmode-belt-spread-128.txt",
+      "bytes": 2680,
+      "sha256": "c6cc5ffea65030db4da9d5e50140619b47d362f4d0624c3370131eb45fab77b8"
+    },
+    {
+      "path": "perf-spatial-unity-native-editmode-belt-spread-32.txt",
+      "bytes": 2652,
+      "sha256": "2d67712fc541cc46d14c4aad631db03ff3906e1ebb90ab89c31863d8cb8b75cc"
+    },
+    {
+      "path": "perf-spatial-unity-native-editmode-belt-spread-64.txt",
+      "bytes": 2665,
+      "sha256": "e2e50faca50dc3d725f2c6600fa036816f33a9b1332a329a5397cba2d576f024"
+    },
+    {
+      "path": "perf-spatial-unity-native-editmode-clustered-1024.txt",
+      "bytes": 2719,
+      "sha256": "22f374ef48bd698eb9d1d7b2d06dede87c659c48b482cde594f93ec90df68dd0"
+    },
+    {
+      "path": "perf-spatial-unity-native-editmode-dense-1024.txt",
+      "bytes": 2688,
+      "sha256": "47818553ce0ff10f7dad56bf06f4266df681eeefbe05f363e93c5e1c6c2e83ad"
+    },
+    {
+      "path": "perf-spatial-unity-native-editmode-high-speed-1024.txt",
+      "bytes": 2736,
+      "sha256": "964185c51166b1b00007e86d37aa40aa583cfb925e44792fca997904cecbb88c"
+    },
+    {
+      "path": "perf-spatial-unity-native-editmode-mixed-1024.txt",
+      "bytes": 2708,
+      "sha256": "81100b21ea08bbaac6ca3d84dc4f9caa5bceedc86a277a0fdc327168d4d9c887"
+    },
+    {
+      "path": "perf-spatial-unity-native-editmode-sparse-huge-320.txt",
+      "bytes": 2693,
+      "sha256": "56bb483399b4656a06b59f6e7fdfdfdff02598f2003320780b7bbcecf3c8d534"
+    },
+    {
+      "path": "perf-spatial-unity-native-editmode-uniform-1024.txt",
+      "bytes": 2709,
+      "sha256": "607b522582deec27c816c312c7bef47d4d13649fb2975e1eb105fcff49b4bf1b"
+    },
+    {
+      "path": "perf-spatial-unity-native-editmode-uniform-4096.txt",
+      "bytes": 2722,
+      "sha256": "a465edf8ac2d3beb896937938550ff5debd0bbe8805c4da2c2a0d7b8d71f0202"
+    }
+  ]
+}

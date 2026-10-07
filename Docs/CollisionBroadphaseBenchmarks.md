@@ -2,7 +2,7 @@
 
 ## Decision and scope
 
-Keep the production `SpatialGrid.Query` traversal and its strict circle-overlap policy. Its ordinary cell visitation order and entry-overlap predicate are unchanged; query bounds now match the builder at reciprocal-rounded upper edges. The bounded quadtree is a **test-only comparator**, not a new default or a global collision-backend abstraction. `QueryPruned` is an explicit experimental alternative; no gameplay caller enables it. Initial managed measurements reject enabling that pruning globally. Native measurements must be collected on the exact integrated revision before making a native-performance claim.
+Keep the production `SpatialGrid.Query` traversal and its strict circle-overlap policy. Its ordinary cell visitation order and entry-overlap predicate are unchanged; query bounds now match the builder at reciprocal-rounded upper edges. The bounded quadtree is a **test-only comparator**, not a new default or a global collision-backend abstraction. `QueryPruned` is an explicit experimental alternative; no gameplay caller enables it. Initial managed measurements reject enabling that pruning globally. Native measurements on exact `4af9b87` now support retaining that default; see the native section below. They remain desktop microbenchmarks, not mobile or complete-game speed claims.
 
 Confirmed correctness/accounting fixes are independent of that decision:
 
@@ -116,3 +116,35 @@ Run the same fixtures in native Unity EditMode with Burst enabled, inspect the a
 - [Samet, Sankaranarayanan and Auerbach, SIGMOD 2013](https://dl.acm.org/doi/10.1145/2463676.2465332) studies loose-quadtree motion updates. This test-only rebuilt bucket tree does not claim those incremental-update benefits.
 - [Box2D dynamic-tree documentation](https://box2d.org/documentation/group__tree.html) distinguishes node and leaf visits; its dynamic AABB tree is not a quadtree.
 - [Unity Burst type support](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/csharp-type-support.html) motivates native flat arrays and value-type visitors. The repository pins Burst 1.8.27; docs for the 1.8 line can track newer patch releases.
+
+## Exact native evidence: 4af9b87
+
+[Unity run 37574715913](https://github.com/karosLi/SPGameFoundation/actions/runs/37574715913), Unity 2022.3.62f2 / Apple M5 Pro, source tree `c0173dec0f2cbda34c5734b496d0915f5bd38d1e`. [All 30 unmodified spatial/AI source reports and hashes](Benchmarks/Native-4af9b87/source.json) are retained. The full run has two unrelated test-only separation precision failures; it is not globally green. All 13 primary spatial and six sensitivity fixtures pass.
+
+Total scheduled rebuild + query + Complete, **p50 / p95 milliseconds**, six warmups and 24 rotated samples:
+
+| Distribution | Entries / queries | Grid | Pruned grid | Two-layer grid | Bounded quadtree |
+|---|---:|---:|---:|---:|---:|
+| uniform | 1024 / 4096 | 0.9299 / 1.0130 | 1.1414 / 1.1886 | 0.8788 / 1.0269 | 1.0303 / 1.0660 |
+| uniform | 4096 / 4096 | 1.8914 / 1.9641 | 2.0480 / 2.0960 | 1.8602 / 1.9199 | 2.4738 / 2.5209 |
+| clustered | 1024 / 4096 | 1.0990 / 1.1376 | 1.1870 / 1.2580 | 1.0547 / 1.1792 | 1.1096 / 1.1860 |
+| mixed | 1024 / 4096 | 1.8274 / 1.8592 | 2.3305 / 2.3855 | 1.2870 / 1.3232 | 1.1779 / 1.2124 |
+| high-speed | 1024 / 4096 | 11.6856 / 11.9413 | 13.3584 / 13.6985 | 8.3592 / 8.5844 | 8.5829 / 8.7373 |
+| sparse-huge | 320 / 1280 | 0.0659 / 0.0955 | 0.0915 / 0.1131 | 0.0664 / 0.0753 | 0.0610 / 0.1006 |
+| dense | 1024 / 128 | 0.1694 / 0.1723 | 0.1695 / 0.1739 | 0.1685 / 0.1698 | 0.2366 / 0.2424 |
+| belt-spread | 32 / 128 | 0.0080 / 0.0120 | 0.0085 / 0.0124 | 0.0088 / 0.0140 | 0.0085 / 0.0118 |
+| belt-spread | 64 / 256 | 0.0111 / 0.0123 | 0.0126 / 0.0185 | 0.0109 / 0.0166 | 0.0133 / 0.0167 |
+| belt-spread | 128 / 512 | 0.0218 / 0.0247 | 0.0249 / 0.0325 | 0.0211 / 0.0264 | 0.0281 / 0.0474 |
+| belt-clustered | 32 / 128 | 0.0118 / 0.0134 | 0.0119 / 0.0137 | 0.0116 / 0.0130 | 0.0107 / 0.0122 |
+| belt-clustered | 64 / 256 | 0.0297 / 0.0333 | 0.0303 / 0.0330 | 0.0290 / 0.0310 | 0.0299 / 0.0311 |
+| belt-clustered | 128 / 512 | 0.0907 / 0.0943 | 0.0919 / 0.0933 | 0.0907 / 0.0930 | 0.0977 / 0.1003 |
+
+
+
+Keep the existing grid defaults. The test-only quadtree wins this mixed-size fixture by 35.5% at median against single grid, but loses uniform 4096 by 30.8%; the already-existing second layer is close in mixed sizes and ahead of the tree in high-speed queries. Sparse-huge gives a small tree median improvement but worse p95. Belt gains are mixed at very small absolute times. No blanket backend migration is justified, especially where visitor order, first-eight neighbors or float accumulation is part of compatibility.
+
+The pruned grid is slower at median in **all 13** primary cases, despite fewer examined entries. High-speed two-layer examines *more* entries than single grid (1,861,091 versus 1,561,479), but visits far fewer cells (608,380 versus 1,554,921), with identical 901,985 visitors and 22,843 exact hits. Raw candidate count alone is not the objective.
+
+Every primary query sentinel and tree-build sentinel is 1. Grid build remains explicitly not independently instrumented. Warmed windows report zero current-thread AllocationSamples and process Gen0 collections, with retained/empty controls 32/0 before and after. These statements do not cover all-thread/native/driver memory. Separate build/query measurements each include their own scheduling/Complete overhead and must not be summed as the pipelined total.
+
+The separate 512-entry sensitivity matrix has 16 samples, so its reported p95 is the maximum observation. Uniform, mixed and sparse topologies reach the same depth 3–4 across several caps; tiny cap-dependent timing changes are not evidence of a useful deeper tree. Preserve every configuration, rather than choosing the minimum after looking at the data. Complete-game, incremental Snake and physical Android/iOS measurements remain separate gates.

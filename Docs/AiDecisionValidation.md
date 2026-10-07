@@ -7,7 +7,7 @@
 - .NET harness 使用真实 Mathematics、Unity API/Job 桩，不能证明 native Burst、图形或移动设备性能。
 - 最终代码的 76 个程序集在 .NET harness 构建通过，0 warnings / 0 errors；完整运行 895 个发现用例，893 passed、0 failed、2 个原有显式工具用例未执行（Sling SearchShots、Snake ExportFrames）。原生 graphics PlayMode 用例不由桩环境执行，不能包含在通过数量里。
 - 其中 RPG 完整套件 63/63、Brawler 90/90；core 的新增决策/快照用例包含在完整套件中。求值校准窗口为 0 current-thread ManagedBytes，前后 positive/empty 各为 33536/0。原生 Unity 仍须重新验证其实际 GC.Alloc sample 单位。
-- 原生 Unity/Mac 精确最终提交验证尚待集中运行。之前的绿色 CI 不覆盖本轮。
+- 原始工作树阶段的原生验证当时尚未运行；下方新增精确集成提交 `4af9b87` 的实测结果。此前绿色 CI 不覆盖后续修复。
 - 自有云机工具链安装已恢复，但现有记录显示 Unity 登录/许可证阻塞；没有为本轮读取凭据或尝试改变登录/设备设置。
 
 ## 正确性门槛
@@ -57,3 +57,28 @@
 2. `Tools/ci/local-unity-tests.sh`：由已授权且可用的原生 Unity 环境运行，保留 EditMode、graphics PlayMode 与 Burst backend 实际结果。不要从本地 .NET 数字推断 native 结果。
 3. 检查原生的 `ScheduledBurstMatchesSynchronousAndChecksActualBackend`、`ScheduledPermutationsHaveIdenticalAcceptedRequestsAndOverflow` 与 belt candidate probe，不能将 managed fallback 标记为 Burst。
 4. 原生 A/B 若显示不利成本，保留原始样本并评估是否值得采用解释器；不能只发布“AI 已优化”。并行 separation 候选仍未进入生产，需原生且完整 Tick 的新增证据才有采用理由。
+
+## 原生集成结果：4af9b87
+
+[原生运行 37574715913](https://github.com/karosLi/SPGameFoundation/actions/runs/37574715913)，Unity 2022.3.62f2 / Apple M5 Pro，精确 tree `c0173dec0f2cbda34c5734b496d0915f5bd38d1e`。[原始报告与逐文件哈希](Benchmarks/Native-4af9b87/source.json)。完整 EditMode 为 1,012 passed / 2 failed / 5 skipped，graphics PlayMode 为 148 passed / 1 explicit diagnostic skip。下列通过项不掩盖 dense separation candidate 的两项失败。
+
+65,536 次变化选择、12 个交错样本、含 Schedule/Complete：直接策略 mean / p50 / p95 为 **0.11871 / 0.11920 / 0.12160 ms**；树为 **0.50258 / 0.49990 / 0.52560 ms**。树中位成本约为直接分支的 **4.19 倍**，因此继续保持直接策略默认。独立 LOS/距离/感知为 1.30186 / 1.26860 / 1.47260 ms，不能从完整 Tick 随意减去。样本数 12 时这里 p95 等于最大样本。全局 Burst 已实证，KernelJob 请求同步 Burst 编译，但此定时报告没有逐 kernel sentinel，不能把全局开关写成每个 kernel 的独立后端测量。
+
+完整 Tick ABBA：90 tick 预热，各自从同一演化后快照恢复，4×120 tick 窗口；每侧 240 个计时 tick，输入与决策频率相同。8 个场景的完整窗口快照均逐字节一致。下表单位 ms：
+
+| Game / population / clustered | Direct p50 / p95 | Tree p50 / p95 | Direct worst / Tree worst |
+|---|---:|---:|---:|
+| RPG / 256 / False | 0.13460 / 0.16810 | 0.13870 / 0.17160 | 0.28360 / 0.54730 |
+| RPG / 256 / True | 0.14450 / 0.17550 | 0.14490 / 0.17110 | 0.23540 / 0.22400 |
+| RPG / 32 / False | 0.04850 / 0.08920 | 0.04870 / 0.08230 | 0.11840 / 0.14460 |
+| RPG / 32 / True | 0.04860 / 0.09140 | 0.04780 / 0.09740 | 0.58820 / 0.11800 |
+| Belt / 128 / False | 0.43590 / 0.48970 | 0.45280 / 0.50860 | 0.51260 / 0.52520 |
+| Belt / 128 / True | 0.55950 / 1.79360 | 0.57140 / 1.78400 | 4.55780 / 4.55470 |
+| Belt / 32 / False | 0.09390 / 0.11100 | 0.09840 / 0.11520 | 0.11830 / 0.13520 |
+| Belt / 32 / True | 0.12330 / 0.17540 | 0.12760 / 0.17690 | 0.34660 / 0.35390 |
+
+
+
+Belt 树的 p50 在四个场景中慢 2.13–4.79%；RPG 中位数变化为 -1.65% 到 +3.05%，尾部结果混合。不能把单个 outlier 的变化宣传为稳定收益。RPG 包含原感知、导航、碰撞、动作、生命周期和已完成 jobs；Belt 包含原 ordered 逻辑、网格、分离、命中、掉落、同步。两者都不包含渲染、GPU 或设备发热/电量。
+
+**独立 separation 候选仍不得启用。** spread 32 / 128 的 ordered p50 为 .05644 / .19818 ms，scheduled+Complete 为 .01434 / .01322 ms，但两个 dense 用例在精确浮点比较处失败，因而没有对应 timing 报告。这个候选比较还混合了主线程与原生编译/调度因素，排除了 build/copyback/其余 Tick。后续 source `5193305` 显式请求 Strict/High 精度，保留原精确相等断言和密集场景；本地通过不能替代新的原生结果，也尚不能确定具体指令根因。只有先修复精确语义，再做完整 Tick A/B，才有采用依据。

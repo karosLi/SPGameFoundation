@@ -8,6 +8,7 @@ namespace SPF.Presentation.Animation
     public struct FootPlantState
     {
         public float Phase;
+        public float AirSeconds;
         public float2 Position, Plant, SwingStart, SwingEnd, PreviousRoot;
         public bool Initialized;
         public bool InStance => Phase < NaturalMotion.Stance;

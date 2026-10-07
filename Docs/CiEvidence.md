@@ -95,6 +95,69 @@ silently inventing frames. Encode user-facing clips at 1x actual acquisition PTS
 by relabeling the sequence as a fixed 30/60 Hz video. The requested 30 Hz capture target
 is not a claim that the observed acquisition cadence achieved it.
 
+## Reproducible 1x review video
+
+After restoring and verifying the complete evidence archive, encode a finished,
+immutable capture directory with the repository helper. Python uses only its standard
+library; `ffmpeg` (with `libx264`) and `ffprobe` must be on PATH. Encoding is offline,
+after acquisition; the helper does not run Unity or alter gameplay/capture settings.
+
+```sh
+python3 Tools/ci/encode_capture.py \
+  restored-evidence/Artifacts/Screenshots/WeaponMotion/grounded-belt-live-gpu \
+  review/grounded-belt-live-gpu.mp4
+python3 -m unittest discover -s Tools/ci -p 'test_*.py'
+```
+
+Choose a new `.mp4` path outside the capture directory. Both that path and its sibling
+`.json` report must be absent, including dangling symlinks. Temporary concat/video
+files are kept outside source evidence and removed after success or failure; the
+original `acquisition.ffconcat` and any historical `encoding.ffconcat` are untouched.
+Verified outputs are published using exclusive same-filesystem hard links, so the
+output filesystem must support hard links. Existing files are never overwritten.
+
+The importable `encode_capture.py` helper:
+
+- Treats `capture.json`'s `.jpg`/`.png` declaration as authoritative, validates its
+  format/lossiness fields, and defaults historical missing metadata/extension to PNG.
+  It never uses stale PNG siblings to fill holes in a declared JPEG sequence. Other
+  extensions are ignored; missing/extra declared-extension frames, mismatched file
+  signatures, symlink frames, or disagreement with a declared frame count fail.
+- Requires at least two sequential CSV rows and finite, nonnegative, strictly
+  increasing acquisition timestamps. Simulation-clock annotations do not set PTS.
+  Invalid timestamps, int64 microsecond overflow, or intervals that collapse at
+  microsecond precision fail rather than being silently clamped or dropped.
+- Subtracts the first acquisition timestamp and rounds each **cumulative** offset
+  to a microsecond before deriving concat durations, avoiding interval-rounding drift.
+  It adds exactly one repeated last image, whose PTS retains the final measured
+  interval rounded to a microsecond. `ffprobe` must confirm all source frames plus
+  that one hold and every planned PTS, including the final hold, before publication.
+- Uses H.264/libx264 CRF 18, `yuv420p`, variable frame rate and a 1,000,000 Hz MP4
+  track timebase. The nominal x264 `fps=30/1` hint does not resample acquisition PTS;
+  there is no output `-r`, frame interpolation, scaling, or dropped source frame.
+  Current bounded, even-dimension captures are the intended input. Corrupt images,
+  unsupported dimensions/codecs or incompatible FFmpeg options fail explicitly.
+- Writes source filenames/SHA-256 hashes, video SHA-256, acquisition cadence,
+  measured timestamp error, measured/encoded final hold, and original capture
+  metadata into the JSON report. It discloses source JPEG lossiness/quality/alpha
+  separately from the **lossy, alpha-discarding MP4**, even for lossless PNG input.
+  Keep the original PNG/raw evidence for pixel assertions. This helper does not
+  establish native capture provenance or substitute for archive-manifest verification.
+
+Local verification of this tooling change: all 30 Python CI-tooling tests pass
+(15 encoder tests and 15 archive tests). The encoder tests use mocked subprocesses,
+so they require no FFmpeg installation. Separate real FFmpeg/ffprobe 7.1.5 smoke runs
+encoded historical PNG and a JPEG-format fixture with stale PNG siblings: each kept
+3 source frames plus one final hold, with a maximum timestamp error of 0.000416 ms.
+A complete historical 160-frame PNG sequence retained all 160 frames plus one hold
+with maximum error 0.000500 ms (the half-microsecond rounding bound). A four-color
+synthetic sequence also decoded in exact source order plus only the repeated final
+color, with 0.000333 ms maximum PTS error; source bytes and existing outputs remained
+unchanged. These are encoder checks, not native Unity JPEG
+execution, new gameplay visuals, or Android/iOS performance evidence. Unity-produced
+JPEG size/quality and the changed native fixture still await the next graphics run.
+Bit-identical MP4 bytes across FFmpeg/libx264 versions are not promised.
+
 ## Archive priority and verification
 
 Packaging now sorts the complete inventory globally before writing the ZIP:

@@ -12,6 +12,10 @@ namespace SPF.Runtime.Composition
         {
             settings.Validate();
             if (modules == null) throw new ArgumentNullException(nameof(modules));
+            // Legacy-only composition retains its declaration/rollback path. An optional provider
+            // opts this composition into a pure metadata pass before any DeclareData callback.
+            if (CompositionPreflight.HasProvider(modules))
+                CompositionPreflight.Validate(modules, settings).ThrowIfInvalid();
             var layout = new WorldLayout { DestroyQueueCapacity = settings.DestroyQueueCapacity };
             try
             {

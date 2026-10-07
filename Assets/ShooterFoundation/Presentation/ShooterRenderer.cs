@@ -1,3 +1,4 @@
+using SPF.Presentation.ArtDirection;
 using System;
 using SPF.Presentation;
 using SPF.Presentation.Sprites;
@@ -30,6 +31,7 @@ namespace ShooterFoundation.Presentation
         public int ActiveEffects => m_Fx.Active;
         public VfxProfile ImpactProfile = VfxProfile.Impact, ShotProfile = VfxProfile.Muzzle, DeathProfile = VfxProfile.Destruction;
         public RenderTier Tier { get; private set; }
+        SanctuaryBackdrop m_Sanctuary;
         ShooterArt m_Art;
         SpriteBatch m_Back, m_Clouds, m_Shadows, m_Pickups, m_Actors, m_Beam, m_Bullets, m_Effects;
         int[] m_Order;
@@ -43,6 +45,7 @@ namespace ShooterFoundation.Presentation
             if (Host == null || Host.Session == null) return;
             var s = Host.Session.World.Resource(ShooterKeys.Rules).Settings;
             m_Art = ShooterArt.Build(); Tier = ForcedTier ?? RenderCapabilities.Detect();
+            m_Sanctuary=new SanctuaryBackdrop(Tier,SanctuaryScene.SkyRiver);
             m_Back = Batch(BlendKind.Opaque, 96, 0); m_Clouds = Batch(BlendKind.Translucent,24,0);
             m_Shadows = Batch(BlendKind.Translucent,130,1); m_Pickups = Batch(BlendKind.Translucent,s.PickupCapacity,2);
             m_Actors = Batch(BlendKind.Translucent,s.EnemyCapacity+4,3); m_Beam = Batch(BlendKind.Translucent,8,4);
@@ -98,6 +101,7 @@ namespace ShooterFoundation.Presentation
             m_Fx.Draw(m_Effects, m_Art.CombatFx.Resolve(m_Art.Sheet), Camera != null ? Camera.ViewRect : new float4(-s.ArenaHalf, s.ArenaHalf));
             var bounds=new Bounds(Vector3.zero,new Vector3(s.ArenaHalf.x*2f+10f,s.ArenaHalf.y*2f+10f,100f));
             SpritesDrawn=0; BytesUploaded=0;
+            if(m_Sanctuary.Ready){m_Sanctuary.Draw(Camera!=null?Camera.ViewRect:new float4(-s.ArenaHalf,s.ArenaHalf),bounds,r.Time);SpritesDrawn+=m_Sanctuary.SpritesDrawn;BytesUploaded+=m_Sanctuary.BytesUploaded;}
             Draw(m_Back,bounds); Draw(m_Clouds,bounds); Draw(m_Shadows,bounds); Draw(m_Pickups,bounds); Draw(m_Actors,bounds); Draw(m_Beam,bounds); Draw(m_Bullets,bounds); Draw(m_Effects,bounds);
         }
         bool After(int a,int b,Unity.Collections.NativeArray<float2> p,Unity.Collections.NativeArray<ShooterEnemy> info) => p[a].y < p[b].y || p[a].y==p[b].y && info[a].Id>info[b].Id;
@@ -108,6 +112,7 @@ namespace ShooterFoundation.Presentation
         void Swap(int a,int b) { int x=m_Order[a]; m_Order[a]=m_Order[b]; m_Order[b]=x; }
         void Background(float2 half,float time)
         {
+            if(m_Sanctuary.Ready)return;
             AddRect(m_Back,float2.zero,half*2f+new float2(0.6f,3f),new float4(0.06f,0.14f,0.24f,1f),10f);
             for (int i=0;i<12;i++)
             {
@@ -148,6 +153,6 @@ namespace ShooterFoundation.Presentation
             }
             events.Clear();
         }
-        void OnDestroy() { m_Back?.Dispose();m_Clouds?.Dispose();m_Shadows?.Dispose();m_Pickups?.Dispose();m_Actors?.Dispose();m_Beam?.Dispose();m_Bullets?.Dispose();m_Effects?.Dispose();m_Art?.Dispose(); }
+        void OnDestroy() { m_Sanctuary?.Dispose(); m_Back?.Dispose();m_Clouds?.Dispose();m_Shadows?.Dispose();m_Pickups?.Dispose();m_Actors?.Dispose();m_Beam?.Dispose();m_Bullets?.Dispose();m_Effects?.Dispose();m_Art?.Dispose(); }
     }
 }

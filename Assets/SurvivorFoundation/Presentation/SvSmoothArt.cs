@@ -62,8 +62,8 @@ namespace SurvivorFoundation.Presentation
                     p.Rim = Paper;
                     p.Line(24, 10, 25, 21 + bob, 7, C(43, 68, 82));
                     p.Line(39, 10, 36, 22 + bob, 7, C(43, 68, 82));
-                    p.Oval(31, 27 + bob, 12, 14, C(77, 156, 178));
-                    p.Oval(31, 45 + bob, 14, 13, C(97, 204, 221));
+                    p.Oval(31, 27 + bob, 12, 14, C(224, 217, 190));
+                    p.Oval(31, 45 + bob, 14, 13, C(239, 230, 201));
                     p.Oval(31, 43 + bob, 9, 8, C(249, 225, 182));
                     p.Oval(27, 45 + bob, 1.5f, 2.2f, Ink, false);
                     p.Oval(35, 45 + bob, 1.5f, 2.2f, Ink, false);
@@ -87,7 +87,7 @@ namespace SurvivorFoundation.Presentation
             for (int k = 0; k < enemyKinds; k++)
             {
                 int first = -1, shape = k % 4;
-                Color32 family = shape == 0 ? C(152,175,111) : shape == 1 ? C(106,159,164) : shape == 2 ? C(182,137,90) : C(150,120,174);
+                Color32 family = shape == 0 ? C(199,109,94) : shape == 1 ? C(169,87,103) : shape == 2 ? C(192,139,87) : C(137,87,123);
                 Color32 tint = (Color32)Color.Lerp(enemyColor(k), (Color)family, 0.78f);
                 for (int f = 0; f < 2; f++)
                 {
@@ -120,16 +120,22 @@ namespace SurvivorFoundation.Presentation
             }
             art.Beacon = Add(atlas, 80, 96, p =>
             {
-                p.Line(16, 12, 64, 12, 14, C(117, 126, 118));
-                p.Line(21, 24, 59, 24, 14, C(161, 170, 150));
-                p.Line(20, 27, 19, 69, 12, C(132, 145, 134));
-                p.Line(60, 27, 61, 69, 12, C(132, 145, 134));
-                p.Line(14, 72, 26, 72, 9, C(184, 194, 168));
-                p.Line(54, 72, 66, 72, 9, C(184, 194, 168));
-                p.Oval(40, 53, 12, 27, C(135, 213, 131));
-                p.Oval(40, 55, 6, 18, C(219, 254, 154));
+                p.Line(16, 12, 64, 12, 14, C(117, 115, 94));
+                p.Line(21, 24, 59, 24, 14, C(196, 191, 164));
+                p.Line(20, 27, 19, 69, 12, C(185, 179, 150));
+                p.Line(60, 27, 61, 69, 12, C(185, 179, 150));
+                p.Line(14, 72, 26, 72, 9, C(220, 207, 166));
+                p.Line(54, 72, 66, 72, 9, C(220, 207, 166));
+                p.Oval(40, 53, 12, 27, C(72, 175, 160));
+                p.Oval(40, 55, 6, 18, C(163, 241, 217));
                 p.Line(35, 35, 45, 71, 3, C(245, 255, 207), false);
-                p.Line(13, 14, 30, 14, 2, C(206, 214, 188), false);
+                p.Line(13, 14, 30, 14, 2, C(241, 231, 194), false);
+                p.Line(18, 36, 19, 65, 2, C(232, 217, 164), false);
+                p.Line(57, 30, 59, 64, 3, C(114, 119, 100), false);
+                p.Line(14, 72, 26, 72, 3, C(179, 139, 71), false);
+                p.Line(54, 72, 66, 72, 3, C(179, 139, 71), false);
+                p.Canvas.Ring(40*Super,54*Super,21*Super,23*Super,C(191,153,83));
+                p.Line(40, 83, 40, 91, 3, C(235, 214, 153), false);
             });
             art.Ground = Add(atlas, 64, 64, p =>
             {

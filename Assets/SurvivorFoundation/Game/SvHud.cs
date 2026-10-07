@@ -65,22 +65,30 @@ namespace SurvivorFoundation.Game
 
             HudPanel = UIFactory.Panel(root, "HudPanel", Color.clear, Vector2.zero, Vector2.one);
             // Keep telemetry legible against dense smooth-art crowds; passive background never captures input.
-            if (guard && !mobile) UIFactory.Panel(HudPanel, "StatsBackdrop", new Color(0.035f, 0.065f, 0.07f, 0.94f),
+            if (guard && !mobile) UIFactory.Card(HudPanel, "StatsBackdrop", SanctuaryUiTheme.Ink,
                 new Vector2(0f, 0.86f), Vector2.one, raycast: false);
             if (mobile)
             {
-                var telemetry = UIFactory.Panel(HudPanel, "MobileStatsBackdrop", new Color(.025f, .065f, .065f, .88f),
-                    new Vector2(.01f, .925f), new Vector2(.72f, .925f), raycast: false);
-                telemetry.offsetMin = new Vector2(-4f, -132f);
-                telemetry.offsetMax = new Vector2(6f, 4f);
+                var telemetry = UIFactory.Card(HudPanel, "MobileStatsBackdrop", SanctuaryUiTheme.Ink,
+                    new Vector2(.015f, .972f), new Vector2(.75f, .972f), raycast: false);
+                telemetry.offsetMin = new Vector2(0f, -204f);
+                telemetry.offsetMax = Vector2.zero;
             }
-            XpFill = UIFactory.Bar(HudPanel, "XpBar", new Color(0f, 0f, 0f, 0.6f), new Color(0.35f, 0.75f, 1f, 0.95f), new Vector2(0f, 0.975f), new Vector2(1f, 1f));
-            HealthFill = UIFactory.Bar(HudPanel, "HealthBar", new Color(0f, 0f, 0f, 0.55f), new Color(0.9f, 0.25f, 0.25f, 0.95f), new Vector2(0.02f, 0.93f), new Vector2(0.3f, 0.96f));
-            BeaconFill = UIFactory.Bar(HudPanel, "BeaconBar", new Color(0f, 0f, 0f, 0.65f), new Color(0.58f, 0.86f, 0.35f, 1f), new Vector2(0.52f, 0.93f), new Vector2(0.8f, 0.96f));
+            XpFill = UIFactory.Bar(HudPanel, "XpBar", SanctuaryUiTheme.Ink, SanctuaryUiTheme.Spirit, new Vector2(0f, mobile ? .992f : .975f), new Vector2(1f, 1f));
+            HealthFill = UIFactory.Bar(HudPanel, "HealthBar", SanctuaryUiTheme.Surface, SanctuaryUiTheme.Coral, new Vector2(mobile ? .035f : .02f, mobile ? .943f : .93f), new Vector2(mobile ? .32f : .3f, mobile ? .955f : .96f));
+            BeaconFill = UIFactory.Bar(HudPanel, "BeaconBar", SanctuaryUiTheme.Surface, SanctuaryUiTheme.Spirit, new Vector2(mobile ? .38f : .52f, mobile ? .943f : .93f), new Vector2(mobile ? .72f : .8f, mobile ? .955f : .96f));
             BeaconFill.transform.parent.gameObject.SetActive(guard);
-            HudMenuButton = UIFactory.Button(HudPanel, "MenuButton", "MENU", new Vector2(-72, -78), new Vector2(135, 70), new Color(0.2f, 0.27f, 0.25f, 0.9f), new Vector2(1f, 1f), 24);
+            if (mobile)
+            {
+                var vitality = UIFactory.Label(HudPanel, "HealthLabel", "VITALITY", 13, TextAnchor.MiddleLeft, new Vector2(.035f, .955f), new Vector2(.32f, .976f));
+                vitality.rectTransform.offsetMin = vitality.rectTransform.offsetMax = Vector2.zero; vitality.color = SanctuaryUiTheme.Muted;
+                var sanctuary = UIFactory.Label(HudPanel, "BeaconLabel", "SANCTUARY", 13, TextAnchor.MiddleLeft, new Vector2(.38f, .955f), new Vector2(.72f, .976f));
+                sanctuary.rectTransform.offsetMin = sanctuary.rectTransform.offsetMax = Vector2.zero; sanctuary.color = SanctuaryUiTheme.Muted;
+                sanctuary.gameObject.SetActive(guard);
+            }
+            HudMenuButton = UIFactory.Button(HudPanel, "MenuButton", "MENU", new Vector2(-72, mobile ? -65 : -78), new Vector2(124, mobile ? 56 : 70), SanctuaryUiTheme.Surface, new Vector2(1f, 1f), mobile ? 19 : 24);
             HudMenuButton.onClick.AddListener(() => m_Game.BackToMenu());
-            StatsText = BufferText.Create(HudPanel, "StatsText", 30, TextAnchor.UpperLeft, new Vector2(0.01f, 0.75f), new Vector2(0.6f, 0.925f));
+            StatsText = BufferText.Create(HudPanel, "StatsText", mobile ? 22 : 30, TextAnchor.UpperLeft, new Vector2(0.015f, 0.75f), new Vector2(mobile ? .74f : .6f, 0.93f));
             if (mobile) Joystick = MobileHud.Joystick;
             else
             {
@@ -90,32 +98,33 @@ namespace SurvivorFoundation.Game
 
             }
 
-            LevelUpPanel = UIFactory.Panel(root, "LevelUpPanel", new Color(0f, 0f, 0.05f, 0.75f), Vector2.zero, Vector2.one);
-            UIFactory.Label(LevelUpPanel, "Title", "LEVEL UP", 100, TextAnchor.MiddleCenter, new Vector2(0f, 0.7f), new Vector2(1f, 0.9f));
+            LevelUpPanel = UIFactory.Panel(root, "LevelUpPanel", SanctuaryUiTheme.Ink, Vector2.zero, Vector2.one);
+            UIFactory.Label(LevelUpPanel, "Title", "LEVEL UP", mobile ? 58 : 100, TextAnchor.MiddleCenter, new Vector2(0f, 0.7f), new Vector2(1f, 0.9f)).color = SanctuaryUiTheme.Ivory;
+            UIFactory.Label(LevelUpPanel, "UpgradeHint", "CHOOSE ONE TO CONTINUE", mobile ? 18 : 24, TextAnchor.MiddleCenter, new Vector2(.1f, .68f), new Vector2(.9f, .74f)).color = SanctuaryUiTheme.Muted;
             ChoiceButtons = new Button[SvGameState.ChoiceCount];
             m_ChoiceLabels = new Text[SvGameState.ChoiceCount];
             for (int i = 0; i < ChoiceButtons.Length; i++)
             {
                 int choice = i;
-                ChoiceButtons[i] = UIFactory.Button(LevelUpPanel, "Choice" + i, "", new Vector2(0, 180 - i * 170), new Vector2(620, 140), new Color(0.3f, 0.45f, 0.75f, 0.95f), new Vector2(0.5f, 0.5f), 36);
+                ChoiceButtons[i] = UIFactory.Button(LevelUpPanel, "Choice" + i, "", new Vector2(0, 180 - i * 170), new Vector2(620, 140), SanctuaryUiTheme.Spirit, new Vector2(0.5f, 0.5f), mobile ? 30 : 36);
                 ChoiceButtons[i].onClick.AddListener(() => m_Game.Choose(choice));
                 m_ChoiceLabels[i] = ChoiceButtons[i].GetComponentInChildren<Text>();
             }
 
-            DeadPanel = UIFactory.Panel(root, "DeadPanel", new Color(0.15f, 0f, 0f, 0.7f), Vector2.zero, Vector2.one);
+            DeadPanel = UIFactory.Panel(root, "DeadPanel", SanctuaryUiTheme.Ink, Vector2.zero, Vector2.one);
             DeadText = UIFactory.Label(DeadPanel, "DeadText", "", 60, TextAnchor.MiddleCenter, new Vector2(0f, 0.55f), new Vector2(1f, 0.85f));
-            RestartButton = UIFactory.Button(DeadPanel, "RestartButton", "AGAIN", new Vector2(0, -60), new Vector2(460, 130), new Color(0.75f, 0.35f, 0.3f, 0.95f), new Vector2(0.5f, 0.5f));
+            RestartButton = UIFactory.Button(DeadPanel, "RestartButton", "AGAIN", new Vector2(0, -60), new Vector2(460, 130), SanctuaryUiTheme.Spirit, new Vector2(0.5f, 0.5f));
             RestartButton.onClick.AddListener(() => m_Game.StartRun());
 
-            MenuButton = UIFactory.Button(DeadPanel, "MenuButton", "MENU", new Vector2(0, -215), new Vector2(460, 100), new Color(0.28f, 0.4f, 0.35f, 0.95f), new Vector2(0.5f, 0.5f), 32);
+            MenuButton = UIFactory.Button(DeadPanel, "MenuButton", "MENU", new Vector2(0, -215), new Vector2(460, 100), SanctuaryUiTheme.Surface, new Vector2(0.5f, 0.5f), 32);
             MenuButton.onClick.AddListener(() => m_Game.BackToMenu());
 
-            MenuPanel = UIFactory.Panel(root, "MenuPanel", new Color(0f, 0f, 0f, 0.55f), Vector2.zero, Vector2.one);
+            MenuPanel = UIFactory.Panel(root, "MenuPanel", new Color(.035f, .095f, .105f, .89f), Vector2.zero, Vector2.one);
             UIFactory.Label(MenuPanel, "Title", game.Session.World.HasResource(SvWeapons.Key) ? "WEAPON HORDE" : swords ? "FLYING SWORDS" : guard ? "BEACON GUARD" : "SURVIVE", mobile ? 64 : guard ? 85 : 140, TextAnchor.MiddleCenter, new Vector2(0f, 0.6f), new Vector2(1f, 0.85f));
             if (game.Session.World.HasResource(SvWeapons.Key)) UIFactory.Label(MenuPanel, "WeaponInstructions", "Auto-attack nearby enemies. Hold ATTACK to strike.\nSWITCH / Q cycles BLADE, SWORD, STAFF and BOW.\nPULSE / J and BLINK / K remain available.", 23, TextAnchor.MiddleCenter, new Vector2(.05f,.18f), new Vector2(.95f,.38f));
             if (guard && !game.Session.World.HasResource(SvWeapons.Key)) UIFactory.Label(MenuPanel, "Instructions", mobile ? "Move with the left stick. Tap PULSE to clear space.\nDrag BLINK to aim, release to jump.\nDrag far away to cancel. Protect the beacon." : "ORIGINAL EXAMPLE\nHold the beacon until waves end, then clear the horde.\nMove to intercept. Two electric bands damage on fixed ticks.", mobile ? 23 : 26, TextAnchor.MiddleCenter, new Vector2(0.07f, 0.2f), new Vector2(0.93f, 0.42f));
             if (swords) UIFactory.Label(MenuPanel, "Instructions", "Move to guide your orbiting sword swarm.\nSwords seek, pierce and return. Collect gems to grow.\nPULSE clears space. Drag BLINK to escape.\nSurvive the waves, then clear the horde.", 24, TextAnchor.MiddleCenter, new Vector2(.05f, .18f), new Vector2(.95f, .40f));
-            StartButton = UIFactory.Button(MenuPanel, "StartButton", "START", new Vector2(0, -20), new Vector2(460, 140), new Color(0.3f, 0.75f, 0.45f, 0.95f), new Vector2(0.5f, 0.5f));
+            StartButton = UIFactory.Button(MenuPanel, "StartButton", "START", new Vector2(0, -20), new Vector2(460, 140), SanctuaryUiTheme.Spirit, new Vector2(0.5f, 0.5f));
             StartButton.onClick.AddListener(() => m_Game.StartRun());
 
             foreach (var button in root.GetComponentsInChildren<Button>(true))

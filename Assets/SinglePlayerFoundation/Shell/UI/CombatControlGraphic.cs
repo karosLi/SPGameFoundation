@@ -35,14 +35,17 @@ namespace SPF.Shell.UI
         public int Glyph = -1;
         public float Fraction = 1f;
         public bool Disc;
+        public bool Enamel;
+        public bool Compass;
+        public float RingWidth = .075f;
         protected override void OnPopulateMesh(VertexHelper vh)
         {
             vh.Clear();
             var rect = GetPixelAdjustedRect();
             Vector2 center = rect.center;
             float r = Mathf.Min(rect.width, rect.height) * .47f;
-            if (Disc) { Circle(vh, center, r); return; }
-            if (Glyph < 0) { Ring(vh, center, r, r * .075f, Mathf.Clamp01(Fraction)); return; }
+            if (Disc) { if (Enamel) Medallion(vh, center, r); else Circle(vh, center, r); return; }
+            if (Glyph < 0) { Ring(vh, center, r, r * RingWidth, Mathf.Clamp01(Fraction)); return; }
             float q = r * .65f;
             if (Glyph == FistGlyph) // fist: knuckles and wrist
             {
@@ -128,11 +131,43 @@ namespace SPF.Shell.UI
         }
         void Vertex(VertexHelper vh, Vector2 p)
         { var v = UIVertex.simpleVert; v.position = new Vector3(p.x, p.y, 0); v.color = color; vh.AddVert(v); }
+        void Vertex(VertexHelper vh, Vector2 p, Color tint)
+        { var v = UIVertex.simpleVert; v.position = new Vector3(p.x, p.y, 0); v.color = tint; vh.AddVert(v); }
         void Quad(VertexHelper vh, Vector2 a, Vector2 b, Vector2 c, Vector2 d)
         { int n = vh.currentVertCount; Vertex(vh, a); Vertex(vh, b); Vertex(vh, c); Vertex(vh, d); vh.AddTriangle(n, n + 1, n + 2); vh.AddTriangle(n, n + 2, n + 3); }
         void Box(VertexHelper vh, Vector2 p, Vector2 size) => Quad(vh, p, p + new Vector2(size.x, 0), p + size, p + new Vector2(0, size.y));
         void Line(VertexHelper vh, Vector2 a, Vector2 b, float width)
         { var d = (b - a).normalized; var n = new Vector2(-d.y, d.x) * width * .5f; Quad(vh, a - n, b - n, b + n, a + n); }
+        void Medallion(VertexHelper vh, Vector2 c, float radius)
+        {
+            // Soft enamel shading and restrained metal engraving are part of the same retained mesh.
+            // The control remains one raycast target with the original rectangular touch bounds.
+            for (int i = 0; i < 48; i++)
+            {
+                float a = i * Mathf.PI * 2 / 48, b = (i + 1) * Mathf.PI * 2 / 48;
+                var d = new Vector2(Mathf.Cos(a), Mathf.Sin(a)); var e = new Vector2(Mathf.Cos(b), Mathf.Sin(b));
+                int n = vh.currentVertCount;
+                Vertex(vh, c, color);
+                Vertex(vh, c + d * radius, Shade(.83f + d.y * .10f));
+                Vertex(vh, c + e * radius, Shade(.83f + e.y * .10f));
+                vh.AddTriangle(n, n + 1, n + 2);
+                var bronze = SanctuaryUiTheme.Bronze; bronze.a = color.a * .75f;
+                TintQuad(vh, c + d * radius * .91f, c + e * radius * .91f,
+                    c + e * (radius * .91f - 1.0f), c + d * (radius * .91f - 1.0f), bronze);
+            }
+            for (int i = 0; i < 4; i++)
+            {
+                float a = i * Mathf.PI * .5f;
+                var d = new Vector2(Mathf.Cos(a), Mathf.Sin(a)); var n = new Vector2(-d.y, d.x);
+                var bronze = SanctuaryUiTheme.Bronze; bronze.a = color.a * .82f;
+                float r = radius * (Compass ? .72f : .93f), halfWidth = Compass ? 1.1f : 1.6f;
+                TintQuad(vh, c + d * r - n * halfWidth, c + d * (r + radius * .05f),
+                    c + d * r + n * halfWidth, c + d * (r - radius * .035f), bronze);
+            }
+        }
+        Color Shade(float value) => new Color(color.r * value, color.g * value, color.b * value, color.a);
+        void TintQuad(VertexHelper vh, Vector2 a, Vector2 b, Vector2 c, Vector2 d, Color tint)
+        { int n = vh.currentVertCount; Vertex(vh, a, tint); Vertex(vh, b, tint); Vertex(vh, c, tint); Vertex(vh, d, tint); vh.AddTriangle(n, n + 1, n + 2); vh.AddTriangle(n, n + 2, n + 3); }
         void Circle(VertexHelper vh, Vector2 c, float radius)
         {
             for (int i = 0; i < 40; i++)

@@ -288,7 +288,7 @@ namespace SPF.Shell.UI
             label.Font = SharedFont;
             label.m_FontSize = size;
             label.m_Alignment = anchor;
-            label.color = Color.white;
+            label.color = SanctuaryUiTheme.Ivory;
             label.raycastTarget = false;
             return label;
         }

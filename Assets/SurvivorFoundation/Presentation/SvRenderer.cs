@@ -1,3 +1,4 @@
+using SPF.Presentation.ArtDirection;
 using SPF.Presentation.Particles;
 using SPF.Contracts.Weapons;
 using SPF.L2.Weapons;
@@ -71,6 +72,7 @@ namespace SurvivorFoundation.Presentation
         public bool StableTranslucentActors => ArtStyle == SvArtStyle.SmoothOutline || NaturalCharacters;
         public void SetQualityLevel(int level) => QualityLevel = math.clamp(level, 0, 3);
 
+        SanctuaryBackdrop m_Sanctuary;
         RenderAssets m_Assets;
         SvArt m_Art;
         SpriteBatch m_Ground, m_Opaque, m_Additive, m_Effects, m_Shadows, m_Health;
@@ -101,6 +103,7 @@ namespace SurvivorFoundation.Presentation
 
         void Release()
         {
+            m_Sanctuary?.Dispose();m_Sanctuary=null;
             m_WeaponParticles?.Dispose();m_WeaponParticles=null;m_WeaponTick=-1;
             m_Characters?.Dispose(); m_Characters = null; ArticulatedEnemies = 0;
             if (m_NaturalMask.IsCreated) m_NaturalMask.Dispose();
@@ -129,6 +132,7 @@ namespace SurvivorFoundation.Presentation
             m_Assets = new RenderAssets(RenderCapabilities.Detect());
             m_Art = SvArt.Build(config.EnemyKinds, k => { var c = config.Enemies[k].Color; return new Color(c.x, c.y, c.z, 1f); }, NaturalCharacters ? SvArtStyle.SmoothOutline : ArtStyle);
             var tier = m_Assets.Tier;
+            if(StableTranslucentActors)m_Sanctuary=new SanctuaryBackdrop(tier,SanctuaryScene.Courtyard);
             if(NaturalCharacters&&world.HasResource(SvWeapons.Key))m_WeaponParticles=new WeaponParticlePresenter(tier, lowQuality: tier!=RenderTier.GpuDriven);
             if(m_WeaponParticles!=null)
             {
@@ -273,16 +277,17 @@ namespace SurvivorFoundation.Presentation
             if (StableTranslucentActors)
                 new SvSpriteOrder { Sprites = m_Opaque.Instances, Scratch = m_SortScratch, Count = m_Opaque.Count }.Run();
             HealthBarsDrawn = m_Health.Count / 3; ShadowsDrawn = m_Shadows.Count;
-            m_Ground.Draw(bounds);
+            if(m_Sanctuary!=null&&m_Sanctuary.Ready)m_Sanctuary.Draw(view,bounds);
+            else m_Ground.Draw(bounds);
             m_Shadows.Draw(bounds);
             m_Opaque.Draw(bounds);
             m_Characters?.Draw(bounds);
             m_Additive.Draw(bounds);
             m_Effects.Draw(bounds); m_Health.Draw(bounds);
             if(m_WeaponParticles!=null){UpdateWeaponParticles(world,game,alpha,effectView);m_WeaponParticles.EndFrame(bounds);}
-            SpritesDrawn = m_Ground.Count + m_Opaque.Count + m_Additive.Count + m_Effects.Count + m_Shadows.Count + m_Health.Count + (m_Characters?.PartsDrawn ?? 0);
+            SpritesDrawn = (m_Sanctuary!=null&&m_Sanctuary.Ready?m_Sanctuary.SpritesDrawn:m_Ground.Count) + m_Opaque.Count + m_Additive.Count + m_Effects.Count + m_Shadows.Count + m_Health.Count + (m_Characters?.PartsDrawn ?? 0);
             // API payload includes full data textures / indirect arguments, not just live packed sprites.
-            BytesUploaded = m_Ground.BytesUploaded + m_Opaque.BytesUploaded + m_Additive.BytesUploaded + m_Effects.BytesUploaded + m_Shadows.BytesUploaded + m_Health.BytesUploaded + (m_Characters?.BytesUploaded ?? 0);
+            BytesUploaded = (m_Sanctuary!=null&&m_Sanctuary.Ready?m_Sanctuary.BytesUploaded:m_Ground.BytesUploaded) + m_Opaque.BytesUploaded + m_Additive.BytesUploaded + m_Effects.BytesUploaded + m_Shadows.BytesUploaded + m_Health.BytesUploaded + (m_Characters?.BytesUploaded ?? 0);
         }
 
         void UpdateWeaponParticles(SimWorld world,SvGameState game,float alpha,float4 viewRect)
@@ -393,6 +398,7 @@ namespace SurvivorFoundation.Presentation
 
         void DrawGround(float4 view)
         {
+            if(m_Sanctuary!=null&&m_Sanctuary.Ready)return;
             var uv = m_Art.Sheet[m_Art.Ground].Uv;
             int2 min = (int2)math.floor(view.xy / GroundTile), max = (int2)math.floor(view.zw / GroundTile);
             for (int y = min.y; y <= max.y; y++)

@@ -28,7 +28,7 @@ namespace SPF.Shell.UI
         int m_PreviewWidth, m_PreviewHeight;
         Rect m_PreviewSafe;
         RectTransform m_Controls, m_StickRing, m_StickKnob;
-        CombatControlGraphic[] m_Rings, m_Icons;
+        CombatControlGraphic[] m_Rings, m_Icons, m_Backs;
         BufferText[] m_Status;
         Text[] m_Labels;
         Image[] m_AssetIcons;
@@ -62,29 +62,32 @@ namespace SPF.Shell.UI
             m_Controls = UIFactory.Panel(SafeRoot, "CombatControls", Color.clear, Vector2.zero, Vector2.one, false);
             var stickArea = UIFactory.Panel(m_Controls, "MoveTouchArea", new Color(0, 0, 0, .001f), Vector2.zero, new Vector2(.48f, .5f));
             Joystick = stickArea.gameObject.AddComponent<VirtualJoystick>();
-            var ring = Graphic(m_Controls, "JoystickRing", new Vector2(150, 165), new Vector2(180, 180), Vector2.zero, new Color(.72f, .86f, .88f, .7f));
+            var ring = Graphic(m_Controls, "JoystickRing", new Vector2(150, 165), new Vector2(180, 180), Vector2.zero, new Color(.67f, .54f, .33f, .55f));
+            ring.RingWidth = .018f;
             m_StickRing = ring.rectTransform;
-            var disc = Graphic(m_StickRing, "JoystickBase", Vector2.zero, new Vector2(170, 170), new Vector2(.5f, .5f), new Color(.035f, .075f, .10f, .42f));
-            disc.Disc = true;
-            var knob = Graphic(m_StickRing, "JoystickKnob", Vector2.zero, new Vector2(65, 65), new Vector2(.5f, .5f), new Color(.6f, .88f, .91f, .9f));
-            knob.Disc = true; m_StickKnob = knob.rectTransform;
+            var disc = Graphic(m_StickRing, "JoystickBase", Vector2.zero, new Vector2(170, 170), new Vector2(.5f, .5f), new Color(.055f, .13f, .14f, .55f));
+            disc.Disc = true; disc.Enamel = true; disc.Compass = true;
+            var knob = Graphic(m_StickRing, "JoystickKnob", Vector2.zero, new Vector2(65, 65), new Vector2(.5f, .5f), new Color(.83f, .85f, .72f, .92f));
+            knob.Disc = true; knob.Enamel = true; m_StickKnob = knob.rectTransform;
             Buttons = new SkillControl[source.SlotCount]; m_Rings = new CombatControlGraphic[Buttons.Length];
-            m_Icons = new CombatControlGraphic[Buttons.Length];
+            m_Icons = new CombatControlGraphic[Buttons.Length]; m_Backs = new CombatControlGraphic[Buttons.Length];
             m_Status = new BufferText[Buttons.Length]; m_Labels = new Text[Buttons.Length];
             m_AssetIcons = new Image[Buttons.Length]; m_BoundIcons = new int[Buttons.Length]; m_BoundSkills = new int[Buttons.Length];
             for (int i = 0; i < Buttons.Length; i++)
             {
-                var back = Graphic(m_Controls, "Skill" + i, Vector2.zero, new Vector2(142, 142), new Vector2(1, 0), new Color(.06f, .11f, .16f, .9f));
-                back.Disc = true; back.raycastTarget = true;
+                var back = Graphic(m_Controls, "Skill" + i, Vector2.zero, new Vector2(142, 142), new Vector2(1, 0), SanctuaryUiTheme.Ink);
+                back.Disc = true; back.Enamel = true; back.raycastTarget = true; m_Backs[i] = back;
                 Buttons[i] = back.gameObject.AddComponent<SkillControl>();
                 int slot = i;
                 Buttons[i].Canceled = () => SkillCanceled?.Invoke(slot);
                 m_Rings[i] = Graphic(back.transform, "Recharge", Vector2.zero, new Vector2(142, 142), new Vector2(.5f, .5f), Color.white);
-                m_Icons[i] = Graphic(back.transform, "Icon", new Vector2(0, 8), new Vector2(84, 84), new Vector2(.5f, .5f), Color.white);
+                m_Rings[i].RingWidth = .030f;
+                m_Icons[i] = Graphic(back.transform, "Icon", new Vector2(0, 10), new Vector2(84, 84), new Vector2(.5f, .5f), SanctuaryUiTheme.Ivory);
                 var asset = UIFactory.Panel(back.transform, "AssetIcon", Color.clear, new Vector2(.2f, .27f), new Vector2(.8f, .87f), false);
                 m_AssetIcons[i] = asset.gameObject.AddComponent<Image>(); m_AssetIcons[i].raycastTarget = false; m_AssetIcons[i].enabled = false; m_BoundIcons[i] = -1;
-                m_Labels[i] = UIFactory.Label(back.transform, "SkillName", source.SlotLabel(i), 20, TextAnchor.MiddleCenter, new Vector2(-.15f, -.20f), new Vector2(1.15f, .10f));
-                m_Status[i] = BufferText.Create(back.transform, "SkillState", 20, TextAnchor.MiddleCenter, new Vector2(0, .04f), new Vector2(1, .35f));
+                m_Labels[i] = UIFactory.Label(back.transform, "SkillName", source.SlotLabel(i), 18, TextAnchor.MiddleCenter, new Vector2(-.15f, -.20f), new Vector2(1.15f, .10f));
+                m_Labels[i].color = SanctuaryUiTheme.Ivory;
+                m_Status[i] = BufferText.Create(back.transform, "SkillState", 16, TextAnchor.MiddleCenter, new Vector2(0, .08f), new Vector2(1, .32f));
             }
             m_Controls.gameObject.SetActive(false);
             Input = new HudInputSource(this);
@@ -117,8 +120,9 @@ namespace SPF.Shell.UI
                 Buttons[i].SetSnapshot(snapshot);
                 if (m_BoundSkills[i] != snapshot.Definition.Id)
                 { m_BoundSkills[i] = snapshot.Definition.Id; m_Labels[i].text = m_Source.SlotLabel(i); }
-                Color tint = !snapshot.Enabled ? new Color(.42f, .47f, .50f, .6f) : snapshot.Charges > 0 ? new Color(.45f, .89f, .96f, .95f) : new Color(.57f, .67f, .73f, .72f);
-                if (Buttons[i].AimingCanceled) tint = new Color(1f, .3f, .25f, 1);
+                Color tint = !snapshot.Enabled ? SanctuaryUiTheme.Disabled : snapshot.Charges > 0 ? SanctuaryUiTheme.Ivory : SanctuaryUiTheme.Muted;
+                Color progress = !snapshot.Enabled ? SanctuaryUiTheme.Disabled : snapshot.Charges > 0 ? SanctuaryUiTheme.Spirit : SanctuaryUiTheme.Bronze;
+                if (Buttons[i].AimingCanceled) tint = progress = SanctuaryUiTheme.Coral;
                 int glyph = m_Source is IMobileCombatHudGlyphSource glyphSource ? glyphSource.ReadFallbackGlyph(i, snapshot) : snapshot.Definition.IconId;
                 if (m_Icons[i].Glyph != glyph) { m_Icons[i].Glyph = glyph; m_Icons[i].SetVerticesDirty(); }
                 if (m_BoundIcons[i] != snapshot.Definition.IconId)
@@ -128,7 +132,9 @@ namespace SPF.Shell.UI
                     m_AssetIcons[i].enabled = m_AssetIcons[i].sprite != null;
                     m_Icons[i].enabled = m_AssetIcons[i].sprite == null;
                 }
-                m_Icons[i].color = tint; m_Rings[i].color = tint; m_AssetIcons[i].color = tint;
+                m_Icons[i].color = tint; m_Rings[i].color = progress; m_AssetIcons[i].color = tint;
+                m_Status[i].color = Buttons[i].AimingCanceled ? SanctuaryUiTheme.Coral : snapshot.Enabled ? SanctuaryUiTheme.Muted : SanctuaryUiTheme.Disabled;
+                m_Backs[i].color = Buttons[i].Pressed ? SanctuaryUiTheme.Surface : SanctuaryUiTheme.Ink;
                 var aim = Buttons[i].Aim;
                 Quaternion aimRotation = Buttons[i].Pressed && snapshot.Definition.Activation == SkillActivation.AimRelease && math.lengthsq(aim) > 0f
                     ? Quaternion.Euler(0, 0, Mathf.Atan2(aim.y, aim.x) * Mathf.Rad2Deg - 45) : Quaternion.identity;

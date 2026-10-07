@@ -1,3 +1,4 @@
+using SPF.Presentation.ArtDirection;
 using SPF.Presentation.Particles;
 using SPF.Contracts.Weapons;
 using SPF.L2.Weapons;
@@ -48,6 +49,7 @@ namespace BrawlerFoundation.Presentation
         public FollowCamera2D Camera;
         public System.Action<BwFeedback> Feedback;
 
+        SanctuaryBackdrop m_Sanctuary;
         RenderAssets m_Assets;
         BwArt m_Art;
         SpriteBatch m_Arena, m_Fighters, m_Effects, m_NaturalShadows;
@@ -72,6 +74,7 @@ namespace BrawlerFoundation.Presentation
 
         void Release()
         {
+            m_Sanctuary?.Dispose(); m_Sanctuary=null;
             m_WeaponParticles?.Dispose(); m_WeaponParticles=null; m_WeaponTick=-1;
             m_NaturalShadows?.Dispose(); m_NaturalShadows = null;
             m_Characters?.Dispose(); m_Characters = null;
@@ -96,6 +99,7 @@ namespace BrawlerFoundation.Presentation
             var rig = session.World.Resource(BwKeys.Rig);
             m_Assets = new RenderAssets(RenderCapabilities.Detect());
             m_Art = BwArt.Build(rig, NaturalCharacters);
+            if(NaturalCharacters)m_Sanctuary=new SanctuaryBackdrop(m_Assets.Tier,SanctuaryScene.Terrace);
             if (NaturalCharacters) m_Characters = new GameplayCharacterPresenter(m_Assets.Tier, math.clamp(session.World.Table(BwKeys.Fighter).Capacity, 1, 128), includeWeapons: session.World.HasResource(BwWeapons.Key));
             if(NaturalCharacters&&session.World.HasResource(BwWeapons.Key))m_WeaponParticles=new WeaponParticlePresenter(m_Assets.Tier, lowQuality: m_Assets.Tier!=RenderTier.GpuDriven);
             if(m_WeaponParticles!=null)
@@ -214,13 +218,14 @@ namespace BrawlerFoundation.Presentation
             }
             if(world.HasResource(BwWeapons.Key))DrawWeaponProjectiles(world.Resource(BwWeapons.Key),alpha);
             m_Fx.UpdateAndDraw(Time.deltaTime, m_Effects, m_Art.Sheet, null);
-            m_Arena.Draw(bounds, dirty: false);
+            if(m_Sanctuary!=null&&m_Sanctuary.Ready)m_Sanctuary.Draw(Camera!=null?Camera.ViewRect:new float4(-12,-3,12,7),bounds);
+            else m_Arena.Draw(bounds, dirty: false);
             m_NaturalShadows?.Draw(bounds);
             m_Fighters.Draw(bounds);
             m_Characters?.Draw(bounds);
             m_Effects.Draw(bounds);
             if(m_WeaponParticles!=null){UpdateWeaponParticles(world,game,alpha);m_WeaponParticles.EndFrame(bounds);}
-            SpritesDrawn = m_Arena.Count + m_Fighters.Count + m_Effects.Count + (m_Characters?.PartsDrawn ?? 0) + (m_NaturalShadows?.Count ?? 0);
+            SpritesDrawn = (m_Sanctuary!=null&&m_Sanctuary.Ready?m_Sanctuary.SpritesDrawn:m_Arena.Count) + m_Fighters.Count + m_Effects.Count + (m_Characters?.PartsDrawn ?? 0) + (m_NaturalShadows?.Count ?? 0);
         }
 
         void UpdateWeaponParticles(SPF.Runtime.World.SimWorld world,BwGameState game,float alpha)

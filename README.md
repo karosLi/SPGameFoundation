@@ -46,7 +46,7 @@ Unity 2022.3 2D 单机小游戏基座（面向移动端），保留贪吃蛇、A
 - [飞剑接入](Docs/FlyingSwordHorde.md) · [纵深动作接入](Docs/LandscapeBeltScroller.md) · [实际玩法自然角色](Docs/GameplayNaturalCharacters.md) · [可选 compute 骨骼后端](Docs/BatComputePaletteValidation.md)
 - [本轮验证结果](Docs/MobileGameplayCheckpoint.md) · [共用能力与新玩法接入](Docs/MobileGameplayIntegration.md) · [射击验证](Docs/ShooterValidation.md) · [守点验证](Docs/HordeGuardValidation.md)
 
-两档渲染均有真实 Unity 测试与截图；美术是原创程序占位图。桌面软件渲染证据不代表 Android/iOS 真机性能。
+两档渲染均有真实 Unity 测试与截图；优先移动玩法已接入[青铜遗迹原创美术第一轮](Docs/SanctuaryArtDirection.md)，其余玩法保留程序美术。各提交的原生视觉验收状态见记录；桌面渲染证据不代表 Android/iOS 真机性能。
 
 ## 共享移动技能 HUD（可选示例）
 

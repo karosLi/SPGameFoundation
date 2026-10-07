@@ -174,10 +174,15 @@ namespace BrawlerFoundation.Game
             }
             if (m_WeaponCombat)
             {
-                SwitchWeaponButton = UIFactory.Button(root, "SwitchWeapon", "SWITCH / Q", new Vector2(-115, -65), new Vector2(200, 76), new Color(.25f,.38f,.54f,.96f), new Vector2(1,1), 25);
+                SwitchWeaponButton = UIFactory.Button(root, "SwitchWeapon", "SWITCH / Q", new Vector2(-112, -55), new Vector2(188, 60), SanctuaryUiTheme.Surface, new Vector2(1,1), 20);
                 SwitchWeaponButton.onClick.AddListener(() => { if (Session.State == SessionState.Running && State.Flow == BwFlow.Fighting && !InputRouter.Scripted.Active) State.Input.Pressed |= 1u << BwWeapons.SwitchButton; });
             }
-            StatsText = BufferText.Create(root, "Stats", 40, TextAnchor.UpperLeft, new Vector2(0.01f, 0.86f), new Vector2(0.7f, 0.99f));
+            if(m_MobileCombat)
+            {
+                var card=UIFactory.Card(root,"CombatStatsBackdrop",SanctuaryUiTheme.Ink,new Vector2(.015f,.985f),new Vector2(.50f,.985f),false);
+                card.offsetMin=new Vector2(0,-115);card.offsetMax=Vector2.zero;
+            }
+            StatsText = BufferText.Create(root, "Stats", m_MobileCombat?25:40, TextAnchor.UpperLeft, new Vector2(0.025f, 0.79f), new Vector2(m_MobileCombat?.50f:.7f, 0.973f));
             if (!m_MobileCombat)
             {
                 var stick = UIFactory.Panel(root, "Joystick", new Color(1f, 1f, 1f, 0.03f), Vector2.zero, new Vector2(0.45f, 0.6f));
@@ -190,14 +195,14 @@ namespace BrawlerFoundation.Game
 
             }
 
-            MenuPanel = UIFactory.Panel(root, "MenuPanel", new Color(0f, 0f, 0f, 0.5f), Vector2.zero, Vector2.one);
-            UIFactory.Label(MenuPanel, "Title", m_WeaponCombat ? "WEAPONS / BRAWL" : m_BeltScroller ? "BELT / BRAWL" : m_MobileCombat ? "BRAWL / MOBILE" : "BRAWL", m_MobileCombat ? 74 : 150, TextAnchor.MiddleCenter, new Vector2(0f, 0.6f), new Vector2(1f, 0.85f));
-            StartButton = UIFactory.Button(MenuPanel, "StartButton", "FIGHT", new Vector2(0, -20), new Vector2(460, 140), new Color(0.85f, 0.4f, 0.3f, 0.95f), new Vector2(0.5f, 0.5f));
+            MenuPanel = UIFactory.Panel(root, "MenuPanel", new Color(.025f, .07f, .075f, .84f), Vector2.zero, Vector2.one);
+            UIFactory.Label(MenuPanel, "Title", m_WeaponCombat ? "WEAPONS / BRAWL" : m_BeltScroller ? "BELT / BRAWL" : m_MobileCombat ? "BRAWL / MOBILE" : "BRAWL", m_MobileCombat ? 60 : 150, TextAnchor.MiddleCenter, new Vector2(0f, 0.6f), new Vector2(1f, 0.85f));
+            StartButton = UIFactory.Button(MenuPanel, "StartButton", "FIGHT", new Vector2(0, -20), new Vector2(460, 140), SanctuaryUiTheme.Coral, new Vector2(0.5f, 0.5f));
             StartButton.onClick.AddListener(() => State?.Send(BwCommandKind.Start));
 
-            EndPanel = UIFactory.Panel(root, "EndPanel", new Color(0f, 0f, 0f, 0.5f), Vector2.zero, Vector2.one);
+            EndPanel = UIFactory.Panel(root, "EndPanel", new Color(.025f, .07f, .075f, .84f), Vector2.zero, Vector2.one);
             EndText = UIFactory.Label(EndPanel, "EndText", "", 110, TextAnchor.MiddleCenter, new Vector2(0f, 0.6f), new Vector2(1f, 0.85f));
-            AgainButton = UIFactory.Button(EndPanel, "AgainButton", "AGAIN", new Vector2(0, -20), new Vector2(460, 140), new Color(0.85f, 0.4f, 0.3f, 0.95f), new Vector2(0.5f, 0.5f));
+            AgainButton = UIFactory.Button(EndPanel, "AgainButton", "AGAIN", new Vector2(0, -20), new Vector2(460, 140), SanctuaryUiTheme.Coral, new Vector2(0.5f, 0.5f));
             AgainButton.onClick.AddListener(() => State?.Send(BwCommandKind.Start));
         }
 

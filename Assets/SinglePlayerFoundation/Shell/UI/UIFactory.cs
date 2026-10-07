@@ -75,7 +75,7 @@ namespace SPF.Shell.UI
             label.text = text;
             label.fontSize = size;
             label.alignment = anchor;
-            label.color = Color.white;
+            label.color = SanctuaryUiTheme.Ivory;
             label.raycastTarget = false;
             label.horizontalOverflow = HorizontalWrapMode.Overflow;
             label.verticalOverflow = VerticalWrapMode.Overflow;
@@ -92,12 +92,22 @@ namespace SPF.Shell.UI
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = anchoredPosition;
             rect.sizeDelta = size;
-            var image = go.AddComponent<Image>();
-            image.color = color;
+            var image = go.AddComponent<SanctuaryPanelGraphic>();
+            image.color = SanctuaryUiTheme.ButtonSurface(color);
             var button = go.AddComponent<Button>();
             button.targetGraphic = image;
-            Label(go.transform, "Label", text, fontSize, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one);
+            var label = Label(go.transform, "Label", text, fontSize, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one);
+            label.fontStyle = FontStyle.Bold;
             return button;
+        }
+
+        /// <summary>A passive or modal framed panel; hit targets remain an explicit caller choice.</summary>
+        public static RectTransform Card(Transform parent, string name, Color color, Vector2 anchorMin, Vector2 anchorMax, bool raycast = false)
+        {
+            var rect = Panel(parent, name, Color.clear, anchorMin, anchorMax, false);
+            var face = rect.gameObject.AddComponent<SanctuaryPanelGraphic>();
+            face.color = color; face.raycastTarget = raycast;
+            return rect;
         }
 
         /// <summary>Horizontal fill bar (background + fill image); returns the fill to drive with <see cref="SetFill"/>.</summary>
@@ -105,6 +115,9 @@ namespace SPF.Shell.UI
         {
             var back = Panel(parent, name, background, anchorMin, anchorMax, raycast: false);
             var fillRect = Panel(back, "Fill", fill, Vector2.zero, Vector2.one, raycast: false);
+            var frame = Panel(back, "Inlay", Color.clear, Vector2.zero, Vector2.one, raycast: false);
+            var line = frame.gameObject.AddComponent<SanctuaryPanelGraphic>();
+            line.OutlineOnly = true; line.Corner = 0; line.Border = 1f; line.raycastTarget = false;
             return fillRect.GetComponent<Image>();
         }
 

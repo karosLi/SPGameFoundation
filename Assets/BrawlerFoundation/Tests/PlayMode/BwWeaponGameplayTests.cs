@@ -66,16 +66,22 @@ namespace BrawlerFoundation.Tests.PlayMode
                 for(int i=0;i<weapons.Current.DurationTicks+weapons.Current.ReleaseTick+2;i++)game.Session.Step();game.State.Input=default;
                 Assert.Greater(weapons.Equipment.CueSequence,consumed);game.Session.Pause();game.Renderer.NaturalCharacters=true;yield return null;yield return null;
                 Assert.AreEqual(weapons.Equipment.CueSequence,game.Renderer.LastWeaponCueSequence);Assert.AreEqual(0,game.Renderer.WeaponParticles.Renderer.Pool.ReservedCount,"rebuilding the view must not replay retained bursts from the hidden interval");game.Session.Resume();
-                uint baseline=game.Renderer.LastWeaponCueSequence;bool observedNewBurst=false;uint releaseSequence=0;
-                game.State.Input=new InputFrame{Held=1};
+                uint baseline=game.Renderer.LastWeaponCueSequence;bool observedNewBurst=false;uint releaseSequence=0;int releasesBefore=weapons.Releases;
+                // Resume changes HUD ownership and deliberately cancels stale input. Settle that
+                // boundary first, then feed held state each tick as the normal input router does.
+                game.MobileHud.Refresh();
                 for(int tick=0;tick<weapons.Current.DurationTicks+weapons.Current.ReleaseTick+3;tick++)
                 {
+                    game.State.Input=new InputFrame{Held=1};
                     game.Session.Step();
                     for(int c=0;c<weapons.CueCount;c++){var cue=weapons.Cues[c];if(cue.Kind==SPF.Contracts.Weapons.WeaponCueKind.Release&&cue.Sequence>baseline)releaseSequence=cue.Sequence;}
                     yield return null;
                     observedNewBurst|=releaseSequence!=0&&game.Renderer.LastWeaponCueSequence>=releaseSequence&&game.Renderer.WeaponParticles.Renderer.Pool.SpawnCount>0;
                 }
-                game.State.Input=default;Assert.IsTrue(observedNewBurst,"new releases after binding still produce their sequenced burst");
+                game.State.Input=default;
+                TestContext.WriteLine($"Belt rebind: flow {game.State.Flow}, hero HP {world.Column(BwKeys.Info)[0].Hp}, releases {releasesBefore}->{weapons.Releases}, cue {releaseSequence}, consumed {game.Renderer.LastWeaponCueSequence}, burst observed {observedNewBurst}");
+                Assert.Greater(weapons.Releases,releasesBefore,"the rebind fixture must actually issue a new release after the resume input boundary");
+                Assert.IsTrue(observedNewBurst,"new releases after binding still produce their sequenced burst");
                 world.ClearLevel();game.State.Flow=BwFlow.Fighting;game.State.Input=default;BwSpawner.Spawn(world,0,0,1,0);BwSpawner.Spawn(world,1,new float2(8,0),-1,0);
                 foreach(int button in new[]{BwButton.Kick,BwBeltRules.JumpButton,BwBeltRules.HealButton})
                 {

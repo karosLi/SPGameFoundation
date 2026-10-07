@@ -1,0 +1,70 @@
+{
+  "scope": "A2 shared-World active-pipeline ownership follow-up only",
+  "baseCommit": "2748be7390f788666bd62eaa23aac0978c8df6ab",
+  "sourceSha256": {
+    "Assets/SinglePlayerFoundation/Runtime/Scheduling/TickPipeline.cs": "2f6d1928c41ef591b66615e2d8cfcf8018a5e3a671753604589add6b29d562ba",
+    "Assets/SinglePlayerFoundation/Runtime/World/AccessGuard.cs": "26382d8978f30d977c34d357e37da4900602e708f16ee0d8bca7365bc8bca645",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs": "da6cf96d16eaabb62aea4529d002965f0742818cf7f8b8ff8f2df3d25744f985"
+  },
+  "results": {
+    "shared-world-red.trx": {
+      "total": "7",
+      "executed": "7",
+      "passed": "4",
+      "failed": "3",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    },
+    "shared-world-green.trx": {
+      "total": "74",
+      "executed": "74",
+      "passed": "74",
+      "failed": "0",
+      "error": "0",
+      "timeout": "0",
+      "aborted": "0",
+      "inconclusive": "0",
+      "passedButRunAborted": "0",
+      "notRunnable": "0",
+      "notExecuted": "0",
+      "disconnected": "0",
+      "warning": "0",
+      "completed": "0",
+      "inProgress": "0",
+      "pending": "0"
+    }
+  },
+  "redFilter": "Name~SharedWorld|Name~InactiveEmptyPipeline",
+  "greenFilter": "FullyQualifiedName~AccessStructureWindowTests|FullyQualifiedName~AccessGuardTests|FullyQualifiedName~TickFailureOwnershipTests|FullyQualifiedName~SessionTests",
+  "environment": "Linux x86_64, .NET SDK 8.0.425, Debug eager-stub harness",
+  "nativeApiCompile": {
+    "engine": "installed Unity 2022.3.62f2 references",
+    "sourceCount": 202,
+    "referenceCount": 96,
+    "errors": 0,
+    "warnings": 1,
+    "executedUnity": false
+  },
+  "artifactSha256": {
+    "shared-world-red.trx": "06dacc688a9b13c06345e368d7ce05f8b546568359d0c6aadcdab906909071cd",
+    "shared-world-red.log": "1e49531571f8937a8e16f7523873afc37aef65e43152c97e1aa175b568a44fa4",
+    "shared-world-green.trx": "24768255e98de3745bb69c9226dfbe9422c5be24f63fb42d9fb0391bffd74710",
+    "shared-world-green.log": "9ce79c9ab2aa8959cdc75bc0e3bf7af01da247ac2220d649eb64bd0b8e1ce60c",
+    "shared-world-native-api.log": "a23d7a6a089f7e76cffec286801463e201838c2337163b3b66c2c984cd31a6ad"
+  },
+  "notRun": [
+    "Current integration full aggregate",
+    "Native Unity Jobs/Burst runtime",
+    "Physical Android/iOS"
+  ]
+}

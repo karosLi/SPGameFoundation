@@ -1,0 +1,1221 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="c3e44d55-085a-4c91-8909-27bd76465ff1" name="@5e9498f43725 2026-10-07 23:36:43" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-07T23:36:43.6901125+08:00" queuing="2026-10-07T23:36:43.6901125+08:00" start="2026-10-07T23:36:42.9619740+08:00" finish="2026-10-07T23:36:45.3818997+08:00" />
+  <TestSettings name="default" id="fe7e085a-a8c4-43a1-a451-6d2751310091">
+    <Deployment runDeploymentRoot="_5e9498f43725_2026-10-07_23_36_43" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="74d52667-ae37-4c5c-8a42-6ad9cd4b0954" testId="6b17199f-d001-2bcf-bcd8-5f4f5e131fa6" testName="WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter(&quot;context&quot;)" computerName="5e9498f43725" duration="00:00:00.0000649" startTime="2026-10-07T23:36:44.1361221+08:00" endTime="2026-10-07T23:36:44.1361869+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="74d52667-ae37-4c5c-8a42-6ad9cd4b0954">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter("context") managedMB=5
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter("context") managedMB=5</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="664c66b4-0286-4899-91c7-1b7d404bcfaa" testId="355e63d5-c363-0541-843b-4b1be3344ad7" testName="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;sort&quot;)" computerName="5e9498f43725" duration="00:00:00.0023650" startTime="2026-10-07T23:36:43.6136069+08:00" endTime="2026-10-07T23:36:43.6159714+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="664c66b4-0286-4899-91c7-1b7d404bcfaa">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("sort") managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("sort") managedMB=20</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="0714fd01-44ce-4dd6-97ea-1a9e130951b3" testId="18a19901-0c9b-72e7-960a-2a92fbbae927" testName="SessionSyncReopensOnlyTheOwningSession" computerName="5e9498f43725" duration="00:00:00.0023580" startTime="2026-10-07T23:36:43.6167962+08:00" endTime="2026-10-07T23:36:43.6191544+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0714fd01-44ce-4dd6-97ea-1a9e130951b3">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SessionSyncReopensOnlyTheOwningSession managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SessionSyncReopensOnlyTheOwningSession managedMB=21</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="f3b4b945-0013-4c41-adfc-7f75e1377ddd" testId="74dd1830-ea22-8007-accb-1da79dba796c" testName="OrdinarySyncCannotDisposePipelineOrOwnerWhileCallbacksRun(True)" computerName="5e9498f43725" duration="00:00:00.0002880" startTime="2026-10-07T23:36:45.2918968+08:00" endTime="2026-10-07T23:36:45.2921853+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f3b4b945-0013-4c41-adfc-7f75e1377ddd">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.OrdinarySyncCannotDisposePipelineOrOwnerWhileCallbacksRun(True) managedMB=16
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.OrdinarySyncCannotDisposePipelineOrOwnerWhileCallbacksRun(True) managedMB=16</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="5c4c8c21-2ae1-4651-8c0f-ba26160ad26b" testId="f2aa575d-1c7c-9082-4ba9-b43c7970e407" testName="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;destroy&quot;)" computerName="5e9498f43725" duration="00:00:00.0028720" startTime="2026-10-07T23:36:43.6097556+08:00" endTime="2026-10-07T23:36:43.6126278+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="5c4c8c21-2ae1-4651-8c0f-ba26160ad26b">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("destroy") managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("destroy") managedMB=20</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="994486c1-a054-47e0-b911-190e87385f6e" testId="1c41b440-072f-c120-d644-76fd93c21651" testName="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;spawn&quot;)" computerName="5e9498f43725" duration="00:00:00.0001200" startTime="2026-10-07T23:36:43.6126426+08:00" endTime="2026-10-07T23:36:43.6127623+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="994486c1-a054-47e0-b911-190e87385f6e">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("spawn") managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("spawn") managedMB=20</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="0dbfb825-5479-4a35-b8a7-725ab2cbc5ec" testId="ce4e07c7-f7f8-599a-824a-c80ec0343d75" testName="UndeclaredJobDataResourceThrows" computerName="5e9498f43725" duration="00:00:00.0006630" startTime="2026-10-07T23:36:43.5827434+08:00" endTime="2026-10-07T23:36:43.5834063+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0dbfb825-5479-4a35-b8a7-725ab2cbc5ec">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessGuardTests.UndeclaredJobDataResourceThrows managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessGuardTests.UndeclaredJobDataResourceThrows managedMB=19</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="ae2d4dea-32a2-4153-852e-5a20dc99b49f" testId="64edfc1c-21aa-7e3c-e023-2145b5bb6839" testName="UpdateAndSyncRunTicksFromFrameTime" computerName="5e9498f43725" duration="00:00:00.0085690" startTime="2026-10-07T23:36:45.2793060+08:00" endTime="2026-10-07T23:36:45.2878749+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ae2d4dea-32a2-4153-852e-5a20dc99b49f">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.SessionTests.UpdateAndSyncRunTicksFromFrameTime managedMB=14
+[SPF-TEST] end   SPF.Tests.EditMode.SessionTests.UpdateAndSyncRunTicksFromFrameTime managedMB=15</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="81a736a5-6c19-403b-b13b-ad4dcded02c1" testId="f0b8e286-2a32-a3c0-ce61-f36956baf5be" testName="SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(True,False)" computerName="5e9498f43725" duration="00:00:00.0005800" startTime="2026-10-07T23:36:45.3009662+08:00" endTime="2026-10-07T23:36:45.3015464+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="81a736a5-6c19-403b-b13b-ad4dcded02c1">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(True,False) managedMB=17
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(True,False) managedMB=17</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="179c2b86-3f20-4eaf-ba13-c319b09aa001" testId="d1f2cfda-ed22-8688-72da-f28553704171" testName="RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(&quot;read&quot;)" computerName="5e9498f43725" duration="00:00:00.0001670" startTime="2026-10-07T23:36:45.2937591+08:00" endTime="2026-10-07T23:36:45.2939265+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="179c2b86-3f20-4eaf-ba13-c319b09aa001">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("read") managedMB=16
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("read") managedMB=17</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="c1704e5e-8e04-4905-a391-ae91e8c62a51" testId="78a687e6-45b7-73ec-bcce-dfc865e13e1d" testName="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;reset&quot;)" computerName="5e9498f43725" duration="00:00:00.0004929" startTime="2026-10-07T23:36:43.6162657+08:00" endTime="2026-10-07T23:36:43.6167583+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c1704e5e-8e04-4905-a391-ae91e8c62a51">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("reset") managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("reset") managedMB=21</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="97c08339-2907-48aa-9af8-f11a0c926ed1" testId="5860aa77-0a4c-5328-ba8c-3aeacd0126ff" testName="OnTickRejectsUnsafeReentry(&quot;begin&quot;)" computerName="5e9498f43725" duration="00:00:00.0015490" startTime="2026-10-07T23:36:45.2880949+08:00" endTime="2026-10-07T23:36:45.2896443+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="97c08339-2907-48aa-9af8-f11a0c926ed1">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("begin") managedMB=15
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("begin") managedMB=15</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="75c74c3b-b31b-4d48-afdd-71360a73356c" testId="33124dd2-3c56-3245-3d78-728acc6e2dde" testName="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,False)" computerName="5e9498f43725" duration="00:00:00.0000980" startTime="2026-10-07T23:36:43.6200490+08:00" endTime="2026-10-07T23:36:43.6201475+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="75c74c3b-b31b-4d48-afdd-71360a73356c">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,False) managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,False) managedMB=21</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="b4feca48-573e-45f4-91c0-1284283a5e9a" testId="602fe94a-c009-486c-233b-a3fa39295f6e" testName="CompletedBarrierThenSynchronousDeclaredReaderDoesNotReborrowCompletedWork" computerName="5e9498f43725" duration="00:00:00.0010760" startTime="2026-10-07T23:36:43.5973773+08:00" endTime="2026-10-07T23:36:43.5984535+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b4feca48-573e-45f4-91c0-1284283a5e9a">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.CompletedBarrierThenSynchronousDeclaredReaderDoesNotReborrowCompletedWork managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.CompletedBarrierThenSynchronousDeclaredReaderDoesNotReborrowCompletedWork managedMB=19</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="918044ce-c1b6-4026-bb00-7dcda50fec0c" testId="a5333da9-039f-6300-f085-1200007bced8" testName="UndeclaredReadOnlyAcquisitionIsRejected(&quot;table&quot;)" computerName="5e9498f43725" duration="00:00:00.0005270" startTime="2026-10-07T23:36:43.6244221+08:00" endTime="2026-10-07T23:36:43.6249487+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="918044ce-c1b6-4026-bb00-7dcda50fec0c">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.UndeclaredReadOnlyAcquisitionIsRejected("table") managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.UndeclaredReadOnlyAcquisitionIsRejected("table") managedMB=21</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="9df9e3a2-cb8d-42b9-a8db-93faae10a39d" testId="2c686e6e-b2b2-3bef-23ab-84da92fc31bb" testName="RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(&quot;pipeline-dispose&quot;)" computerName="5e9498f43725" duration="00:00:00.0001420" startTime="2026-10-07T23:36:45.2939368+08:00" endTime="2026-10-07T23:36:45.2940786+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9df9e3a2-cb8d-42b9-a8db-93faae10a39d">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("pipeline-dispose") managedMB=17
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("pipeline-dispose") managedMB=17</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="8e0872f0-f629-4e37-a2dc-d4cd297e8262" testId="b5fb04d3-632f-9818-0c3b-a23eb2c0be8a" testName="SimulatedBarrierCompletionRejectionSkipsBarrierAndRetainsEarlierWork" computerName="5e9498f43725" duration="00:00:00.0008660" startTime="2026-10-07T23:36:45.3061499+08:00" endTime="2026-10-07T23:36:45.3070156+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8e0872f0-f629-4e37-a2dc-d4cd297e8262">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SimulatedBarrierCompletionRejectionSkipsBarrierAndRetainsEarlierWork managedMB=18
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SimulatedBarrierCompletionRejectionSkipsBarrierAndRetainsEarlierWork managedMB=18</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="790718d6-96f3-47ba-b9f1-d737bc64b1c9" testId="0b60b197-3cf0-8412-6c02-7334f81076b3" testName="SimulatedRecoveryCompletionRejectionKeepsWorldOwnedUntilRetry" computerName="5e9498f43725" duration="00:00:00.0015260" startTime="2026-10-07T23:36:45.3070516+08:00" endTime="2026-10-07T23:36:45.3085776+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="790718d6-96f3-47ba-b9f1-d737bc64b1c9">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SimulatedRecoveryCompletionRejectionKeepsWorldOwnedUntilRetry managedMB=18
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SimulatedRecoveryCompletionRejectionKeepsWorldOwnedUntilRetry managedMB=18</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="79c36089-6912-46fe-9479-24d821fd5abd" testId="a7ea8151-3f03-f6d0-a57d-e5e033ae80ef" testName="OnCreateBetweenTicksCompletedBarrierAndSerialCompletionAreLegal" computerName="5e9498f43725" duration="00:00:00.0008530" startTime="2026-10-07T23:36:43.6024509+08:00" endTime="2026-10-07T23:36:43.6033041+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="79c36089-6912-46fe-9479-24d821fd5abd">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.OnCreateBetweenTicksCompletedBarrierAndSerialCompletionAreLegal managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.OnCreateBetweenTicksCompletedBarrierAndSerialCompletionAreLegal managedMB=19</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="64bf0e62-05f8-406e-8e5e-b7c66bbf9864" testId="1917e3c8-ae97-a644-34b5-0365c0acffde" testName="AcquiringExplicitViewsNeverCompletesOutstandingJobs" computerName="5e9498f43725" duration="00:00:00.0119790" startTime="2026-10-07T23:36:43.5852655+08:00" endTime="2026-10-07T23:36:43.5972440+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="64bf0e62-05f8-406e-8e5e-b7c66bbf9864">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.AcquiringExplicitViewsNeverCompletesOutstandingJobs managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.AcquiringExplicitViewsNeverCompletesOutstandingJobs managedMB=19</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="04fdb051-022c-4573-b8be-3ee4b62c6037" testId="7225372e-853a-479d-89d7-401a2ec33c43" testName="SchedulingPreservesCompletedDependencyValues(True,False)" computerName="5e9498f43725" duration="00:00:00.0002720" startTime="2026-10-07T23:36:45.3057796+08:00" endTime="2026-10-07T23:36:45.3060516+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="04fdb051-022c-4573-b8be-3ee4b62c6037">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingPreservesCompletedDependencyValues(True,False) managedMB=18
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingPreservesCompletedDependencyValues(True,False) managedMB=18</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="6fca46c1-cf98-46bb-8d7b-e9358f3adf9a" testId="83a19905-1879-7f63-6973-61981b9b5e55" testName="RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(&quot;session-dispose&quot;)" computerName="5e9498f43725" duration="00:00:00.0001870" startTime="2026-10-07T23:36:45.2940887+08:00" endTime="2026-10-07T23:36:45.2942759+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6fca46c1-cf98-46bb-8d7b-e9358f3adf9a">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("session-dispose") managedMB=17
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("session-dispose") managedMB=17</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="cd7e4a22-5462-4fb3-8b10-2fd03d7b3339" testId="ba848ede-e0b5-72d6-2780-7778b8908fd8" testName="SchedulingPreservesCompletedDependencyValues(False,False)" computerName="5e9498f43725" duration="00:00:00.0027220" startTime="2026-10-07T23:36:45.3030118+08:00" endTime="2026-10-07T23:36:45.3057332+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="cd7e4a22-5462-4fb3-8b10-2fd03d7b3339">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingPreservesCompletedDependencyValues(False,False) managedMB=18
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingPreservesCompletedDependencyValues(False,False) managedMB=18</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="ba465348-adbc-4932-96d6-f91f1b75c0db" testId="66b855b2-ed0a-90f5-2bae-d8b2c62ffc6b" testName="FailedCompletionRetainsSharedWorldAdmissionUntilRetry" computerName="5e9498f43725" duration="00:00:00.0011630" startTime="2026-10-07T23:36:43.6008259+08:00" endTime="2026-10-07T23:36:43.6019890+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ba465348-adbc-4932-96d6-f91f1b75c0db">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.FailedCompletionRetainsSharedWorldAdmissionUntilRetry managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.FailedCompletionRetainsSharedWorldAdmissionUntilRetry managedMB=19</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="8e14fc80-7947-45d7-82ee-ad6ccc5b6ac9" testId="b4ad01b4-d95a-ef3d-7ffd-e1dab69c1092" testName="TwoWorldsDoNotShareAccessOrOutstandingOwnership" computerName="5e9498f43725" duration="00:00:00.0005880" startTime="2026-10-07T23:36:43.6224497+08:00" endTime="2026-10-07T23:36:43.6230380+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8e14fc80-7947-45d7-82ee-ad6ccc5b6ac9">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.TwoWorldsDoNotShareAccessOrOutstandingOwnership managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.TwoWorldsDoNotShareAccessOrOutstandingOwnership managedMB=21</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="a0446e4d-729d-4ffa-bfb0-20c973790498" testId="0ce662ad-94c4-8eb4-55ed-35e8bcb34780" testName="OnTickRejectsUnsafeReentry(&quot;read&quot;)" computerName="5e9498f43725" duration="00:00:00.0003200" startTime="2026-10-07T23:36:45.2904276+08:00" endTime="2026-10-07T23:36:45.2907471+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a0446e4d-729d-4ffa-bfb0-20c973790498">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("read") managedMB=15
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("read") managedMB=15</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="0b744086-f194-4f6a-af27-610bd08bbd20" testId="70577e2c-dcb2-4e72-e60a-b4078585b1b0" testName="OnTickRejectsUnsafeReentry(&quot;write&quot;)" computerName="5e9498f43725" duration="00:00:00.0002810" startTime="2026-10-07T23:36:45.2901344+08:00" endTime="2026-10-07T23:36:45.2904151+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0b744086-f194-4f6a-af27-610bd08bbd20">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("write") managedMB=15
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("write") managedMB=15</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="f6841aae-1ba5-48d0-ada5-c0fe1ab55626" testId="8b1b6fc2-71f4-8839-cf49-36ecf70a390f" testName="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;create&quot;)" computerName="5e9498f43725" duration="00:00:00.0013730" startTime="2026-10-07T23:36:43.6083706+08:00" endTime="2026-10-07T23:36:43.6097435+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f6841aae-1ba5-48d0-ada5-c0fe1ab55626">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("create") managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("create") managedMB=20</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="2c138466-b277-4984-bf2e-27f0d211cd24" testId="4ade8258-29c4-5e44-8582-295b22850c7d" testName="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;clear-level&quot;)" computerName="5e9498f43725" duration="00:00:00.0002690" startTime="2026-10-07T23:36:43.6159854+08:00" endTime="2026-10-07T23:36:43.6162541+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="2c138466-b277-4984-bf2e-27f0d211cd24">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("clear-level") managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("clear-level") managedMB=20</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="ee2143af-fba1-41c0-a255-60d874e274f9" testId="aec82d35-d2a8-4500-b745-bef5464261fb" testName="ReadDeclarationCannotAcquireExplicitWrite(&quot;world&quot;)" computerName="5e9498f43725" duration="00:00:00.0006759" startTime="2026-10-07T23:36:43.6065730+08:00" endTime="2026-10-07T23:36:43.6072490+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="ee2143af-fba1-41c0-a255-60d874e274f9">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReadDeclarationCannotAcquireExplicitWrite("world") managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReadDeclarationCannotAcquireExplicitWrite("world") managedMB=20</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="12c17b48-1778-457f-8ad2-ac6f8809357c" testId="73e572ef-5794-10e5-bd2f-fb3e399a56e4" testName="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;spawn-range&quot;)" computerName="5e9498f43725" duration="00:00:00.0006630" startTime="2026-10-07T23:36:43.6127692+08:00" endTime="2026-10-07T23:36:43.6134319+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="12c17b48-1778-457f-8ad2-ac6f8809357c">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("spawn-range") managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("spawn-range") managedMB=20</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="87c862cb-3f28-44a4-88a5-1088ad6c7c0b" testId="71561582-c1ee-b3a0-bee2-f94f3fcdfe58" testName="OrdinarySyncCannotDisposePipelineOrOwnerWhileCallbacksRun(False)" computerName="5e9498f43725" duration="00:00:00.0006350" startTime="2026-10-07T23:36:45.2912478+08:00" endTime="2026-10-07T23:36:45.2918830+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="87c862cb-3f28-44a4-88a5-1088ad6c7c0b">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.OrdinarySyncCannotDisposePipelineOrOwnerWhileCallbacksRun(False) managedMB=15
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.OrdinarySyncCannotDisposePipelineOrOwnerWhileCallbacksRun(False) managedMB=16</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="3cdee27e-3f88-4d91-9568-dd77dea60175" testId="885e5b69-2722-a462-4b60-eb19349a6400" testName="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,True)" computerName="5e9498f43725" duration="00:00:00.0000620" startTime="2026-10-07T23:36:43.6201549+08:00" endTime="2026-10-07T23:36:43.6202167+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="3cdee27e-3f88-4d91-9568-dd77dea60175">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,True) managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,True) managedMB=21</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="f6b2116d-050d-4516-a31f-1a8c425a331f" testId="68670662-00fc-dafc-1066-8a6040342e77" testName="SimulatedSerialCompletionRejectionRetainsReturnedWorkAndSecondaryDiagnostic(True)" computerName="5e9498f43725" duration="00:00:00.0005920" startTime="2026-10-07T23:36:45.3100432+08:00" endTime="2026-10-07T23:36:45.3106351+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f6b2116d-050d-4516-a31f-1a8c425a331f">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SimulatedSerialCompletionRejectionRetainsReturnedWorkAndSecondaryDiagnostic(True) managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SimulatedSerialCompletionRejectionRetainsReturnedWorkAndSecondaryDiagnostic(True) managedMB=19</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="94f6719c-f45b-43f8-9fa7-58a57faac877" testId="6c78b520-3eda-a6d9-4f02-d13866f625cb" testName="OnTickRejectsUnsafeReentry(&quot;pipeline-dispose&quot;)" computerName="5e9498f43725" duration="00:00:00.0001140" startTime="2026-10-07T23:36:45.2907765+08:00" endTime="2026-10-07T23:36:45.2908906+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="94f6719c-f45b-43f8-9fa7-58a57faac877">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("pipeline-dispose") managedMB=15
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("pipeline-dispose") managedMB=15</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="b8f054a9-c93b-40c9-8365-976fe4d4c0df" testId="026fe19f-c05c-6955-e4f6-c0caf0a02247" testName="SimulatedSerialCompletionRejectionRetainsReturnedWorkAndSecondaryDiagnostic(False)" computerName="5e9498f43725" duration="00:00:00.0013850" startTime="2026-10-07T23:36:45.3086414+08:00" endTime="2026-10-07T23:36:45.3100261+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b8f054a9-c93b-40c9-8365-976fe4d4c0df">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SimulatedSerialCompletionRejectionRetainsReturnedWorkAndSecondaryDiagnostic(False) managedMB=18
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SimulatedSerialCompletionRejectionRetainsReturnedWorkAndSecondaryDiagnostic(False) managedMB=19</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="a94db79d-9c7f-48b6-9a3c-91d540d9552d" testId="6436675e-7420-97cd-55c0-ca47d3c33418" testName="SchedulingPreservesCompletedDependencyValues(True,True)" computerName="5e9498f43725" duration="00:00:00.0000610" startTime="2026-10-07T23:36:45.3060661+08:00" endTime="2026-10-07T23:36:45.3061268+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a94db79d-9c7f-48b6-9a3c-91d540d9552d">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingPreservesCompletedDependencyValues(True,True) managedMB=18
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingPreservesCompletedDependencyValues(True,True) managedMB=18</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="084a917d-3d9c-4b86-bc61-8ef9e72b3386" testId="55127807-671d-fd4e-149e-c69f9e60c9fd" testName="RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(&quot;write&quot;)" computerName="5e9498f43725" duration="00:00:00.0002030" startTime="2026-10-07T23:36:45.2935443+08:00" endTime="2026-10-07T23:36:45.2937468+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="084a917d-3d9c-4b86-bc61-8ef9e72b3386">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("write") managedMB=16
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("write") managedMB=16</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="d4a55021-f550-4608-8e2c-405421a9240f" testId="3e897c1f-845c-8a3b-3ef3-a02dc4e02a55" testName="RestartReusesMemoryAndRepopulates" computerName="5e9498f43725" duration="00:00:00.0284010" startTime="2026-10-07T23:36:44.4051173+08:00" endTime="2026-10-07T23:36:44.4335180+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d4a55021-f550-4608-8e2c-405421a9240f">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.SessionTests.RestartReusesMemoryAndRepopulates managedMB=24
+[SPF-TEST] end   SPF.Tests.EditMode.SessionTests.RestartReusesMemoryAndRepopulates managedMB=24</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="9d951b3f-0581-4a3a-bec8-82ab8fc3a248" testId="f9897ff9-0bfd-79ac-6449-9ed90d00c16c" testName="ReadOnlyNativeViewCanBePassedToDependentJob" computerName="5e9498f43725" duration="00:00:00.0005740" startTime="2026-10-07T23:36:43.6077747+08:00" endTime="2026-10-07T23:36:43.6083489+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9d951b3f-0581-4a3a-bec8-82ab8fc3a248">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReadOnlyNativeViewCanBePassedToDependentJob managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReadOnlyNativeViewCanBePassedToDependentJob managedMB=20</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="55e87186-ade7-4b61-8b7b-cdb4d908e396" testId="60965e2f-9303-0e02-3126-7d2e294f1d37" testName="PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(Resolve)" computerName="5e9498f43725" duration="00:00:00.0003280" startTime="2026-10-07T23:36:43.6055905+08:00" endTime="2026-10-07T23:36:43.6059189+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="55e87186-ade7-4b61-8b7b-cdb4d908e396">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(Resolve) managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(Resolve) managedMB=19</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="41458148-3381-4d80-8fc3-ce1e1ebae207" testId="cb7d155e-1749-5b2e-960f-342debe552ac" testName="PopulationStaysAtTargetAndHandlesStayConsistent" computerName="5e9498f43725" duration="00:00:00.2686730" startTime="2026-10-07T23:36:44.1363692+08:00" endTime="2026-10-07T23:36:44.4050422+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="41458148-3381-4d80-8fc3-ce1e1ebae207">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.SessionTests.PopulationStaysAtTargetAndHandlesStayConsistent managedMB=5
+[SPF-TEST] end   SPF.Tests.EditMode.SessionTests.PopulationStaysAtTargetAndHandlesStayConsistent managedMB=24</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="b6f022e3-7712-483e-b578-1b8e97045877" testId="bbcf05bf-5a27-e0c7-8667-cc19f3111e9f" testName="ReadDeclarationCannotAcquireExplicitWrite(&quot;table&quot;)" computerName="5e9498f43725" duration="00:00:00.0002580" startTime="2026-10-07T23:36:43.6072615+08:00" endTime="2026-10-07T23:36:43.6075193+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b6f022e3-7712-483e-b578-1b8e97045877">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReadDeclarationCannotAcquireExplicitWrite("table") managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReadDeclarationCannotAcquireExplicitWrite("table") managedMB=20</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="48c01518-d65a-4fce-b9a5-0c83f59b513e" testId="079d30ab-e4d0-2018-5204-3b1c824f2f9d" testName="SynchronousDeclaredSystemDoesNotCloseStructuralWindow" computerName="5e9498f43725" duration="00:00:00.0004150" startTime="2026-10-07T23:36:43.6220230+08:00" endTime="2026-10-07T23:36:43.6224380+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="48c01518-d65a-4fce-b9a5-0c83f59b513e">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SynchronousDeclaredSystemDoesNotCloseStructuralWindow managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SynchronousDeclaredSystemDoesNotCloseStructuralWindow managedMB=21</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="cee988e6-159f-42de-8260-7219e1b91951" testId="f719f8e1-e5ac-4e30-25f6-2e7f31225779" testName="PlaybackRejectionReleasesSharedWorldAdmission" computerName="5e9498f43725" duration="00:00:00.0005910" startTime="2026-10-07T23:36:43.6059574+08:00" endTime="2026-10-07T23:36:43.6065485+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="cee988e6-159f-42de-8260-7219e1b91951">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.PlaybackRejectionReleasesSharedWorldAdmission managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.PlaybackRejectionReleasesSharedWorldAdmission managedMB=19</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="f196d49d-7c46-4bb5-9744-0ab8bf7a2697" testId="42f664d6-8dcd-0b87-8702-4350c266164e" testName="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;compact&quot;)" computerName="5e9498f43725" duration="00:00:00.0001540" startTime="2026-10-07T23:36:43.6134443+08:00" endTime="2026-10-07T23:36:43.6135982+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f196d49d-7c46-4bb5-9744-0ab8bf7a2697">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("compact") managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("compact") managedMB=20</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="19bdb49a-2f81-4cc6-baf0-78f0aa63f0d0" testId="bbcda61c-b408-2d9b-6c36-21ac5079554c" testName="RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(&quot;reset&quot;)" computerName="5e9498f43725" duration="00:00:00.0001580" startTime="2026-10-07T23:36:45.2933763+08:00" endTime="2026-10-07T23:36:45.2935344+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="19bdb49a-2f81-4cc6-baf0-78f0aa63f0d0">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("reset") managedMB=16
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("reset") managedMB=16</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="83c6779c-4898-4232-a5f1-38422f2b4bdb" testId="eaaec5a8-997f-dab7-f4c2-a202cc58e9dd" testName="OnTickRejectsUnsafeReentry(&quot;session-dispose&quot;)" computerName="5e9498f43725" duration="00:00:00.0002640" startTime="2026-10-07T23:36:45.2909009+08:00" endTime="2026-10-07T23:36:45.2911645+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="83c6779c-4898-4232-a5f1-38422f2b4bdb">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("session-dispose") managedMB=15
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("session-dispose") managedMB=15</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="cbd7fbeb-c198-4bab-80d2-34f84333fd87" testId="5ae4fdc3-5a1a-5f72-b354-a31bf07fa1f2" testName="CountOnlyAccessDiagnosticsStillRejectStructureAndStorageDisposal" computerName="5e9498f43725" duration="00:00:00.0023470" startTime="2026-10-07T23:36:43.5984666+08:00" endTime="2026-10-07T23:36:43.6008132+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="cbd7fbeb-c198-4bab-80d2-34f84333fd87">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.CountOnlyAccessDiagnosticsStillRejectStructureAndStorageDisposal managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.CountOnlyAccessDiagnosticsStillRejectStructureAndStorageDisposal managedMB=19</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="36f2fb1f-2057-481f-be81-c005b726eee2" testId="217f343c-145b-c7f8-27c1-95d7a00bafbf" testName="PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(ApplyCommands)" computerName="5e9498f43725" duration="00:00:00.0008460" startTime="2026-10-07T23:36:43.6047329+08:00" endTime="2026-10-07T23:36:43.6055788+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="36f2fb1f-2057-481f-be81-c005b726eee2">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(ApplyCommands) managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(ApplyCommands) managedMB=19</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="a50e602a-0d19-49ba-b1a7-d6f5f3d0ae77" testId="d1655874-4708-a0bc-80d6-a20209bce64b" testName="SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(False,True)" computerName="5e9498f43725" duration="00:00:00.0009990" startTime="2026-10-07T23:36:45.3015791+08:00" endTime="2026-10-07T23:36:45.3025779+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a50e602a-0d19-49ba-b1a7-d6f5f3d0ae77">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(False,True) managedMB=17
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(False,True) managedMB=17</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="82647859-a786-4927-b005-192675e526ff" testId="04d82a5c-b343-48ae-e0fc-f14245822a3d" testName="UndeclaredColumnThrowsDeclaredDoesNot" computerName="5e9498f43725" duration="00:00:00.0256760" startTime="2026-10-07T23:36:43.5535253+08:00" endTime="2026-10-07T23:36:43.5791370+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="82647859-a786-4927-b005-192675e526ff">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessGuardTests.UndeclaredColumnThrowsDeclaredDoesNot managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessGuardTests.UndeclaredColumnThrowsDeclaredDoesNot managedMB=19</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="6b3a5f6d-dbd2-47b0-a292-534d72c721e5" testId="ce323e71-3229-069f-eb33-7171ac34364a" testName="SameSeedIsDeterministic" computerName="5e9498f43725" duration="00:00:00.2424130" startTime="2026-10-07T23:36:44.4335922+08:00" endTime="2026-10-07T23:36:44.6760051+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6b3a5f6d-dbd2-47b0-a292-534d72c721e5">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.SessionTests.SameSeedIsDeterministic managedMB=24
+[SPF-TEST] end   SPF.Tests.EditMode.SessionTests.SameSeedIsDeterministic managedMB=14</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="9efa65b2-3ae1-4142-a338-6e6b2cf27c73" testId="0b70e14e-3c96-f764-c15c-4a060bcd5e0b" testName="SuccessfulSchedulingRecoveryReleasesSharedWorldAdmission" computerName="5e9498f43725" duration="00:00:00.0005860" startTime="2026-10-07T23:36:43.6214254+08:00" endTime="2026-10-07T23:36:43.6220111+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="9efa65b2-3ae1-4142-a338-6e6b2cf27c73">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SuccessfulSchedulingRecoveryReleasesSharedWorldAdmission managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SuccessfulSchedulingRecoveryReleasesSharedWorldAdmission managedMB=21</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="1db8045d-2e14-4cd7-856b-20457829d5a1" testId="098f6288-66fe-2d77-12dd-3b1714fc5673" testName="SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(True,True)" computerName="5e9498f43725" duration="00:00:00.0003440" startTime="2026-10-07T23:36:45.3026122+08:00" endTime="2026-10-07T23:36:45.3029558+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="1db8045d-2e14-4cd7-856b-20457829d5a1">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(True,True) managedMB=17
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(True,True) managedMB=18</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="c142fc9f-27d0-4466-b7da-cde1fbbd8cca" testId="6e318615-b67a-4d80-8e28-1e8b97bff31d" testName="WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter(&quot;table&quot;)" computerName="5e9498f43725" duration="00:00:00.0002530" startTime="2026-10-07T23:36:44.1357970+08:00" endTime="2026-10-07T23:36:44.1360498+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c142fc9f-27d0-4466-b7da-cde1fbbd8cca">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter("table") managedMB=5
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter("table") managedMB=5</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="f3db340b-43b5-4a6d-9cb6-6f2fd1111f3e" testId="9672ee50-288e-2658-803a-5b2ff7258f2d" testName="OnSyncCannotAdmitAnotherPipelineAndThrowingSyncReleasesAfterExit" computerName="5e9498f43725" duration="00:00:00.0013850" startTime="2026-10-07T23:36:43.6033164+08:00" endTime="2026-10-07T23:36:43.6047013+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="f3db340b-43b5-4a6d-9cb6-6f2fd1111f3e">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.OnSyncCannotAdmitAnotherPipelineAndThrowingSyncReleasesAfterExit managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.OnSyncCannotAdmitAnotherPipelineAndThrowingSyncReleasesAfterExit managedMB=19</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="24027d01-57b7-49b4-8f18-acda62b40d19" testId="1a7e6617-1890-6213-c8a4-a9928dda483b" testName="UndeclaredReadOnlyAcquisitionIsRejected(&quot;context&quot;)" computerName="5e9498f43725" duration="00:00:00.0000830" startTime="2026-10-07T23:36:43.6249590+08:00" endTime="2026-10-07T23:36:43.6250416+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="24027d01-57b7-49b4-8f18-acda62b40d19">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.UndeclaredReadOnlyAcquisitionIsRejected("context") managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.UndeclaredReadOnlyAcquisitionIsRejected("context") managedMB=21</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="09b7a238-ada6-46f4-accc-2b705b732762" testId="b36794d3-8b82-2b22-93e8-5594669f8ad3" testName="WarmSuccessPathsAllocateNothingWithEnabledAndDisabledChecks" computerName="5e9498f43725" duration="00:00:00.5083410" startTime="2026-10-07T23:36:43.6250555+08:00" endTime="2026-10-07T23:36:44.1333962+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="09b7a238-ada6-46f4-accc-2b705b732762">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.WarmSuccessPathsAllocateNothingWithEnabledAndDisabledChecks managedMB=21
+SPF_ACCESS_ALLOCATION enabled=False iterations=10000 value=0 metric=ManagedBytes gen0=0 controlsBefore=33536/0 controlsAfter=33536/0
+SPF_ACCESS_ALLOCATION enabled=True iterations=10000 value=0 metric=ManagedBytes gen0=0 controlsBefore=33536/0 controlsAfter=33536/0
+SPF_ACCESS_COST disabled_ms=5.877999,6.544266,6.167819,6.12214,5.593948,5.543253,5.394603,5.309867,5.31825,6.289698,6.744312,10.050431,9.616478,10.588078,9.836845,7.765966,6.733697,7.776993,5.627688,6.51333,5.860232,5.661237,5.25759,5.220365,5.410897,6.676332,6.994623,6.249439,7.246035,6.160417,5.58906
+SPF_ACCESS_COST enabled_ms=5.597773,5.789527,5.581429,5.571766,5.644373,5.528251,5.629761,5.578055,6.268658,5.754401,14.886887,9.799089,9.228652,9.263375,9.582798,12.332953,5.523543,6.493902,7.326655,5.54104,5.537444,7.090715,7.37704,6.414103,5.924728,6.372482,6.02695,5.51399,5.62211,6.821947,6.440192
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.WarmSuccessPathsAllocateNothingWithEnabledAndDisabledChecks managedMB=5</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="2e1a83a4-f1f4-454f-9240-ba3521c75751" testId="080a7864-c9c2-039d-683f-0dd9b2e72b18" testName="InactiveEmptyPipelineEndAndDisposeCannotReleaseWriterOwnership" computerName="5e9498f43725" duration="00:00:00.0004390" startTime="2026-10-07T23:36:43.6020004+08:00" endTime="2026-10-07T23:36:43.6024397+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="2e1a83a4-f1f4-454f-9240-ba3521c75751">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.InactiveEmptyPipelineEndAndDisposeCannotReleaseWriterOwnership managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.InactiveEmptyPipelineEndAndDisposeCannotReleaseWriterOwnership managedMB=19</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="dde08c61-02c2-4a0e-a44e-9118d7446629" testId="6f3755d5-86f1-03fb-d1f4-eb249d0df8c0" testName="ThrowingSystemSelfCompletesItsUnreturnedPrivateJob" computerName="5e9498f43725" duration="00:00:00.0008640" startTime="2026-10-07T23:36:45.3106638+08:00" endTime="2026-10-07T23:36:45.3115281+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="dde08c61-02c2-4a0e-a44e-9118d7446629">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.ThrowingSystemSelfCompletesItsUnreturnedPrivateJob managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.ThrowingSystemSelfCompletesItsUnreturnedPrivateJob managedMB=19</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="46bda846-8e26-48dc-baaf-ffaf2201c1a7" testId="e06c255d-f415-8cd7-e2f6-6ed56888692e" testName="UndeclaredExplicitWriteIsRejectedButLegacyReadDeclarationRemainsCompatible" computerName="5e9498f43725" duration="00:00:00.0007460" startTime="2026-10-07T23:36:43.6230497+08:00" endTime="2026-10-07T23:36:43.6237957+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="46bda846-8e26-48dc-baaf-ffaf2201c1a7">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.UndeclaredExplicitWriteIsRejectedButLegacyReadDeclarationRemainsCompatible managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.UndeclaredExplicitWriteIsRejectedButLegacyReadDeclarationRemainsCompatible managedMB=21</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="06cfeab0-e2db-4847-a581-fb97ed47122b" testId="208d4815-bddd-1237-2612-8e783c77b6f0" testName="SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(False,False)" computerName="5e9498f43725" duration="00:00:00.0066040" startTime="2026-10-07T23:36:45.2943147+08:00" endTime="2026-10-07T23:36:45.3009187+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="06cfeab0-e2db-4847-a581-fb97ed47122b">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(False,False) managedMB=17
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(False,False) managedMB=17</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="b947d79b-327d-41fb-931a-a2002323c4e5" testId="2f540644-632f-8798-c851-0eb86a0281ab" testName="SteadyStateTicksDoNotAllocate" computerName="5e9498f43725" duration="00:00:00.6031090" startTime="2026-10-07T23:36:44.6760755+08:00" endTime="2026-10-07T23:36:45.2791848+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="b947d79b-327d-41fb-931a-a2002323c4e5">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.SessionTests.SteadyStateTicksDoNotAllocate managedMB=14
+[SPF-TEST] end   SPF.Tests.EditMode.SessionTests.SteadyStateTicksDoNotAllocate managedMB=14</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="77c3f719-76b6-494f-bf76-9e021bc019bb" testId="fbfa6459-c6a9-cc84-ad5d-fcf0ea39cb15" testName="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,False)" computerName="5e9498f43725" duration="00:00:00.0005330" startTime="2026-10-07T23:36:43.6191808+08:00" endTime="2026-10-07T23:36:43.6197133+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="77c3f719-76b6-494f-bf76-9e021bc019bb">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,False) managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,False) managedMB=21</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="d1b92091-7a04-45d5-8a0b-6dd2b85445e3" testId="f3c9f533-1e62-cc1d-f72d-13050910befe" testName="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,True)" computerName="5e9498f43725" duration="00:00:00.0002840" startTime="2026-10-07T23:36:43.6197410+08:00" endTime="2026-10-07T23:36:43.6200249+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="d1b92091-7a04-45d5-8a0b-6dd2b85445e3">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,True) managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,True) managedMB=21</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="0adc74c7-b30b-4160-a033-a56b2feaeb19" testId="a83baa3c-e991-2dc6-94f4-5d824ced83bc" testName="RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(&quot;end&quot;)" computerName="5e9498f43725" duration="00:00:00.0003200" startTime="2026-10-07T23:36:45.2930272+08:00" endTime="2026-10-07T23:36:45.2933473+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="0adc74c7-b30b-4160-a033-a56b2feaeb19">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("end") managedMB=16
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("end") managedMB=16</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="05d7ef80-b96d-4ef8-8660-a29459d9ecce" testId="4f158b97-be5e-7487-ba16-263597efa86e" testName="ReadDeclarationCannotAcquireExplicitWrite(&quot;context&quot;)" computerName="5e9498f43725" duration="00:00:00.0002250" startTime="2026-10-07T23:36:43.6075294+08:00" endTime="2026-10-07T23:36:43.6077539+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="05d7ef80-b96d-4ef8-8660-a29459d9ecce">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReadDeclarationCannotAcquireExplicitWrite("context") managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReadDeclarationCannotAcquireExplicitWrite("context") managedMB=20</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="a755d986-e8bb-4032-b488-091e172e4e91" testId="7324e14a-973a-162d-b661-cbb40e665ac8" testName="OnTickRejectsUnsafeReentry(&quot;end&quot;)" computerName="5e9498f43725" duration="00:00:00.0003570" startTime="2026-10-07T23:36:45.2896827+08:00" endTime="2026-10-07T23:36:45.2900397+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="a755d986-e8bb-4032-b488-091e172e4e91">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("end") managedMB=15
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("end") managedMB=15</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="6d7b0ad6-1e4a-47eb-9078-4a839de1d25c" testId="c62a715a-734f-6f00-f953-8965017a2f41" testName="UndeclaredReadOnlyAcquisitionIsRejected(&quot;world&quot;)" computerName="5e9498f43725" duration="00:00:00.0005910" startTime="2026-10-07T23:36:43.6238192+08:00" endTime="2026-10-07T23:36:43.6244104+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6d7b0ad6-1e4a-47eb-9078-4a839de1d25c">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.UndeclaredReadOnlyAcquisitionIsRejected("world") managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.UndeclaredReadOnlyAcquisitionIsRejected("world") managedMB=21</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="50829450-8f0b-401c-b7df-d02fb27cefec" testId="41e0ddb5-613c-9790-ebaf-2354a939d0bb" testName="SimulatedCompletionRejectionRetainsWindowUntilSuccessfulRetry" computerName="5e9498f43725" duration="00:00:00.0011580" startTime="2026-10-07T23:36:43.6202558+08:00" endTime="2026-10-07T23:36:43.6214139+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="50829450-8f0b-401c-b7df-d02fb27cefec">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SimulatedCompletionRejectionRetainsWindowUntilSuccessfulRetry managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SimulatedCompletionRejectionRetainsWindowUntilSuccessfulRetry managedMB=21</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="4e2bb684-da34-4c6d-a199-f0e394da58b3" testId="695ee5cb-fe75-a13f-e44a-091c4efd9679" testName="RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(&quot;begin&quot;)" computerName="5e9498f43725" duration="00:00:00.0007350" startTime="2026-10-07T23:36:45.2922532+08:00" endTime="2026-10-07T23:36:45.2929880+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="4e2bb684-da34-4c6d-a199-f0e394da58b3">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("begin") managedMB=16
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("begin") managedMB=16</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="c9301755-48ce-4df2-8eeb-6cf5b9d57f4d" testId="86ddda1d-18f8-c478-5933-10204ee606ea" testName="OnTickRejectsUnsafeReentry(&quot;reset&quot;)" computerName="5e9498f43725" duration="00:00:00.0000740" startTime="2026-10-07T23:36:45.2900529+08:00" endTime="2026-10-07T23:36:45.2901268+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c9301755-48ce-4df2-8eeb-6cf5b9d57f4d">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("reset") managedMB=15
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("reset") managedMB=15</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="aec591c9-6b55-4718-a859-e96ee146270d" testId="e18d7101-82cf-e386-66b0-f3299edf7eb9" testName="WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter(&quot;world&quot;)" computerName="5e9498f43725" duration="00:00:00.0013170" startTime="2026-10-07T23:36:44.1344428+08:00" endTime="2026-10-07T23:36:44.1357602+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="aec591c9-6b55-4718-a859-e96ee146270d">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter("world") managedMB=5
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter("world") managedMB=5</StdOut>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="UpdateAndSyncRunTicksFromFrameTime" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="64edfc1c-21aa-7e3c-e023-2145b5bb6839">
+      <Execution id="ae2d4dea-32a2-4153-852e-5a20dc99b49f" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.SessionTests" name="UpdateAndSyncRunTicksFromFrameTime" />
+    </UnitTest>
+    <UnitTest name="AcquiringExplicitViewsNeverCompletesOutstandingJobs" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="1917e3c8-ae97-a644-34b5-0365c0acffde">
+      <Execution id="64bf0e62-05f8-406e-8e5e-b7c66bbf9864" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="AcquiringExplicitViewsNeverCompletesOutstandingJobs" />
+    </UnitTest>
+    <UnitTest name="SimulatedBarrierCompletionRejectionSkipsBarrierAndRetainsEarlierWork" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="b5fb04d3-632f-9818-0c3b-a23eb2c0be8a">
+      <Execution id="8e0872f0-f629-4e37-a2dc-d4cd297e8262" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="SimulatedBarrierCompletionRejectionSkipsBarrierAndRetainsEarlierWork" />
+    </UnitTest>
+    <UnitTest name="OnTickRejectsUnsafeReentry(&quot;write&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="70577e2c-dcb2-4e72-e60a-b4078585b1b0">
+      <Execution id="0b744086-f194-4f6a-af27-610bd08bbd20" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="OnTickRejectsUnsafeReentry(&quot;write&quot;)" />
+    </UnitTest>
+    <UnitTest name="InactiveEmptyPipelineEndAndDisposeCannotReleaseWriterOwnership" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="080a7864-c9c2-039d-683f-0dd9b2e72b18">
+      <Execution id="2e1a83a4-f1f4-454f-9240-ba3521c75751" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="InactiveEmptyPipelineEndAndDisposeCannotReleaseWriterOwnership" />
+    </UnitTest>
+    <UnitTest name="WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter(&quot;context&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="6b17199f-d001-2bcf-bcd8-5f4f5e131fa6">
+      <Execution id="74d52667-ae37-4c5c-8a42-6ad9cd4b0954" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter(&quot;context&quot;)" />
+    </UnitTest>
+    <UnitTest name="RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(&quot;read&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="d1f2cfda-ed22-8688-72da-f28553704171">
+      <Execution id="179c2b86-3f20-4eaf-ba13-c319b09aa001" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(&quot;read&quot;)" />
+    </UnitTest>
+    <UnitTest name="SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(True,False)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="f0b8e286-2a32-a3c0-ce61-f36956baf5be">
+      <Execution id="81a736a5-6c19-403b-b13b-ad4dcded02c1" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(True,False)" />
+    </UnitTest>
+    <UnitTest name="SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(False,True)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="d1655874-4708-a0bc-80d6-a20209bce64b">
+      <Execution id="a50e602a-0d19-49ba-b1a7-d6f5f3d0ae77" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(False,True)" />
+    </UnitTest>
+    <UnitTest name="RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(&quot;write&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="55127807-671d-fd4e-149e-c69f9e60c9fd">
+      <Execution id="084a917d-3d9c-4b86-bc61-8ef9e72b3386" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(&quot;write&quot;)" />
+    </UnitTest>
+    <UnitTest name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;destroy&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="f2aa575d-1c7c-9082-4ba9-b43c7970e407">
+      <Execution id="5c4c8c21-2ae1-4651-8c0f-ba26160ad26b" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;destroy&quot;)" />
+    </UnitTest>
+    <UnitTest name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;compact&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="42f664d6-8dcd-0b87-8702-4350c266164e">
+      <Execution id="f196d49d-7c46-4bb5-9744-0ab8bf7a2697" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;compact&quot;)" />
+    </UnitTest>
+    <UnitTest name="RestartReusesMemoryAndRepopulates" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="3e897c1f-845c-8a3b-3ef3-a02dc4e02a55">
+      <Execution id="d4a55021-f550-4608-8e2c-405421a9240f" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.SessionTests" name="RestartReusesMemoryAndRepopulates" />
+    </UnitTest>
+    <UnitTest name="OnTickRejectsUnsafeReentry(&quot;pipeline-dispose&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="6c78b520-3eda-a6d9-4f02-d13866f625cb">
+      <Execution id="94f6719c-f45b-43f8-9fa7-58a57faac877" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="OnTickRejectsUnsafeReentry(&quot;pipeline-dispose&quot;)" />
+    </UnitTest>
+    <UnitTest name="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,True)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="885e5b69-2722-a462-4b60-eb19349a6400">
+      <Execution id="3cdee27e-3f88-4d91-9568-dd77dea60175" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,True)" />
+    </UnitTest>
+    <UnitTest name="TwoWorldsDoNotShareAccessOrOutstandingOwnership" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="b4ad01b4-d95a-ef3d-7ffd-e1dab69c1092">
+      <Execution id="8e14fc80-7947-45d7-82ee-ad6ccc5b6ac9" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="TwoWorldsDoNotShareAccessOrOutstandingOwnership" />
+    </UnitTest>
+    <UnitTest name="OnTickRejectsUnsafeReentry(&quot;begin&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="5860aa77-0a4c-5328-ba8c-3aeacd0126ff">
+      <Execution id="97c08339-2907-48aa-9af8-f11a0c926ed1" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="OnTickRejectsUnsafeReentry(&quot;begin&quot;)" />
+    </UnitTest>
+    <UnitTest name="SchedulingPreservesCompletedDependencyValues(True,True)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="6436675e-7420-97cd-55c0-ca47d3c33418">
+      <Execution id="a94db79d-9c7f-48b6-9a3c-91d540d9552d" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="SchedulingPreservesCompletedDependencyValues(True,True)" />
+    </UnitTest>
+    <UnitTest name="SimulatedCompletionRejectionRetainsWindowUntilSuccessfulRetry" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="41e0ddb5-613c-9790-ebaf-2354a939d0bb">
+      <Execution id="50829450-8f0b-401c-b7df-d02fb27cefec" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="SimulatedCompletionRejectionRetainsWindowUntilSuccessfulRetry" />
+    </UnitTest>
+    <UnitTest name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;reset&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="78a687e6-45b7-73ec-bcce-dfc865e13e1d">
+      <Execution id="c1704e5e-8e04-4905-a391-ae91e8c62a51" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;reset&quot;)" />
+    </UnitTest>
+    <UnitTest name="PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(ApplyCommands)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="217f343c-145b-c7f8-27c1-95d7a00bafbf">
+      <Execution id="36f2fb1f-2057-481f-be81-c005b726eee2" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(ApplyCommands)" />
+    </UnitTest>
+    <UnitTest name="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,True)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="f3c9f533-1e62-cc1d-f72d-13050910befe">
+      <Execution id="d1b92091-7a04-45d5-8a0b-6dd2b85445e3" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,True)" />
+    </UnitTest>
+    <UnitTest name="SynchronousDeclaredSystemDoesNotCloseStructuralWindow" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="079d30ab-e4d0-2018-5204-3b1c824f2f9d">
+      <Execution id="48c01518-d65a-4fce-b9a5-0c83f59b513e" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="SynchronousDeclaredSystemDoesNotCloseStructuralWindow" />
+    </UnitTest>
+    <UnitTest name="ReadDeclarationCannotAcquireExplicitWrite(&quot;world&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="aec82d35-d2a8-4500-b745-bef5464261fb">
+      <Execution id="ee2143af-fba1-41c0-a255-60d874e274f9" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="ReadDeclarationCannotAcquireExplicitWrite(&quot;world&quot;)" />
+    </UnitTest>
+    <UnitTest name="UndeclaredColumnThrowsDeclaredDoesNot" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="04d82a5c-b343-48ae-e0fc-f14245822a3d">
+      <Execution id="82647859-a786-4927-b005-192675e526ff" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessGuardTests" name="UndeclaredColumnThrowsDeclaredDoesNot" />
+    </UnitTest>
+    <UnitTest name="ThrowingSystemSelfCompletesItsUnreturnedPrivateJob" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="6f3755d5-86f1-03fb-d1f4-eb249d0df8c0">
+      <Execution id="dde08c61-02c2-4a0e-a44e-9118d7446629" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="ThrowingSystemSelfCompletesItsUnreturnedPrivateJob" />
+    </UnitTest>
+    <UnitTest name="PopulationStaysAtTargetAndHandlesStayConsistent" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="cb7d155e-1749-5b2e-960f-342debe552ac">
+      <Execution id="41458148-3381-4d80-8fc3-ce1e1ebae207" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.SessionTests" name="PopulationStaysAtTargetAndHandlesStayConsistent" />
+    </UnitTest>
+    <UnitTest name="RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(&quot;reset&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="bbcda61c-b408-2d9b-6c36-21ac5079554c">
+      <Execution id="19bdb49a-2f81-4cc6-baf0-78f0aa63f0d0" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(&quot;reset&quot;)" />
+    </UnitTest>
+    <UnitTest name="UndeclaredExplicitWriteIsRejectedButLegacyReadDeclarationRemainsCompatible" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="e06c255d-f415-8cd7-e2f6-6ed56888692e">
+      <Execution id="46bda846-8e26-48dc-baaf-ffaf2201c1a7" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="UndeclaredExplicitWriteIsRejectedButLegacyReadDeclarationRemainsCompatible" />
+    </UnitTest>
+    <UnitTest name="RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(&quot;end&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="a83baa3c-e991-2dc6-94f4-5d824ced83bc">
+      <Execution id="0adc74c7-b30b-4160-a033-a56b2feaeb19" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(&quot;end&quot;)" />
+    </UnitTest>
+    <UnitTest name="SchedulingPreservesCompletedDependencyValues(False,False)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="ba848ede-e0b5-72d6-2780-7778b8908fd8">
+      <Execution id="cd7e4a22-5462-4fb3-8b10-2fd03d7b3339" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="SchedulingPreservesCompletedDependencyValues(False,False)" />
+    </UnitTest>
+    <UnitTest name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;sort&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="355e63d5-c363-0541-843b-4b1be3344ad7">
+      <Execution id="664c66b4-0286-4899-91c7-1b7d404bcfaa" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;sort&quot;)" />
+    </UnitTest>
+    <UnitTest name="OrdinarySyncCannotDisposePipelineOrOwnerWhileCallbacksRun(False)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="71561582-c1ee-b3a0-bee2-f94f3fcdfe58">
+      <Execution id="87c862cb-3f28-44a4-88a5-1088ad6c7c0b" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="OrdinarySyncCannotDisposePipelineOrOwnerWhileCallbacksRun(False)" />
+    </UnitTest>
+    <UnitTest name="OnTickRejectsUnsafeReentry(&quot;end&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="7324e14a-973a-162d-b661-cbb40e665ac8">
+      <Execution id="a755d986-e8bb-4032-b488-091e172e4e91" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="OnTickRejectsUnsafeReentry(&quot;end&quot;)" />
+    </UnitTest>
+    <UnitTest name="ReadDeclarationCannotAcquireExplicitWrite(&quot;table&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="bbcf05bf-5a27-e0c7-8667-cc19f3111e9f">
+      <Execution id="b6f022e3-7712-483e-b578-1b8e97045877" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="ReadDeclarationCannotAcquireExplicitWrite(&quot;table&quot;)" />
+    </UnitTest>
+    <UnitTest name="UndeclaredReadOnlyAcquisitionIsRejected(&quot;table&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="a5333da9-039f-6300-f085-1200007bced8">
+      <Execution id="918044ce-c1b6-4026-bb00-7dcda50fec0c" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="UndeclaredReadOnlyAcquisitionIsRejected(&quot;table&quot;)" />
+    </UnitTest>
+    <UnitTest name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;spawn&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="1c41b440-072f-c120-d644-76fd93c21651">
+      <Execution id="994486c1-a054-47e0-b911-190e87385f6e" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;spawn&quot;)" />
+    </UnitTest>
+    <UnitTest name="OnCreateBetweenTicksCompletedBarrierAndSerialCompletionAreLegal" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="a7ea8151-3f03-f6d0-a57d-e5e033ae80ef">
+      <Execution id="79c36089-6912-46fe-9479-24d821fd5abd" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="OnCreateBetweenTicksCompletedBarrierAndSerialCompletionAreLegal" />
+    </UnitTest>
+    <UnitTest name="PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(Resolve)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="60965e2f-9303-0e02-3126-7d2e294f1d37">
+      <Execution id="55e87186-ade7-4b61-8b7b-cdb4d908e396" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(Resolve)" />
+    </UnitTest>
+    <UnitTest name="SchedulingPreservesCompletedDependencyValues(True,False)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="7225372e-853a-479d-89d7-401a2ec33c43">
+      <Execution id="04fdb051-022c-4573-b8be-3ee4b62c6037" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="SchedulingPreservesCompletedDependencyValues(True,False)" />
+    </UnitTest>
+    <UnitTest name="RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(&quot;begin&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="695ee5cb-fe75-a13f-e44a-091c4efd9679">
+      <Execution id="4e2bb684-da34-4c6d-a199-f0e394da58b3" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(&quot;begin&quot;)" />
+    </UnitTest>
+    <UnitTest name="WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter(&quot;world&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="e18d7101-82cf-e386-66b0-f3299edf7eb9">
+      <Execution id="aec591c9-6b55-4718-a859-e96ee146270d" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter(&quot;world&quot;)" />
+    </UnitTest>
+    <UnitTest name="OrdinarySyncCannotDisposePipelineOrOwnerWhileCallbacksRun(True)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="74dd1830-ea22-8007-accb-1da79dba796c">
+      <Execution id="f3b4b945-0013-4c41-adfc-7f75e1377ddd" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="OrdinarySyncCannotDisposePipelineOrOwnerWhileCallbacksRun(True)" />
+    </UnitTest>
+    <UnitTest name="UndeclaredReadOnlyAcquisitionIsRejected(&quot;context&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="1a7e6617-1890-6213-c8a4-a9928dda483b">
+      <Execution id="24027d01-57b7-49b4-8f18-acda62b40d19" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="UndeclaredReadOnlyAcquisitionIsRejected(&quot;context&quot;)" />
+    </UnitTest>
+    <UnitTest name="OnTickRejectsUnsafeReentry(&quot;read&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="0ce662ad-94c4-8eb4-55ed-35e8bcb34780">
+      <Execution id="a0446e4d-729d-4ffa-bfb0-20c973790498" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="OnTickRejectsUnsafeReentry(&quot;read&quot;)" />
+    </UnitTest>
+    <UnitTest name="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,False)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="33124dd2-3c56-3245-3d78-728acc6e2dde">
+      <Execution id="75c74c3b-b31b-4d48-afdd-71360a73356c" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,False)" />
+    </UnitTest>
+    <UnitTest name="WarmSuccessPathsAllocateNothingWithEnabledAndDisabledChecks" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="b36794d3-8b82-2b22-93e8-5594669f8ad3">
+      <Execution id="09b7a238-ada6-46f4-accc-2b705b732762" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="WarmSuccessPathsAllocateNothingWithEnabledAndDisabledChecks" />
+    </UnitTest>
+    <UnitTest name="SameSeedIsDeterministic" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="ce323e71-3229-069f-eb33-7171ac34364a">
+      <Execution id="6b3a5f6d-dbd2-47b0-a292-534d72c721e5" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.SessionTests" name="SameSeedIsDeterministic" />
+    </UnitTest>
+    <UnitTest name="SimulatedRecoveryCompletionRejectionKeepsWorldOwnedUntilRetry" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="0b60b197-3cf0-8412-6c02-7334f81076b3">
+      <Execution id="790718d6-96f3-47ba-b9f1-d737bc64b1c9" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="SimulatedRecoveryCompletionRejectionKeepsWorldOwnedUntilRetry" />
+    </UnitTest>
+    <UnitTest name="SuccessfulSchedulingRecoveryReleasesSharedWorldAdmission" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="0b70e14e-3c96-f764-c15c-4a060bcd5e0b">
+      <Execution id="9efa65b2-3ae1-4142-a338-6e6b2cf27c73" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="SuccessfulSchedulingRecoveryReleasesSharedWorldAdmission" />
+    </UnitTest>
+    <UnitTest name="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,False)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="fbfa6459-c6a9-cc84-ad5d-fcf0ea39cb15">
+      <Execution id="77c3f719-76b6-494f-bf76-9e021bc019bb" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,False)" />
+    </UnitTest>
+    <UnitTest name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;clear-level&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="4ade8258-29c4-5e44-8582-295b22850c7d">
+      <Execution id="2c138466-b277-4984-bf2e-27f0d211cd24" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;clear-level&quot;)" />
+    </UnitTest>
+    <UnitTest name="UndeclaredJobDataResourceThrows" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="ce4e07c7-f7f8-599a-824a-c80ec0343d75">
+      <Execution id="0dbfb825-5479-4a35-b8a7-725ab2cbc5ec" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessGuardTests" name="UndeclaredJobDataResourceThrows" />
+    </UnitTest>
+    <UnitTest name="RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(&quot;pipeline-dispose&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="2c686e6e-b2b2-3bef-23ab-84da92fc31bb">
+      <Execution id="9df9e3a2-cb8d-42b9-a8db-93faae10a39d" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(&quot;pipeline-dispose&quot;)" />
+    </UnitTest>
+    <UnitTest name="OnTickRejectsUnsafeReentry(&quot;session-dispose&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="eaaec5a8-997f-dab7-f4c2-a202cc58e9dd">
+      <Execution id="83c6779c-4898-4232-a5f1-38422f2b4bdb" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="OnTickRejectsUnsafeReentry(&quot;session-dispose&quot;)" />
+    </UnitTest>
+    <UnitTest name="SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(False,False)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="208d4815-bddd-1237-2612-8e783c77b6f0">
+      <Execution id="06cfeab0-e2db-4847-a581-fb97ed47122b" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(False,False)" />
+    </UnitTest>
+    <UnitTest name="ReadDeclarationCannotAcquireExplicitWrite(&quot;context&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="4f158b97-be5e-7487-ba16-263597efa86e">
+      <Execution id="05d7ef80-b96d-4ef8-8660-a29459d9ecce" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="ReadDeclarationCannotAcquireExplicitWrite(&quot;context&quot;)" />
+    </UnitTest>
+    <UnitTest name="WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter(&quot;table&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="6e318615-b67a-4d80-8e28-1e8b97bff31d">
+      <Execution id="c142fc9f-27d0-4466-b7da-cde1fbbd8cca" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter(&quot;table&quot;)" />
+    </UnitTest>
+    <UnitTest name="PlaybackRejectionReleasesSharedWorldAdmission" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="f719f8e1-e5ac-4e30-25f6-2e7f31225779">
+      <Execution id="cee988e6-159f-42de-8260-7219e1b91951" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="PlaybackRejectionReleasesSharedWorldAdmission" />
+    </UnitTest>
+    <UnitTest name="ReadOnlyNativeViewCanBePassedToDependentJob" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="f9897ff9-0bfd-79ac-6449-9ed90d00c16c">
+      <Execution id="9d951b3f-0581-4a3a-bec8-82ab8fc3a248" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="ReadOnlyNativeViewCanBePassedToDependentJob" />
+    </UnitTest>
+    <UnitTest name="OnSyncCannotAdmitAnotherPipelineAndThrowingSyncReleasesAfterExit" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="9672ee50-288e-2658-803a-5b2ff7258f2d">
+      <Execution id="f3db340b-43b5-4a6d-9cb6-6f2fd1111f3e" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="OnSyncCannotAdmitAnotherPipelineAndThrowingSyncReleasesAfterExit" />
+    </UnitTest>
+    <UnitTest name="SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(True,True)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="098f6288-66fe-2d77-12dd-3b1714fc5673">
+      <Execution id="1db8045d-2e14-4cd7-856b-20457829d5a1" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(True,True)" />
+    </UnitTest>
+    <UnitTest name="CompletedBarrierThenSynchronousDeclaredReaderDoesNotReborrowCompletedWork" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="602fe94a-c009-486c-233b-a3fa39295f6e">
+      <Execution id="b4feca48-573e-45f4-91c0-1284283a5e9a" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="CompletedBarrierThenSynchronousDeclaredReaderDoesNotReborrowCompletedWork" />
+    </UnitTest>
+    <UnitTest name="SessionSyncReopensOnlyTheOwningSession" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="18a19901-0c9b-72e7-960a-2a92fbbae927">
+      <Execution id="0714fd01-44ce-4dd6-97ea-1a9e130951b3" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="SessionSyncReopensOnlyTheOwningSession" />
+    </UnitTest>
+    <UnitTest name="UndeclaredReadOnlyAcquisitionIsRejected(&quot;world&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="c62a715a-734f-6f00-f953-8965017a2f41">
+      <Execution id="6d7b0ad6-1e4a-47eb-9078-4a839de1d25c" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="UndeclaredReadOnlyAcquisitionIsRejected(&quot;world&quot;)" />
+    </UnitTest>
+    <UnitTest name="FailedCompletionRetainsSharedWorldAdmissionUntilRetry" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="66b855b2-ed0a-90f5-2bae-d8b2c62ffc6b">
+      <Execution id="ba465348-adbc-4932-96d6-f91f1b75c0db" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="FailedCompletionRetainsSharedWorldAdmissionUntilRetry" />
+    </UnitTest>
+    <UnitTest name="OnTickRejectsUnsafeReentry(&quot;reset&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="86ddda1d-18f8-c478-5933-10204ee606ea">
+      <Execution id="c9301755-48ce-4df2-8eeb-6cf5b9d57f4d" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="OnTickRejectsUnsafeReentry(&quot;reset&quot;)" />
+    </UnitTest>
+    <UnitTest name="SimulatedSerialCompletionRejectionRetainsReturnedWorkAndSecondaryDiagnostic(False)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="026fe19f-c05c-6955-e4f6-c0caf0a02247">
+      <Execution id="b8f054a9-c93b-40c9-8365-976fe4d4c0df" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="SimulatedSerialCompletionRejectionRetainsReturnedWorkAndSecondaryDiagnostic(False)" />
+    </UnitTest>
+    <UnitTest name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;create&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="8b1b6fc2-71f4-8839-cf49-36ecf70a390f">
+      <Execution id="f6841aae-1ba5-48d0-ada5-c0fe1ab55626" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;create&quot;)" />
+    </UnitTest>
+    <UnitTest name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;spawn-range&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="73e572ef-5794-10e5-bd2f-fb3e399a56e4">
+      <Execution id="12c17b48-1778-457f-8ad2-ac6f8809357c" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="ReturnedWorkRejectsStructuralMutationUntilSync(&quot;spawn-range&quot;)" />
+    </UnitTest>
+    <UnitTest name="CountOnlyAccessDiagnosticsStillRejectStructureAndStorageDisposal" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="5ae4fdc3-5a1a-5f72-b354-a31bf07fa1f2">
+      <Execution id="cbd7fbeb-c198-4bab-80d2-34f84333fd87" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="CountOnlyAccessDiagnosticsStillRejectStructureAndStorageDisposal" />
+    </UnitTest>
+    <UnitTest name="SimulatedSerialCompletionRejectionRetainsReturnedWorkAndSecondaryDiagnostic(True)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="68670662-00fc-dafc-1066-8a6040342e77">
+      <Execution id="f6b2116d-050d-4516-a31f-1a8c425a331f" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="SimulatedSerialCompletionRejectionRetainsReturnedWorkAndSecondaryDiagnostic(True)" />
+    </UnitTest>
+    <UnitTest name="RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(&quot;session-dispose&quot;)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="83a19905-1879-7f63-6973-61981b9b5e55">
+      <Execution id="6fca46c1-cf98-46bb-8d7b-e9358f3adf9a" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.TickFailureOwnershipTests" name="RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(&quot;session-dispose&quot;)" />
+    </UnitTest>
+    <UnitTest name="SteadyStateTicksDoNotAllocate" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="2f540644-632f-8798-c851-0eb86a0281ab">
+      <Execution id="b947d79b-327d-41fb-931a-a2002323c4e5" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.SessionTests" name="SteadyStateTicksDoNotAllocate" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="6b17199f-d001-2bcf-bcd8-5f4f5e131fa6" executionId="74d52667-ae37-4c5c-8a42-6ad9cd4b0954" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="355e63d5-c363-0541-843b-4b1be3344ad7" executionId="664c66b4-0286-4899-91c7-1b7d404bcfaa" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="18a19901-0c9b-72e7-960a-2a92fbbae927" executionId="0714fd01-44ce-4dd6-97ea-1a9e130951b3" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="74dd1830-ea22-8007-accb-1da79dba796c" executionId="f3b4b945-0013-4c41-adfc-7f75e1377ddd" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f2aa575d-1c7c-9082-4ba9-b43c7970e407" executionId="5c4c8c21-2ae1-4651-8c0f-ba26160ad26b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="1c41b440-072f-c120-d644-76fd93c21651" executionId="994486c1-a054-47e0-b911-190e87385f6e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ce4e07c7-f7f8-599a-824a-c80ec0343d75" executionId="0dbfb825-5479-4a35-b8a7-725ab2cbc5ec" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="64edfc1c-21aa-7e3c-e023-2145b5bb6839" executionId="ae2d4dea-32a2-4153-852e-5a20dc99b49f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f0b8e286-2a32-a3c0-ce61-f36956baf5be" executionId="81a736a5-6c19-403b-b13b-ad4dcded02c1" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d1f2cfda-ed22-8688-72da-f28553704171" executionId="179c2b86-3f20-4eaf-ba13-c319b09aa001" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="78a687e6-45b7-73ec-bcce-dfc865e13e1d" executionId="c1704e5e-8e04-4905-a391-ae91e8c62a51" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="5860aa77-0a4c-5328-ba8c-3aeacd0126ff" executionId="97c08339-2907-48aa-9af8-f11a0c926ed1" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="33124dd2-3c56-3245-3d78-728acc6e2dde" executionId="75c74c3b-b31b-4d48-afdd-71360a73356c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="602fe94a-c009-486c-233b-a3fa39295f6e" executionId="b4feca48-573e-45f4-91c0-1284283a5e9a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a5333da9-039f-6300-f085-1200007bced8" executionId="918044ce-c1b6-4026-bb00-7dcda50fec0c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="2c686e6e-b2b2-3bef-23ab-84da92fc31bb" executionId="9df9e3a2-cb8d-42b9-a8db-93faae10a39d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b5fb04d3-632f-9818-0c3b-a23eb2c0be8a" executionId="8e0872f0-f629-4e37-a2dc-d4cd297e8262" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="0b60b197-3cf0-8412-6c02-7334f81076b3" executionId="790718d6-96f3-47ba-b9f1-d737bc64b1c9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a7ea8151-3f03-f6d0-a57d-e5e033ae80ef" executionId="79c36089-6912-46fe-9479-24d821fd5abd" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="1917e3c8-ae97-a644-34b5-0365c0acffde" executionId="64bf0e62-05f8-406e-8e5e-b7c66bbf9864" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="7225372e-853a-479d-89d7-401a2ec33c43" executionId="04fdb051-022c-4573-b8be-3ee4b62c6037" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="83a19905-1879-7f63-6973-61981b9b5e55" executionId="6fca46c1-cf98-46bb-8d7b-e9358f3adf9a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ba848ede-e0b5-72d6-2780-7778b8908fd8" executionId="cd7e4a22-5462-4fb3-8b10-2fd03d7b3339" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="66b855b2-ed0a-90f5-2bae-d8b2c62ffc6b" executionId="ba465348-adbc-4932-96d6-f91f1b75c0db" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b4ad01b4-d95a-ef3d-7ffd-e1dab69c1092" executionId="8e14fc80-7947-45d7-82ee-ad6ccc5b6ac9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="0ce662ad-94c4-8eb4-55ed-35e8bcb34780" executionId="a0446e4d-729d-4ffa-bfb0-20c973790498" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="70577e2c-dcb2-4e72-e60a-b4078585b1b0" executionId="0b744086-f194-4f6a-af27-610bd08bbd20" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="8b1b6fc2-71f4-8839-cf49-36ecf70a390f" executionId="f6841aae-1ba5-48d0-ada5-c0fe1ab55626" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="4ade8258-29c4-5e44-8582-295b22850c7d" executionId="2c138466-b277-4984-bf2e-27f0d211cd24" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="aec82d35-d2a8-4500-b745-bef5464261fb" executionId="ee2143af-fba1-41c0-a255-60d874e274f9" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="73e572ef-5794-10e5-bd2f-fb3e399a56e4" executionId="12c17b48-1778-457f-8ad2-ac6f8809357c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="71561582-c1ee-b3a0-bee2-f94f3fcdfe58" executionId="87c862cb-3f28-44a4-88a5-1088ad6c7c0b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="885e5b69-2722-a462-4b60-eb19349a6400" executionId="3cdee27e-3f88-4d91-9568-dd77dea60175" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="68670662-00fc-dafc-1066-8a6040342e77" executionId="f6b2116d-050d-4516-a31f-1a8c425a331f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="6c78b520-3eda-a6d9-4f02-d13866f625cb" executionId="94f6719c-f45b-43f8-9fa7-58a57faac877" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="026fe19f-c05c-6955-e4f6-c0caf0a02247" executionId="b8f054a9-c93b-40c9-8365-976fe4d4c0df" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="6436675e-7420-97cd-55c0-ca47d3c33418" executionId="a94db79d-9c7f-48b6-9a3c-91d540d9552d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="55127807-671d-fd4e-149e-c69f9e60c9fd" executionId="084a917d-3d9c-4b86-bc61-8ef9e72b3386" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="3e897c1f-845c-8a3b-3ef3-a02dc4e02a55" executionId="d4a55021-f550-4608-8e2c-405421a9240f" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f9897ff9-0bfd-79ac-6449-9ed90d00c16c" executionId="9d951b3f-0581-4a3a-bec8-82ab8fc3a248" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="60965e2f-9303-0e02-3126-7d2e294f1d37" executionId="55e87186-ade7-4b61-8b7b-cdb4d908e396" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="cb7d155e-1749-5b2e-960f-342debe552ac" executionId="41458148-3381-4d80-8fc3-ce1e1ebae207" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="bbcf05bf-5a27-e0c7-8667-cc19f3111e9f" executionId="b6f022e3-7712-483e-b578-1b8e97045877" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="079d30ab-e4d0-2018-5204-3b1c824f2f9d" executionId="48c01518-d65a-4fce-b9a5-0c83f59b513e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f719f8e1-e5ac-4e30-25f6-2e7f31225779" executionId="cee988e6-159f-42de-8260-7219e1b91951" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="42f664d6-8dcd-0b87-8702-4350c266164e" executionId="f196d49d-7c46-4bb5-9744-0ab8bf7a2697" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="bbcda61c-b408-2d9b-6c36-21ac5079554c" executionId="19bdb49a-2f81-4cc6-baf0-78f0aa63f0d0" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="eaaec5a8-997f-dab7-f4c2-a202cc58e9dd" executionId="83c6779c-4898-4232-a5f1-38422f2b4bdb" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="5ae4fdc3-5a1a-5f72-b354-a31bf07fa1f2" executionId="cbd7fbeb-c198-4bab-80d2-34f84333fd87" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="217f343c-145b-c7f8-27c1-95d7a00bafbf" executionId="36f2fb1f-2057-481f-be81-c005b726eee2" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="d1655874-4708-a0bc-80d6-a20209bce64b" executionId="a50e602a-0d19-49ba-b1a7-d6f5f3d0ae77" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="04d82a5c-b343-48ae-e0fc-f14245822a3d" executionId="82647859-a786-4927-b005-192675e526ff" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="ce323e71-3229-069f-eb33-7171ac34364a" executionId="6b3a5f6d-dbd2-47b0-a292-534d72c721e5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="0b70e14e-3c96-f764-c15c-4a060bcd5e0b" executionId="9efa65b2-3ae1-4142-a338-6e6b2cf27c73" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="098f6288-66fe-2d77-12dd-3b1714fc5673" executionId="1db8045d-2e14-4cd7-856b-20457829d5a1" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="6e318615-b67a-4d80-8e28-1e8b97bff31d" executionId="c142fc9f-27d0-4466-b7da-cde1fbbd8cca" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="9672ee50-288e-2658-803a-5b2ff7258f2d" executionId="f3db340b-43b5-4a6d-9cb6-6f2fd1111f3e" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="1a7e6617-1890-6213-c8a4-a9928dda483b" executionId="24027d01-57b7-49b4-8f18-acda62b40d19" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="b36794d3-8b82-2b22-93e8-5594669f8ad3" executionId="09b7a238-ada6-46f4-accc-2b705b732762" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="080a7864-c9c2-039d-683f-0dd9b2e72b18" executionId="2e1a83a4-f1f4-454f-9240-ba3521c75751" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="6f3755d5-86f1-03fb-d1f4-eb249d0df8c0" executionId="dde08c61-02c2-4a0e-a44e-9118d7446629" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e06c255d-f415-8cd7-e2f6-6ed56888692e" executionId="46bda846-8e26-48dc-baaf-ffaf2201c1a7" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="208d4815-bddd-1237-2612-8e783c77b6f0" executionId="06cfeab0-e2db-4847-a581-fb97ed47122b" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="2f540644-632f-8798-c851-0eb86a0281ab" executionId="b947d79b-327d-41fb-931a-a2002323c4e5" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="fbfa6459-c6a9-cc84-ad5d-fcf0ea39cb15" executionId="77c3f719-76b6-494f-bf76-9e021bc019bb" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f3c9f533-1e62-cc1d-f72d-13050910befe" executionId="d1b92091-7a04-45d5-8a0b-6dd2b85445e3" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="a83baa3c-e991-2dc6-94f4-5d824ced83bc" executionId="0adc74c7-b30b-4160-a033-a56b2feaeb19" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="4f158b97-be5e-7487-ba16-263597efa86e" executionId="05d7ef80-b96d-4ef8-8660-a29459d9ecce" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="7324e14a-973a-162d-b661-cbb40e665ac8" executionId="a755d986-e8bb-4032-b488-091e172e4e91" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="c62a715a-734f-6f00-f953-8965017a2f41" executionId="6d7b0ad6-1e4a-47eb-9078-4a839de1d25c" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="41e0ddb5-613c-9790-ebaf-2354a939d0bb" executionId="50829450-8f0b-401c-b7df-d02fb27cefec" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="695ee5cb-fe75-a13f-e44a-091c4efd9679" executionId="4e2bb684-da34-4c6d-a199-f0e394da58b3" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="86ddda1d-18f8-c478-5933-10204ee606ea" executionId="c9301755-48ce-4df2-8eeb-6cf5b9d57f4d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="e18d7101-82cf-e386-66b0-f3299edf7eb9" executionId="aec591c9-6b55-4718-a859-e96ee146270d" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Completed">
+    <Counters total="74" executed="74" passed="74" failed="0" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 4.5.0.0: Test execution started
+Running selected tests in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll
+   NUnit3TestExecutor discovered 74 of 74 NUnit test cases using Current Discovery mode, Non-Explicit run
+NUnit Adapter 4.5.0.0: Test execution complete
+</StdOut>
+    </Output>
+    <RunInfos>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6032372+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessGuardTests.UndeclaredColumnThrowsDeclaredDoesNot managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessGuardTests.UndeclaredColumnThrowsDeclaredDoesNot managedMB=19
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6056201+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessGuardTests.UndeclaredJobDataResourceThrows managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessGuardTests.UndeclaredJobDataResourceThrows managedMB=19
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6066088+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.AcquiringExplicitViewsNeverCompletesOutstandingJobs managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.AcquiringExplicitViewsNeverCompletesOutstandingJobs managedMB=19
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6068425+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.CompletedBarrierThenSynchronousDeclaredReaderDoesNotReborrowCompletedWork managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.CompletedBarrierThenSynchronousDeclaredReaderDoesNotReborrowCompletedWork managedMB=19
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6070781+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.CountOnlyAccessDiagnosticsStillRejectStructureAndStorageDisposal managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.CountOnlyAccessDiagnosticsStillRejectStructureAndStorageDisposal managedMB=19
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6073044+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.FailedCompletionRetainsSharedWorldAdmissionUntilRetry managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.FailedCompletionRetainsSharedWorldAdmissionUntilRetry managedMB=19
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6075219+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.InactiveEmptyPipelineEndAndDisposeCannotReleaseWriterOwnership managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.InactiveEmptyPipelineEndAndDisposeCannotReleaseWriterOwnership managedMB=19
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6077277+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.OnCreateBetweenTicksCompletedBarrierAndSerialCompletionAreLegal managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.OnCreateBetweenTicksCompletedBarrierAndSerialCompletionAreLegal managedMB=19
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6079477+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.OnSyncCannotAdmitAnotherPipelineAndThrowingSyncReleasesAfterExit managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.OnSyncCannotAdmitAnotherPipelineAndThrowingSyncReleasesAfterExit managedMB=19
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6976032+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(ApplyCommands) managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(ApplyCommands) managedMB=19
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6976064+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(Resolve) managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.PhaseLabelDoesNotOpenWindowWithEarlierReturnedWork(Resolve) managedMB=19
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6976089+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.PlaybackRejectionReleasesSharedWorldAdmission managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.PlaybackRejectionReleasesSharedWorldAdmission managedMB=19
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6976110+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReadDeclarationCannotAcquireExplicitWrite("world") managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReadDeclarationCannotAcquireExplicitWrite("world") managedMB=20
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6976131+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReadDeclarationCannotAcquireExplicitWrite("table") managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReadDeclarationCannotAcquireExplicitWrite("table") managedMB=20
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6976153+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReadDeclarationCannotAcquireExplicitWrite("context") managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReadDeclarationCannotAcquireExplicitWrite("context") managedMB=20
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6976186+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReadOnlyNativeViewCanBePassedToDependentJob managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReadOnlyNativeViewCanBePassedToDependentJob managedMB=20
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6976206+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("create") managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("create") managedMB=20
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6976261+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("destroy") managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("destroy") managedMB=20
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6985600+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("spawn") managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("spawn") managedMB=20
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6985626+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("spawn-range") managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("spawn-range") managedMB=20
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6985650+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("compact") managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("compact") managedMB=20
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6985674+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("sort") managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("sort") managedMB=20
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6985694+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("clear-level") managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("clear-level") managedMB=20
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6985715+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("reset") managedMB=20
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.ReturnedWorkRejectsStructuralMutationUntilSync("reset") managedMB=21
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6985732+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SessionSyncReopensOnlyTheOwningSession managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SessionSyncReopensOnlyTheOwningSession managedMB=21
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6985752+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,False) managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,False) managedMB=21
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6985771+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,True) managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,True) managedMB=21
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6988541+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,False) managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,False) managedMB=21
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6988566+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,True) managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,True) managedMB=21
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6988600+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SimulatedCompletionRejectionRetainsWindowUntilSuccessfulRetry managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SimulatedCompletionRejectionRetainsWindowUntilSuccessfulRetry managedMB=21
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6988630+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SuccessfulSchedulingRecoveryReleasesSharedWorldAdmission managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SuccessfulSchedulingRecoveryReleasesSharedWorldAdmission managedMB=21
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6988652+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SynchronousDeclaredSystemDoesNotCloseStructuralWindow managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SynchronousDeclaredSystemDoesNotCloseStructuralWindow managedMB=21
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6988672+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.TwoWorldsDoNotShareAccessOrOutstandingOwnership managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.TwoWorldsDoNotShareAccessOrOutstandingOwnership managedMB=21
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6988696+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.UndeclaredExplicitWriteIsRejectedButLegacyReadDeclarationRemainsCompatible managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.UndeclaredExplicitWriteIsRejectedButLegacyReadDeclarationRemainsCompatible managedMB=21
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6988717+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.UndeclaredReadOnlyAcquisitionIsRejected("world") managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.UndeclaredReadOnlyAcquisitionIsRejected("world") managedMB=21
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6988738+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.UndeclaredReadOnlyAcquisitionIsRejected("table") managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.UndeclaredReadOnlyAcquisitionIsRejected("table") managedMB=21
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:43.6990709+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.UndeclaredReadOnlyAcquisitionIsRejected("context") managedMB=21
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.UndeclaredReadOnlyAcquisitionIsRejected("context") managedMB=21
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:44.1357030+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.WarmSuccessPathsAllocateNothingWithEnabledAndDisabledChecks managedMB=21
+SPF_ACCESS_ALLOCATION enabled=False iterations=10000 value=0 metric=ManagedBytes gen0=0 controlsBefore=33536/0 controlsAfter=33536/0
+SPF_ACCESS_ALLOCATION enabled=True iterations=10000 value=0 metric=ManagedBytes gen0=0 controlsBefore=33536/0 controlsAfter=33536/0
+SPF_ACCESS_COST disabled_ms=5.877999,6.544266,6.167819,6.12214,5.593948,5.543253,5.394603,5.309867,5.31825,6.289698,6.744312,10.050431,9.616478,10.588078,9.836845,7.765966,6.733697,7.776993,5.627688,6.51333,5.860232,5.661237,5.25759,5.220365,5.410897,6.676332,6.994623,6.249439,7.246035,6.160417,5.58906
+SPF_ACCESS_COST enabled_ms=5.597773,5.789527,5.581429,5.571766,5.644373,5.528251,5.629761,5.578055,6.268658,5.754401,14.886887,9.799089,9.228652,9.263375,9.582798,12.332953,5.523543,6.493902,7.326655,5.54104,5.537444,7.090715,7.37704,6.414103,5.924728,6.372482,6.02695,5.51399,5.62211,6.821947,6.440192
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.WarmSuccessPathsAllocateNothingWithEnabledAndDisabledChecks managedMB=5
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:44.1361213+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter("world") managedMB=5
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter("world") managedMB=5
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:44.1364382+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter("table") managedMB=5
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter("table") managedMB=5
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:44.1366428+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter("context") managedMB=5
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.WriteDeclarationCanReadAndWriteAndReadOnlyViewHasNoSetter("context") managedMB=5
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:44.4068126+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.SessionTests.PopulationStaysAtTargetAndHandlesStayConsistent managedMB=5
+[SPF-TEST] end   SPF.Tests.EditMode.SessionTests.PopulationStaysAtTargetAndHandlesStayConsistent managedMB=24
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:44.4345391+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.SessionTests.RestartReusesMemoryAndRepopulates managedMB=24
+[SPF-TEST] end   SPF.Tests.EditMode.SessionTests.RestartReusesMemoryAndRepopulates managedMB=24
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:44.6771361+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.SessionTests.SameSeedIsDeterministic managedMB=24
+[SPF-TEST] end   SPF.Tests.EditMode.SessionTests.SameSeedIsDeterministic managedMB=14
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.2801529+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.SessionTests.SteadyStateTicksDoNotAllocate managedMB=14
+[SPF-TEST] end   SPF.Tests.EditMode.SessionTests.SteadyStateTicksDoNotAllocate managedMB=14
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.2884603+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.SessionTests.UpdateAndSyncRunTicksFromFrameTime managedMB=14
+[SPF-TEST] end   SPF.Tests.EditMode.SessionTests.UpdateAndSyncRunTicksFromFrameTime managedMB=15
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.2900459+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("begin") managedMB=15
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("begin") managedMB=15
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.2902756+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("end") managedMB=15
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("end") managedMB=15
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.2904958+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("reset") managedMB=15
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("reset") managedMB=15
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.2906934+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("write") managedMB=15
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("write") managedMB=15
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.2910116+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("read") managedMB=15
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("read") managedMB=15
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.2913560+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("pipeline-dispose") managedMB=15
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("pipeline-dispose") managedMB=15
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.2915612+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("session-dispose") managedMB=15
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.OnTickRejectsUnsafeReentry("session-dispose") managedMB=15
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.2939289+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.OrdinarySyncCannotDisposePipelineOrOwnerWhileCallbacksRun(False) managedMB=15
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.OrdinarySyncCannotDisposePipelineOrOwnerWhileCallbacksRun(False) managedMB=16
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.2939306+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.OrdinarySyncCannotDisposePipelineOrOwnerWhileCallbacksRun(True) managedMB=16
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.OrdinarySyncCannotDisposePipelineOrOwnerWhileCallbacksRun(True) managedMB=16
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.2939321+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("begin") managedMB=16
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("begin") managedMB=16
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.2939361+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("end") managedMB=16
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("end") managedMB=16
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.2939375+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("reset") managedMB=16
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("reset") managedMB=16
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.2940447+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("write") managedMB=16
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("write") managedMB=16
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.2942683+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("read") managedMB=16
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("read") managedMB=17
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.2944779+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("pipeline-dispose") managedMB=17
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("pipeline-dispose") managedMB=17
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.2946645+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("session-dispose") managedMB=17
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure("session-dispose") managedMB=17
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.3015162+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(False,False) managedMB=17
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(False,False) managedMB=17
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.3019176+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(True,False) managedMB=17
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(True,False) managedMB=17
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.3029136+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(False,True) managedMB=17
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(False,True) managedMB=17
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.3032780+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(True,True) managedMB=17
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(True,True) managedMB=18
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.3077763+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingPreservesCompletedDependencyValues(False,False) managedMB=18
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingPreservesCompletedDependencyValues(False,False) managedMB=18
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.3078510+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingPreservesCompletedDependencyValues(True,False) managedMB=18
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingPreservesCompletedDependencyValues(True,False) managedMB=18
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.3079073+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingPreservesCompletedDependencyValues(True,True) managedMB=18
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SchedulingPreservesCompletedDependencyValues(True,True) managedMB=18
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.3079612+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SimulatedBarrierCompletionRejectionSkipsBarrierAndRetainsEarlierWork managedMB=18
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SimulatedBarrierCompletionRejectionSkipsBarrierAndRetainsEarlierWork managedMB=18
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.3090012+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SimulatedRecoveryCompletionRejectionKeepsWorldOwnedUntilRetry managedMB=18
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SimulatedRecoveryCompletionRejectionKeepsWorldOwnedUntilRetry managedMB=18
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.3120804+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SimulatedSerialCompletionRejectionRetainsReturnedWorkAndSecondaryDiagnostic(False) managedMB=18
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SimulatedSerialCompletionRejectionRetainsReturnedWorkAndSecondaryDiagnostic(False) managedMB=19
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.3121127+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.SimulatedSerialCompletionRejectionRetainsReturnedWorkAndSecondaryDiagnostic(True) managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.SimulatedSerialCompletionRejectionRetainsReturnedWorkAndSecondaryDiagnostic(True) managedMB=19
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:36:45.3121500+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.TickFailureOwnershipTests.ThrowingSystemSelfCompletesItsUnreturnedPrivateJob managedMB=19
+[SPF-TEST] end   SPF.Tests.EditMode.TickFailureOwnershipTests.ThrowingSystemSelfCompletesItsUnreturnedPrivateJob managedMB=19
+</Text>
+      </RunInfo>
+    </RunInfos>
+  </ResultSummary>
+</TestRun>

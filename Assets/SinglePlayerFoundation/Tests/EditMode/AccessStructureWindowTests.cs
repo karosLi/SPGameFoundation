@@ -254,6 +254,88 @@ namespace SPF.Tests.EditMode
             pipeline.EndTick();
         }
 
+        [TestCase(false, false), TestCase(false, true), TestCase(true, false), TestCase(true, true)]
+        public void SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(bool emptyFirst, bool checksEnabled)
+        {
+            using var world = World();
+            using var writer = new TickPipeline(world, new ISimSystem[] { new Writer() });
+            using var empty = new TickPipeline(world, Array.Empty<ISimSystem>());
+            AccessGuard.Enabled = checksEnabled;
+            var first = emptyFirst ? empty : writer; var second = emptyFirst ? writer : empty;
+            first.BeginTick(Time);
+            try
+            {
+                Assert.Throws<InvalidOperationException>(() => second.BeginTick(Time));
+                Assert.IsFalse(second.HasPendingTick, "rejected admission must not acquire ownership");
+                second.EndTick();
+            }
+            finally { second.EndTick(); first.EndTick(); }
+            // Multiple constructed pipelines are legal and can take turns after the active one ends.
+            Assert.DoesNotThrow(() => { second.BeginTick(Time); second.EndTick(); });
+        }
+
+        [Test]
+        public void InactiveEmptyPipelineEndAndDisposeCannotReleaseWriterOwnership()
+        {
+            using var world = World();
+            using var writer = new TickPipeline(world, new ISimSystem[] { new Writer() });
+            using var empty = new TickPipeline(world, Array.Empty<ISimSystem>());
+            writer.BeginTick(Time);
+            try
+            {
+                empty.EndTick(); empty.Dispose();
+                Assert.Throws<InvalidOperationException>(() => world.CreateEntity(Things, out _));
+            }
+            finally { writer.EndTick(); }
+        }
+
+        [Test]
+        public void PlaybackRejectionReleasesSharedWorldAdmission()
+        {
+            using var world = World();
+            using var a = new TickPipeline(world, Array.Empty<ISimSystem>());
+            using var b = new TickPipeline(world, Array.Empty<ISimSystem>());
+            // Simulate a rejected playback precondition, without freeing storage or a real worker.
+            var count = typeof(AccessGuard).GetField("m_OutstandingReturns", BindingFlags.Instance | BindingFlags.NonPublic);
+            count.SetValue(world.Guard, 1);
+            try { Assert.Throws<InvalidOperationException>(() => a.BeginTick(Time)); }
+            finally { count.SetValue(world.Guard, 0); }
+            Assert.IsFalse(a.HasPendingTick);
+            Assert.DoesNotThrow(() => { b.BeginTick(Time); b.EndTick(); });
+        }
+
+        [Test]
+        public void OnSyncCannotAdmitAnotherPipelineAndThrowingSyncReleasesAfterExit()
+        {
+            var sync = new SyncAdmissionProbe();
+            var layout = new WorldLayout(); layout.Resource(new ResourceKey<SyncAdmissionProbe>("AccessWindow.Sync"), sync);
+            using var world = new SimWorld(layout, 1);
+            using var a = new TickPipeline(world, Array.Empty<ISimSystem>());
+            using var b = new TickPipeline(world, Array.Empty<ISimSystem>());
+            var failure = new Exception("OnSync failure");
+            sync.Callback = () => {
+                Assert.Throws<InvalidOperationException>(() => b.BeginTick(Time));
+                throw failure;
+            };
+            a.BeginTick(Time);
+            Assert.AreSame(failure, Assert.Catch(() => a.EndTick()));
+            Assert.IsFalse(a.HasPendingTick);
+            sync.Callback = null;
+            Assert.DoesNotThrow(() => { b.BeginTick(Time); b.EndTick(); });
+        }
+
+        [Test]
+        public void SuccessfulSchedulingRecoveryReleasesSharedWorldAdmission()
+        {
+            using var world = World();
+            var failure = new Exception("scheduling failure");
+            using var broken = new TickPipeline(world, new ISimSystem[] { new Writer(),
+                new Callback { DeclareAction = a => a.Write(Other), Action = w => throw failure } });
+            using var empty = new TickPipeline(world, Array.Empty<ISimSystem>());
+            Assert.AreSame(failure, Assert.Catch(() => broken.BeginTick(Time)));
+            Assert.DoesNotThrow(() => { empty.BeginTick(Time); empty.EndTick(); });
+        }
+
         [Test]
         public void TwoWorldsDoNotShareAccessOrOutstandingOwnership()
         {
@@ -270,6 +352,27 @@ namespace SPF.Tests.EditMode
             }
             finally { pa.EndTick(); }
         }
+
+#if SPF_DOTNET_HARNESS
+        [Test]
+        public void FailedCompletionRetainsSharedWorldAdmissionUntilRetry()
+        {
+            using var world = World();
+            using var writer = new TickPipeline(world, new ISimSystem[] { new Writer() });
+            using var empty = new TickPipeline(world, Array.Empty<ISimSystem>());
+            var hook = typeof(TickPipeline).GetField("m_BeforeCompleteForTesting", BindingFlags.Instance | BindingFlags.NonPublic);
+            writer.BeginTick(Time);
+            hook.SetValue(writer, (Action<JobHandle>)(_ => throw new Exception("simulated pre-completion rejection")));
+            try
+            {
+                Assert.Catch(() => writer.EndTick());
+                Assert.Throws<InvalidOperationException>(() => empty.BeginTick(Time));
+                Assert.IsTrue(writer.HasPendingTick);
+            }
+            finally { hook.SetValue(writer, null); empty.EndTick(); writer.EndTick(); }
+            Assert.DoesNotThrow(() => { empty.BeginTick(Time); empty.EndTick(); });
+        }
+#endif
 
 #if SPF_DOTNET_HARNESS
         [Test]
@@ -330,6 +433,12 @@ namespace SPF.Tests.EditMode
                 case "context": return new SimContext(world, Time).ReadColumn(Value);
                 default: throw new ArgumentException(route);
             }
+        }
+
+        sealed class SyncAdmissionProbe : ISyncResource
+        {
+            public Action Callback;
+            public void OnSync() => Callback?.Invoke();
         }
 
         sealed class Module : IGameplayModule

@@ -1,6 +1,6 @@
 # A2：显式列权限与结构变更窗口
 
-2026-10-07。本次独立实现蓝图 §6.2，不引入 Latios/Entities，不改变 Phase → Order → 注册序、依赖图、保存布局或旧工厂。来源基线为 `9fc4e2b7e20a17e5586a68f756e92f8102f99339`；精确受测源文件 SHA-256、命令和原始结果在[证据清单](validation/AccessStructureWindows-20261007/evidence.json)。集成提交还需完整兼容回归与原生 Jobs/Burst safety 验证，下面的 .NET 和 API 编译不替代这些门槛。
+2026-10-07。本次独立实现蓝图 §6.2，不引入 Latios/Entities，不改变 Phase → Order → 注册序、依赖图、保存布局或旧工厂。来源基线为 `9fc4e2b7e20a17e5586a68f756e92f8102f99339`；首个 A2 提交 `2748be7390f788666bd62eaa23aac0978c8df6ab` 的精确受测源文件 SHA-256、命令和原始结果在[基础证据清单](validation/AccessStructureWindows-20261007/evidence.json)；随后共享 World 所有权修正的当前证据见[补丁清单](validation/AccessStructureWindows-20261007/shared-world-evidence.json)及第 6 节。集成提交还需完整兼容回归与原生 Jobs/Burst safety 验证，下面的 .NET 和 API 编译不替代这些门槛。
 
 ## 1. 新入口和兼容边界
 
@@ -28,7 +28,7 @@ SimContext、SimWorld、SimTable 均增加同名入口：
 - HasPendingTick 本身不是是否有 Job 的证据。完全同步的已声明系统以及已经完成所有工作但还未 EndTick 的 barrier 之后都允许结构修改。
 - `JobHandle.IsCompleted` 不是主线程已取回 NativeContainer 所有权的证明，本实现不会凭它开放窗口，也不会在 getter 或结构检查中悄悄 Complete。
 
-当前检查故意采用 **World 级保守窗口**：即使 Job 使用另一张表，也先拒绝该 World 的结构变更；没有增加细粒度 table/registry/resource lease。直接由用户代码调度、尚未从 OnTick 返回的私有 Job 不可见，调用者仍须负责其同步，尤其在 OnTick/OnCreate 抛错时。一个 Session 的唯一 Pipeline 管理自己的 World，不提供多个同时运行 Pipeline 共用一个 World 的所有权协议。
+当前检查故意采用 **World 级保守窗口**：即使 Job 使用另一张表，也先拒绝该 World 的结构变更；没有增加细粒度 table/registry/resource lease。直接由用户代码调度、尚未从 OnTick 返回的私有 Job 不可见，调用者仍须负责其同步，尤其在 OnTick/OnCreate 抛错时。一个 World 可以构造多个 Pipeline，但同一时刻最多允许一个处于调度、pending Tick 或 OnSync 中。BeginTick 在任何 playback/调度副作用前取得 World 准入；另一个 Pipeline 会明确抛错，即使第一个 Tick 没有 Job 或 Enabled=false。已构造的非活动 Pipeline 仍可轮流使用同一 World。
 
 ## 3. 操作类别
 
@@ -50,7 +50,7 @@ OnCreate、已同步 Tick 之间、任何 Phase 的已完成 barrier 均合法�
 
 ## 4. 开发检查和成本
 
-`AccessGuard.Enabled` 在 UNITY_EDITOR、DEVELOPMENT_BUILD、SPF_DOTNET_HARNESS 默认 true，普通 release 默认 false。所有权记录仍运行，防止运行中切换 Enabled 丢失状态；本次没有声称检查代码被编译移除。
+`AccessGuard.Enabled` 在 UNITY_EDITOR、DEVELOPMENT_BUILD、SPF_DOTNET_HARNESS 默认 true，普通 release 默认 false。所有权记录及单活动 Pipeline 准入仍运行，防止关闭诊断丢失状态或允许另一 Pipeline 清除在途所有权；本次没有声称检查代码被编译移除。
 
 - 开发检查开启时，`Guard.Throw=false` 仅把列/资源权限违规改为计数。**结构违规仍始终抛错**，绝不在日志模式下继续释放或改表。
 - Enabled=false 关闭这些开发检查，并不自动使违反依赖/所有权契约的操作合法。原生 safety 和调用者生命周期责任仍在。
@@ -76,3 +76,13 @@ Linux x86_64 / .NET SDK 8.0.425 / Debug harness，5×10,000 次预热；每个�
 .NET Job stubs 仍 eager 执行。仅本测试 fixture 打开 ThreadStatic 的“已返回未归还”句柄 token 模式，Complete 清 token，Combine 保留存在性；它不模拟 DAG、线程并发、原生安全句柄或原生 Complete 失败。普通 harness 默认行为保持 eager/default；原有失败注入仍明确是 **Complete 之前** 的模拟拒绝。
 
 **未在本独立改动执行：** 19 组合全量回归、精确集成提交 Unity EditMode/Burst/graphics CI、Android/iOS 实机及 release player。它们由统一集成验证处理，不能把本地绿色结果提升为这些门槛已通过。
+
+## 6. 独立审查修正：多个 Pipeline 共用 World
+
+审查发现初版的真实缺口：B（无系统）先 BeginTick，A（writer）再 BeginTick，随后 B.EndTick 会把 World 全局 outstanding 计数清零，误释放 A 的结构窗口。公开构造器允许这种组合，不能仅靠文档约定排除。
+
+修正采用最小的 **单活动/pending Pipeline 准入**，不改调度图、不禁止多个非活动构造器。该规则不受 Enabled/Throw 开关影响。BeginTick 在 playback 前按引用登记当前 Pipeline；只有同一个 owner 可以归还；Complete 失败保留登记；playback 失败或成功完成的异常恢复在最外层 finally 归还。OnSync 回调执行期间仍占有登记，包括回调抛错的路径，因此不能从回调重入另一 Pipeline。无 pending 的空 Pipeline EndTick/Dispose 不会归还别人的工作。
+
+在初版 A2 上先记录 **3 失败 / 4 通过 / 7 总计** 的红结果，再实施修正。最终加入 playback 拒绝及 OnSync 回调/失败释放两例，当前源精选结果为 **74/74 通过**（39 个 A2 加 35 个原有相关用例）；两个启动顺序、Enabled=true/false、多非活动构造器、串行轮流使用、失败完成重试和不同 Session 均覆盖。真实 Unity DLL API 再编译仍为 **202 源 / 96 引用 / 0 错误 / 1 原有警告**。
+
+上面第 4 节成本和第 5 节 65+12 结果保留为初版精确提交记录，不伪装为补丁后完整回归。本补丁的成功准入仅增加每 Tick 的引用检查/赋值，不在每次列 getter 加同步；完整集成、原生执行及设备门槛仍待统一验证。

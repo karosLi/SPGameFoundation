@@ -20,12 +20,27 @@ namespace SPF.Runtime.World
         bool[] m_Allowed;
         bool[] m_Writable;
         int m_OutstandingReturns;
+        object m_ActivePipeline;
         string m_System;
 
         /// <summary>Violations seen. Access violations can be count-only; structural violations always throw when enabled.</summary>
         public int Violations { get; private set; }
         public string LastViolation { get; private set; }
         public bool Throw { get; set; } = true;
+
+        // Public constructors may share a World, but only one pipeline may schedule or hold a
+        // pending tick at once. This ownership rule is unconditional, not a development diagnostic.
+        internal void ClaimPipeline(object pipeline)
+        {
+            if (m_ActivePipeline != null)
+                throw new InvalidOperationException("This World already has an active or pending pipeline. Complete its tick before beginning another pipeline.");
+            m_ActivePipeline = pipeline;
+        }
+
+        internal void ReleasePipeline(object pipeline)
+        {
+            if (ReferenceEquals(m_ActivePipeline, pipeline)) m_ActivePipeline = null;
+        }
 
         internal void Begin(bool[] allowed, bool[] writable, string system)
         {

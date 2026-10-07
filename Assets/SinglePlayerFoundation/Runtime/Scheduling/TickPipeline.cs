@@ -129,6 +129,7 @@ namespace SPF.Runtime.Scheduling
             if (HasPendingTick)
                 throw new InvalidOperationException("EndTick must be called before the next BeginTick.");
 
+            m_World.Guard.ClaimPipeline(this);
             m_BeginningTick = true;
             m_BeginTimestamp = Stopwatch.GetTimestamp();
             s_BeginMarker.Begin();
@@ -163,7 +164,12 @@ namespace SPF.Runtime.Scheduling
                     throw;
                 }
             }
-            finally { m_BeginningTick = false; s_BeginMarker.End(); }
+            finally
+            {
+                m_BeginningTick = false;
+                if (!HasPendingTick) m_World.Guard.ReleasePipeline(this);
+                s_BeginMarker.End();
+            }
             m_Stats.RecordScheduleTotal(Stopwatch.GetTimestamp() - m_BeginTimestamp);
         }
 
@@ -250,7 +256,14 @@ namespace SPF.Runtime.Scheduling
                 // does not prevent final cleanup. Failed scheduling never counts as a successful tick.
                 finally { HasPendingTick = false; m_RecordPendingStats = false; }
             }
-            finally { m_EndingTick = false; s_EndMarker.End(); }
+            finally
+            {
+                m_EndingTick = false;
+                // Failed Complete retains admission and storage ownership. Recovery inside BeginTick
+                // releases in its outer finally; successful OnSync (or its failure) has already ended.
+                if (!HasPendingTick && !m_BeginningTick) m_World.Guard.ReleasePipeline(this);
+                s_EndMarker.End();
+            }
         }
 
         void Complete(ref JobHandle handle)

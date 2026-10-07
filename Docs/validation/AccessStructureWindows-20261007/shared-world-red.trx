@@ -1,0 +1,175 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TestRun id="93d5b5bc-3db7-4fe4-a1b6-3c3f17b5407a" name="@5e9498f43725 2026-10-07 23:34:54" xmlns="http://microsoft.com/schemas/VisualStudio/TeamTest/2010">
+  <Times creation="2026-10-07T23:34:54.0504417+08:00" queuing="2026-10-07T23:34:54.0504417+08:00" start="2026-10-07T23:34:53.3125610+08:00" finish="2026-10-07T23:34:54.0568495+08:00" />
+  <TestSettings name="default" id="464f0362-e975-4251-a1eb-2c31733cf73f">
+    <Deployment runDeploymentRoot="_5e9498f43725_2026-10-07_23_34_54" />
+  </TestSettings>
+  <Results>
+    <UnitTestResult executionId="47555325-cb2b-4528-9743-3c20c0a86574" testId="885e5b69-2722-a462-4b60-eb19349a6400" testName="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,True)" computerName="5e9498f43725" duration="00:00:00.0006070" startTime="2026-10-07T23:34:53.9059985+08:00" endTime="2026-10-07T23:34:53.9066051+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="47555325-cb2b-4528-9743-3c20c0a86574">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,True) managedMB=12
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,True) managedMB=12</StdOut>
+        <ErrorInfo>
+          <Message>  Expected: &lt;System.InvalidOperationException&gt;
+  But was:  null
+</Message>
+          <StackTrace>   at SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(Boolean emptyFirst, Boolean checksEnabled) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 268
+   at InvokeStub_AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(Object, Span`1)
+
+1)    at SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(Boolean emptyFirst, Boolean checksEnabled) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 268
+   at InvokeStub_AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(Object, Span`1)
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="69c4a5bb-f180-4bf9-a4f7-4353badccebb" testId="fbfa6459-c6a9-cc84-ad5d-fcf0ea39cb15" testName="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,False)" computerName="5e9498f43725" duration="00:00:00.0239790" startTime="2026-10-07T23:34:53.8800869+08:00" endTime="2026-10-07T23:34:53.9040655+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="69c4a5bb-f180-4bf9-a4f7-4353badccebb">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,False) managedMB=12
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,False) managedMB=12</StdOut>
+        <ErrorInfo>
+          <Message>  Expected: &lt;System.InvalidOperationException&gt;
+  But was:  null
+</Message>
+          <StackTrace>   at SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(Boolean emptyFirst, Boolean checksEnabled) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 268
+
+1)    at SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(Boolean emptyFirst, Boolean checksEnabled) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 268
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="6f0cc557-c11f-41e4-bbd9-9b38838d2db4" testId="f3c9f533-1e62-cc1d-f72d-13050910befe" testName="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,True)" computerName="5e9498f43725" duration="00:00:00.0009580" startTime="2026-10-07T23:34:53.9041824+08:00" endTime="2026-10-07T23:34:53.9051400+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="6f0cc557-c11f-41e4-bbd9-9b38838d2db4">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,True) managedMB=12
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,True) managedMB=12</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="df1a56a2-80d2-4c16-adb8-bb3f9eca0298" testId="0b70e14e-3c96-f764-c15c-4a060bcd5e0b" testName="SuccessfulSchedulingRecoveryReleasesSharedWorldAdmission" computerName="5e9498f43725" duration="00:00:00.0024800" startTime="2026-10-07T23:34:53.9081982+08:00" endTime="2026-10-07T23:34:53.9106784+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="df1a56a2-80d2-4c16-adb8-bb3f9eca0298">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SuccessfulSchedulingRecoveryReleasesSharedWorldAdmission managedMB=12
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SuccessfulSchedulingRecoveryReleasesSharedWorldAdmission managedMB=12</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="e137f9c9-93b0-40c9-a2b4-eb3f52987981" testId="33124dd2-3c56-3245-3d78-728acc6e2dde" testName="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,False)" computerName="5e9498f43725" duration="00:00:00.0008290" startTime="2026-10-07T23:34:53.9051546+08:00" endTime="2026-10-07T23:34:53.9059839+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Failed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="e137f9c9-93b0-40c9-a2b4-eb3f52987981">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,False) managedMB=12
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,False) managedMB=12</StdOut>
+        <ErrorInfo>
+          <Message>  Expected: &lt;System.InvalidOperationException&gt;
+  But was:  null
+</Message>
+          <StackTrace>   at SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(Boolean emptyFirst, Boolean checksEnabled) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 268
+   at InvokeStub_AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(Object, Span`1)
+
+1)    at SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(Boolean emptyFirst, Boolean checksEnabled) in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Assets/SinglePlayerFoundation/Tests/EditMode/AccessStructureWindowTests.cs:line 268
+   at InvokeStub_AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(Object, Span`1)
+
+</StackTrace>
+        </ErrorInfo>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="c2d76c2a-3a20-4365-8a98-20d90a2cd36a" testId="66b855b2-ed0a-90f5-2bae-d8b2c62ffc6b" testName="FailedCompletionRetainsSharedWorldAdmissionUntilRetry" computerName="5e9498f43725" duration="00:00:00.0243689" startTime="2026-10-07T23:34:53.8529626+08:00" endTime="2026-10-07T23:34:53.8772532+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="c2d76c2a-3a20-4365-8a98-20d90a2cd36a">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.FailedCompletionRetainsSharedWorldAdmissionUntilRetry managedMB=11
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.FailedCompletionRetainsSharedWorldAdmissionUntilRetry managedMB=11</StdOut>
+      </Output>
+    </UnitTestResult>
+    <UnitTestResult executionId="8d40b290-37a9-4278-94bb-b093936da9fe" testId="080a7864-c9c2-039d-683f-0dd9b2e72b18" testName="InactiveEmptyPipelineEndAndDisposeCannotReleaseWriterOwnership" computerName="5e9498f43725" duration="00:00:00.0010060" startTime="2026-10-07T23:34:53.8790226+08:00" endTime="2026-10-07T23:34:53.8800284+08:00" testType="13cdc9d9-ddb5-4fa4-a97d-d965ccfc6d4b" outcome="Passed" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" relativeResultsDirectory="8d40b290-37a9-4278-94bb-b093936da9fe">
+      <Output>
+        <StdOut>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.InactiveEmptyPipelineEndAndDisposeCannotReleaseWriterOwnership managedMB=12
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.InactiveEmptyPipelineEndAndDisposeCannotReleaseWriterOwnership managedMB=12</StdOut>
+      </Output>
+    </UnitTestResult>
+  </Results>
+  <TestDefinitions>
+    <UnitTest name="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,True)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="885e5b69-2722-a462-4b60-eb19349a6400">
+      <Execution id="47555325-cb2b-4528-9743-3c20c0a86574" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,True)" />
+    </UnitTest>
+    <UnitTest name="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,False)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="fbfa6459-c6a9-cc84-ad5d-fcf0ea39cb15">
+      <Execution id="69c4a5bb-f180-4bf9-a4f7-4353badccebb" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,False)" />
+    </UnitTest>
+    <UnitTest name="SuccessfulSchedulingRecoveryReleasesSharedWorldAdmission" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="0b70e14e-3c96-f764-c15c-4a060bcd5e0b">
+      <Execution id="df1a56a2-80d2-4c16-adb8-bb3f9eca0298" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="SuccessfulSchedulingRecoveryReleasesSharedWorldAdmission" />
+    </UnitTest>
+    <UnitTest name="InactiveEmptyPipelineEndAndDisposeCannotReleaseWriterOwnership" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="080a7864-c9c2-039d-683f-0dd9b2e72b18">
+      <Execution id="8d40b290-37a9-4278-94bb-b093936da9fe" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="InactiveEmptyPipelineEndAndDisposeCannotReleaseWriterOwnership" />
+    </UnitTest>
+    <UnitTest name="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,False)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="33124dd2-3c56-3245-3d78-728acc6e2dde">
+      <Execution id="e137f9c9-93b0-40c9-a2b4-eb3f52987981" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,False)" />
+    </UnitTest>
+    <UnitTest name="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,True)" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="f3c9f533-1e62-cc1d-f72d-13050910befe">
+      <Execution id="6f0cc557-c11f-41e4-bbd9-9b38838d2db4" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,True)" />
+    </UnitTest>
+    <UnitTest name="FailedCompletionRetainsSharedWorldAdmissionUntilRetry" storage="/workspace/scratch/dc59b980bb73/spgamefoundation-access-windows/tools/dotnetharness/.gen/spf.tests.editmode/bin/debug/net8.0/spf.tests.editmode.dll" id="66b855b2-ed0a-90f5-2bae-d8b2c62ffc6b">
+      <Execution id="c2d76c2a-3a20-4365-8a98-20d90a2cd36a" />
+      <TestMethod codeBase="/workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll" adapterTypeName="executor://nunit3testexecutor/" className="SPF.Tests.EditMode.AccessStructureWindowTests" name="FailedCompletionRetainsSharedWorldAdmissionUntilRetry" />
+    </UnitTest>
+  </TestDefinitions>
+  <TestEntries>
+    <TestEntry testId="885e5b69-2722-a462-4b60-eb19349a6400" executionId="47555325-cb2b-4528-9743-3c20c0a86574" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="fbfa6459-c6a9-cc84-ad5d-fcf0ea39cb15" executionId="69c4a5bb-f180-4bf9-a4f7-4353badccebb" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="f3c9f533-1e62-cc1d-f72d-13050910befe" executionId="6f0cc557-c11f-41e4-bbd9-9b38838d2db4" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="0b70e14e-3c96-f764-c15c-4a060bcd5e0b" executionId="df1a56a2-80d2-4c16-adb8-bb3f9eca0298" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="33124dd2-3c56-3245-3d78-728acc6e2dde" executionId="e137f9c9-93b0-40c9-a2b4-eb3f52987981" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="66b855b2-ed0a-90f5-2bae-d8b2c62ffc6b" executionId="c2d76c2a-3a20-4365-8a98-20d90a2cd36a" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestEntry testId="080a7864-c9c2-039d-683f-0dd9b2e72b18" executionId="8d40b290-37a9-4278-94bb-b093936da9fe" testListId="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+  </TestEntries>
+  <TestLists>
+    <TestList name="Results Not in a List" id="8c84fa94-04c1-424b-9868-57a2d4851a1d" />
+    <TestList name="All Loaded Results" id="19431567-8539-422a-85d7-44ee4e166bda" />
+  </TestLists>
+  <ResultSummary outcome="Failed">
+    <Counters total="7" executed="7" passed="4" failed="3" error="0" timeout="0" aborted="0" inconclusive="0" passedButRunAborted="0" notRunnable="0" notExecuted="0" disconnected="0" warning="0" completed="0" inProgress="0" pending="0" />
+    <Output>
+      <StdOut>NUnit Adapter 4.5.0.0: Test execution started
+Running selected tests in /workspace/scratch/dc59b980bb73/SPGameFoundation-access-windows/Tools/DotnetHarness/.gen/SPF.Tests.EditMode/bin/Debug/net8.0/SPF.Tests.EditMode.dll
+   NUnit3TestExecutor discovered 7 of 7 NUnit test cases using Current Discovery mode, Non-Explicit run
+NUnit Adapter 4.5.0.0: Test execution complete
+</StdOut>
+    </Output>
+    <RunInfos>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:34:53.9106400+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.FailedCompletionRetainsSharedWorldAdmissionUntilRetry managedMB=11
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.FailedCompletionRetainsSharedWorldAdmissionUntilRetry managedMB=11
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:34:53.9122509+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.InactiveEmptyPipelineEndAndDisposeCannotReleaseWriterOwnership managedMB=12
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.InactiveEmptyPipelineEndAndDisposeCannotReleaseWriterOwnership managedMB=12
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:34:53.9135421+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,False) managedMB=12
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,False) managedMB=12
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:34:53.9137941+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,True) managedMB=12
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(False,True) managedMB=12
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:34:53.9140741+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,False) managedMB=12
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,False) managedMB=12
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:34:53.9143789+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,True) managedMB=12
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SharedWorldRejectsOverlappingPipelinesEvenWhenFirstHasNoJobs(True,True) managedMB=12
+</Text>
+      </RunInfo>
+      <RunInfo computerName="5e9498f43725" outcome="Warning" timestamp="2026-10-07T23:34:53.9152632+08:00">
+        <Text>[SPF-TEST] start SPF.Tests.EditMode.AccessStructureWindowTests.SuccessfulSchedulingRecoveryReleasesSharedWorldAdmission managedMB=12
+[SPF-TEST] end   SPF.Tests.EditMode.AccessStructureWindowTests.SuccessfulSchedulingRecoveryReleasesSharedWorldAdmission managedMB=12
+</Text>
+      </RunInfo>
+    </RunInfos>
+  </ResultSummary>
+</TestRun>

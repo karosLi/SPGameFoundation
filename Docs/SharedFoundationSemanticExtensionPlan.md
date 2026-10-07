@@ -2,7 +2,7 @@
 
 日期：2026-10-07。面向 SPGameFoundation 的后续演进，基于 `9a95654247f066ee9ff9164381bdd30ade4c9309` 源码和[开源共享基座调研](OpenSourceSharedFoundationSurvey.md)。本文交付的是计划，没有实施下述运行时改造，也没有产生新的性能或设备验收结果。当前实现与验证状态继续以[能力清单](RequestedCapabilityChecklist.md)和[精确提交验证记录](MobileFoundationFollowupValidation.md)为准。
 
-实施状态：计划发布时的两项试验候选精度失败现已在精确 `e86ee87` 原生闭环解决（1,084 EditMode、154 graphics PlayMode、1,050 .NET 通过）。用户已授权在该闭环后执行本计划；当前开始 P0 兼容/语义基线，后续阶段仍按各自门槛实施和验证。见[证据与剩余设备门槛](MobileFoundationFollowupValidation.md)。
+实施状态：计划发布时的两项试验候选精度失败现已在精确 `e86ee87` 原生闭环解决（1,084 EditMode、154 graphics PlayMode、1,050 .NET 通过）。用户已授权在该闭环后执行本计划；P0 兼容/语义基线现已完成，进入 P1 的失败回滚与生命周期红测试；后续阶段仍按各自门槛实施和验证。见[证据与剩余设备门槛](MobileFoundationFollowupValidation.md)。
 
 ## 1 推荐方向与完成标准
 
@@ -372,3 +372,9 @@
 ## 10 本计划的证据范围
 
 本次检查了组合、布局、调度、Session、句柄、保存、共享武器/技能、两个玩法表现绑定、粒子、AI、预算和程序集引用的实际代码，并对照固定版本的开源源码与现有调研。文档中的新增类型、路径和阶段均为提案。没有修改运行时、引入外部包、运行外部框架、重写存档，也没有把历史测试/桌面性能套用于这些尚未实施的方案。
+
+## 阶段 A 完成记录
+
+[真实组合矩阵](FoundationCompatibilityMatrix.md)记录19个组合、154个固定源码哈希和65个已有测试方法，并保留可重复冷启动探针。[Architecture](Architecture.md)和[接入配方](NewGameplayIntegrationRecipe.md)已按实际 API 校准，未新增运行时接口或改旧快照。静态验证覆盖150个相对链接引用、11个菜单和83行表格；6个代码示例编译通过，DriftSmoke 60 tick、技能槽和扩展列示例执行通过，完整 .NET 回归1,050通过。集成后再次静态检查、编译/执行示例均通过。
+
+[Stage A 验证](FoundationStageAValidation.md)说明源码与原生基线、冷探针局限和兼容例外。下一阶段先复现真实组合失败与生命周期问题，不把这些文档提案直接当作已实现能力。

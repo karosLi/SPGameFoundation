@@ -4,12 +4,12 @@
 
 ## 1. 开工与架构
 
-- 先读 [README](README.md)、[新玩法接入配方](Docs/NewGameplayIntegrationRecipe.md)、[能力验收清单](Docs/RequestedCapabilityChecklist.md)，检查当前分支、工作树、已有实现与最新提交对应的证据。历史通过结果不能套到新提交。
+- 先读 [README](README.md)、[新玩法接入配方](Docs/NewGameplayIntegrationRecipe.md)、[能力验收清单](Docs/RequestedCapabilityChecklist.md)和[真实组合兼容矩阵](Docs/FoundationCompatibilityMatrix.md)，检查当前分支、工作树、已有实现与最新提交对应的证据。历史通过结果不能套到新提交。
 - 玩法需要新的基座能力时，先调研业界做法，优先官方文档、引擎示例或原始技术论文；记录需求、备选方案、适用条件、移动端代价、取舍与来源，再决定复用、扩展或新增。调研不能替代本项目的正确性和性能实测。 开源方案可先参考[共享基座调研](Docs/OpenSourceSharedFoundationSurvey.md)和[分层语义扩展计划](Docs/SharedFoundationSemanticExtensionPlan.md)，固定源码版本并核对实际采用文件、依赖和资源的许可；优先吸收有证据的局部模式，不因调研自动重写当前架构。
 - 所有交付内容以移动端为目标，包括代码、场景、美术、UI、动画、特效、工具与文档。明确 Android/iOS、横竖屏、安全区、触摸输入、目标渲染档和能力回退，分别定义 CPU/GPU、内存、上传、过绘制与持续帧时预算；桌面只是开发/验证环境。
 - 给本次玩法写清楚目标玩家操作、核心循环、横竖屏、目标设备、实体/弹丸/特效容量、性能预算、验收方法及明确不支持的能力。预算按实际平台和场景定义，不把某次桌面测试的毫秒值当成所有设备标准。
 - 复用 Module / Table / System / SessionHost、稳定实体句柄、空间查询、共享战斗、技能槽、HUD、动画和渲染后端。新玩法主要增加规则、配置和适配层，不复制一套引擎，也不为了一个 demo 扩充公共玩法枚举。
-- 保持 Runtime / Presentation / Game / Editor / Tests 分层及 asmdef 依赖方向。模拟固定 Tick，表现只读；画质、粒子、插值、镜头不能改变伤害、命中、冷却、掉落或胜负。
+- 保持 Runtime / Presentation / Game / Editor / Tests 分层及 asmdef 依赖方向。模拟固定 Tick，表现只读；画质、粒子、插值、镜头不能改变伤害、命中、冷却、掉落或胜负。 已有具名兼容例外须在矩阵中明示：经典 Snake 的 AI 调频属于被记录的回放输入，不得说成纯视觉降档。本阶段保留旧行为，新玩法遵循只读表现规则；改变例外须单独版本化、回归与迁移。
 - 声明实际读写依赖；并行 Job 只写自己的行或受控队列，主线程读取前完成依赖。创建、销毁、压缩和资源释放必须遵守 Session 的安全窗口。
 - 容量、随机数、溢出、重置、稳定排序、句柄代数及快照恢复都是接口契约。可选新功能不得无说明地改旧存档布局或经典玩法结果。
 

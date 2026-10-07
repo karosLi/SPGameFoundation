@@ -45,6 +45,7 @@ namespace SurvivorFoundation.Tests.PlayMode
                     for(int slot=0;slot<4;slot++)Assert.AreEqual(world.Resource(SvMobileSkills.Key).GetSnapshot(slot).Definition,game.Hud.MobileHud.Buttons[slot].Snapshot.Definition,"fallback art must preserve authored asset keys and skill rules");
                     CollectionAssert.AreEqual(beforeHud,game.Session.CaptureSnapshot(),"HUD refresh must not rewrite persisted skill definitions or equipment state");
                     SvSpawner.SpawnEnemy(world,runtime,1,new float2(side*(id>=WeaponProfiles.Staff?5:1),0));
+                    int hitsBefore=weapons.AcceptedHits;float targetHp=world.Column(SvKeys.Info)[0].Hp;
                     int marker=weapons.Current.Ranged?weapons.Current.ReleaseTick:weapons.Current.Active.From;
                     // Stop retains the previous tick/pulse. Require a fresh auto-targeted action instead
                     // of mistaking an already completed action for this target's contact marker.
@@ -65,7 +66,7 @@ namespace SurvivorFoundation.Tests.PlayMode
                     float socketError=math.distance(canonical,socket.Muzzle);
                     TestContext.WriteLine($"Horde weapon {id}, facing {side}: native socket error {socketError:R}, muzzle ({socket.Muzzle.x:R},{socket.Muzzle.y:R}), canonical ({canonical.x:R},{canonical.y:R})");
                     Assert.Less(socketError,.17f);
-                    for(int i=0;i<35;i++)game.Session.Step();Assert.Greater(weapons.AcceptedHits,0);Assert.AreEqual(0,world.Table(SvKeys.Bullet).Count,"classic hero bolt is disabled only for this explicit variant");
+                    for(int i=0;i<35;i++)game.Session.Step();Assert.Greater(weapons.AcceptedHits,hitsBefore,"this setup must resolve a new hit");Assert.Less(world.Column(SvKeys.Info)[0].Hp,targetHp,"the current target must actually take damage");Assert.AreEqual(0,world.Table(SvKeys.Bullet).Count,"classic hero bolt is disabled only for this explicit variant");
                 }
                 yield return null;game.Session.Pause();uint consumed=game.Renderer.LastWeaponCueSequence;Assert.Greater(consumed,0);
                 game.Renderer.NaturalCharacters=false;yield return null;yield return null;game.Session.Resume();

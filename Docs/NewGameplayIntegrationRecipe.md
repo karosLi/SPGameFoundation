@@ -78,7 +78,7 @@ finally
 
 1. 复制 DriftSmoke 的数据声明和四个小系统到自己的 Runtime，统一替换 namespace、Keys、模块名与资源名。不要让新游戏继续注册同一套 DriftKeys。
 2. 先保留 Position、Velocity 和一个固定容量表。跑过自己的移动 / 重开测试后，再添加 HP、阵营、武器等列。
-3. 将容量、速度、Tick 规则放入自己的配置，在创建 Session 时校验并冻结。不要在 Job 中直接读可变 ScriptableObject；现有 Bake 路径不全是深复制（如 Snake Capacity、RPG 部分 section 仍保留源引用），不要未经审计照搬这种所有权。
+3. 将容量、速度、Tick 规则放入自己的配置，在创建 Session 时校验并冻结。不要在 Job 中直接读可变 ScriptableObject；Snake Capacity 和 RPG 的 section/技能槽现已[隔离 authoring 来源](RuntimeConfigSourceIsolation.md)；这不表示公开的 runtime 对象不可修改，也不自动覆盖其他玩法的 Bake 路径。对新配置仍应独立验证共享来源、两个 Session、非法输入和失败释放。
 4. `MyGameBootstrap` 创建模块、Mode、Host，绑定 Renderer 和 HUD。创建时拥有的临时配置/Mode/Module，销毁时也由它释放；Host 释放 Session，不替它释放这些 SO。外部传入的共享资源保留原 owner；失败、重复绑定、disable 和 destroy 路径分别检查。
 5. Renderer 先画简单 sprite，不必一开始接自然人物或 BAT。HUD 先实现状态、开始 / 暂停 / 重开，再按第 4 节接共享技能控件。
 

@@ -1,0 +1,15 @@
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Bb]uilds/
+/Artifacts/
+/.upm-cache/
+/.launch-lock/
+*.csproj
+*.sln
+__pycache__/
+# packages-lock.json is deliberately NOT ignored: commit Unity's real resolution.
+/Assets/Latios2022Tests/Generated/
+/Assets/Latios2022Tests/Generated.meta

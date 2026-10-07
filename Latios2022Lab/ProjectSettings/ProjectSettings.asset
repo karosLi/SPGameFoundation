@@ -1,0 +1,16 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!129 &1
+PlayerSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 26
+  companyName: SPGameFoundation
+  productName: Latios2022Lab
+  scriptingDefineSymbols:
+    Standalone: ENTITY_STORE_V1;UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS
+    Android: ENTITY_STORE_V1;UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS
+    iPhone: ENTITY_STORE_V1;UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS
+  apiCompatibilityLevelPerPlatform:
+    Standalone: 6
+    Android: 6
+    iPhone: 6

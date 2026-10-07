@@ -1,0 +1,6 @@
+{
+  "name": "Latios2022Lab.EditorTools",
+  "references": ["Latios2022Lab.Runtime", "Latios.Core", "Unity.Burst"],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": true
+}

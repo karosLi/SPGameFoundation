@@ -1,0 +1,11 @@
+# S1a isolated lab preparation
+
+2026-10-07. Implementation staging of [the Unity 2022 blueprint](LatiosUnity2022IntegrationBlueprint.md); this record supersedes the blueprint's "nothing implemented" description only for this bounded preparation, not its native acceptance gates.
+
+The new [Latios2022Lab](../Latios2022Lab/README.md) is a separate Unity project inside the repository, outside the product `Assets`, with its own Packages, ProjectSettings, Library/cache and gated launcher. It pins Unity 2022.3.62f2 and original Latios 0.11.5 commit `381a77dbf774ff603014d5695ef6c06abaa25d96`. It adds no root package, runtime backend, S1b patch, CI job or default gameplay change.
+
+Prepared: source-grounded Core collection/Job/lifecycle fixtures, QVVS empty-world installation, independent small Psyshock pair/ray/distance oracles, Burst execution witness, domain-reload/reentry test, minimal generated-scene desktop IL2CPP smoke build entry, and environment/evidence capture. Expected native discovery is 49 EditMode cases and one PlayMode case, each run with Burst on and off. Exact discovery must be verified by Unity.
+
+Verified now: 17 Python launcher/preflight unit tests and static JSON/metadata/path/source checks. Native import, all-package C# compilation, generator behavior, genuine resolution lock, test execution, IL2CPP build/run and physical mobile acceptance are **NOT RUN**. No lock has been fabricated. Existing SPF P0 native acceptance has priority; no new native execution is queued by this change.
+
+A runner reservation and inspected exact-source P0 evidence are required before using the executable launcher path. Passing these preparation checks cannot open S1b/S2 or prove performance benefit. [Matrix](../Latios2022Lab/Docs/CompatibilityMatrix.md) and [source/licence ledger](../Latios2022Lab/Docs/BackportLedger.md) separate declared dependencies, compiled assemblies, installed systems, executed algorithms and remaining platforms.

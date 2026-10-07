@@ -1,0 +1,116 @@
+{
+  "date": "2026-10-07",
+  "testedLocalCommit": "2c1b601c3aed4333a89e40f76bce74e27ac49c18",
+  "testedTree": "a956d6a7ac72ea2216bf5d711a23a1280ec4628a",
+  "baseLocalCommit": "1754f9d",
+  "baseRemoteEquivalent": "614d3794aee58afcce77f2155ba74e2ebff9dfc6",
+  "harness": {
+    "passed": 1554,
+    "failed": 0,
+    "assemblies": [
+      {
+        "name": "BrawlerFoundation.Tests.EditMode",
+        "passed": 169
+      },
+      {
+        "name": "DefenseFoundation.Tests.EditMode",
+        "passed": 8
+      },
+      {
+        "name": "FoundationAcceptance.Tests.EditMode",
+        "passed": 9
+      },
+      {
+        "name": "PlatformerFoundation.Tests.EditMode",
+        "passed": 18
+      },
+      {
+        "name": "PuzzleFoundation.Tests.EditMode",
+        "passed": 7
+      },
+      {
+        "name": "RpgFoundation.Tests.EditMode",
+        "passed": 88
+      },
+      {
+        "name": "SPF.Tests.EditMode",
+        "passed": 998
+      },
+      {
+        "name": "ShooterFoundation.Tests.EditMode",
+        "passed": 24
+      },
+      {
+        "name": "SlingFoundation.Tests.EditMode",
+        "passed": 4
+      },
+      {
+        "name": "SnakeFoundation.Tests.EditMode",
+        "passed": 62
+      },
+      {
+        "name": "StoryFoundation.Tests.EditMode",
+        "passed": 5
+      },
+      {
+        "name": "SurvivorFoundation.Tests.EditMode",
+        "passed": 162
+      }
+    ],
+    "projects": 78,
+    "warnings": 0,
+    "explicitDiagnosticsNotCounted": 6,
+    "newNonExplicitCases": 21
+  },
+  "realApi": {
+    "sources": 578,
+    "references": 95,
+    "targets": [
+      "net8.0",
+      "netstandard2.1"
+    ],
+    "errorsEach": 0,
+    "existingWarningsEach": 7,
+    "nativeExecution": false
+  },
+  "python": {
+    "ci": 30,
+    "acceptance": 24,
+    "audio": 10,
+    "labStatic": 22,
+    "allPassed": true
+  },
+  "cold19Sha256": "a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30",
+  "cold19EqualToOriginal": true,
+  "review": "61 focused tests, two scoped API compilations, independent read-only source/hash review; resolved camera shake, XP strip and repeated-draw clearance findings",
+  "native": "NOT_RUN on this candidate; current A1-A3 Mac run remains in Set up job",
+  "publication": "commit objects can be uploaded for review; branch advance held to avoid adding native jobs before runner recovery",
+  "sourceSha256": {
+    "Assets/BrawlerFoundation/Game/BwGameBootstrap.cs": "51d51b8d972ecb11cd431c1d4b491e9143c03ff0c8de8cdd0a5ae715488f6a3e",
+    "Assets/BrawlerFoundation/Presentation/BwRenderer.cs": "c1b4297e41bd6c289b8a98b994f660b962ad3bb01e383765bfccddddbf425219",
+    "Assets/BrawlerFoundation/Tests/EditMode/BwDamageNumbersTests.cs": "c6e0c0aa77452a0d684987b8d13137f9abf7453f85e6c807ec504ebe5922f15f",
+    "Assets/BrawlerFoundation/Tests/PlayMode/BwDamageNumberGameplayTests.cs": "b92c4a193b6ec1a26a5c8b977e725bf93bd69b3be3dacf6596b78e8065a98616",
+    "Assets/SinglePlayerFoundation/Presentation/Combat/DamageNumberLayout.cs": "bb12e7d54b0f216a9401ef193818edba05dba82b82126e06e3e9a0a0240aea4a",
+    "Assets/SinglePlayerFoundation/Presentation/Combat/DamageNumberPool.cs": "acf6d0dddcdac7d51898fbe05a7e89d2a93803ca56d1cb48b05921b25bd8ec95",
+    "Assets/SinglePlayerFoundation/Shell/UI/MobileCombatHud.cs": "d9de82fdbf4c8959854b5eac344c965b5b1ddbff5deba157bddf13669e38ee20",
+    "Assets/SinglePlayerFoundation/Shell/UI/MobileSafeArea.cs": "62e42df29d12a8a2e5b8773f418bd82ee0c488394e8a49e4ec9c2b210ced9d0d",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/DamageNumberLegibilityTests.cs": "87c477a6b6b7a168d838f6abe9083a452db61db031c38b40d8ad12504d2bd2d2",
+    "Assets/SurvivorFoundation/Game/SvHud.cs": "0ee857c0030ec98bb4e2704efe0bda7d03aed45cccb30dcaa9ed451ff6ca14be",
+    "Assets/SurvivorFoundation/Presentation/SvRenderer.cs": "ae44213cbf417d4be14c107e8186cbb6cb172b758668dd63495f1a72b8f6cc90",
+    "Assets/SurvivorFoundation/Tests/EditMode/SvDamageNumbersTests.cs": "4ec80611c2680bc0aadc52a28d29d31d65d5c6bce8267213f238ebb763c1d338",
+    "Assets/SurvivorFoundation/Tests/PlayMode/SvDamageNumberGameplayTests.cs": "eb48175844a57e7def82c269f2cd934d523a3cc2ae73850521e5919ebfca5750"
+  },
+  "logSha256": {
+    "build-final.log": "7a04d22c50fc449d39b17d14fdc667e53e9a7f948e3a1dbfdf90ce0a0a6e2b3c",
+    "tests-final.log": "37476bbce75a828d1a602c09abe7c78c499803b36644e780fbda1878ce9d5eee",
+    "api-generation.log": "125994bf0c89d35e6bdd790d71e4c08481502eed3299718f71bcce88f86168b2",
+    "api-build.log": "d07466c339afa75692de92a145cb90d11be8d4f230edcc6b719fcd0c92e4d95b",
+    "netstandard-api-generation.log": "adaacf705e6b9da6fd7943406883b31cf401949e9c3eb4104a2836eed629e76d",
+    "netstandard-api-build.log": "257c518e2453f2c9f5d724139bef463d05639c5c3b83c1f25107729f28077d41",
+    "probe-build.log": "6e8ff2e7c4867fb2c508ac07dcadfcb8031e64d95c0d84e3c5068b755d053f27",
+    "ci-python-tests.log": "ac9d3a7da84fced76a404a1f09b0851023bdcf3dfe97f4dd42270cfc217f39a4",
+    "acceptance-python-tests.log": "20ddb70b5f6e3eef886c3895a30080fa9fcd7f46c0dac98016ff7020799e6149",
+    "audio-python-tests.log": "8a104a3d7b32c11fbdbd7276c04f6bbbab281313657d898838bc460922641de3",
+    "lab-static-tests.log": "162d518342a6da3dbbf8cf55c93e815b7ccc804454cfa953f45985685353dc7a"
+  }
+}

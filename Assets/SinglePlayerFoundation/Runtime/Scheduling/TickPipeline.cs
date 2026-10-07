@@ -10,8 +10,9 @@ namespace SPF.Runtime.Scheduling
 {
     /// <summary>
     /// Runs one simulation tick as a single job graph: <see cref="BeginTick"/> applies deferred
-    /// structural changes and schedules every system in phase order; <see cref="EndTick"/> is the only
-    /// sync point (Complete + resource sync). Between the two the main thread is free.
+    /// structural changes and schedules every system in phase order; <see cref="EndTick"/> completes
+    /// the remaining graph and syncs resources. Empty declarations and SerialProfiling may Complete
+    /// earlier. Between BeginTick and EndTick the main thread is free.
     /// </summary>
     public sealed class TickPipeline : IDisposable
     {
@@ -23,6 +24,7 @@ namespace SPF.Runtime.Scheduling
         readonly SystemEntry[] m_Systems;
         readonly DependencyTracker m_Tracker;
         readonly PipelineStats m_Stats;
+        readonly ExecutionPlanSystem[] m_ExecutionSystems;
         JobHandle m_Pending;
         // Own the returned handle even if dependency registration itself throws.
         JobHandle m_Unrecorded;
@@ -47,7 +49,13 @@ namespace SPF.Runtime.Scheduling
         public TickTime LastTickTime { get; private set; }
 
         public TickPipeline(SimWorld world, IReadOnlyList<ISimSystem> systems)
+            : this(world, systems, null) { }
+
+        public TickPipeline(SimWorld world, IReadOnlyList<ISimSystem> systems,
+            IReadOnlyList<SystemRegistrationSource> sources)
         {
+            if (sources != null && sources.Count != systems.Count)
+                throw new ArgumentException("System provenance must match the registration count.", nameof(sources));
             m_World = world;
 
             var entries = new List<SystemEntry>(systems.Count);
@@ -58,7 +66,7 @@ namespace SPF.Runtime.Scheduling
                 var access = new AccessDeclaration();
                 system.Declare(access);
                 maxKey = Math.Max(maxKey, access.MaxId);
-                entries.Add(new SystemEntry(system, access, i));
+                entries.Add(new SystemEntry(system, access, i, sources == null ? default : sources[i]));
             }
             // Stable sort: phase, then order, then registration order.
             entries.Sort((a, b) =>
@@ -69,6 +77,13 @@ namespace SPF.Runtime.Scheduling
                 return c != 0 ? c : a.RegistrationIndex.CompareTo(b.RegistrationIndex);
             });
             m_Systems = entries.ToArray();
+            m_ExecutionSystems = new ExecutionPlanSystem[m_Systems.Length];
+            for (int i = 0; i < m_Systems.Length; i++)
+            {
+                var entry = m_Systems[i];
+                m_ExecutionSystems[i] = new ExecutionPlanSystem(i, entry.RegistrationIndex,
+                    entry.System, entry.Access, entry.Source);
+            }
             m_Tracker = new DependencyTracker(maxKey + 1);
 
             var names = new string[m_Systems.Length];
@@ -98,6 +113,9 @@ namespace SPF.Runtime.Scheduling
         /// overlap between systems, so tick time is higher than in normal (pipelined) operation.
         /// </summary>
         public bool SerialProfiling { get; set; }
+
+        /// <summary>Build a cold diagnostic from captured declarations; never schedules or completes work.</summary>
+        public ExecutionPlan GetExecutionPlan() => new ExecutionPlan(m_ExecutionSystems, SerialProfiling);
 
         public int SystemCount => m_Systems.Length;
         public ISimSystem GetSystem(int index) => m_Systems[index].System;
@@ -320,20 +338,24 @@ namespace SPF.Runtime.Scheduling
             public readonly ISimSystem System;
             public readonly AccessDeclaration Access;
             public readonly int RegistrationIndex;
+            public readonly SystemRegistrationSource Source;
             public readonly string Name;
             public readonly bool[] Allowed;   // null for barriers (may touch anything)
+            public readonly bool[] Writable;  // explicit write declarations; null for barriers
             public ProfilerMarker Marker;
 
-            public SystemEntry(ISimSystem system, AccessDeclaration access, int registrationIndex)
+            public SystemEntry(ISimSystem system, AccessDeclaration access, int registrationIndex, SystemRegistrationSource source)
             {
                 System = system;
                 Access = access;
-                if (access.IsBarrier) Allowed = null;
+                Source = source;
+                if (access.IsBarrier) { Allowed = null; Writable = null; }
                 else
                 {
                     Allowed = new bool[access.MaxId + 1];
+                    Writable = new bool[access.MaxId + 1];
                     foreach (int id in access.Reads) Allowed[id] = true;
-                    foreach (int id in access.Writes) Allowed[id] = true;
+                    foreach (int id in access.Writes) { Allowed[id] = true; Writable[id] = true; }
                 }
                 RegistrationIndex = registrationIndex;
                 Name = system.GetType().Name;

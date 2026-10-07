@@ -1,0 +1,739 @@
+{
+  "date": "2026-10-07",
+  "baseLocalCommit": "9fc4e2b7e20a17e5586a68f756e92f8102f99339",
+  "baseRemoteEquivalent": "d7f357a",
+  "scope": "A1 execution-plan cold metadata/export plus A2-agreed Writable cold field; no runtime scheduling/failure-path body changes",
+  "implementationSourceSha256": {
+    "Assets/SinglePlayerFoundation/Runtime/Composition/IGameplayModule.cs": "f6873d72ebe73206fde7d084de90c64224597df67b3d7fe270b551eebbd26c81",
+    "Assets/SinglePlayerFoundation/Runtime/Composition/WorldComposer.cs": "0c15961ba27581e15098a77e2bb321f41b52f099e714e2d3cc6f0b185b1e1d4d",
+    "Assets/SinglePlayerFoundation/Runtime/Scheduling/AccessDeclaration.cs": "0871e4be26c5405509c04fc60c085e4801a293173386051975951236179a0272",
+    "Assets/SinglePlayerFoundation/Runtime/Scheduling/TickPipeline.cs": "7aa7e73e30dc70626f6df2d9a16cf1a4f16aaae135e3856c50989e6074db3ee0",
+    "Assets/SinglePlayerFoundation/Runtime/Scheduling/ExecutionPlan.cs": "7123b77fe15f3f2a3d2277d241833fa29275279aefd2b0014a88b721a23fc0e9",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/ExecutionPlanTests.cs": "7a09070bb352d3f4176bc7392bf1a52044f97a864be115c501aeafd91e9eb50c",
+    "Docs/validation/FoundationCompatibilityProbe.cs": "0198dc3b9c6146b5e9d0311ab188cc072897f9973b8b2270aeeffc4ed0716b8a",
+    "Docs/validation/ExecutionPlanColdCostProbe.cs": "b1cc206b73aaee3fc955ab443dba235487d92f4604f543664b78b6d2fd0f84f9"
+  },
+  "runtime": "Debian Linux x64, .NET SDK 8.0.425; Unity APIs are harness stubs",
+  "red": {
+    "result": "compile rejected before implementation",
+    "errors": 4,
+    "reason": "ExecutionDependencyReason/new execution-plan API missing on base",
+    "logSha256": "b84a6fad01a49e8c36d906a4317acf354ff73fa00d14048b1b7607890abb3732"
+  },
+  "focused": {
+    "passed": 49,
+    "failed": 0,
+    "skipped": 0,
+    "newPlanTests": 16,
+    "filter": "FullyQualifiedName~ExecutionPlanTests|FullyQualifiedName~PipelineTests|FullyQualifiedName~TickFailureOwnershipTests|FullyQualifiedName~CompositionTests|FullyQualifiedName~AccessGuardTests",
+    "trxSha256": "94b0c3923b7bad0f23584e4f44bad049a86cdfb6199b52f863f7e32e1b3a821c",
+    "buildLogSha256": "7a189735179b72b4b063cb926463a3178f529d5f9ee94ccec897dddcdae3f0ba",
+    "testLogSha256": "60cd0ec8ec04ccdb5faa7fb93e85856bb0345448da30995ca9f650e7ec0a2a76",
+    "results": [
+      {
+        "name": "BeginTickTwiceWithoutEndThrows",
+        "outcome": "Passed"
+      },
+      {
+        "name": "CapturedMetadataDoesNotAliasTheSavedDeclarationOrCallerProvenance",
+        "outcome": "Passed"
+      },
+      {
+        "name": "ConflictEdgesNameActualKeyAndReason(False,True,ReadToWrite)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "ConflictEdgesNameActualKeyAndReason(True,False,WriteToRead)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "ConflictEdgesNameActualKeyAndReason(True,True,WriteToWrite)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "DeclaredAccessChainsJobsAndSnapshotsRotateAtSync",
+        "outcome": "Passed"
+      },
+      {
+        "name": "DirectPipelineAndRawRegistryKeepUnknownOriginAndInternalCompletion",
+        "outcome": "Passed"
+      },
+      {
+        "name": "EmptyDeclarationBarrierWaitsForAllAndFeedsLaterSystems",
+        "outcome": "Passed"
+      },
+      {
+        "name": "ExceptionWhileSchedulingCompletesAlreadyScheduledJobs",
+        "outcome": "Passed"
+      },
+      {
+        "name": "ExportDoesNotTickCompleteChangeProfilingOrChangeRawSnapshot",
+        "outcome": "Passed"
+      },
+      {
+        "name": "ExportUsesSavedDeclarationOnceAndWriteUpgradeIsAccurate",
+        "outcome": "Passed"
+      },
+      {
+        "name": "ExportsEscapeUserSuppliedNamesAndUseInvariantOrderNumbers",
+        "outcome": "Passed"
+      },
+      {
+        "name": "FrameworkCompletionReasonsIncludeConditionalSerialAndFailureRecovery",
+        "outcome": "Passed"
+      },
+      {
+        "name": "MismatchedProvenanceIsRejectedBeforeDeclareOrOnCreate",
+        "outcome": "Passed"
+      },
+      {
+        "name": "OnTickRejectsUnsafeReentry(\"begin\")",
+        "outcome": "Passed"
+      },
+      {
+        "name": "OnTickRejectsUnsafeReentry(\"end\")",
+        "outcome": "Passed"
+      },
+      {
+        "name": "OnTickRejectsUnsafeReentry(\"pipeline-dispose\")",
+        "outcome": "Passed"
+      },
+      {
+        "name": "OnTickRejectsUnsafeReentry(\"read\")",
+        "outcome": "Passed"
+      },
+      {
+        "name": "OnTickRejectsUnsafeReentry(\"reset\")",
+        "outcome": "Passed"
+      },
+      {
+        "name": "OnTickRejectsUnsafeReentry(\"session-dispose\")",
+        "outcome": "Passed"
+      },
+      {
+        "name": "OnTickRejectsUnsafeReentry(\"write\")",
+        "outcome": "Passed"
+      },
+      {
+        "name": "OrdinarySyncCannotDisposePipelineOrOwnerWhileCallbacksRun(False)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "OrdinarySyncCannotDisposePipelineOrOwnerWhileCallbacksRun(True)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "ReadReadAndPhaseTransitionsDoNotAddJobDependenciesOrCompletions",
+        "outcome": "Passed"
+      },
+      {
+        "name": "RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(\"begin\")",
+        "outcome": "Passed"
+      },
+      {
+        "name": "RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(\"end\")",
+        "outcome": "Passed"
+      },
+      {
+        "name": "RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(\"pipeline-dispose\")",
+        "outcome": "Passed"
+      },
+      {
+        "name": "RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(\"read\")",
+        "outcome": "Passed"
+      },
+      {
+        "name": "RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(\"reset\")",
+        "outcome": "Passed"
+      },
+      {
+        "name": "RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(\"session-dispose\")",
+        "outcome": "Passed"
+      },
+      {
+        "name": "RecoverySyncRejectsUnsafeReentryAndPreservesSchedulingFailure(\"write\")",
+        "outcome": "Passed"
+      },
+      {
+        "name": "RemovingAddedModuleRestoresIdenticalPlan",
+        "outcome": "Passed"
+      },
+      {
+        "name": "SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(False,False)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(False,True)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(True,False)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "SchedulingFailureKeepsOriginalAndCompletesEarlierReturnedJob(True,True)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "SchedulingPreservesCompletedDependencyValues(False,False)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "SchedulingPreservesCompletedDependencyValues(True,False)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "SchedulingPreservesCompletedDependencyValues(True,True)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "SimulatedBarrierCompletionRejectionSkipsBarrierAndRetainsEarlierWork",
+        "outcome": "Passed"
+      },
+      {
+        "name": "SimulatedRecoveryCompletionRejectionKeepsWorldOwnedUntilRetry",
+        "outcome": "Passed"
+      },
+      {
+        "name": "SimulatedSerialCompletionRejectionRetainsReturnedWorkAndSecondaryDiagnostic(False)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "SimulatedSerialCompletionRejectionRetainsReturnedWorkAndSecondaryDiagnostic(True)",
+        "outcome": "Passed"
+      },
+      {
+        "name": "StablePhaseOrderRegistrationAndModuleProvenanceAreCapturedWithoutGuessing",
+        "outcome": "Passed"
+      },
+      {
+        "name": "SystemsRunInPhaseThenOrderThenRegistrationOrder",
+        "outcome": "Passed"
+      },
+      {
+        "name": "ThrowingSystemSelfCompletesItsUnreturnedPrivateJob",
+        "outcome": "Passed"
+      },
+      {
+        "name": "UndeclaredColumnThrowsDeclaredDoesNot",
+        "outcome": "Passed"
+      },
+      {
+        "name": "UndeclaredJobDataResourceThrows",
+        "outcome": "Passed"
+      },
+      {
+        "name": "WriterWaitsForAllReadersSinceLastWriterAndResetsReaderSet",
+        "outcome": "Passed"
+      }
+    ]
+  },
+  "coldCompositions": {
+    "count": 19,
+    "sha256": "a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30",
+    "unchangedFromFrozenInventory": true,
+    "sameSessionRepeatIdentical": true,
+    "freshProcessRepeatIdentical": true,
+    "graphviz19DotParse": "passed; rerun with writable font cache",
+    "graphvizLogSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "plans": [
+      {
+        "id": "snake.classic",
+        "systems": 16,
+        "declarationKeys": 95,
+        "dependencyEdges": 83,
+        "textBytes": 10535,
+        "textSha256": "dc9a3ff2323a7e53203423ff81f17ee142fa8c9ef3737344661e1626bb037e6d",
+        "dotBytes": 11112,
+        "dotSha256": "ca90e5d90fc90e38c227523243101e7f162a567b771db0bcbaead2973afcbd08"
+      },
+      {
+        "id": "rpg.classic",
+        "systems": 14,
+        "declarationKeys": 78,
+        "dependencyEdges": 66,
+        "textBytes": 9346,
+        "textSha256": "9ed28f74728d6f90ae042b9ec7affc56ee80d722d1bc041697d33706e9a80d30",
+        "dotBytes": 9831,
+        "dotSha256": "7b4173b7f2013d24f6916e14bb8f024850c85f662179dc8dd4c40b43c81d1897"
+      },
+      {
+        "id": "survivor.classic",
+        "systems": 10,
+        "declarationKeys": 33,
+        "dependencyEdges": 27,
+        "textBytes": 5090,
+        "textSha256": "2e4e4f6ff6078e3c2568a02dd06cbdd0fee68fc04f9b7974a4c10c37440de38d",
+        "dotBytes": 5445,
+        "dotSha256": "bc09e6dabdab5a21a73a1073507dbc91b4a27b06a875e0102f62a74328f75465"
+      },
+      {
+        "id": "platformer.classic",
+        "systems": 4,
+        "declarationKeys": 9,
+        "dependencyEdges": 5,
+        "textBytes": 2132,
+        "textSha256": "8aed72e30af2f47821c8aa009ad49b74b202d43177cc4a581101743a68777aba",
+        "dotBytes": 2268,
+        "dotSha256": "87e87b448c357074db09b8ec9c215a1022c99de219756f4ca28bd1ac2bdf59bb"
+      },
+      {
+        "id": "defense.classic",
+        "systems": 7,
+        "declarationKeys": 24,
+        "dependencyEdges": 17,
+        "textBytes": 3607,
+        "textSha256": "7d591aec51d42fa846ec74dc97c7a89e405fb2ddca502f5dd4df790690fd6928",
+        "dotBytes": 3855,
+        "dotSha256": "6604cadc9d2688f8662c1b3771f15e1d960a561fb301d5012269852ead3f3244"
+      },
+      {
+        "id": "puzzle.classic",
+        "systems": 1,
+        "declarationKeys": 0,
+        "dependencyEdges": 0,
+        "textBytes": 1008,
+        "textSha256": "1b5d1715cf7c1db35efbe4f6e63f18a78a9bd87532a14e94eb8a863c57b1ec6a",
+        "dotBytes": 1012,
+        "dotSha256": "ee1c561ab755f08d7386e71065326e51a0256e5ba3eea87893de551a2d361d82"
+      },
+      {
+        "id": "sling.classic",
+        "systems": 3,
+        "declarationKeys": 1,
+        "dependencyEdges": 3,
+        "textBytes": 1628,
+        "textSha256": "a5a0bc7ecd4476b858558926428b28d569341999499c5c94e09060addc093301",
+        "dotBytes": 1760,
+        "dotSha256": "0f475a7562c42359c71ba95fc9696c9ebc8b22686f9d69fcbfb0937d47f67a36"
+      },
+      {
+        "id": "brawler.classic",
+        "systems": 3,
+        "declarationKeys": 6,
+        "dependencyEdges": 3,
+        "textBytes": 1763,
+        "textSha256": "4b78ca0c7dae2c14a1ad89fe675351f9241f84824372ad4e57d0d433c25acb0e",
+        "dotBytes": 1880,
+        "dotSha256": "046ae27d4c396225ddc7011e0c47f1858690865cb72fa87f6b821bd38906cc42"
+      },
+      {
+        "id": "story.classic",
+        "systems": 1,
+        "declarationKeys": 0,
+        "dependencyEdges": 0,
+        "textBytes": 1005,
+        "textSha256": "016723da7b244baa8a5d19446886c6c5dfa63e1b715eb0fd0a8b7c6405120d00",
+        "dotBytes": 1009,
+        "dotSha256": "c077e4c356e2e0bf2922106126c33e5c54bc0d581aea7e45001b4c9bbb6b0135"
+      },
+      {
+        "id": "shooter.default",
+        "systems": 1,
+        "declarationKeys": 16,
+        "dependencyEdges": 0,
+        "textBytes": 1364,
+        "textSha256": "276170ef768136b782ccdd4f9534b84bf8cf03f340e7f7bab6e357372f283f8d",
+        "dotBytes": 1241,
+        "dotSha256": "0bfeb9ea45edcb354f3e641a54ee1a31a44299d56f8808b77cc3429940232b89"
+      },
+      {
+        "id": "survivor.guard",
+        "systems": 10,
+        "declarationKeys": 33,
+        "dependencyEdges": 27,
+        "textBytes": 5090,
+        "textSha256": "2e4e4f6ff6078e3c2568a02dd06cbdd0fee68fc04f9b7974a4c10c37440de38d",
+        "dotBytes": 5445,
+        "dotSha256": "bc09e6dabdab5a21a73a1073507dbc91b4a27b06a875e0102f62a74328f75465"
+      },
+      {
+        "id": "survivor.flying_sword",
+        "systems": 13,
+        "declarationKeys": 45,
+        "dependencyEdges": 42,
+        "textBytes": 6700,
+        "textSha256": "475dbc45514b23c120afcab5ef74977de3a06ba0974c3ed4b413f277ea4de826",
+        "dotBytes": 7092,
+        "dotSha256": "04290c3274ccd2a80dd8a8e88d271b7ce59bc08c3f4ed53bc67c49d10b7c4d0c"
+      },
+      {
+        "id": "brawler.belt",
+        "systems": 3,
+        "declarationKeys": 11,
+        "dependencyEdges": 3,
+        "textBytes": 1946,
+        "textSha256": "06132173f0b01a67342ff437bb8bf29c24d6ece4cdc33c6b9673987f909054fe",
+        "dotBytes": 2048,
+        "dotSha256": "c719cf98546de0d9dcfc22e855de66577f57eb1429b290938df803cee899b9ff"
+      },
+      {
+        "id": "survivor.crossed_blades",
+        "systems": 11,
+        "declarationKeys": 37,
+        "dependencyEdges": 30,
+        "textBytes": 5509,
+        "textSha256": "29935fd492f2cf6841f523809df281dad2395d62758d9c2186e4e09c64cb5183",
+        "dotBytes": 5876,
+        "dotSha256": "557d480c5c82e55a44aabbed2994b781028fcfc2384ce7e867ac3a57ba81d34a"
+      },
+      {
+        "id": "survivor.mobile",
+        "systems": 12,
+        "declarationKeys": 38,
+        "dependencyEdges": 34,
+        "textBytes": 5931,
+        "textSha256": "d7f5ae6e40beb7fadc73bf89eb4e55a4467deda79b0e97743b2759853c4cea0d",
+        "dotBytes": 6324,
+        "dotSha256": "01624ded9ea8c84ba15bb7a97481279514f56a940c9917ed7d943ad4554540cd"
+      },
+      {
+        "id": "survivor.weapons",
+        "systems": 13,
+        "declarationKeys": 45,
+        "dependencyEdges": 42,
+        "textBytes": 6696,
+        "textSha256": "d29d274f27d46c567c799f72aec8a83b6f53b9382ec6f15ebe28150886054ff4",
+        "dotBytes": 7088,
+        "dotSha256": "231e6791fb1354b1d12b670f48583cf2fe2248226db80c097a528061dc83c388"
+      },
+      {
+        "id": "brawler.shared_combat",
+        "systems": 3,
+        "declarationKeys": 6,
+        "dependencyEdges": 3,
+        "textBytes": 1763,
+        "textSha256": "4b78ca0c7dae2c14a1ad89fe675351f9241f84824372ad4e57d0d433c25acb0e",
+        "dotBytes": 1880,
+        "dotSha256": "046ae27d4c396225ddc7011e0c47f1858690865cb72fa87f6b821bd38906cc42"
+      },
+      {
+        "id": "brawler.mobile",
+        "systems": 4,
+        "declarationKeys": 8,
+        "dependencyEdges": 6,
+        "textBytes": 2134,
+        "textSha256": "59037c143eee0ca40a63c0853144f90ec161995e5f267f8bb6aa445e3af96289",
+        "dotBytes": 2272,
+        "dotSha256": "8aaed7449c31f4a1d85e542779925afe38d14435b86d5244c091d88a7307283b"
+      },
+      {
+        "id": "brawler.weapon_belt",
+        "systems": 4,
+        "declarationKeys": 23,
+        "dependencyEdges": 11,
+        "textBytes": 2918,
+        "textSha256": "77d588e5cf42cdf509ef0e345cdfc55fc81c0b355f8fbf8480aa23a5abd669dc",
+        "dotBytes": 3006,
+        "dotSha256": "4881180195d02feaa6ec6eca4702da0a0ef3cb7738237f0d82d622c74bc3631c"
+      }
+    ]
+  },
+  "cost": {
+    "probe": "Docs/validation/ExecutionPlanColdCostProbe.cs",
+    "scope": "current-thread synchronous .NET allocated bytes; cold constructor includes A2 Writable metadata; export unformatted; not retained heap, native memory, mobile performance or tick timing",
+    "base": [
+      {
+        "systemCount": 1,
+        "readsPerSystem": 4,
+        "writesPerSystem": 4,
+        "repetitions": 20,
+        "metric": "ManagedBytes",
+        "thread": "current synchronous test thread",
+        "collections": 0,
+        "beforePositive": 33536,
+        "beforeEmpty": 0,
+        "afterPositive": 33536,
+        "afterEmpty": 0,
+        "constructionBytes": [
+          1568,
+          1568,
+          1568,
+          1568,
+          1568,
+          1568,
+          1568,
+          1568,
+          1568,
+          1568,
+          1568,
+          1568,
+          1568,
+          1568,
+          1568,
+          1568,
+          1568,
+          1568,
+          1568,
+          1568
+        ],
+        "unformattedPlanExportBytes": []
+      },
+      {
+        "systemCount": 20,
+        "readsPerSystem": 4,
+        "writesPerSystem": 4,
+        "repetitions": 20,
+        "metric": "ManagedBytes",
+        "thread": "current synchronous test thread",
+        "collections": 0,
+        "beforePositive": 33536,
+        "beforeEmpty": 0,
+        "afterPositive": 33536,
+        "afterEmpty": 0,
+        "constructionBytes": [
+          19728,
+          19728,
+          19728,
+          19728,
+          19728,
+          19728,
+          19728,
+          19728,
+          19728,
+          19728,
+          19728,
+          19728,
+          19728,
+          19728,
+          19728,
+          19728,
+          19728,
+          19728,
+          19728,
+          19728
+        ],
+        "unformattedPlanExportBytes": []
+      },
+      {
+        "systemCount": 64,
+        "readsPerSystem": 4,
+        "writesPerSystem": 4,
+        "repetitions": 20,
+        "metric": "ManagedBytes",
+        "thread": "current synchronous test thread",
+        "collections": 0,
+        "beforePositive": 33536,
+        "beforeEmpty": 0,
+        "afterPositive": 33536,
+        "afterEmpty": 0,
+        "constructionBytes": [
+          61792,
+          61792,
+          61792,
+          61792,
+          61792,
+          61792,
+          61792,
+          61792,
+          61792,
+          61792,
+          61792,
+          61792,
+          61792,
+          61792,
+          61792,
+          61792,
+          61792,
+          61792,
+          61792,
+          61792
+        ],
+        "unformattedPlanExportBytes": []
+      }
+    ],
+    "new": [
+      {
+        "systemCount": 1,
+        "readsPerSystem": 4,
+        "writesPerSystem": 4,
+        "repetitions": 20,
+        "metric": "ManagedBytes",
+        "thread": "current synchronous test thread",
+        "collections": 0,
+        "beforePositive": 33536,
+        "beforeEmpty": 0,
+        "afterPositive": 33536,
+        "afterEmpty": 0,
+        "constructionBytes": [
+          3008,
+          3008,
+          3008,
+          3008,
+          3008,
+          3008,
+          3008,
+          3008,
+          3008,
+          3008,
+          3008,
+          3008,
+          3008,
+          3008,
+          3008,
+          3008,
+          3008,
+          3008,
+          3008,
+          3008
+        ],
+        "unformattedPlanExportBytes": [
+          1536,
+          1536,
+          1536,
+          1536,
+          1536,
+          1536,
+          1536,
+          1536,
+          1536,
+          1536,
+          1536,
+          1536,
+          1536,
+          1536,
+          1536,
+          1536,
+          1536,
+          1536,
+          1536,
+          1536
+        ]
+      },
+      {
+        "systemCount": 20,
+        "readsPerSystem": 4,
+        "writesPerSystem": 4,
+        "repetitions": 20,
+        "metric": "ManagedBytes",
+        "thread": "current synchronous test thread",
+        "collections": 0,
+        "beforePositive": 33536,
+        "beforeEmpty": 0,
+        "afterPositive": 33536,
+        "afterEmpty": 0,
+        "constructionBytes": [
+          47920,
+          47920,
+          47920,
+          47920,
+          47920,
+          47920,
+          47920,
+          47920,
+          47920,
+          47920,
+          47920,
+          47920,
+          47920,
+          47920,
+          47920,
+          47920,
+          47920,
+          47920,
+          47920,
+          47920
+        ],
+        "unformattedPlanExportBytes": [
+          11344,
+          11344,
+          11344,
+          11344,
+          11344,
+          11344,
+          11344,
+          11344,
+          11344,
+          11344,
+          11344,
+          11344,
+          11344,
+          11344,
+          11344,
+          11344,
+          11344,
+          11344,
+          11344,
+          11344
+        ]
+      },
+      {
+        "systemCount": 64,
+        "readsPerSystem": 4,
+        "writesPerSystem": 4,
+        "repetitions": 20,
+        "metric": "ManagedBytes",
+        "thread": "current synchronous test thread",
+        "collections": 1,
+        "beforePositive": 33536,
+        "beforeEmpty": 0,
+        "afterPositive": 33536,
+        "afterEmpty": 0,
+        "constructionBytes": [
+          151936,
+          151936,
+          151936,
+          151936,
+          151936,
+          151936,
+          151936,
+          151936,
+          151936,
+          152224,
+          151936,
+          151936,
+          151936,
+          151936,
+          151936,
+          151936,
+          151936,
+          151936,
+          151936,
+          151936
+        ],
+        "unformattedPlanExportBytes": [
+          24264,
+          24264,
+          24264,
+          24264,
+          24264,
+          24264,
+          24264,
+          24264,
+          24264,
+          24264,
+          24264,
+          24264,
+          24264,
+          24264,
+          24264,
+          24264,
+          24264,
+          24264,
+          24264,
+          24264
+        ]
+      }
+    ]
+  },
+  "notRun": [
+    "full aggregate harness",
+    "new-source native Unity EditMode/PlayMode/Burst",
+    "physical Android/iOS"
+  ],
+  "evidenceArtifacts": [
+    "red-build.log",
+    "green-build.log",
+    "green-tests.log",
+    "a1-focused.trx",
+    "compositions.json",
+    "compositions-repeat.json",
+    "plans/*.txt",
+    "plans/*.dot",
+    "plans-repeat/*.txt",
+    "plans-repeat/*.dot",
+    "cost-base.json",
+    "cost-new.json",
+    "graphviz.log"
+  ]
+}

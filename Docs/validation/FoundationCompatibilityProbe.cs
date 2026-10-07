@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using System.Reflection;
 using System.Text.Json;
 using SPF.Contracts;
@@ -26,6 +27,7 @@ static class Program
 {
     const BindingFlags InstanceFields = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
     static readonly List<UnityEngine.Object> OwnedConfigs = new List<UnityEngine.Object>();
+    static string ExecutionPlanDirectory;
 
     static T Own<T>(T config) where T : UnityEngine.Object
     {
@@ -119,27 +121,31 @@ static class Program
                 };
             }).ToArray();
 
-            // This second registry is metadata-only: no OnCreate or OnTick is called on these objects.
-            var registry = new SystemRegistry();
-            foreach (var module in mode.Modules) module.RegisterSystems(registry);
-            var registered = registry.Systems.ToList();
-            var systems = Enumerable.Range(0, session.Pipeline.SystemCount).Select(index =>
+            // Use the pipeline's captured declarations and registration provenance. Never re-register
+            // modules or call Declare again just to inspect metadata (both may have side effects).
+            var plan = session.Pipeline.GetExecutionPlan();
+            if (ExecutionPlanDirectory != null)
             {
-                var system = session.Pipeline.GetSystem(index);
-                var declaration = new AccessDeclaration();
-                system.Declare(declaration);
-                // This diagnostic deliberately follows private shape at the pinned source version.
-                var barrier = typeof(AccessDeclaration).GetProperty("IsBarrier", BindingFlags.Instance | BindingFlags.NonPublic)
-                    ?? throw new InvalidOperationException("Probe requires AccessDeclaration.IsBarrier");
+                string text = plan.ToText(), dot = plan.ToDot();
+                if (text != session.Pipeline.GetExecutionPlan().ToText() || dot != session.Pipeline.GetExecutionPlan().ToDot())
+                    throw new InvalidOperationException("Execution plan changed on repeated export: " + id);
+                if (plan.Systems.Any(s => !s.Source.IsKnown))
+                    throw new InvalidOperationException("Composed system has unknown provenance: " + id);
+                File.WriteAllText(Path.Combine(ExecutionPlanDirectory, id + ".txt"), text);
+                File.WriteAllText(Path.Combine(ExecutionPlanDirectory, id + ".dot"), dot);
+            }
+            var systems = plan.Systems.Select(entry =>
+            {
+                var system = session.Pipeline.GetSystem(entry.ScheduleIndex);
                 return new
                 {
-                    type = system.GetType().FullName,
-                    phase = system.Phase.ToString(),
-                    order = system.Order,
-                    registrationIndex = registered.FindIndex(s => s.GetType() == system.GetType()),
+                    type = entry.SystemType,
+                    phase = entry.Phase.ToString(),
+                    order = entry.Order,
+                    registrationIndex = entry.RegistrationIndex,
                     snapshotHook = system is ISnapshotSystem,
                     resetHook = system is IResettableSystem,
-                    barrier = barrier.GetValue(declaration),
+                    barrier = entry.IsBarrier,
                 };
             }).ToArray();
 
@@ -164,8 +170,15 @@ static class Program
         }
     }
 
-    static void Main()
+    static void Main(string[] args)
     {
+        if (args.Length != 0)
+        {
+            if (args.Length != 2 || args[0] != "--execution-plans")
+                throw new ArgumentException("Usage: Probe [--execution-plans OUTPUT_DIRECTORY]");
+            ExecutionPlanDirectory = args[1];
+            Directory.CreateDirectory(ExecutionPlanDirectory);
+        }
         try
         {
             var rows = new List<object>();

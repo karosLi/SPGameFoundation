@@ -41,8 +41,8 @@ namespace SPF.Runtime.Composition
         {
             var registry = new SystemRegistry();
             foreach (var module in modules)
-                module.RegisterSystems(registry);
-            return new TickPipeline(world, registry.Systems);
+                registry.RegisterModule(module);
+            return new TickPipeline(world, registry.Systems, registry.Sources);
         }
     }
 }

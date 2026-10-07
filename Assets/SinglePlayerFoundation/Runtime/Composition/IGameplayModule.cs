@@ -36,12 +36,24 @@ namespace SPF.Runtime.Composition
     public sealed class SystemRegistry
     {
         readonly List<ISimSystem> m_Systems = new List<ISimSystem>();
+        readonly List<SystemRegistrationSource> m_Sources = new List<SystemRegistrationSource>();
+        SystemRegistrationSource m_CurrentSource;
 
         public IReadOnlyList<ISimSystem> Systems => m_Systems;
+        public IReadOnlyList<SystemRegistrationSource> Sources => m_Sources;
+
+        internal void RegisterModule(IGameplayModule module)
+        {
+            var previous = m_CurrentSource;
+            m_CurrentSource = new SystemRegistrationSource(module.Id, module.GetType().FullName);
+            try { module.RegisterSystems(this); }
+            finally { m_CurrentSource = previous; }
+        }
 
         public SystemRegistry Add(ISimSystem system)
         {
             m_Systems.Add(system);
+            m_Sources.Add(m_CurrentSource);
             return this;
         }
     }

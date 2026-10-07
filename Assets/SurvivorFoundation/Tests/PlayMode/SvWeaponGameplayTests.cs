@@ -28,13 +28,21 @@ namespace SurvivorFoundation.Tests.PlayMode
             try
             {
                 yield return null;game.StartRun();yield return UIDriver.WaitUntil(()=>game.State.Flow==SvFlow.Playing,5);game.Session.Sync();game.Session.ManualClock=true;game.InputRouter.enabled=false;game.Governor.AdaptiveQuality=false;
+                // Manual Step advances tick index, not the automatic accumulator. Exact marker captures require alpha zero.
+                game.Session.Clock.Restore(game.Session.Clock.NextTickIndex,game.Session.Clock.Elapsed);
                 var world=game.Session.World;var weapons=world.Resource(SvWeapons.Key);var runtime=world.Resource(SvKeys.Config);
                 capture=new CanvasCapture(game.gameObject,game.CameraRig.Camera,720,1280);var safe=new Rect(0,0,720,1280);game.Hud.MobileHud.SetPreviewViewport(720,1280,safe);game.CameraRig.Snap();Assert.AreEqual(4,game.Hud.MobileHud.Buttons.Length);
                 foreach(int id in new[]{WeaponProfiles.Blade,WeaponProfiles.Sword,WeaponProfiles.Staff,WeaponProfiles.Bow})for(int side=-1;side<=1;side+=2)
                 {
                     world.ClearLevel();game.State.Flow=SvFlow.Playing;game.State.Hero=game.State.HeroPrev=0;game.State.Facing=new float2(side,0);game.State.Input=default;weapons.RequestEquip(id);for(int i=0;i<weapons.Profile(id).EquipTicks;i++)game.Session.Step();
                     SvSpawner.SpawnEnemy(world,runtime,1,new float2(side*(id>=WeaponProfiles.Staff?5:1),0));
-                    for(int i=0;i<weapons.Current.Active.From+3;i++)game.Session.Step();
+                    int marker=weapons.Current.Ranged?weapons.Current.ReleaseTick:weapons.Current.Active.From;
+                    // Auto-target acquisition uses the existing grid; wait for the real action and its exact sampled marker.
+                    for(int i=0;i<weapons.Current.DurationTicks*2&&(weapons.Equipment.Timeline.PulseId==0||weapons.Equipment.Timeline.Tick<marker+1);i++)game.Session.Step();
+                    Assert.IsTrue(weapons.Equipment.Timeline.Running);
+                    var sampled=weapons.View(game.Session.InterpolationAlpha);
+                    Assert.AreEqual((float)marker/weapons.Current.DurationTicks,sampled.Phase,.00001f,"fixture must sample the authored contact/release marker");
+                    TestContext.WriteLine($"Horde weapon {id}, facing {side}: ticks {weapons.Equipment.Timeline.PreviousTick}/{weapons.Equipment.Timeline.Tick}, alpha {game.Session.InterpolationAlpha:R}, sampled phase {sampled.Phase:R}, marker {(float)marker/weapons.Current.DurationTicks:R}");
                     yield return capture.Save("weapon-horde-"+id+"-"+(side<0?"left-":"right-")+suffix,safe,game.Hud.MobileHud.Buttons[3].gameObject);
                     Assert.IsTrue(game.Renderer.Characters.TryReadWeapon(new EntityHandle(-1,1),out var socket));Assert.AreEqual(id,socket.VisualId);
                     float2 canonical=game.State.Hero+new float2(side*weapons.Current.MuzzleOffset.x,weapons.Current.MuzzleOffset.y)*SvWeapons.ActorScale;Assert.Less(math.distance(canonical,socket.Muzzle),.17f);

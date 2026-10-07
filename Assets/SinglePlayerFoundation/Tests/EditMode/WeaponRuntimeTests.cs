@@ -70,6 +70,16 @@ namespace SPF.Tests.EditMode
             Step(r,r.Current.DurationTicks);Step(r,1,pressed:true);Assert.IsTrue(r.RecordHit(0,new EntityHandle(7,2),0));
         }
         [Test]
+        public void ManualContactCaptureMustClearTheRetainedFractionalClockAlpha()
+        {
+            var clock=new SPF.Runtime.Scheduling.FixedStepClock(60,4);clock.Advance(.3f/60f);
+            using var weapon=Create();Step(weapon,1,pressed:true);Step(weapon,weapon.Current.Active.From+1);
+            for(int i=0;i<weapon.Current.Active.From+2;i++)clock.NextTick();
+            float marker=(float)weapon.Current.Active.From/weapon.Current.DurationTicks;
+            Assert.AreEqual(.3f,clock.Alpha,.00001f);Assert.Greater(weapon.View(clock.Alpha).Phase,marker,"manual ticks retain the old automatic alpha and sample past contact");
+            clock.Restore(clock.NextTickIndex,clock.Elapsed);Assert.AreEqual(marker,weapon.View(clock.Alpha).Phase,.00001f);
+        }
+        [Test]
         public void SkillPoseClockRejectsDurationsWithoutAVisibleInterpolatedInterval()
         {
             var pose=new SPF.L2.Skills.ActionPoseClock();Assert.Throws<ArgumentOutOfRangeException>(()=>pose.Begin(101,1));Assert.Throws<ArgumentOutOfRangeException>(()=>pose.Begin(101,2));

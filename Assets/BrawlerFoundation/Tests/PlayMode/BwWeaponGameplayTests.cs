@@ -29,6 +29,8 @@ namespace BrawlerFoundation.Tests.PlayMode
             {
                 yield return null;UIDriver.Click(game.StartButton.gameObject);yield return UIDriver.WaitUntil(()=>game.State.Flow==BwFlow.Fighting,5);
                 game.Session.Sync();game.Session.ManualClock=true;game.InputRouter.enabled=false;game.Governor.AdaptiveQuality=false;
+                // Manual Step advances tick index, not the automatic accumulator. Exact marker captures require alpha zero.
+                game.Session.Clock.Restore(game.Session.Clock.NextTickIndex,game.Session.Clock.Elapsed);
                 capture=new CanvasCapture(game.gameObject,game.CameraRig.Camera,1280,720);var safe=new Rect(0,0,1280,720);game.MobileHud.SetPreviewViewport(1280,720,safe);game.CameraRig.Snap();
                 var world=game.Session.World;var weapons=world.Resource(BwWeapons.Key);
                 foreach(int id in new[]{WeaponProfiles.Blade,WeaponProfiles.Sword,WeaponProfiles.Staff,WeaponProfiles.Bow})for(int side=-1;side<=1;side+=2)
@@ -36,7 +38,12 @@ namespace BrawlerFoundation.Tests.PlayMode
                     world.ClearLevel();game.State.Flow=BwFlow.Fighting;game.State.Input=default;
                     BwSpawner.Spawn(world,0,0,side,0);BwSpawner.Spawn(world,1,new float2(side*(id>=WeaponProfiles.Staff?5:1.2f),0),-side,0);var info=world.Column(BwKeys.Info);var target=info[1];target.Hp=target.MaxHp=1000;info[1]=target;
                     weapons.RequestEquip(id);for(int i=0;i<weapons.Profile(id).EquipTicks;i++)game.Session.Step();
-                    game.State.Input=new InputFrame{Pressed=1};game.Session.Step();game.State.Input=default;for(int i=0;i<weapons.Current.Active.From+1;i++)game.Session.Step();
+                    game.State.Input=new InputFrame{Pressed=1};game.Session.Step();game.State.Input=default;
+                    int marker=weapons.Current.Ranged?weapons.Current.ReleaseTick:weapons.Current.Active.From;
+                    for(int i=0;i<marker+1;i++)game.Session.Step();
+                    var sampled=weapons.View(game.Session.InterpolationAlpha);
+                    Assert.AreEqual((float)marker/weapons.Current.DurationTicks,sampled.Phase,.00001f,"fixture must sample the authored contact/release marker");
+                    TestContext.WriteLine($"Belt weapon {id}, facing {side}: ticks {weapons.Equipment.Timeline.PreviousTick}/{weapons.Equipment.Timeline.Tick}, alpha {game.Session.InterpolationAlpha:R}, sampled phase {sampled.Phase:R}, marker {(float)marker/weapons.Current.DurationTicks:R}");
                     yield return capture.Save("weapon-belt-"+id+"-"+(side<0?"left-":"right-")+suffix,safe,game.SwitchWeaponButton.gameObject);
                     Assert.IsTrue(game.Renderer.Characters.TryReadWeapon(weapons.Owner,out var socket));Assert.AreEqual(id,socket.VisualId);
                     float2 root=world.Column(BwKeys.Position)[0];float2 canonical=root+new float2(side*weapons.Current.MuzzleOffset.x,weapons.Current.MuzzleOffset.y)*BwWeapons.ActorScale;

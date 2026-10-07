@@ -1,0 +1,91 @@
+{
+  "baseline": "9bc7c41",
+  "red_failures": [
+    {
+      "source_log": "red-BrawlerFoundation-final.log",
+      "test": "DisableClearsTransientStateAndReenableSkipsHiddenWeaponCues [1 s]",
+      "message": "Error Message:\nExpected: 3\nBut was:  2"
+    },
+    {
+      "source_log": "red-BrawlerFoundation-final.log",
+      "test": "DisableReleaseAndCameraReplacementDetachOnlyOwnedCallback [1 s]",
+      "message": "Error Message:\nDisabled view must not remain called by a live camera.\nExpected: null\nBut was:  <System.Action`1[SPF.Shell.CameraRig.FollowCamera2D]>"
+    },
+    {
+      "source_log": "red-BrawlerFoundation-final.log",
+      "test": "RemovingHostReleasesPrivateBindingAndCanRebindSameSession [1 s]",
+      "message": "Error Message:\nA removed Session binding cannot keep private particle resources alive.\nExpected: null\nBut was:  <SPF.Presentation.Particles.WeaponParticlePresenter>"
+    },
+    {
+      "source_log": "red-BrawlerFoundation-final.log",
+      "test": "SameTickRestoreClearsOldTransientFeedback(False) [12 ms]",
+      "message": "Error Message:\nTransient feedback belongs to the old timeline even when the numeric tick is unchanged.\nExpected: 0\nBut was:  2"
+    },
+    {
+      "source_log": "red-BrawlerFoundation-final.log",
+      "test": "SameTickRestoreClearsOldTransientFeedback(True) [1 s]",
+      "message": "Error Message:\nTransient feedback belongs to the old timeline even when the numeric tick is unchanged.\nExpected: 0\nBut was:  2"
+    },
+    {
+      "source_log": "red-BrawlerFoundation-final.log",
+      "test": "TwoViewsReadWeaponCuesIndependentlyWithoutChangingSnapshot [2 s]",
+      "message": "Error Message:\nExpected: greater than 0\nBut was:  0"
+    },
+    {
+      "source_log": "red-SurvivorFoundation-final.log",
+      "test": "DisableClearsTransientStateAndReenableSkipsHiddenWeaponCues [1 s]",
+      "message": "Error Message:\nTime spent hidden must not replay release/impact cues.\nExpected: 0\nBut was:  13"
+    },
+    {
+      "source_log": "red-SurvivorFoundation-final.log",
+      "test": "DisableReleaseAndCameraReplacementDetachOnlyOwnedCallback [1 s]",
+      "message": "Error Message:\nDisabled view must not remain called by a live camera.\nExpected: null\nBut was:  <System.Action`1[SPF.Shell.CameraRig.FollowCamera2D]>"
+    },
+    {
+      "source_log": "red-SurvivorFoundation-final.log",
+      "test": "RemovingHostReleasesPrivateBindingAndCanRebindSameSession [1 s]",
+      "message": "Error Message:\nA removed Session binding cannot keep private particle resources alive.\nExpected: null\nBut was:  <SPF.Presentation.Particles.WeaponParticlePresenter>"
+    },
+    {
+      "source_log": "red-SurvivorFoundation-final.log",
+      "test": "SameTickRestoreClearsOldTransientFeedback(False) [23 ms]",
+      "message": "Error Message:\nTransient feedback belongs to the old timeline even when the numeric tick is unchanged.\nExpected: 0\nBut was:  1"
+    },
+    {
+      "source_log": "red-SurvivorFoundation-final.log",
+      "test": "SameTickRestoreClearsOldTransientFeedback(True) [1 s]",
+      "message": "Error Message:\nTransient feedback belongs to the old timeline even when the numeric tick is unchanged.\nExpected: 0\nBut was:  1"
+    },
+    {
+      "source_log": "red.log",
+      "test": "DisabledHudCannotReviveControlsWhenBuiltOrRefreshed(False) [40 ms]",
+      "message": "Error Message:\nexplicit refresh/build must respect the disabled HUD\nExpected: False\nBut was:  True"
+    },
+    {
+      "source_log": "red.log",
+      "test": "DisabledHudCannotReviveControlsWhenBuiltOrRefreshed(True) [1 ms]",
+      "message": "Error Message:\nexplicit refresh/build must respect the disabled HUD\nExpected: False\nBut was:  True"
+    },
+    {
+      "source_log": "red.log",
+      "test": "FailedReinitializeClearsPublishedSessionAndStopsLauncherUntilRetry(True) [16 ms]",
+      "message": "Error Message:\nfailed replacement must not publish the disposed previous session\nExpected: null\nBut was:  <SPF.Runtime.Session.SimSession>"
+    },
+    {
+      "source_log": "red.log",
+      "test": "FailedReinitializeClearsPublishedSessionAndStopsLauncherUntilRetry(False) [1 ms]",
+      "message": "Error Message:\nfailed replacement must not publish the disposed previous session\nExpected: null\nBut was:  <SPF.Runtime.Session.SimSession>"
+    },
+    {
+      "source_log": "destroy-red.log",
+      "test": "DestroyingHostDetachesEvenWhenSessionCleanupThrows [33 ms]",
+      "message": "Error Message:\ndestroy must unpublish the session even when owner cleanup reports an error\nExpected: null\nBut was:  <SPF.Runtime.Session.SimSession>"
+    },
+    {
+      "source_log": "camera-red.log",
+      "test": "CameraBeforeRenderDoesNotReadDisposedPublishedSession [1 s]",
+      "message": "Expected no exception from order-400 camera callback after direct published Session.Dispose; actual System.ArgumentException: Resource Sv.Game was not registered by any module."
+    }
+  ],
+  "note": "First baseline fixtures were tightened to require a true retained staff release and saved Guard RunTicks; these final red logs precede renderer runtime fixes. Full logs remain in local validation output. The additional camera-first disposal regression was reproduced after the first lifecycle patch, before its callback guard."
+}

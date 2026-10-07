@@ -1,0 +1,111 @@
+{
+  "baseline": "9bc7c41",
+  "runtime_checkpoint": "7c5e821",
+  "host_checkpoint": "fa706a4",
+  "dotnet": {
+    "passed": 1080,
+    "failed": 0,
+    "new_cases": 30,
+    "assemblies": [
+      {
+        "name": "BrawlerFoundation.Tests.EditMode.dll",
+        "passed": 113,
+        "failed": 0
+      },
+      {
+        "name": "DefenseFoundation.Tests.EditMode.dll",
+        "passed": 8,
+        "failed": 0
+      },
+      {
+        "name": "PlatformerFoundation.Tests.EditMode.dll",
+        "passed": 10,
+        "failed": 0
+      },
+      {
+        "name": "PuzzleFoundation.Tests.EditMode.dll",
+        "passed": 7,
+        "failed": 0
+      },
+      {
+        "name": "RpgFoundation.Tests.EditMode.dll",
+        "passed": 63,
+        "failed": 0
+      },
+      {
+        "name": "SPF.Tests.EditMode.dll",
+        "passed": 702,
+        "failed": 0
+      },
+      {
+        "name": "ShooterFoundation.Tests.EditMode.dll",
+        "passed": 16,
+        "failed": 0
+      },
+      {
+        "name": "SlingFoundation.Tests.EditMode.dll",
+        "passed": 4,
+        "failed": 0
+      },
+      {
+        "name": "SnakeFoundation.Tests.EditMode.dll",
+        "passed": 38,
+        "failed": 0
+      },
+      {
+        "name": "StoryFoundation.Tests.EditMode.dll",
+        "passed": 5,
+        "failed": 0
+      },
+      {
+        "name": "SurvivorFoundation.Tests.EditMode.dll",
+        "passed": 114,
+        "failed": 0
+      }
+    ]
+  },
+  "native_api_compile": {
+    "source_files": 499,
+    "errors": 0,
+    "warnings": 7,
+    "executed_unity": false
+  },
+  "composition": {
+    "semantic_compositions_matched": 19,
+    "changed_source_hashes": [
+      "Assets/BrawlerFoundation/Presentation/BwRenderer.cs",
+      "Assets/SinglePlayerFoundation/Runtime/Session/SessionHost.cs",
+      "Assets/SinglePlayerFoundation/Tests/EditMode/SessionHostTests.cs",
+      "Assets/SurvivorFoundation/Presentation/SvRenderer.cs"
+    ]
+  },
+  "snapshot_invariance": "Actual adapters compare complete snapshot byte arrays, stronger than hash equality; full legacy fixture/replay tests pass unchanged.",
+  "remaining_gates": [
+    "Integrated Unity EditMode",
+    "Both-tier graphics PlayMode including newly added assertions",
+    "Native render/allocation/continuous-motion checks",
+    "Physical Android/iOS"
+  ],
+  "source_sha256": {
+    "Assets/BrawlerFoundation/Presentation/BwRenderer.cs": "0541f6d267f850a663293a738b5917631992051f984db393098c4d0367963659",
+    "Assets/BrawlerFoundation/Tests/EditMode/BrawlerFoundation.Tests.EditMode.asmdef": "bb69b0acbe16809673cff28563fa886c66a726ddfa2add5b299a441bc7bf5646",
+    "Assets/BrawlerFoundation/Tests/EditMode/BwViewLifecycleTests.cs": "14ad0d2b959ceb0b4173e48e308c0f4ee0dd01ff89703661f3fc9f47f9a58314",
+    "Assets/BrawlerFoundation/Tests/PlayMode/BwWeaponGameplayTests.cs": "6e501a1ba8d07cfb989dbbe0b5721d3a211c150bb0b92644ae1ab4615de9eb09",
+    "Assets/SinglePlayerFoundation/Presentation/Rendering/ViewTimelineStamp.cs": "e0cd8c3ce27f75f92a08eaca0674c837a8e5c80ce22ebe95da1cfba8cc4de752",
+    "Assets/SinglePlayerFoundation/Runtime/Session/SessionHost.cs": "f5c52a3b9af229926abf68d2ad5d3a9fd73d91a56ebdf75e7d41619fdbaeb292",
+    "Assets/SinglePlayerFoundation/Shell/UI/MobileCombatHud.cs": "b3a1d5c558436feb719ae7acd7e228bb0180b99b29ef3733424a15411eeef0ce",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/MobileInputTests.cs": "25f9728f7932ffde35a45a5c73d75bad39d8008e860ac38ef9b02771f2221cf2",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/SessionHostTests.cs": "4cdcc9ebfd70c5d2791ef8596000dd0541b12ffd0880d1e8871a0ccd6554e828",
+    "Assets/SurvivorFoundation/Presentation/SvRenderer.cs": "5db5dbab2c4747ffa71681a370cc5eb366958e2168d6df2629e01a39ca35667c",
+    "Assets/SurvivorFoundation/Tests/EditMode/SurvivorFoundation.Tests.EditMode.asmdef": "50063cdb32bb60e6af7fa817de9f2235aeac62cc511ded9dc508716c49f4e4a1",
+    "Assets/SurvivorFoundation/Tests/EditMode/SvViewLifecycleTests.cs": "f7adb42e3c52b7cc4384c8eeda6f4c262e00ec1d2b30db97bc99b2dfc934c340",
+    "Assets/SurvivorFoundation/Tests/PlayMode/SvWeaponGameplayTests.cs": "abbc79e18032c3a282fda7e2d798a789fbfd922218afb92d9789ce712ebd35f5"
+  },
+  "log_sha256": {
+    "final-build.log": "7e7af547f825ff39e2da003d329242350495a6415314240baadba1794765384c",
+    "final-test.log": "37ab189cea20e7501414e2e4e04e1e21497b0613b07ab6940cdd606e40f0bd50",
+    "camera-red.log": "2c750546d0e804d89a6adaaf12c6727a865e39d550d5055b35557d41d4a2c023",
+    "camera-green.log": "202e12b8f0016d0525d787d5c190059a44814f1738bf78274fd3d2134384934c",
+    "native-api-final2.log": "ab827d787ef27432e893ad1cc9ec4fbf30ca36ad1e498564620b72397956e761"
+  }
+}

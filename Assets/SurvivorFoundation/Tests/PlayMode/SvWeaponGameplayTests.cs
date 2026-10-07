@@ -5,6 +5,7 @@ using NUnit.Framework;
 using SPF.Contracts;
 using SPF.L2.Weapons;
 using SPF.Presentation;
+using SPF.Presentation.Animation;
 using SPF.Shell.UI;
 using SPF.Testing;
 using SurvivorFoundation.Game;
@@ -108,6 +109,27 @@ namespace SurvivorFoundation.Tests.PlayMode
                         }
                         game.Session.ManualClock=true;frames.Write("weapon-horde-live-"+suffix,"Actual automatic-clock portrait horde: run/walk, pulse/blink in contact captures, staff charge/projectile, switch to bow draw/release while independent pulse/blink HUD remains. Target30Hz, measured timestamps retained.");
                     }
+                    // Move actual agile/heavy enemies for locomotion evidence; the weapon fixture
+                    // above intentionally freezes enemies and cannot demonstrate their walking.
+                    capture.Dispose();capture=new CanvasCapture(game.gameObject,game.CameraRig.Camera,320,568);game.Hud.MobileHud.SetPreviewViewport(320,568,new Rect(0,0,320,568));
+                    world.ClearLevel();game.State.Flow=SvFlow.Playing;game.State.Hero=game.State.HeroPrev=0;game.State.Input=default;
+                    for(int kind=0;kind<runtime.Enemies.Length;kind++){var enemy=runtime.Enemies[kind];enemy.Speed=kind==2?1.3f:kind==0?2.1f:1.7f;runtime.Enemies[kind]=enemy;}
+                    SvSpawner.SpawnEnemy(world,runtime,0,new float2(3.5f,4));SvSpawner.SpawnEnemy(world,runtime,1,new float2(-3.5f,3.5f));SvSpawner.SpawnEnemy(world,runtime,2,new float2(0,-4));
+                    Canvas.ForceUpdateCanvases();yield return null;yield return null;
+                    using(var frames=new BufferedFrameCapture(capture.Target,160))
+                    {
+                        var trace=new GaitTrace();game.Session.ManualClock=false;double next=Time.realtimeSinceStartupAsDouble;
+                        for(int i=0;i<160;i++)
+                        {
+                            while(Time.realtimeSinceStartupAsDouble<next)yield return null;
+                            float2 move=i<40?new float2(.20f,.12f):i<80?new float2(.8f,.6f):i<100?float2.zero:i<135?new float2(-.2f,-.12f):new float2(0,.20f);
+                            game.State.Input=InputFrame.Latch(game.State.Input,new InputFrame{Move=move});
+                            double acquiredAt=Time.realtimeSinceStartupAsDouble;frames.Capture(weapons.Tick/30d);trace.Capture(i,0,acquiredAt,game.Renderer.Characters,new EntityHandle(-1,1));
+                            var handles=world.Table(SvKeys.Enemy).Handles;for(int row=0;row<math.min(3,world.Table(SvKeys.Enemy).Count);row++)trace.Capture(i,row+1,acquiredAt,game.Renderer.Characters,handles[row]);
+                            next=acquiredAt+1d/30;
+                        }
+                        game.Session.ManualClock=true;string directory=frames.Write("grounded-horde-live-"+suffix,"Actual automatic-clock hero plus moving agile, standard and heavy enemies: walk, run, stop, reverse and depth walk. Same camera/input schedule for before/after. Per-actor gait.csv is a readback annotation, not a manufactured render clock.");trace.Write(directory);
+                    }
                 }
                 LogAssert.NoUnexpectedReceived();
             }
@@ -123,6 +145,36 @@ namespace SurvivorFoundation.Tests.PlayMode
             Assert.AreEqual(id,weapons.Equipment.EquippedId);
             Assert.AreEqual(0,weapons.Equipment.PendingId);
             Assert.AreEqual(0,weapons.Equipment.EquipRemaining);
+        }
+
+        // Test-only, fixed-capacity samples. Serialization happens after image acquisition.
+        struct GaitSample
+        {
+            public int Frame,Actor;public double Time;public GameplayCharacterMotion Motion;public float Pelvis,Head;
+        }
+        sealed class GaitTrace
+        {
+            readonly GaitSample[] samples=new GaitSample[160*4];int count;
+            public void Capture(int frame,int actor,double time,GameplayCharacterPresenter presenter,EntityHandle handle)
+            {
+                if(count==samples.Length||!presenter.TryRead(handle,out var motion))return;
+                samples[count++]=new GaitSample {Frame=frame,Actor=actor,Time=time,Motion=motion,
+                    Pelvis=presenter.ReadBone(handle,NaturalCharacterRig.Pelvis).Position.y,
+                    Head=presenter.ReadBone(handle,NaturalCharacterRig.Head).Position.y};
+            }
+            public void Write(string directory)
+            {
+                var csv=new System.Text.StringBuilder("frame,actor,acquisition_seconds,root_x,root_y,ground_y,velocity_x,velocity_depth,scale,locomotion,far_phase,near_phase,far_stance,near_stance,far_x,far_y,near_x,near_y,pelvis_above_ground,head_above_ground,authoritative_jump\n");
+                for(int i=0;i<count;i++)
+                {
+                    var s=samples[i];var m=s.Motion;float ground=m.FarFoot.PreviousRoot.y*m.Scale;
+                    csv.Append(s.Frame).Append(',').Append(s.Actor).Append(',').Append((s.Time-samples[0].Time).ToString("F9",System.Globalization.CultureInfo.InvariantCulture));
+                    foreach(float value in new[]{m.PreviousRoot.x,m.PreviousRoot.y,ground,m.PreviousVelocity.x*m.Scale,m.PreviousVelocity.y*m.Scale,m.Scale,(float)m.Locomotion,m.FarFoot.Phase,m.NearFoot.Phase,m.FarFoot.InStance?1:0,m.NearFoot.InStance?1:0,m.FarFoot.Position.x*m.Scale,m.FarFoot.Position.y*m.Scale,m.NearFoot.Position.x*m.Scale,m.NearFoot.Position.y*m.Scale,s.Pelvis-ground,s.Head-ground,m.PreviousRoot.y-ground})
+                        csv.Append(',').Append(value.ToString("R",System.Globalization.CultureInfo.InvariantCulture));
+                    csv.Append('\n');
+                }
+                System.IO.File.WriteAllText(System.IO.Path.Combine(directory,"gait.csv"),csv.ToString());
+            }
         }
     }
 }

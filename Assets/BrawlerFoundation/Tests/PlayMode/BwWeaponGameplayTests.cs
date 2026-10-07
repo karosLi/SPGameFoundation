@@ -124,10 +124,60 @@ namespace BrawlerFoundation.Tests.PlayMode
                         Assert.AreEqual(required,locomotionStates&required,"the live hero recording must actually include idle, walk and run");
                         Assert.AreEqual(WeaponProfiles.Sword,weapons.Equipment.EquippedId);
                     }
+                    // Dedicated locomotion evidence: the original weapon clip is retained above.
+                    capture.Dispose();capture=new CanvasCapture(game.gameObject,game.CameraRig.Camera,568,320);game.MobileHud.SetPreviewViewport(568,320,new Rect(0,0,568,320));
+                    world.ClearLevel();game.State.Flow=BwFlow.Fighting;game.State.Input=default;
+                    BwSpawner.Spawn(world,0,new float2(-3,0),1,0);BwSpawner.Spawn(world,1,new float2(5,-.7f),-1,1);BwSpawner.Spawn(world,1,new float2(7,.7f),-1,3);
+                    for(int row=0;row<world.Table(BwKeys.Fighter).Count;row++){var actor=world.Column(BwKeys.Info)[row];actor.Hp=actor.MaxHp=10000;world.Column(BwKeys.Info).Set(row,actor);}
+                    Canvas.ForceUpdateCanvases();yield return null;yield return null;
+                    using(var frames=new BufferedFrameCapture(capture.Target,160))
+                    {
+                        var trace=new GaitTrace();game.Session.ManualClock=false;double next=Time.realtimeSinceStartupAsDouble;
+                        for(int i=0;i<160;i++)
+                        {
+                            while(Time.realtimeSinceStartupAsDouble<next)yield return null;
+                            float2 move=i<40?new float2(.27f,.18f):i<80?new float2(1,.35f):i<100?float2.zero:i<135?new float2(-.27f,-.18f):new float2(0,.24f);
+                            game.State.Input=InputFrame.Latch(game.State.Input,new InputFrame{Move=move});
+                            double acquiredAt=Time.realtimeSinceStartupAsDouble;frames.Capture(weapons.Tick/60d);
+                            var handles=world.Table(BwKeys.Fighter).Handles;for(int row=0;row<math.min(3,world.Table(BwKeys.Fighter).Count);row++)trace.Capture(i,row,acquiredAt,game.Renderer.Characters,handles[row]);
+                            next=acquiredAt+1d/30;
+                        }
+                        game.Session.ManualClock=true;string directory=frames.Write("grounded-belt-live-"+suffix,"Actual automatic-clock hero, agile and heavy enemy movement: walk, run, stop, reverse and depth walk. Same camera and input schedule for before/after. Per-actor gait.csv is a readback annotation, not a manufactured render clock.");trace.Write(directory);
+                    }
                 }
                 LogAssert.NoUnexpectedReceived();
             }
             finally{capture?.Dispose();RenderCapabilities.Override=null;if(Camera.main!=null)Object.Destroy(Camera.main.gameObject);Object.Destroy(game.gameObject);}
+        }
+
+        // Test-only, fixed-capacity samples. Serialization happens after image acquisition.
+        struct GaitSample
+        {
+            public int Frame,Actor;public double Time;public GameplayCharacterMotion Motion;public float Pelvis,Head;
+        }
+        sealed class GaitTrace
+        {
+            readonly GaitSample[] samples=new GaitSample[160*4];int count;
+            public void Capture(int frame,int actor,double time,GameplayCharacterPresenter presenter,EntityHandle handle)
+            {
+                if(count==samples.Length||!presenter.TryRead(handle,out var motion))return;
+                samples[count++]=new GaitSample {Frame=frame,Actor=actor,Time=time,Motion=motion,
+                    Pelvis=presenter.ReadBone(handle,NaturalCharacterRig.Pelvis).Position.y,
+                    Head=presenter.ReadBone(handle,NaturalCharacterRig.Head).Position.y};
+            }
+            public void Write(string directory)
+            {
+                var csv=new System.Text.StringBuilder("frame,actor,acquisition_seconds,root_x,root_y,ground_y,velocity_x,velocity_depth,scale,locomotion,far_phase,near_phase,far_stance,near_stance,far_x,far_y,near_x,near_y,pelvis_above_ground,head_above_ground,authoritative_jump\n");
+                for(int i=0;i<count;i++)
+                {
+                    var s=samples[i];var m=s.Motion;float ground=m.FarFoot.PreviousRoot.y*m.Scale;
+                    csv.Append(s.Frame).Append(',').Append(s.Actor).Append(',').Append((s.Time-samples[0].Time).ToString("F9",System.Globalization.CultureInfo.InvariantCulture));
+                    foreach(float value in new[]{m.PreviousRoot.x,m.PreviousRoot.y,ground,m.PreviousVelocity.x*m.Scale,m.PreviousVelocity.y*m.Scale,m.Scale,(float)m.Locomotion,m.FarFoot.Phase,m.NearFoot.Phase,m.FarFoot.InStance?1:0,m.NearFoot.InStance?1:0,m.FarFoot.Position.x*m.Scale,m.FarFoot.Position.y*m.Scale,m.NearFoot.Position.x*m.Scale,m.NearFoot.Position.y*m.Scale,s.Pelvis-ground,s.Head-ground,m.PreviousRoot.y-ground})
+                        csv.Append(',').Append(value.ToString("R",System.Globalization.CultureInfo.InvariantCulture));
+                    csv.Append('\n');
+                }
+                System.IO.File.WriteAllText(System.IO.Path.Combine(directory,"gait.csv"),csv.ToString());
+            }
         }
     }
 }

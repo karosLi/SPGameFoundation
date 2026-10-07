@@ -1,4 +1,5 @@
 using SPF.Runtime.Composition;
+using SPF.Runtime.World;
 using UnityEngine;
 
 namespace SPF.Runtime.Session
@@ -35,6 +36,7 @@ namespace SPF.Runtime.Session
         // job completion prevents disposal; no replacement is admitted until this slot drains.
         SimSession m_RetiredSession;
         bool m_RetirementInProgress;
+        bool m_Initializing;
 
         public SimSession Session { get; private set; }
 
@@ -67,16 +69,36 @@ namespace SPF.Runtime.Session
         /// <summary>Creates the session from code (bootstraps, tests). Disposes a previous session.</summary>
         public SimSession Initialize(ModeDefinition mode, uint seed, bool start = true)
         {
-            RetireSession();
-            m_Mode = mode;
-            m_Seed = seed;
-            Session = SimSession.Create(mode, seed);
-            if (start)
-                Session.Start();
-            enabled = true;
-            EnsureLauncher();
-            SessionCreated?.Invoke(Session);
-            return Session;
+            if (m_Initializing)
+                throw new System.InvalidOperationException("Session initialization is still in progress.");
+            m_Initializing = true;
+            try
+            {
+                RetireSession();
+                m_Mode = mode;
+                m_Seed = seed;
+                var created = SimSession.Create(mode, seed);
+                Session = created;
+                try
+                {
+                    if (start) created.Start();
+                    enabled = true;
+                    EnsureLauncher();
+                    SessionCreated?.Invoke(created);
+                    if (!ReferenceEquals(Session, created) || created.State == SessionState.Disposed)
+                        throw new System.InvalidOperationException("Session was removed or disposed during binding.");
+                    return created;
+                }
+                catch (System.Exception failure)
+                {
+                    // Host owns the new Session, not arbitrary partial assets in subscribers.
+                    // Unpublish first, retain an unsafe retirement for retry, and keep the binding
+                    // failure primary if safe cleanup also reports errors.
+                    CleanupErrors.Try(RetireSession, ref failure);
+                    throw;
+                }
+            }
+            finally { m_Initializing = false; }
         }
 
         void RetireSession()

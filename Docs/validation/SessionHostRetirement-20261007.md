@@ -1,6 +1,6 @@
 # B/C integration: retained Host cleanup ownership
 
-2026-10-07. This is a narrow follow-up to the Stage B rollback commits `40cec34`, `9ebdd9a`, `a332580` and Stage C Host/View checkpoints `fa706a4`, `7c5e821`. It changes only SessionHost ownership and its tests; World/Pipeline/Session implementation, authoritative state and snapshot layout remain unchanged.
+2026-10-07. This is a narrow follow-up to the Stage B rollback commits `40cec34`, `9ebdd9a`, `a332580` and Stage C Host/View checkpoints `fa706a4`, `7c5e821`. Retirement checkpoint: `d9b737b`; the additional publication-boundary cases below build on it. It changes only SessionHost ownership and its tests; World/Pipeline/Session implementation, authoritative state and snapshot layout remain unchanged.
 
 ## Reproduction and fix
 
@@ -12,7 +12,7 @@ Safe cleanup errors remain errors: system/resource cleanup finishes, the complet
 
 ## Red-first evidence
 
-`SessionHostRetirementTests` adds 8 cases:
+The retirement part of `SessionHostRetirementTests` adds 8 cases:
 
 - 4 direct-child replacement cases across both overlap modes and later replacement/destroy retry: the unpublished Session remains Host-owned; remaining system teardown still observes an undisposed resource; replacement declarations/notifications remain zero until safe retry; each resource/system cleans up once.
 - 1 direct-child OnDestroy reentry case: incomplete teardown retains ownership; repeated OnDestroy after child completion drains it once.
@@ -20,6 +20,16 @@ Safe cleanup errors remain errors: system/resource cleanup finishes, the complet
 - 1 existing-good diagnostic control: original system exception and secondary resource exception survive; completed cleanup clears the retry slot and replacement succeeds later.
 
 Before the fix: **7 failed, 1 passed**. After the fix: the combined focused set (`SessionHostTests`, `SessionHostRetirementTests`, `CompositionRollbackTests`, `MobileInputTests`, `MobileSkillControlTests`) passes **101/101**. The 8 new cases are additional to the prior B/C suite totals. Full integrated regression and actual Unity execution belong to the publishing parent's combined checkpoint and are not substituted by this focused result.
+
+## SessionCreated publication failure boundary
+
+A second red-first pass reproduced 4/4 additional failures: throwing SessionCreated handlers (with and without a secondary cleanup exception) left the newly created Session published/ticking; a one-shot reentrant Initialize replaced the outer binding without rejecting it; a handler could dispose the Session and Initialize still returned that disposed binding.
+
+Initialize now rejects reentry until its creation/binding attempt finishes. The newly created Session is published for binding callbacks, but any subsequent failure unpublishes it, stops scheduling and uses the same retirement slot to clean up safely. B's CleanupErrors keeps the original binding exception primary, including its stack, and attaches any secondary teardown diagnostics. After handlers return, Initialize also verifies that its binding was not removed or disposed. Removing the failing handler permits the next explicit Initialize to succeed.
+
+This protects only objects owned by the Host. It does not undo arbitrary side effects or destroy partial assets allocated by a subscriber; each binding handler remains responsible for its own partially created view/resources. A successfully invoked earlier handler is not given a fictitious transactional rollback promise.
+
+After these 4 additional cases, the combined focused set above is **105/105 passed** (12 new retirement/publication cases in total). No authoritative content/layout/snapshot changes are involved. Integrated full-suite and actual Unity results remain the publishing checkpoint's responsibility.
 
 All 503 current Assets C# files, including the new Host cases, compile against the installed Unity 2022.3 APIs. This is a compile-only gate, not a native execution result.
 

@@ -43,6 +43,8 @@ namespace SPF.Tests.EditMode
             // Explicit fallback makes the intentionally-red run resource safe after its assertions.
             m_Module.Resource.Failure = null; m_Module.Resource.Callback = null;
             m_Module.Last.Failure = null; m_Module.Last.Callback = null;
+            if (m_Replacement.Resource != null) { m_Replacement.Resource.Failure = null; m_Replacement.Resource.Callback = null; }
+            if (m_Replacement.Last != null) { m_Replacement.Last.Failure = null; m_Replacement.Last.Callback = null; }
             Invoke("OnDestroy"); m_Old.Dispose();
             foreach (var session in m_Created) session.Dispose(); m_Created.Clear();
             Object.DestroyImmediate(m_Object); Object.DestroyImmediate(m_Mode); Object.DestroyImmediate(m_ReplacementMode);
@@ -128,6 +130,72 @@ namespace SPF.Tests.EditMode
             Assert.Zero(m_Replacement.Declarations); Assert.AreEqual(1, m_Module.Resource.Disposals);
             Assert.AreEqual(1, m_Module.First.Destroys); Assert.AreEqual(1, m_Module.Last.Destroys);
             m_Host.Initialize(m_ReplacementMode, 9); Assert.AreEqual(1, m_Replacement.Declarations);
+        }
+
+        [TestCase(false)] [TestCase(true)]
+        public void ThrowingSessionCreatedBindingRetiresNewSessionAndPreservesDiagnostics(bool cleanupThrows)
+        {
+            var bindingFailure = new InvalidOperationException("view binding failed");
+            var cleanupFailure = new ApplicationException("binding cleanup failed");
+            SimSession failed = null;
+            Action<SimSession> handler = created => {
+                failed = created;
+                if (cleanupThrows) m_Replacement.Resource.Failure = cleanupFailure;
+                throw bindingFailure;
+            };
+            m_Host.SessionCreated += handler;
+            try
+            {
+                var actual = Assert.Throws<InvalidOperationException>(() => m_Host.Initialize(m_ReplacementMode, 8));
+                Assert.AreSame(bindingFailure, actual);
+                Assert.IsNull(m_Host.Session, "A failed view binding must not leave a published/ticking Session.");
+                Assert.IsFalse(Launcher.enabled); Assert.IsNull(Retired);
+                Assert.AreEqual(SessionState.Disposed, failed.State);
+                Assert.AreEqual(1, m_Replacement.Resource.Disposals);
+                Assert.AreEqual(1, m_Replacement.First.Destroys); Assert.AreEqual(1, m_Replacement.Last.Destroys);
+                Assert.AreEqual(SessionState.Disposed, m_Old.State); Assert.AreEqual(1, m_Module.Resource.Disposals);
+                if (cleanupThrows)
+                {
+                    var cleanup = actual.Data["SPF.CleanupFailures"] as AggregateException;
+                    Assert.IsNotNull(cleanup); CollectionAssert.Contains(cleanup.Flatten().InnerExceptions, cleanupFailure);
+                }
+            }
+            finally { m_Host.SessionCreated -= handler; }
+            m_Host.Initialize(m_ReplacementMode, 9);
+            Assert.AreEqual(2, m_Replacement.Declarations); Assert.AreEqual(SessionState.Running, m_Host.Session.State);
+            Assert.IsTrue(Launcher.enabled);
+        }
+
+        [Test]
+        public void SessionCreatedCannotReenterReplacementAndOrphanOuterBinding()
+        {
+            int calls = 0;
+            Action<SimSession> handler = _ => { if (++calls == 1) m_Host.Initialize(m_ReplacementMode, 9); };
+            m_Host.SessionCreated += handler;
+            try
+            {
+                Assert.Throws<InvalidOperationException>(() => m_Host.Initialize(m_ReplacementMode, 8));
+                Assert.AreEqual(1, calls); Assert.AreEqual(1, m_Replacement.Declarations);
+                Assert.AreEqual(1, m_Replacement.Resource.Disposals);
+                Assert.IsNull(m_Host.Session); Assert.IsNull(Retired); Assert.IsFalse(Launcher.enabled);
+            }
+            finally { m_Host.SessionCreated -= handler; }
+            m_Host.Initialize(m_ReplacementMode, 10); Assert.AreEqual(2, m_Replacement.Declarations);
+        }
+
+        [Test]
+        public void SessionCreatedCannotReturnAnAlreadyDisposedBinding()
+        {
+            Action<SimSession> handler = created => created.Dispose();
+            m_Host.SessionCreated += handler;
+            try
+            {
+                Assert.Throws<InvalidOperationException>(() => m_Host.Initialize(m_ReplacementMode, 8));
+                Assert.IsNull(m_Host.Session); Assert.IsNull(Retired); Assert.IsFalse(Launcher.enabled);
+                Assert.AreEqual(1, m_Replacement.Resource.Disposals);
+            }
+            finally { m_Host.SessionCreated -= handler; }
+            m_Host.Initialize(m_ReplacementMode, 9); Assert.AreEqual(2, m_Replacement.Declarations);
         }
 
         void Invoke(string name) => typeof(SessionHost).GetMethod(name, Private).Invoke(m_Host, null);

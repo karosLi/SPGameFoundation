@@ -30,6 +30,7 @@ namespace PlatformerFoundation.Presentation
         readonly float2[] m_Torches = new float2[32];
         int m_TorchCount;
         SimSession m_Session;
+        uint m_TimelineRevision;
         int m_Built = -1;
         float m_Look;
         SpriteLocomotionClock m_HeroClock;
@@ -69,6 +70,7 @@ namespace PlatformerFoundation.Presentation
         {
             Release();
             m_Session = session;
+            m_TimelineRevision = session.TimelineRevision;
             m_Assets = new RenderAssets(RenderCapabilities.Detect());
             m_Art = PlArt.Build();
             m_Normals = NormalMapBaker.Bake(m_Art.Sheet);
@@ -93,6 +95,16 @@ namespace PlatformerFoundation.Presentation
             var session = Host != null ? Host.Session : null;
             if (session == null) return;
             if (session != m_Session) Bind(session);
+            if (m_TimelineRevision != session.TimelineRevision)
+            {
+                // Restart may clear the map without changing the level-build counter.
+                // The unsaved session revision also covers same-tick snapshot restoration.
+                m_TimelineRevision = session.TimelineRevision;
+                m_Built = -1;
+                m_HeroClock = default;
+                HeroFrame = m_Art.HeroIdle.First;
+                m_Time = m_Look = 0f;
+            }
             var world = session.World;
             var game = world.Resource(PlKeys.Game);
             float alpha = session.InterpolationAlpha;

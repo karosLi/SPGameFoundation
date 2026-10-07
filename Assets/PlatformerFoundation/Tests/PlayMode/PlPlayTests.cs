@@ -63,6 +63,15 @@ namespace PlatformerFoundation.Tests.PlayMode
                     && game.Renderer.HeroFrame == game.Renderer.Art.HeroFall, 3f);
                 yield return Capture("fall", GameplayLocomotionState.Air, -1);
                 Assert.AreEqual(uploads, game.Renderer.TileUploads, "actor transitions preserve the static tile upload contract");
+                game.Script = () => default;
+                game.Session.Restart();
+                game.Session.Pause();
+                yield return null; yield return null;
+                Assert.AreEqual(PlFlow.Menu, game.State.Flow);
+                Assert.AreEqual(0, game.Renderer.TileSprites, "restart cannot display the old map after simulation clears it");
+                Assert.AreEqual(GameplayLocomotionState.Idle, game.Renderer.HeroLocomotion);
+                Assert.AreEqual(0f, game.Renderer.HeroStridePhase);
+                Assert.AreEqual(game.Renderer.Art.HeroIdle.First, game.Renderer.HeroFrame);
                 game.Host.Initialize(replacement, 1, start: false);
                 yield return null;
                 Assert.AreEqual(0f, game.Renderer.AnimationTime, "new session resets presentation time");

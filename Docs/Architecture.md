@@ -1,8 +1,10 @@
 # SinglePlayerFoundation 架构与语义合约
 
-本文说明**当前源码怎样工作**，并保留蛇身、空间查询和渲染的工程取舍。源码核对基线为 `62c5b7f`（2026-10-07）；[共享基座分层与语义扩展计划](SharedFoundationSemanticExtensionPlan.md)中的后续安装事务、manifest、保存 envelope、异步租约等仍是提案，本文没有实现它们。
+本文说明**当前源码怎样工作**，并保留蛇身、空间查询和渲染的工程取舍。最初源码核对基线为 `62c5b7f`（2026-10-07）；后续[共享基座分层与语义扩展计划](SharedFoundationSemanticExtensionPlan.md)的 A–G 已独立实施，包括组合回滚、可选 manifest、两个 View 的时间线绑定、同运行域保存 envelope、两游戏规则组合、后端契约和共享验收。异步资产租约、运行中模块热插拔和通用跨平台存档迁移仍未实现，不得与上述已存在能力混称。
 
 运行时验收与文档校正分开：已恢复的精确远端 `e86ee87a7691282ae7e96713c315dbec5998c414` 为 **1,050 .NET、1,084 原生 EditMode、154 graphics PlayMode 通过**。原生另有 5/1 项跳过；[精确清单](validation/NativePrecisionClosure-20261007.json)记录本地/远端树等价。范围与历史失败见[本轮验证记录](MobileFoundationFollowupValidation.md)。这些结果不等于 Android/iOS 物理设备通过，也不自动覆盖以后的源码提交。九个经典玩法和四个移动示例的差异见[兼容性矩阵](FoundationCompatibilityMatrix.md)。
+
+最新发布的 `fc1c10df57e179b7da5d5ae2b457cb0de2719738` 已通过 **1,432 项 .NET**，并完成真实 Unity API/netstandard2.1 编译及 19 个冷组合兼容检查；其完整原生与视觉门槛仍待完成。[架构/音频验证](FoundationArchitectureAudioValidation.md)与[动作/伤害反馈验证](MobileFeedbackCoordinationValidation.md)记录准确范围，不能用上段历史原生绿灯替代本次验证。
 
 ## 0. 设计目标与证据边界
 
@@ -336,7 +338,7 @@ GPU 镜像不拥有模拟真相。轨迹 owner/Version/Start 变化要正确失�
 - World 保存 live rows、Registry 和 ISnapshotResource；检查 world format、seed、表/资源顺序及相关容量/标记。Pipeline 按参与保存的系统类型名顺序读写。
 - IJobData 没实现 ISnapshotResource 会被 SnapshotGaps 拒绝；这只是诊断启发式，**不会发现未标记/未保存的全部可变状态**；例如 Signals 是 Job 使用的 Native mailbox，却没有 IJobData。例如 SnakeGameState、RegionPopulations、ReplayBuffer、SnakeQuality 和 Signals 没有完整保存资源实现，相关 system 也未实现 ISnapshotSystem；Snake 输入回放通过不等于完整中途 Session 保存成立。各游戏必须审计自己的保存清单。
 - 不可变配置通常不写入 raw snapshot；读取端必须有相同规则、布局、seed。已有 SkillSlots、飞剑/Belt/武器等选择性指纹不等于全库完整兼容校验。当前 WeaponRuntime 指纹还含 VisualId/握持定义，不能声称改视觉定义必然不影响读档兼容。
-- World format 1 不保存列 key/type 的语义身份；Pipeline 采用系统类型短名。raw Native 数据、等大小字段或列换义、系统改名/同短名、配置同 ID 不同规则都需要显式 schema/指纹策略。通用长期跨版本/跨平台迁移与外层 envelope 仍为提案。
+- World format 1 不保存列 key/type 的语义身份；Pipeline 采用系统类型短名。raw Native 数据、等大小字段或列换义、系统改名/同短名、配置同 ID 不同规则都需要显式 schema/指纹策略。现有可选 [SaveEnvelope](VersionedSaveEnvelope.md)已在调用旧 raw reader 之前检查完整有序 schema、内容和运行域身份，并提供已知 legacy 来源的受限导入；旧 raw 入口未因此变为可移植格式。通用长期跨版本/跨平台迁移仍未实现。
 - 成功恢复增加 TimelineRevision 并清掉 pending ticks；非法数据时 Session Restart 后重抛，不能保证保留失败前的进行中对局。直接 World.ReadSnapshot 失败可能部分恢复，必须 Reset 后再用。
 - grid/scratch 若派生自权威状态，恢复后先重建再读取；视觉 cue、IK、粒子等按失效协议清理，不能自动重播已发生事件。
 
@@ -452,7 +454,7 @@ payload 字节、纹理页/前缀填充、API 实际上传量和硬件显存流�
 | 空间查询、身体池、共享战斗/技能/武器、渲染回退 | 多个现有消费者；每种能力边界和模式差异见专题文档与兼容矩阵 |
 | 保存、重开、清关、输入中断 | 已有机制与模式专属测试；不是所有模式/主线程资源都可直接 raw snapshot |
 | Stage A 语义对齐 | 文档与兼容性基线；不改 Runtime/asmdef 或经典 fixture |
-| 组合 manifest/完整安装事务、统一 View binding、保存 envelope | 后续计划；不得在新游戏中当现成 API 调用 |
+| 可选组合 manifest、完整 Session 安装回滚、两个 View 时间线绑定、同运行域保存 envelope | 已实现；按对应阶段文档的具体 API、拥有权和失败边界接入，不能推广成任意异步租约/热插拔/跨平台迁移 |
 | 物理移动端验收 | 外部门槛：触摸、图形 API、热态持续帧时、内存/电量仍需真实设备 |
 
 后续分阶段目标、依赖和回滚策略以[共享基座扩展计划](SharedFoundationSemanticExtensionPlan.md)为准；开源概念依据及许可边界见[调研](OpenSourceSharedFoundationSurvey.md)。不为了实现全部提案一次重写存档、实体布局、渲染或游戏枚举。

@@ -124,6 +124,22 @@ class LauncherTests(unittest.TestCase):
             link = Path(tmp) / 'Latios2022Lab'; link.symlink_to(lab.PROJECT, target_is_directory=True)
             with self.assertRaisesRegex(ValueError, 'symlink'): lab.validate_paths(link)
 
+    def test_playmode_witness_uses_requested_mode_and_shared_runtime_policy(self):
+        root = lab.PROJECT / 'Assets/Latios2022Tests'
+        playmode = (root / 'PlayMode/PlayModeTests.cs').read_text()
+        policy = (root / 'Runtime/LabRunPolicy.cs').read_text()
+        editor = (root / 'EditorTools/LabEnvironment.cs').read_text()
+        self.assertIn('expectedBurst = LabRunPolicy.VerifyRequestedMode()', playmode)
+        self.assertIn('PsyshockProbe.RunQueries(expectedBurst)', playmode)
+        self.assertNotIn('RunQueries(BurstCompiler.IsEnabled)', playmode)
+        self.assertIn('LATIOS_LAB_EXPECT_BURST', policy)
+        self.assertIn('BurstCompiler.IsEnabled != expected', policy)
+        self.assertIn('Application.unityVersion != EditorVersion', policy)
+        self.assertIn('UNITY_EDITOR && !ENABLE_UNITY_COLLECTIONS_CHECKS', policy)
+        self.assertIn('!BurstCompiler.Options.EnableBurstSafetyChecks', policy)
+        self.assertNotIn('using UnityEditor', policy)
+        self.assertIn('LabRunPolicy.VerifyRequestedMode()', editor)
+
     def test_each_assembly_declares_its_direct_api_dependencies(self):
         required = {
             'Latios2022Lab.Runtime': {'Latios.Core', 'Latios.Transforms', 'Latios.Psyshock', 'Unity.Entities', 'Unity.Collections', 'Unity.Jobs', 'Unity.Mathematics', 'Unity.Burst'},

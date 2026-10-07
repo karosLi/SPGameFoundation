@@ -4,7 +4,7 @@ Prepared 2026-10-07. All native cells remain **NOT RUN**. No `packages-lock.json
 
 | Scope | Prepared test/entry | Current evidence | Passing would mean |
 | --- | --- | --- | --- |
-| Isolated launcher and pin validation | `Tools/lab.py`, `Tools/test_lab.py` | Static preflight + 18 Python tests passed | Launcher/parser behavior only; not Unity compilation |
+| Isolated launcher and pin validation | `Tools/lab.py`, `Tools/test_lab.py` | Static preflight + 19 Python tests passed | Launcher/parser behavior only; not Unity compilation |
 | Full pinned package + dependency compilation | `import` and genuine lock/inventory | NOT RUN | Exact Editor/host/package graph imports; not every module's runtime behavior |
 | Core collections/source generation | `TrackedWriterReaderAndDisposal`, exception case | NOT RUN | Generated pseudo-component and tracked jobs dispose correctly in tested paths |
 | Core lifecycle | two owned worlds; two domain-reloaded play entries; PlayMode repeat | NOT RUN | Tested create/update/destroy/reentry cycles; not arbitrary disabled-domain-reload settings |

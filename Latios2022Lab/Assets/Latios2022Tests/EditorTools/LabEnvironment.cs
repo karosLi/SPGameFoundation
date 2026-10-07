@@ -11,28 +11,17 @@ namespace Latios2022Lab
 {
     public static class LabEnvironment
     {
-        public const string EditorVersion = "2022.3.62f2";
-        public static bool ExpectBurst => Environment.GetEnvironmentVariable("LATIOS_LAB_EXPECT_BURST") != "off";
+        public const string EditorVersion = LabRunPolicy.EditorVersion;
+        public static bool ExpectBurst => LabRunPolicy.ExpectedBurst;
 
         public static void Verify()
         {
-            if (Application.unityVersion != EditorVersion)
-                throw new InvalidOperationException("Use exactly Unity " + EditorVersion);
+            LabRunPolicy.VerifyRequestedMode();
             if (new DirectoryInfo(Application.dataPath).Parent.Name != "Latios2022Lab")
                 throw new InvalidOperationException("This entry point only runs in the dedicated Latios2022Lab project.");
-#if !ENABLE_UNITY_COLLECTIONS_CHECKS
-            throw new InvalidOperationException("Native collection safety checks must be enabled.");
-#endif
-#if !ENTITY_STORE_V1 || !UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS
-            throw new InvalidOperationException("The pinned Latios 0.11.5 defines are missing.");
-#endif
             var target = BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget);
             if (PlayerSettings.GetApiCompatibilityLevel(target) != ApiCompatibilityLevel.NET_Standard)
                 throw new InvalidOperationException("The lab requires .NET Standard API compatibility.");
-            if (BurstCompiler.IsEnabled != ExpectBurst)
-                throw new InvalidOperationException("The requested Burst control is unavailable; do not change persistent preferences automatically.");
-            if (ExpectBurst && !BurstCompiler.Options.EnableBurstSafetyChecks)
-                throw new InvalidOperationException("Burst safety checks are disabled; do not weaken the gate.");
             if (EditorSettings.enterPlayModeOptionsEnabled &&
                 (EditorSettings.enterPlayModeOptions & EnterPlayModeOptions.DisableDomainReload) != 0)
                 throw new InvalidOperationException("The lab's reentry gate requires domain reload enabled.");

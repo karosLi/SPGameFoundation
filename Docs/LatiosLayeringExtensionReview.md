@@ -1,5 +1,7 @@
 # Latios 对 SPGameFoundation 分层与扩展性的增量启发
 
+整合决策与实施顺序见[SPF 与 Latios 的 Unity 2022 完整方案](LatiosUnity2022IntegrationBlueprint.md)。
+
 研究日期：2026-10-07。本文是源码研究与后续提案，没有引入 Latios、修改运行时、升级 Unity 或执行新基准。它补充[开源共享基座调研](OpenSourceSharedFoundationSurvey.md)，不重开已经完成的[语义扩展 A–G](SharedFoundationSemanticExtensionPlan.md)。
 
 ## 1. 结论与基线

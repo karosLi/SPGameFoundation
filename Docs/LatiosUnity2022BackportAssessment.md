@@ -1,5 +1,7 @@
 # Latios 适配 Unity 2022.3.62f2：版本基线、回迁边界与验证计划
 
+整合决策与实施顺序见[SPF 与 Latios 的 Unity 2022 完整方案](LatiosUnity2022IntegrationBlueprint.md)。
+
 研究日期：2026-10-07。本文补充并限定[前一份分层研究](LatiosLayeringExtensionReview.md)的采用结论。**Unity 6 是当前上游版本的支持边界，不是 Latios 无法适配 Unity 2022 的技术证明。可以建立 2022 兼容分支；先验证历史基线，再按需要回迁新版功能，是更可控的路线。**
 
 本轮只查官方源码、历史 tag、作者样例与 Unity 文档，并更新文档。没有安装 Latios、创建 Unity 试验项目、改变 SPF 依赖、运行 Unity/IL2CPP、复制实现或发布上游 fork。下文“可行”分别标注为历史支持证据、源码判断或待实测，不把三者混为一谈。

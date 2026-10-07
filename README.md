@@ -1,6 +1,6 @@
 # SPGameFoundation
 
-> 当前工作分支正在验证新增玩法与自然角色；完成项、实测范围及外部设备阻塞见 [能力验收清单](Docs/RequestedCapabilityChecklist.md)。`dot/mobile-foundation-validated` 只在对应提交的远程 CI 通过后前进，历史冻结记录见 [CurrentWipStatus](Docs/CurrentWipStatus.md)。
+> 武器与连续动作检查点已在提交 `52c1ec8` 通过完整原生验证（878 EditMode、141 PlayMode、848 .NET）；见 [本轮验证](Docs/WeaponMotionStage5Validation.md)。碰撞/AI 实测优化及原创美术仍在继续。完成项、实测范围及外部设备阻塞见 [能力验收清单](Docs/RequestedCapabilityChecklist.md)。`dot/mobile-foundation-validated` 只在对应提交的远程 CI 通过后前进，历史冻结记录见 [CurrentWipStatus](Docs/CurrentWipStatus.md)。
 
 Unity 2022.3 2D 单机小游戏基座（面向移动端），保留贪吃蛇、ARPG、幸存者、平台跳跃、塔防、三消、弹弓、格斗、剧情九个验证玩法，新增非像素竖屏射击、守点怪潮、飞剑怪潮与横屏纵深动作变体，用于验证共享能力接入。
 

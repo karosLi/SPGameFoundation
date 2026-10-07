@@ -1,5 +1,7 @@
 # Confirmed capability acceptance checklist
 
+Current checkpoint: [exact-head weapon/motion validation](WeaponMotionStage5Validation.md) passed native Mac Unity 878 EditMode and 141 PlayMode tests, plus 848 .NET logic tests. The historical counts below are retained where they describe earlier evidence; the next requested collision/AI and original-art stages remain in progress.
+
 This is a finite implementation/verification checklist for the user's supplied reference archetypes. Examples prove reusable foundation interfaces; they are not independent copied engines. Status is scoped to the evidence named here, not a claim that a display demo is integrated gameplay.
 
 | Item | Concrete implementation / acceptance | Current status and evidence |
@@ -23,6 +25,8 @@ This is a finite implementation/verification checklist for the user's supplied r
 
 ## Completion and external gates
 
-All implementable capability rows above have source, tests and evidence in `GameplayVariantsAndCharactersCheckpoint.md`. The source checkpoint is published on the stage-four preview branch. Remaining work is the bounded .NET accounting-harness repair and exact-head remote CI, which must respect the pending permission to enable Burst on the Mac runner. Physical-device validation remains externally blocked on hardware/access.
+The weapon/motion checkpoint is now fully green on exact remote `52c1ec8`, as recorded in [WeaponMotionStage5Validation.md](WeaponMotionStage5Validation.md). The Mac Burst preference was explicitly authorized and native execution has been verified. The allocation harness repair and the current ordinary Story budget both passed; historical failed evidence is preserved.
 
-This is completion of the confirmed bounded capability slice, not a claim that every possible future engine/editor feature, arbitrary rig importer or device certification is finished. No physics/GC budget was weakened.
+The user subsequently requested empirical collision/quadtree comparisons, industry-grounded AI improvements, and a separate original-art redesign. Those are active follow-on implementation and verification stages, not completed by the weapon checkpoint. Physical-device validation remains externally blocked on hardware/access.
+
+This is a bounded capability slice, not a claim that arbitrary rig importing, every possible editor feature or device certification is finished. No physics or GC budget was weakened.

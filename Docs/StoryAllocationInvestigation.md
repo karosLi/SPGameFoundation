@@ -44,3 +44,7 @@ Remote head `0b0dd6d` (local tree-equivalent `d3f4fcf`), Unity run `37565476883`
 Both weapon belt rebind fixtures passed this run. Full suites: EditMode 878 passed/0 failed/5 skipped; PlayMode 140 passed/1 failed/1 skipped. The sole failure was the profiled Story budget. These figures describe this exact run, not a successful final acceptance.
 
 Normal push/PR CI now leaves allocation-stack capture disabled. `workflow_dispatch` exposes an explicit `story_gc_capture` boolean (default false) for diagnostic reproduction. The test window and allocation threshold remain unchanged. The next full native run must evaluate the original fixture without intrusive profiling before any production optimization is claimed.
+
+## Uninstrumented exact-head outcome
+
+Remote `52c1ec8` (local `1c9731a`), native run `37568026818`, passed the original Story fixture unchanged: `perf-gc.txt` reports 0 of 30 frames allocated, 0 bytes. EditMode passed 878 cases with 5 skips; PlayMode passed 141 with 1 skip and no failures. This closes the current native validation gate, but does not retroactively attribute the previous uninstrumented three-frame failure or establish a production optimization. The captured test-runner overhead and the ordinary budget result are separate evidence.

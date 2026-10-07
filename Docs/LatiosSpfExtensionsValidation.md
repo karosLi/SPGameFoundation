@@ -30,7 +30,7 @@
 诊断与校验不是免费的性能优化。A1 增加构造时元数据；A3 的有限值检查、来源副本增加冷分配。A2 成功热路径的校准探针为 0 当前线程托管分配，但 Debug harness 的计时不代表 release player 或手机。各自原始成本和观察器控制见专项文档。
 
 - 这个集成提交的 Unity EditMode/Burst/graphics 尚待远端执行，不能使用原始 d7 的结果代替。
-- d7 的修正音频 PlayMode 已核验 169 通过、0 失败、1 原有跳过，三段音频控制使用原阈值；其 EditMode XML、上传终态与完整归档核验仍由独立 P0 证据记录维护。
+- d7 的[完整 P0 原生闭环](NativeFeedbackAudioClosure.md)已核验：1,474 Edit /169 Play 通过、0 失败、6 原有跳过，26 分片完整恢复；三段音频控制使用原阈值。它不替代本次新源的原生运行。
 - Lab 的 49 个 EditMode + 1 个 PlayMode 案例、实际 lock、clean-repeat import、IL2CPP 构建/运行都尚未执行。固定上游的 reactive cleanup 查询存在源码风险，严格反例保留，不能靠最终 World.Dispose 掩盖。
 - Android/iOS 的持续 CPU/GPU、内存、温度、电量、音频路由和实际操作仍需要物理设备。
 - 已交付 fc1 的真实连续片段；密集横屏血条/数字及少量竖屏 HUD 边缘遮挡仍列为局部可读性待办，不把静态数学或软件绿色结果升级为最终美术自然度认可。

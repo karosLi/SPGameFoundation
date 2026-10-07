@@ -31,6 +31,10 @@ namespace SPF.Runtime.Session
         SessionTickLauncher m_Launcher;
         bool m_ApplicationPaused;
         bool m_FocusLost;
+        // Unpublished does not mean safely disposed. Keep one owner while child teardown or
+        // job completion prevents disposal; no replacement is admitted until this slot drains.
+        SimSession m_RetiredSession;
+        bool m_RetirementInProgress;
 
         public SimSession Session { get; private set; }
 
@@ -63,11 +67,7 @@ namespace SPF.Runtime.Session
         /// <summary>Creates the session from code (bootstraps, tests). Disposes a previous session.</summary>
         public SimSession Initialize(ModeDefinition mode, uint seed, bool start = true)
         {
-            // Stop publishing/scheduling the old session before cleanup or creation can throw.
-            var previous = Session;
-            Session = null;
-            if (m_Launcher != null) m_Launcher.enabled = false;
-            previous?.Dispose();
+            RetireSession();
             m_Mode = mode;
             m_Seed = seed;
             Session = SimSession.Create(mode, seed);
@@ -77,6 +77,36 @@ namespace SPF.Runtime.Session
             EnsureLauncher();
             SessionCreated?.Invoke(Session);
             return Session;
+        }
+
+        void RetireSession()
+        {
+            // A cleanup hook may call Initialize/OnDestroy. Never create a replacement while
+            // the outer owner is still running hooks, even if State is already Disposed.
+            if (m_RetirementInProgress)
+                throw new System.InvalidOperationException("Session cleanup is still in progress.");
+            if (m_Launcher != null) m_Launcher.enabled = false;
+            if (Session != null)
+            {
+                m_RetiredSession = Session;
+                Session = null;
+            }
+            var retired = m_RetiredSession;
+            if (retired == null) return;
+            m_RetirementInProgress = true;
+            try
+            {
+                retired.Dispose();
+                if (retired.State != SessionState.Disposed)
+                    throw new System.InvalidOperationException("Session cleanup is still in progress.");
+            }
+            finally
+            {
+                // Safe cleanup may throw diagnostics after releasing everything. Unsafe or
+                // child-in-progress cleanup instead remains owned for Initialize/OnDestroy retry.
+                if (retired.State == SessionState.Disposed) m_RetiredSession = null;
+                m_RetirementInProgress = false;
+            }
         }
 
         void OnEnable() => EnsureLauncher();
@@ -137,9 +167,7 @@ namespace SPF.Runtime.Session
                 m_Launcher.enabled = false;
                 m_Launcher.Host = null;
             }
-            var session = Session;
-            Session = null;
-            session?.Dispose();
+            RetireSession();
         }
     }
 }

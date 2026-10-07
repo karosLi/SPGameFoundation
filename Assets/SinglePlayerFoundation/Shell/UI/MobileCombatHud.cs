@@ -42,6 +42,13 @@ namespace SPF.Shell.UI
         public int ViewportWidth => m_Width;
         public int ViewportHeight => m_Height;
         public Rect ViewportSafeArea => m_LastSafe;
+        public float4 SafeViewport
+        {
+            get { MobileSafeArea.Anchors(m_LastSafe, m_Width, m_Height, out var min, out var max); return new float4(min.x, min.y, max.x, max.y); }
+        }
+        public float4 ChildViewport(RectTransform rect) => rect == null ? default : MobileSafeArea.ChildViewport(m_LastSafe, m_Width, m_Height,
+            new float4(rect.anchorMin.x, rect.anchorMin.y, rect.anchorMax.x, rect.anchorMax.y),
+            new float4(rect.offsetMin.x, rect.offsetMin.y, rect.offsetMax.x, rect.offsetMax.y));
         public RectTransform SafeRoot { get; private set; }
         public VirtualJoystick Joystick { get; private set; }
         public SkillControl[] Buttons { get; private set; }

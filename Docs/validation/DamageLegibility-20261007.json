@@ -1,0 +1,267 @@
+{
+  "date": "2026-10-07",
+  "base_commit": "341f830cb6fe0c020089d32dfefcf5db53628956",
+  "branch": "feat/mobile-damage-legibility",
+  "source_files_sha256": {
+    "Assets/BrawlerFoundation/Game/BwGameBootstrap.cs": "51d51b8d972ecb11cd431c1d4b491e9143c03ff0c8de8cdd0a5ae715488f6a3e",
+    "Assets/BrawlerFoundation/Presentation/BwRenderer.cs": "c1b4297e41bd6c289b8a98b994f660b962ad3bb01e383765bfccddddbf425219",
+    "Assets/BrawlerFoundation/Tests/EditMode/BwDamageNumbersTests.cs": "c6e0c0aa77452a0d684987b8d13137f9abf7453f85e6c807ec504ebe5922f15f",
+    "Assets/BrawlerFoundation/Tests/PlayMode/BwDamageNumberGameplayTests.cs": "b92c4a193b6ec1a26a5c8b977e725bf93bd69b3be3dacf6596b78e8065a98616",
+    "Assets/SinglePlayerFoundation/Presentation/Combat/DamageNumberLayout.cs": "bb12e7d54b0f216a9401ef193818edba05dba82b82126e06e3e9a0a0240aea4a",
+    "Assets/SinglePlayerFoundation/Presentation/Combat/DamageNumberPool.cs": "acf6d0dddcdac7d51898fbe05a7e89d2a93803ca56d1cb48b05921b25bd8ec95",
+    "Assets/SinglePlayerFoundation/Shell/UI/MobileCombatHud.cs": "d9de82fdbf4c8959854b5eac344c965b5b1ddbff5deba157bddf13669e38ee20",
+    "Assets/SinglePlayerFoundation/Shell/UI/MobileSafeArea.cs": "62e42df29d12a8a2e5b8773f418bd82ee0c488394e8a49e4ec9c2b210ced9d0d",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/DamageNumberLegibilityTests.cs": "87c477a6b6b7a168d838f6abe9083a452db61db031c38b40d8ad12504d2bd2d2",
+    "Assets/SurvivorFoundation/Game/SvHud.cs": "0ee857c0030ec98bb4e2704efe0bda7d03aed45cccb30dcaa9ed451ff6ca14be",
+    "Assets/SurvivorFoundation/Presentation/SvRenderer.cs": "ae44213cbf417d4be14c107e8186cbb6cb172b758668dd63495f1a72b8f6cc90",
+    "Assets/SurvivorFoundation/Tests/EditMode/SvDamageNumbersTests.cs": "4ec80611c2680bc0aadc52a28d29d31d65d5c6bce8267213f238ebb763c1d338",
+    "Assets/SurvivorFoundation/Tests/PlayMode/SvDamageNumberGameplayTests.cs": "eb48175844a57e7def82c269f2cd934d523a3cc2ae73850521e5919ebfca5750"
+  },
+  "source_scope": "Presentation/Game/Shell plus targeted tests/docs only; no Runtime/Packages/Lab changes; no publication by this worker",
+  "input_evidence": {
+    "note": "Existing source pixels and CSVs inspected; not post-fix imagery.",
+    "representative_live_frames": [
+      {
+        "path": "weapon-motion-ci/c790b0b/preliminary-verified-files/Artifacts/Screenshots/WeaponMotion/damage-belt-live-gpu/frame-040.jpg",
+        "sha256": "84c310695a2df6ffea13f3d1e6d0c5a645b04741a9c93cca17e3bf59071cb39c"
+      },
+      {
+        "path": "weapon-motion-ci/c790b0b/preliminary-verified-files/Artifacts/Screenshots/WeaponMotion/damage-belt-live-datatex/frame-040.jpg",
+        "sha256": "f07262caf4d937ea37dea6f3119b2d422c8f96460042560b45c00d63a788019c"
+      },
+      {
+        "path": "weapon-motion-ci/c790b0b/preliminary-verified-files/Artifacts/Screenshots/WeaponMotion/damage-horde-live-gpu/frame-008.jpg",
+        "sha256": "2a327f4b8b378fc4b3828cb069130a379c9a013c016acded2fa63d92bdf42477"
+      },
+      {
+        "path": "weapon-motion-ci/c790b0b/preliminary-verified-files/Artifacts/Screenshots/WeaponMotion/damage-horde-live-datatex/frame-008.jpg",
+        "sha256": "1cff1498c946d34d64362ce53e0e103bebfdad075589116936de65c174ec0a69"
+      }
+    ],
+    "all_restored_damage_point_pngs": [
+      {
+        "path": "weapon-motion-ci/9fc4e2b/restored-evidence/Artifacts/Screenshots/DamageNumbers/damage-belt-datatex-glyphs.png",
+        "sha256": "f333d791bf456711d1756af13fb6fc1ed430b98fcb1898426b2b5c6dea63d5b9"
+      },
+      {
+        "path": "weapon-motion-ci/9fc4e2b/restored-evidence/Artifacts/Screenshots/DamageNumbers/damage-belt-gpu-glyphs.png",
+        "sha256": "976533aaf2de0ad9d674793b4185d67a9bd4426bb52030f0cde60eb508265656"
+      },
+      {
+        "path": "weapon-motion-ci/9fc4e2b/restored-evidence/Artifacts/Screenshots/DamageNumbers/damage-horde-datatex-glyphs.png",
+        "sha256": "855f3627b385753f348242bf87e454fe78ba335f797a8590620be23dfd17476b"
+      },
+      {
+        "path": "weapon-motion-ci/9fc4e2b/restored-evidence/Artifacts/Screenshots/DamageNumbers/damage-horde-gpu-glyphs.png",
+        "sha256": "855f3627b385753f348242bf87e454fe78ba335f797a8590620be23dfd17476b"
+      },
+      {
+        "path": "weapon-motion-ci/9fc4e2b/restored-evidence/Artifacts/Screenshots/MobileHud/damage-belt-dense-datatex.png",
+        "sha256": "c472d01c83ee2db9985c78d605c595e64945724ff4ec0ce1e4cea59e3e5cf07e"
+      },
+      {
+        "path": "weapon-motion-ci/9fc4e2b/restored-evidence/Artifacts/Screenshots/MobileHud/damage-belt-dense-gpu.png",
+        "sha256": "01d48af9638ed174739fa6aaf9bec8b059890c33b3ab42861334d8cdde905c33"
+      },
+      {
+        "path": "weapon-motion-ci/9fc4e2b/restored-evidence/Artifacts/Screenshots/MobileHud/damage-belt-dense-low-datatex.png",
+        "sha256": "7b2909e6ece8a740ae4adf2eb944ec672f54d460333ec080f891ffb522f007e6"
+      },
+      {
+        "path": "weapon-motion-ci/9fc4e2b/restored-evidence/Artifacts/Screenshots/MobileHud/damage-belt-dense-low-gpu.png",
+        "sha256": "7b2909e6ece8a740ae4adf2eb944ec672f54d460333ec080f891ffb522f007e6"
+      },
+      {
+        "path": "weapon-motion-ci/9fc4e2b/restored-evidence/Artifacts/Screenshots/MobileHud/damage-belt-normal-critical-datatex.png",
+        "sha256": "a7352ced1ca4f3c0db42ba77aaaa9cc2210831a2c12d318af64c95487ed5c50a"
+      },
+      {
+        "path": "weapon-motion-ci/9fc4e2b/restored-evidence/Artifacts/Screenshots/MobileHud/damage-belt-normal-critical-gpu.png",
+        "sha256": "d0feb6cfc0bdc9724c784594e1c72dc84df52b3909bb3c568c3fe68078415628"
+      },
+      {
+        "path": "weapon-motion-ci/9fc4e2b/restored-evidence/Artifacts/Screenshots/MobileHud/damage-belt-single-datatex.png",
+        "sha256": "eb3ea8ea19327e6abc81e01587d3f652fbebb0c61c1bc510a052ca5749d79585"
+      },
+      {
+        "path": "weapon-motion-ci/9fc4e2b/restored-evidence/Artifacts/Screenshots/MobileHud/damage-belt-single-gpu.png",
+        "sha256": "3d7cb24a68d7ca9f8a59d9efcb3c1e7db289764aea00662e87fda6ab18c23c94"
+      },
+      {
+        "path": "weapon-motion-ci/9fc4e2b/restored-evidence/Artifacts/Screenshots/MobileHud/damage-horde-dense-datatex.png",
+        "sha256": "41e3ac02567fd2de3d75e92c0ba3726f724eec8bb9ee29f2a4ffc9c965f8ca53"
+      },
+      {
+        "path": "weapon-motion-ci/9fc4e2b/restored-evidence/Artifacts/Screenshots/MobileHud/damage-horde-dense-gpu.png",
+        "sha256": "e88c7be15e8fc984c1c4b9bcd4c93a7a7ab4338600f3530ad6b2f8978e1025a3"
+      },
+      {
+        "path": "weapon-motion-ci/9fc4e2b/restored-evidence/Artifacts/Screenshots/MobileHud/damage-horde-dense-low-datatex.png",
+        "sha256": "535c84fe2e47a9bba4932b8b1b9ac237180ee0e71b3a46f9676807dfa684372f"
+      },
+      {
+        "path": "weapon-motion-ci/9fc4e2b/restored-evidence/Artifacts/Screenshots/MobileHud/damage-horde-dense-low-gpu.png",
+        "sha256": "5553e4322b19be82ec1981af2fbd4b9c5b2b3043a4c8517c88d5a2a42ade981c"
+      },
+      {
+        "path": "weapon-motion-ci/9fc4e2b/restored-evidence/Artifacts/Screenshots/MobileHud/damage-horde-normal-critical-datatex.png",
+        "sha256": "6167588f4aaebda1e161644760b66862ef40f9c1f453c6aeda48640079ac6d59"
+      },
+      {
+        "path": "weapon-motion-ci/9fc4e2b/restored-evidence/Artifacts/Screenshots/MobileHud/damage-horde-normal-critical-gpu.png",
+        "sha256": "6167588f4aaebda1e161644760b66862ef40f9c1f453c6aeda48640079ac6d59"
+      },
+      {
+        "path": "weapon-motion-ci/9fc4e2b/restored-evidence/Artifacts/Screenshots/MobileHud/damage-horde-single-datatex.png",
+        "sha256": "90be26966595d44cd40dd72ad2900abac61387700eec1f510d6fbdcd0c4faede"
+      },
+      {
+        "path": "weapon-motion-ci/9fc4e2b/restored-evidence/Artifacts/Screenshots/MobileHud/damage-horde-single-gpu.png",
+        "sha256": "1c3997957c3957a2b8e9d354df1cba7cf080d3698306f12163be27021bb72963"
+      }
+    ],
+    "live_csv": [
+      {
+        "path": "weapon-motion-ci/c790b0b/preliminary-verified-files/Artifacts/Screenshots/WeaponMotion/damage-belt-live-gpu/damage.csv",
+        "sha256": "243ffe296b7f351275158082fa26b94a30db788ede429b11de8b453906d10047",
+        "frames": 90,
+        "visible_frames": 76,
+        "max_active": 3,
+        "max_glyphs": 8,
+        "max_overlap_drops": 1
+      },
+      {
+        "path": "weapon-motion-ci/c790b0b/preliminary-verified-files/Artifacts/Screenshots/WeaponMotion/damage-belt-live-datatex/damage.csv",
+        "sha256": "67d4b2cbff7d9808ffd99f91f90fc4f25247f05a195d09941daa5bb14e0cdbf5",
+        "frames": 90,
+        "visible_frames": 76,
+        "max_active": 3,
+        "max_glyphs": 7,
+        "max_overlap_drops": 1
+      },
+      {
+        "path": "weapon-motion-ci/c790b0b/preliminary-verified-files/Artifacts/Screenshots/WeaponMotion/damage-horde-live-gpu/damage.csv",
+        "sha256": "99893b8d53f737342e27bf335500048e5e1d2014754530896de70f6402fb3794",
+        "frames": 90,
+        "visible_frames": 32,
+        "max_active": 24,
+        "max_glyphs": 54,
+        "max_overlap_drops": 3
+      },
+      {
+        "path": "weapon-motion-ci/c790b0b/preliminary-verified-files/Artifacts/Screenshots/WeaponMotion/damage-horde-live-datatex/damage.csv",
+        "sha256": "b0d5840bf45c9ae7d89a5096cd1c5f6f829c0281f30ff6237b01d01a59242ef2",
+        "frames": 90,
+        "visible_frames": 31,
+        "max_active": 24,
+        "max_glyphs": 54,
+        "max_overlap_drops": 2
+      }
+    ]
+  },
+  "validation": {
+    "red": {
+      "method": "Original base DamageNumberPool.Draw body, with unused optional layout parameter only, against initial14 targeted cases",
+      "passed": 6,
+      "failed": 8,
+      "failures": "4 normal/critical head-clearance cases,2 dense critical clearance cases,2 HUD cases"
+    },
+    "focused_green": {
+      "shared": 38,
+      "belt": 11,
+      "horde": 12,
+      "total": 61,
+      "failed": 0,
+      "skipped": 0
+    },
+    "affected_game_builds": {
+      "belt": "0 warnings/0 errors",
+      "horde": "0 warnings/0 errors"
+    },
+    "real_api_compile": {
+      "frameworks": [
+        "net8.0",
+        "netstandard2.1"
+      ],
+      "sources": 246,
+      "api_references": 95,
+      "scope": "Dependency closure of Brawler.Game, Survivor.Game, SPF.Testing plus2 changed native fixtures and shared legibility tests",
+      "errors_each": 0,
+      "warnings_each": 4,
+      "warnings": "Existing unassigned serialized SvGameBootstrap fields"
+    },
+    "allocation": {
+      "samples": 1000,
+      "current_thread_managed_bytes": 0,
+      "empty_before_after": [
+        0,
+        0
+      ],
+      "retained_array_controls_before_after": [
+        33536,
+        33536
+      ],
+      "thresholds_and_prior_windows_unchanged": true
+    },
+    "independent_review_repairs": [
+      "Use actual render-camera pose, including existing shake, for HUD projection",
+      "Reserve full-width Horde XP strip",
+      "Cap additional clearance at25% view height and commit displacement only after complete-label admission; failed Draw(0) does not ratchet"
+    ]
+  },
+  "logs": [
+    {
+      "local_path": "damage-legibility-validation/build-BrawlerFoundation.Game.log",
+      "sha256": "1acd0b9500a873a6079e4b0f94b0ebc016bf455370c392590e5f3e1f6aca4036"
+    },
+    {
+      "local_path": "damage-legibility-validation/build-SurvivorFoundation.Game.log",
+      "sha256": "cc61932f85261d96308dd2617055647ec6d77bdbb80bb90aa6cd822e6b4a64d8"
+    },
+    {
+      "local_path": "damage-legibility-validation/green-BrawlerFoundation.Tests.EditMode.log",
+      "sha256": "94050db5c088c4ae35b01ef0697950e68d3f32cd4f4707d8032710898fcd6304"
+    },
+    {
+      "local_path": "damage-legibility-validation/green-SPF.Tests.EditMode.log",
+      "sha256": "327ca274c1a96816db6f6319987ea832eca2e90ff5c1370d2e530d1c187885f5"
+    },
+    {
+      "local_path": "damage-legibility-validation/green-SurvivorFoundation.Tests.EditMode.log",
+      "sha256": "2532e590725fd9efa972d84a96ecd1f012bcb2a8341dd2cd11705e764fae0e1d"
+    },
+    {
+      "local_path": "damage-legibility-validation/real-api-net8.0.log",
+      "sha256": "f28e1aa0826e7bb8b833b1daae1c670451150b408cfca571488c9563f319a10a"
+    },
+    {
+      "local_path": "damage-legibility-validation/real-api-netstandard2.1.log",
+      "sha256": "f8479743ae971944c1d612049ff4224bc97632fd2b702ea7334351a14aea074f"
+    },
+    {
+      "local_path": "damage-legibility-validation/red.log",
+      "sha256": "4e4e93a2ed1e0387a806b527bc09d3b6870de6b333887d44e34778e7f6420d3c"
+    }
+  ],
+  "pending": [
+    "Exact integrated full software aggregate",
+    "Unity EditMode/graphics PlayMode/Burst on final integrated source",
+    "GPU/DataTexture actual single/mixed/dense/low and notch/tall pixels, original4x90-frame sequences at1x with actual timestamps",
+    "Review actor head extremes including up-aim/cast torso reach, and density suppression counts; static reservations are not exact animated silhouette proof",
+    "Physical Android/iOS sustained frame time, heat, memory, touch and graphics APIs"
+  ],
+  "policy": {
+    "actor_rectangles": 256,
+    "overflow": "Conservatively union all overflow into final fixed slot; count ReservationOverflows",
+    "max_additional_clearance_view_fraction": 0.25,
+    "max_actor_rectangle_checks_per_draw": 114688,
+    "glyph_budget_unchanged": [
+      192,
+      144,
+      96,
+      64
+    ],
+    "reserved_drops": "Per-frame whole-label omission for HUD/safe/actor/cap conflict; accepted damage facts are untouched",
+    "legacy_health_bars_unchanged": true
+  }
+}

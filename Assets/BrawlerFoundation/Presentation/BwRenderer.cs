@@ -49,6 +49,7 @@ namespace BrawlerFoundation.Presentation
         public uint LastWeaponCueSequence => m_WeaponCueSequence;
         public WeaponParticlePresenter WeaponParticles => m_WeaponParticles;
         DamageNumberPool m_DamageNumbers;
+        public readonly DamageNumberLayout DamageLayout = new DamageNumberLayout();
         SpriteBatch m_DamageGlyphs;
         AppliedDamageJournal m_DamageJournal;
         DamageFactCursor m_DamageCursor;
@@ -280,7 +281,7 @@ namespace BrawlerFoundation.Presentation
                     float fade = f.State == FighterState.KO ? math.saturate(1f - (f.StateTime - BwRules.KoTime + 0.4f) / 0.4f) : 1f;
                     m_Tint[i] = new float4(1f, 1f, 1f, 1f) * new float4(fade, fade, fade, 1f);
                     m_Fighters.Add(p + new float2(0f, 0.03f), new float2(1.1f, 0.3f), m_Art.Sheet[m_Art.Shadow].Uv, ShadowDepth, new float4(1f, 1f, 1f, 1f));
-                    if (f.Team == 1 && f.State != FighterState.KO)
+                    if (f.Team == 1 && f.State != FighterState.KO && (m_DamageNumbers == null || DamageNumberLayout.ShowHealthBar(f.Hp, f.MaxHp, f.Variant == 3)))
                     {
                         float hp = math.saturate(f.Hp / math.max(f.MaxHp, 1f));
                         m_Fighters.Add(p + new float2(0f, 2.15f), new float2(0.9f, 0.1f), m_Art.Sheet[m_Art.Bar].Uv, FxDepth + 0.2f, new float4(0.15f, 0.1f, 0.1f, 1f));
@@ -307,7 +308,7 @@ namespace BrawlerFoundation.Presentation
             }
             if(world.HasResource(BwWeapons.Key))DrawWeaponProjectiles(world.Resource(BwWeapons.Key),alpha);
             m_Fx.UpdateAndDraw(presentationDeltaTime, m_Effects, m_Art.Sheet, null);
-            UpdateDamageNumbers(session, damageDiscontinuity || game.Flow == BwFlow.Menu, session.State == SessionState.Running && (game.Flow == BwFlow.Fighting || game.Flow == BwFlow.WaveClear) ? presentationDeltaTime : 0f, Camera != null ? Camera.ViewRect : new float4(-12, -3, 12, 7));
+            UpdateDamageNumbers(session, damageDiscontinuity || game.Flow == BwFlow.Menu, session.State == SessionState.Running && (game.Flow == BwFlow.Fighting || game.Flow == BwFlow.WaveClear) ? presentationDeltaTime : 0f, Camera != null ? Camera.ViewRect : new float4(-12, -3, 12, 7), alpha);
             if(m_Sanctuary!=null&&m_Sanctuary.Ready)m_Sanctuary.Draw(Camera!=null?Camera.ViewRect:new float4(-12,-3,12,7),bounds);
             else m_Arena.Draw(bounds, dirty: false);
             m_NaturalShadows?.Draw(bounds);
@@ -318,7 +319,7 @@ namespace BrawlerFoundation.Presentation
             SpritesDrawn = (m_Sanctuary!=null&&m_Sanctuary.Ready?m_Sanctuary.SpritesDrawn:m_Arena.Count) + m_Fighters.Count + m_Effects.Count + (m_DamageGlyphs?.Count ?? 0) + (m_Characters?.PartsDrawn ?? 0) + (m_NaturalShadows?.Count ?? 0);
         }
 
-        void UpdateDamageNumbers(SimSession session, bool reset, float dt, float4 view)
+        void UpdateDamageNumbers(SimSession session, bool reset, float dt, float4 view, float alpha)
         {
             if (m_DamageNumbers == null) return;
             var journal = session.World.Resource(AppliedDamageJournal.Key);
@@ -333,7 +334,26 @@ namespace BrawlerFoundation.Presentation
             m_DamageNumbers.BeginFrame(dt, QualityLevel);
             while (journal.TryRead(ref m_DamageCursor, out var fact))
                 m_DamageNumbers.Emit(fact.Target, fact.Position, fact.Amount, fact.Critical, fact.Sequence, fact.Tick, session.Clock.StepSeconds);
-            m_DamageNumbers.Draw(m_DamageGlyphs, m_Art.Sheet, m_Art.Font, view);
+            view = DamageNumberLayout.RenderedView(Camera != null ? Camera.Camera : null, view);
+            ReserveDamageLayout(session.World, view, alpha);
+            m_DamageNumbers.Draw(m_DamageGlyphs, m_Art.Sheet, m_Art.Font, view, layout: DamageLayout);
+        }
+
+        void ReserveDamageLayout(SimWorld world, float4 view, float alpha)
+        {
+            DamageLayout.Begin(view);
+            if (m_DamageNumbers.Active == 0) return;
+            var info = world.Column(BwKeys.Info); var position = world.Column(BwKeys.Position); var previous = world.Column(BwKeys.Prev);
+            int count = math.min(world.Table(BwKeys.Fighter).Count, MaxFighters);
+            for (int i = 0; i < count; i++)
+            {
+                if (info[i].State == FighterState.KO) continue;
+                float2 p = math.lerp(previous[i], position[i], alpha);
+                // Original natural head/horns and bar occupy root + .8 .. 2.43 (including small pose motion); reserve the
+                // same visual extent even when an undamaged ordinary bar is omitted.
+                float top = NaturalCharacters ? 2.43f : 2.2f;
+                DamageLayout.ReserveActor(new float4(p + new float2(-.6f, .8f), p + new float2(.6f, top)));
+            }
         }
 
         void UpdateWeaponParticles(SPF.Runtime.World.SimWorld world,BwGameState game,float alpha,float presentationDeltaTime)
@@ -434,7 +454,7 @@ namespace BrawlerFoundation.Presentation
                     Scale=.9f,State=state,Phase=phase,Action=f.Attack==AttackKind.Kick?GameplayCharacterAction.Kick:GameplayCharacterAction.Punch,
                     Kind=f.Team==0?0:1,Flash=f.Flash,Tint=f.Team==0?new float4(1f):new float4(1f,1f-f.Variant*.035f,1f-f.Variant*.06f,1f),Depth=FighterDepth+ground.y*.01f});
                 m_NaturalShadows.Add(ground+new float2(0,.01f),new float2(.95f,.24f),m_Art.Sheet[m_Art.Shadow].Uv,ShadowDepth,new float4(0,0,0,.34f));
-                if(f.Team==1&&f.State!=FighterState.KO)
+                if(f.Team==1&&f.State!=FighterState.KO&&(m_DamageNumbers==null||DamageNumberLayout.ShowHealthBar(f.Hp,f.MaxHp,f.Variant==3)))
                 {
                     float hp=math.saturate(f.Hp/math.max(1,f.MaxHp));
                     m_Effects.Add(p+new float2(0,2.3f),new float2(.84f,.12f),m_Art.Sheet[m_Art.Bar].Uv,FxDepth,new float4(.07f,.13f,.16f,1));

@@ -62,6 +62,7 @@ namespace SurvivorFoundation.Presentation
         public uint LastWeaponCueSequence => m_WeaponCueSequence;
         public WeaponParticlePresenter WeaponParticles => m_WeaponParticles;
         DamageNumberPool m_DamageNumbers;
+        public readonly DamageNumberLayout DamageLayout = new DamageNumberLayout();
         SpriteBatch m_DamageGlyphs;
         AppliedDamageJournal m_DamageJournal;
         DamageFactCursor m_DamageCursor;
@@ -362,7 +363,7 @@ namespace SurvivorFoundation.Presentation
             if(world.HasResource(SvWeapons.Key))DrawWeaponProjectiles(world.Resource(SvWeapons.Key),alpha);
             m_Fx.UpdateAndDraw(dt, m_Effects, m_Art.Sheet, m_Art.Font);
             m_CombatFx.Draw(m_Effects, m_Art.CombatFx.Resolve(m_Art.Sheet), effectView, BulletDepth - 0.2f);
-            UpdateDamageNumbers(session, damageDiscontinuity, session.State == SessionState.Running && game.Flow == SvFlow.Playing ? dt : 0f, effectView);
+            UpdateDamageNumbers(session, damageDiscontinuity, session.State == SessionState.Running && game.Flow == SvFlow.Playing ? dt : 0f, effectView, alpha);
 
             if (StableTranslucentActors)
                 new SvSpriteOrder { Sprites = m_Opaque.Instances, Scratch = m_SortScratch, Count = m_Opaque.Count }.Run();
@@ -380,7 +381,7 @@ namespace SurvivorFoundation.Presentation
             BytesUploaded = (m_Sanctuary!=null&&m_Sanctuary.Ready?m_Sanctuary.BytesUploaded:m_Ground.BytesUploaded) + m_Opaque.BytesUploaded + m_Additive.BytesUploaded + m_Effects.BytesUploaded + m_Shadows.BytesUploaded + m_Health.BytesUploaded + (m_DamageGlyphs?.BytesUploaded ?? 0) + (m_Characters?.BytesUploaded ?? 0);
         }
 
-        void UpdateDamageNumbers(SimSession session, bool reset, float dt, float4 view)
+        void UpdateDamageNumbers(SimSession session, bool reset, float dt, float4 view, float alpha)
         {
             if (m_DamageNumbers == null) return;
             var journal = session.World.Resource(AppliedDamageJournal.Key);
@@ -395,7 +396,31 @@ namespace SurvivorFoundation.Presentation
             m_DamageNumbers.BeginFrame(dt, QualityLevel);
             while (journal.TryRead(ref m_DamageCursor, out var fact))
                 m_DamageNumbers.Emit(fact.Target, fact.Position, fact.Amount, fact.Critical, fact.Sequence, fact.Tick, session.Clock.StepSeconds);
-            m_DamageNumbers.Draw(m_DamageGlyphs, m_Art.Sheet, m_Art.Font, view);
+            view = DamageNumberLayout.RenderedView(Camera != null ? Camera.Camera : null, view);
+            ReserveDamageLayout(session.World, view, alpha);
+            m_DamageNumbers.Draw(m_DamageGlyphs, m_Art.Sheet, m_Art.Font, view, layout: DamageLayout);
+        }
+
+        void ReserveDamageLayout(SimWorld world, float4 view, float alpha)
+        {
+            DamageLayout.Begin(view);
+            if (m_DamageNumbers.Active == 0) return;
+            var info = world.Column(SvKeys.Info); var position = world.Column(SvKeys.Position); var previous = world.Column(SvKeys.PrevPosition);
+            for (int i = 0; i < world.Table(SvKeys.Enemy).Count; i++)
+            {
+                var enemy = info[i]; if (enemy.Has(EnemyFlags.Dead)) continue;
+                float2 p = math.lerp(previous[i], position[i], alpha); float size = enemy.Radius * 2.6f;
+                // Match EnemyDrawJob's projected sprite/bar extent. Natural cutouts use their
+                // actual scale ceiling; reservation is presentation geometry, never a hitbox.
+                float top = math.max(size * .96f + .07f, NaturalCharacters ? math.clamp(enemy.Radius * 1.22f, .28f, .85f) * 2.70f : size * .9f);
+                float half = math.max(.31f, size * .5f);
+                DamageLayout.ReserveActor(new float4(p + new float2(-half, size * .3f), p + new float2(half, top)));
+            }
+            var game = world.Resource(SvKeys.Game); float2 hero = math.lerp(game.HeroPrev, game.Hero, alpha);
+            DamageLayout.ReserveActor(new float4(hero + new float2(-.6f, .6f), hero + new float2(.6f, 1.75f)));
+            var settings = world.Resource(SvKeys.Config).Settings;
+            if (settings.Variant == SvVariant.GuardBeacon)
+                DamageLayout.ReserveActor(new float4(settings.BeaconPosition + new float2(-1.05f, 0), settings.BeaconPosition + new float2(1.05f, 2.9f)));
         }
 
         void UpdateWeaponParticles(SimWorld world,SvGameState game,float alpha,float4 viewRect,float presentationDeltaTime)
@@ -531,7 +556,7 @@ namespace SurvivorFoundation.Presentation
                 Uv = m_Art.EnemyUv, Out = slots, Written = m_Counts, Alpha = alpha, View = view, Time = time,
                 Count = math.min(count, slots.Length), Shadows = shadows, Bars = bars,
                 Hits = m_HitVisuals, Handles = world.Table(SvKeys.Enemy).Handles, EmitHits = emitHits,
-                NaturalMask = m_NaturalMask,
+                NaturalMask = m_NaturalMask, DamageReadability = m_DamageNumbers != null,
                 ShadowUv = m_Art.Sheet[m_Art.Shadow].Uv, WhiteUv = m_Art.Sheet[m_Art.White].Uv, Smooth = StableTranslucentActors,
             }.Run();
             m_Opaque.Trim(start + m_Counts[0]); m_Shadows.Trim(m_Counts[1]); m_Health.Trim(m_Counts[2]);
@@ -584,7 +609,7 @@ namespace SurvivorFoundation.Presentation
             [ReadOnly] public NativeArray<EntityHandle> Handles;
             [ReadOnly] public NativeArray<byte> NaturalMask;
             public NativeArray<HitVisual> Hits;
-            public bool EmitHits;
+            public bool EmitHits, DamageReadability;
             public float4 ShadowUv, WhiteUv;
             public bool Smooth;
             public float Alpha, Time;
@@ -614,7 +639,7 @@ namespace SurvivorFoundation.Presentation
                     }
                     if (shadows < Shadows.Length)
                         Shadows[shadows++] = PackedSprite.Pack(p, new float2(size, size * 0.35f), ShadowUv, GroundDepth - 1f, new float4(0f, 0f, 0f, 0.28f));
-                    if (bars + 3 <= Bars.Length)
+                    if (bars + 3 <= Bars.Length && (!DamageReadability || DamageNumberLayout.ShowHealthBar(info.Hp, info.MaxHp, info.Has(EnemyFlags.Elite))))
                     {
                         float2 bar = p + new float2(0f, size * 0.96f);
                         float width = math.max(0.55f, size * 0.8f), fill = math.saturate(info.Hp / math.max(1f, info.MaxHp));

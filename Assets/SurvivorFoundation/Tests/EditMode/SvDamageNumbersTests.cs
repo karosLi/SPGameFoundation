@@ -7,6 +7,9 @@ using SPF.Runtime.World;
 using SPF.Runtime.Session;
 using SPF.Runtime.Composition;
 using Unity.Mathematics;
+using SPF.Presentation;
+using SPF.Presentation.Combat;
+using SPF.Presentation.Sprites;
 
 namespace SurvivorFoundation.Tests
 {
@@ -23,6 +26,25 @@ namespace SurvivorFoundation.Tests
             foreach (var e in c.Enemies) { e.Hp = 100; e.Speed = e.Damage = 0; e.Shooter = false; }
         });
         static void Pulse(SvTestWorld t) { t.Game.Input = new InputFrame { Pressed = 1 }; t.Step(); t.Game.Input = default; t.Step(3); }
+        [TestCase(RenderTier.GpuDriven)] [TestCase(RenderTier.DataTexture)]
+        public void ReservedPresentationQualityAndHudChangesLeaveAuthoritySnapshotIdentical(RenderTier tier)
+        {
+            using var t = Create(); t.Spawn(1, new float2(4.8f, 0)); t.Spawn(1, new float2(-4.8f, 0)); Pulse(t);
+            var before = t.Session.CaptureSnapshot(); var journal = t.World.Resource(AppliedDamageJournal.Key); var cursor = journal.CreateCursor(true);
+            var atlas = new SpriteAtlasBuilder(); var font = SpriteFont.CreateSmooth(atlas); using var sheet = atlas.Build(128);
+            using var batch = new SpriteBatch(tier, sheet.Texture, BlendKind.Translucent, 192);
+            var pool = new DamageNumberPool(); var layout = new DamageNumberLayout(); var view = new float4(-8, -5, 8, 5);
+            while (journal.TryRead(ref cursor, out var fact)) pool.Emit(fact.Target, fact.Position, fact.Amount, fact.Critical, fact.Sequence, fact.Tick, t.Session.Clock.StepSeconds);
+            Assert.Greater(pool.Active, 0);
+            for (int quality = 0; quality < 4; quality++)
+            {
+                layout.SafeViewport = new float4(.03f, .03f, .97f, .93f); layout.HeaderViewport = new float4(.03f, .8f, .75f, .93f);
+                layout.Begin(view); layout.ReserveActor(new float4(-2, .8f, 2, 2.36f));
+                pool.BeginFrame(.03f, quality); batch.Clear(); pool.Draw(batch, sheet, font, view, layout: layout);
+                CollectionAssert.AreEqual(before, t.Session.CaptureSnapshot(), "presentation reservations cannot change HP, critical cadence, handles or save bytes");
+            }
+        }
+
         [TestCase(1)] [TestCase(513)]
         public void GameJournalRejectsCapacityOutsidePerFrameBudget(int capacity)
         {

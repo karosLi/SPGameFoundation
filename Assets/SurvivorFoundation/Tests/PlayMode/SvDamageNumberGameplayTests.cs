@@ -89,6 +89,21 @@ namespace SurvivorFoundation.Tests.PlayMode
                 game.Renderer.SetQualityLevel(3); game.Renderer.RenderFrame(0);
                 yield return capture.Save("damage-horde-dense-low-" + suffix, safe); game.Renderer.SetQualityLevel(0);
 
+                // Additional fixed frame only: preserve every existing live frame/window and capture.
+                var beforeLayout = game.Session.CaptureSnapshot();
+                capture.Dispose(); capture = new CanvasCapture(game.gameObject, game.CameraRig.Camera, 720, 1600);
+                var notched = new Rect(30, 35, 660, 1495);
+                game.Hud.MobileHud.SetPreviewViewport(720, 1600, notched); yield return null;
+                game.CameraRig.Snap(); game.Renderer.RenderFrame(0); AssertReservedGlyphs(game.Renderer);
+                var actualHeader = capture.RectOf(game.Hud.HudPanel.Find("MobileStatsBackdrop").gameObject); var reservedHeader = game.Renderer.DamageLayout.HeaderViewport;
+                Assert.That(reservedHeader.x * capture.Width, Is.EqualTo(actualHeader.xMin).Within(1.1f));
+                Assert.That(reservedHeader.y * capture.Height, Is.EqualTo(actualHeader.yMin).Within(1.1f));
+                Assert.That(reservedHeader.z * capture.Width, Is.EqualTo(actualHeader.xMax).Within(1.1f));
+                Assert.That(reservedHeader.w * capture.Height, Is.EqualTo(actualHeader.yMax).Within(1.1f));
+                CollectionAssert.AreEqual(beforeLayout, game.Session.CaptureSnapshot());
+                yield return capture.Save("damage-horde-safe-tall-" + suffix, notched);
+                TestContext.WriteLine("Damage reservation suppressions=" + game.Renderer.DamageNumbers.Stats.ReservedDrops + "; bounded actor reservation overflow=" + game.Renderer.DamageLayout.ReservationOverflows);
+
                 capture.Dispose(); capture = new CanvasCapture(game.gameObject, game.CameraRig.Camera, 360, 640);
                 game.Hud.MobileHud.SetPreviewViewport(360, 640, new Rect(0, 0, 360, 640));
                 game.Session.Resume(); Setup(game, 24); game.CameraRig.Snap(); game.Renderer.RenderFrame(0);
@@ -114,7 +129,7 @@ namespace SurvivorFoundation.Tests.PlayMode
             game.State.Input = new InputFrame { Pressed = 1u << SvMobileSkills.Pulse }; game.Session.Step(); game.State.Input = default;
             for (int i = 0; i < 3; i++) game.Session.Step();
         }
-        struct LiveSample { public double At; public uint Tick; public ulong Normal, Critical; public int Active, Glyphs, Dropped, Overlap; }
+        struct LiveSample { public double At; public uint Tick; public ulong Normal, Critical; public int Active, Glyphs, Dropped, Overlap, Reserved, ReservationOverflow; }
         static IEnumerator CaptureLive(SvGameBootstrap game, CanvasCapture capture, string suffix)
         {
             yield return null; yield return null;
@@ -128,19 +143,20 @@ namespace SurvivorFoundation.Tests.PlayMode
                     game.State.Input = new InputFrame { Move = new float2(i < 45 ? .12f : -.12f, 0), Pressed = i == 4 || i == 48 ? 1u << SvMobileSkills.Pulse : 0 };
                     game.Session.Sync();
                     double at = Time.realtimeSinceStartupAsDouble; frames.Capture(game.Session.Clock.Elapsed);
+                    AssertReservedGlyphs(game.Renderer);
                     var stats = game.Renderer.DamageNumbers.Stats; if (stats.Glyphs > 0) visibleFrames++;
                     trace[i] = new LiveSample { At = at, Tick = game.Session.Clock.NextTickIndex, Normal = journal.AcceptedNormal, Critical = journal.AcceptedCritical,
-                        Active = game.Renderer.DamageNumbers.Active, Glyphs = stats.Glyphs, Dropped = stats.Dropped, Overlap = stats.OverlapDrops };
+                        Active = game.Renderer.DamageNumbers.Active, Glyphs = stats.Glyphs, Dropped = stats.Dropped, Overlap = stats.OverlapDrops, Reserved = stats.ReservedDrops, ReservationOverflow = game.Renderer.DamageLayout.ReservationOverflows };
                     next = at + 1d / 30;
                 }
                 game.State.Input = default; game.Session.ManualClock = true; game.Session.Sync();
                 string directory = frames.Write("damage-horde-live-" + suffix,
                     "Actual automatic-clock horde gameplay. Authored pulse input and ordinary movement; normal/critical labels consume settled HP deltas with fixed budgets. No injected facts or intermediate frames. Acquisition timestamps retained; target30Hz is not a device performance claim.", BufferedFrameFormat.Jpeg95Review);
-                var csv = new System.Text.StringBuilder("frame,acquisition_seconds,tick,normal_facts,critical_facts,active_labels,glyphs,dropped,overlap_drops\n");
+                var csv = new System.Text.StringBuilder("frame,acquisition_seconds,tick,normal_facts,critical_facts,active_labels,glyphs,dropped,overlap_drops,reserved_drops,reservation_overflows\n");
                 for (int i = 0; i < trace.Length; i++)
                 {
                     var s = trace[i]; csv.Append(i).Append(',').Append(s.At.ToString("R", System.Globalization.CultureInfo.InvariantCulture)).Append(',').Append(s.Tick).Append(',')
-                        .Append(s.Normal).Append(',').Append(s.Critical).Append(',').Append(s.Active).Append(',').Append(s.Glyphs).Append(',').Append(s.Dropped).Append(',').Append(s.Overlap).Append('\n');
+                        .Append(s.Normal).Append(',').Append(s.Critical).Append(',').Append(s.Active).Append(',').Append(s.Glyphs).Append(',').Append(s.Dropped).Append(',').Append(s.Overlap).Append(',').Append(s.Reserved).Append(',').Append(s.ReservationOverflow).Append('\n');
                 }
                 System.IO.File.WriteAllText(System.IO.Path.Combine(directory, "damage.csv"), csv.ToString());
                 Assert.Greater(journal.AcceptedNormal, 0ul); Assert.Greater(journal.AcceptedCritical, 0ul); Assert.Greater(visibleFrames, 4);
@@ -149,8 +165,32 @@ namespace SurvivorFoundation.Tests.PlayMode
         // Inspect the actual batch prepared by the game renderer. Its normal scene draw remains
         // covered by the main-camera screenshots; this second camera excludes every actor/HUD/effect,
         // so passing pixels must be font glyphs rather than an unrelated non-background scene.
+        static void AssertReservedGlyphs(object renderer)
+        {
+            var type = renderer.GetType();
+            var field = type.GetField("m_DamageGlyphs", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            var batch = (SPF.Presentation.Sprites.SpriteBatch)field.GetValue(renderer);
+            var layout = (SPF.Presentation.Combat.DamageNumberLayout)type.GetField("DamageLayout").GetValue(renderer);
+            var camera = ((SPF.Shell.CameraRig.FollowCamera2D)type.GetField("Camera").GetValue(renderer)).Camera;
+            for (int i = 0; i < batch.Count; i++)
+            {
+                var glyph = batch.Instances[i]; var rect = new float4(glyph.Center - glyph.Size * .5f, glyph.Center + glyph.Size * .5f);
+                Assert.IsTrue(layout.Allows(rect), "actual game batch glyph must clear safe-area/header/menu reservations");
+                Assert.Zero(layout.ActorLift(rect), "actual glyph must clear reserved character/head/bar geometry");
+                // Independent Unity camera projection includes impact shake, unlike follow/culling bounds.
+                var a = camera.WorldToViewportPoint(new Vector3(rect.x, rect.y, 0));
+                var b = camera.WorldToViewportPoint(new Vector3(rect.z, rect.w, 0));
+                var projected = new float4(a.x, a.y, b.x, b.y); var safe = layout.SafeViewport;
+                Assert.GreaterOrEqual(projected.x, safe.x); Assert.GreaterOrEqual(projected.y, safe.y);
+                Assert.LessOrEqual(projected.z, safe.z); Assert.LessOrEqual(projected.w, safe.w);
+                Assert.IsFalse(SPF.Presentation.Combat.DamageNumberLayout.Overlaps(projected, layout.HeaderViewport));
+                Assert.IsFalse(SPF.Presentation.Combat.DamageNumberLayout.Overlaps(projected, layout.MenuViewport));
+                Assert.IsFalse(SPF.Presentation.Combat.DamageNumberLayout.Overlaps(projected, layout.StatusViewport));
+            }
+        }
         static void AssertGlyphPixels(object renderer, Camera source, string name)
         {
+            AssertReservedGlyphs(renderer);
             var field = renderer.GetType().GetField("m_DamageGlyphs", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
             var batch = (SPF.Presentation.Sprites.SpriteBatch)field.GetValue(renderer);
             Assert.Greater(batch.Count, 0);

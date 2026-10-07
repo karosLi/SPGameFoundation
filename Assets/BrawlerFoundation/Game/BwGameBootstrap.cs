@@ -57,6 +57,7 @@ namespace BrawlerFoundation.Game
         public TapButton PunchButton { get; private set; }
         public TapButton KickButton { get; private set; }
         public VirtualJoystick Joystick { get; private set; }
+        RectTransform m_DamageTelemetry;
         public MobileCombatHud MobileHud { get; private set; }
         public Button SwitchWeaponButton { get; private set; }
 
@@ -202,7 +203,7 @@ namespace BrawlerFoundation.Game
             if(m_MobileCombat)
             {
                 var card=UIFactory.Card(root,"CombatStatsBackdrop",SanctuaryUiTheme.Ink,new Vector2(.015f,.985f),new Vector2(.50f,.985f),false);
-                card.offsetMin=new Vector2(0,-115);card.offsetMax=Vector2.zero;
+                card.offsetMin=new Vector2(0,-115);card.offsetMax=Vector2.zero; m_DamageTelemetry=card;
             }
             StatsText = BufferText.Create(root, "Stats", m_MobileCombat?25:40, TextAnchor.UpperLeft, new Vector2(0.025f, 0.79f), new Vector2(m_MobileCombat?.50f:.7f, 0.973f));
             if (!m_MobileCombat)
@@ -232,6 +233,12 @@ namespace BrawlerFoundation.Game
         {
             var state = State;
             if (state == null || StatsText == null) return;
+            if (MobileHud != null && Renderer != null)
+            {
+                Renderer.DamageLayout.SafeViewport = MobileHud.SafeViewport;
+                Renderer.DamageLayout.HeaderViewport = MobileHud.ChildViewport(m_DamageTelemetry);
+                Renderer.DamageLayout.MenuViewport = MobileHud.ChildViewport(SwitchWeaponButton != null ? (RectTransform)SwitchWeaponButton.transform : null);
+            }
             int hp = 0;
             Session.Sync();
             var world = Session.World;

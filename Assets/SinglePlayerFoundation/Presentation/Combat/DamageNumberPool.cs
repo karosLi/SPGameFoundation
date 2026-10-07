@@ -11,6 +11,7 @@ namespace SPF.Presentation.Combat
     public sealed class DamageNumberPool
     {
         public const float MergeSeconds = .12f;
+        public const float MaxClearanceFraction = .25f;
         public const int MaxDisplay = 999999;
         public struct Label
         {
@@ -18,6 +19,7 @@ namespace SPF.Presentation.Combat
             public float2 Anchor;
             public double Amount;
             public float Age;
+            public float PresentationLift; // Retained upward clearance, never an authoritative anchor change.
             public bool Critical;
             public int Lane;
             public ulong Sequence;
@@ -61,7 +63,7 @@ namespace SPF.Presentation.Combat
         {
             m_Budget = DamageNumberBudget.ForQuality(quality);
             m_NormalAdmissions = m_CriticalAdmissions = m_NormalAttempts = m_CriticalAttempts = 0;
-            Stats.Glyphs = Stats.Visible = Stats.GlyphDrops = Stats.OverlapDrops = 0; Stats.ScreenArea = 0;
+            Stats.Glyphs = Stats.Visible = Stats.GlyphDrops = Stats.OverlapDrops = Stats.ReservedDrops = 0; Stats.ScreenArea = 0;
             dt = math.isfinite(dt) ? math.max(0f, dt) : 0f;
             int count = 0;
             for (int i = 0; i < Active; i++)
@@ -149,15 +151,15 @@ namespace SPF.Presentation.Combat
         /// and overlap budgets prohibit truncating a value or hiding all critical feedback behind a flood.
         /// Heights are proportional to the orthographic world-view height, so they remain legible at
         /// portrait/landscape resolution. Three bounded local offsets avoid cross-target overlap.</summary>
-        public void Draw(SpriteBatch batch, SpriteSheet sheet, SpriteFont font, float4 view, float depth = -3f)
+        public void Draw(SpriteBatch batch, SpriteSheet sheet, SpriteFont font, float4 view, float depth = -3f, DamageNumberLayout layout = null)
         {
-            Stats.Glyphs = Stats.Visible = Stats.GlyphDrops = Stats.OverlapDrops = 0; Stats.ScreenArea = 0;
+            Stats.Glyphs = Stats.Visible = Stats.GlyphDrops = Stats.OverlapDrops = Stats.ReservedDrops = 0; Stats.ScreenArea = 0;
             if (batch == null || sheet == null || font == null || !math.all(math.isfinite(view)) || view.z <= view.x || view.w <= view.y) return;
             float viewHeight = view.w - view.y, viewArea = (view.z - view.x) * viewHeight;
             for (int priority = 1; priority >= 0; priority--)
             for (int i = 0; i < Active; i++)
             {
-                var e = m_Labels[i]; if ((e.Critical ? 1 : 0) != priority) continue;
+                ref var e = ref m_Labels[i]; if ((e.Critical ? 1 : 0) != priority) continue;
                 int value = DisplayAmount(e.Amount); bool clipped = e.Amount > MaxDisplay;
                 int glyphs = DigitCount(value) + (e.Critical ? 1 : 0) + (clipped ? 1 : 0);
                 float t = e.Age / Lifetime(e.Critical);
@@ -177,12 +179,34 @@ namespace SPF.Presentation.Combat
                 float side = (e.Target.Index & 1) == 0 ? -1f : 1f;
                 float2 center = e.Anchor + new float2(side * e.Age * .12f,
                     viewHeight * .025f + layoutHeight * e.Lane * 1.25f + e.Age * (e.Critical ? 2.2f - .85f * e.Age : 1.1f));
-                if (center.x + width * .5f < view.x || center.x - width * .5f > view.z || center.y + height * .5f < view.y || center.y - height * .5f > view.w) continue;
-                bool placed = false; float4 rectangle = default;
+                float candidateLift = e.PresentationLift;
+                if (layout != null)
+                {
+                    // Measure against peak glyph bounds, not the shrinking pop. Retaining the lift
+                    // prevents disappearing/moving bars from pulling a live label back downward.
+                    float peakWidth = width * layoutHeight / height;
+                    float maxLift = viewHeight * MaxClearanceFraction; bool blocked = candidateLift > maxLift;
+                    for (int sweep = 0; sweep < 3 && !blocked; sweep++)
+                    {
+                        float2 at = center + new float2(0, candidateLift);
+                        float lift = layout.ActorLift(new float4(at - new float2(peakWidth, layoutHeight) * .55f, at + new float2(peakWidth, layoutHeight) * .55f));
+                        if (lift <= 0) break;
+                        float nextLift = candidateLift + lift + viewHeight * .006f;
+                        if (nextLift > maxLift) { blocked = true; break; }
+                        candidateLift = nextLift;
+                    }
+                    float2 finalCenter = center + new float2(0, candidateLift);
+                    if (blocked || layout.ActorLift(new float4(finalCenter - new float2(peakWidth, layoutHeight) * .55f, finalCenter + new float2(peakWidth, layoutHeight) * .55f)) > 0)
+                    { Stats.ReservedDrops++; continue; }
+                    center.y += candidateLift;
+                }
+                if (center.x + width * .5f < view.x || center.x - width * .5f > view.z || center.y + height * .5f < view.y || center.y - height * .5f > view.w) { if (layout != null) Stats.ReservedDrops++; continue; }
+                bool placed = false, reserved = false; float4 rectangle = default;
                 for (int attempt = 0; attempt < 3 && !placed; attempt++)
                 {
                     float2 adjusted = center + new float2(0, layoutHeight * 1.15f * attempt);
                     rectangle = new float4(adjusted - new float2(width, height) * .55f, adjusted + new float2(width, height) * .55f);
+                    if (layout != null && (!layout.Allows(rectangle) || layout.ActorLift(rectangle) > 0)) { reserved = true; continue; }
                     if (rectangle.x < view.x || rectangle.z > view.z || rectangle.y < view.y || rectangle.w > view.w) continue;
                     bool overlaps = false;
                     for (int j = 0; j < Stats.Visible; j++)
@@ -192,7 +216,8 @@ namespace SPF.Presentation.Combat
                     }
                     if (!overlaps) { center = adjusted; placed = true; }
                 }
-                if (!placed) { Stats.OverlapDrops++; continue; }
+                if (!placed) { if (reserved) Stats.ReservedDrops++; else Stats.OverlapDrops++; continue; }
+                e.PresentationLift = candidateLift; // Commit only a fully admitted placement; failed Draw(0) cannot ratchet.
                 var color = e.Critical ? new float4(1f, .80f, .18f, 1f) : new float4(.96f, .93f, .80f, 1f);
                 color.w *= 1f - math.saturate((t - .55f) / .45f);
                 font.DrawNumber(batch, sheet, value, e.Critical ? '!' : '\0', clipped ? '+' : '\0', center, height, depth, color);
@@ -220,7 +245,7 @@ namespace SPF.Presentation.Combat
     public struct DamageNumberDiagnostics
     {
         public int Accepted, Merged, Duplicates, Dropped, Evicted, Expired, DisplayOverflows, HighWater;
-        public int Glyphs, Visible, GlyphDrops, OverlapDrops, GlyphHighWater;
+        public int Glyphs, Visible, GlyphDrops, OverlapDrops, ReservedDrops, GlyphHighWater;
         public double AcceptedAmount;
         public float ScreenArea;
     }

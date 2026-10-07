@@ -185,6 +185,13 @@ namespace SurvivorFoundation.Game
             var world = m_Game.Session.World;
             int seconds = (int)state.Time;
             if (m_LastDebugTelemetry != ShowDebugTelemetry) RefreshMobileTelemetryLayout();
+            if (MobileHud != null && m_Game.Renderer != null)
+            {
+                m_Game.Renderer.DamageLayout.SafeViewport = MobileHud.SafeViewport;
+                m_Game.Renderer.DamageLayout.HeaderViewport = MobileHud.ChildViewport(m_MobileTelemetry);
+                m_Game.Renderer.DamageLayout.MenuViewport = MobileHud.ChildViewport((RectTransform)HudMenuButton.transform);
+                m_Game.Renderer.DamageLayout.StatusViewport = MobileHud.ChildViewport((RectTransform)XpFill.transform.parent);
+            }
             // Player-facing timer/level/objective stay visible; engine counters are optional on mobile.
             // BufferText compares its retained chars, so unchanged status does not rebuild a mesh.
             var stats = StatsText.Begin().Append(seconds / 60, 2).Append(':').Append(seconds % 60, 2).Append("   Lv ").Append(state.Level).Append("   Kills ").Append(state.Kills);

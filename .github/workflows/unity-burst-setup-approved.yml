@@ -1,0 +1,42 @@
+name: Approved one-time Mac Burst setup and verification
+
+# The owner approved enabling Burst on this Mac runner on 2026-10-07.
+# A dedicated branch-creation event bounds this mutation; ordinary pushes cannot invoke it.
+on:
+  push:
+    branches: [dot/ci-burst-setup-approved-20261007]
+
+jobs:
+  activate-and-verify:
+    if: vars.UNITY_SELF_HOSTED == 'true' && github.event.created == true
+    runs-on: [self-hosted, unity, macOS]
+    permissions:
+      contents: read
+    timeout-minutes: 120
+    env:
+      UNITY_EDITOR_PATH: ${{ vars.UNITY_EDITOR_PATH }}
+      SPF_APPROVED_BURST_SETUP: '2026-10-07'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          clean: false
+      - name: Read, activate approved preference, and verify in fresh Editors
+        shell: bash
+        run: Tools/ci/approved-mac-burst-setup.sh
+      - name: Unchanged full EditMode and PlayMode suites
+        shell: bash
+        run: Tools/ci/local-unity-tests.sh
+      - name: Require native full-suite evidence and report results
+        shell: bash
+        run: python3 Tools/ci/verify-approved-burst-results.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: approved-mac-burst-setup-and-tests
+          path: |
+            BurstSetupArtifacts
+            Artifacts/*.xml
+            Artifacts/*.log
+            Artifacts/*.txt
+            Artifacts/Screenshots
+          if-no-files-found: error

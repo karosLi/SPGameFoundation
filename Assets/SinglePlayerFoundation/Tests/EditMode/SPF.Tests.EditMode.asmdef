@@ -16,7 +16,8 @@
         "Unity.Collections",
         "Unity.Mathematics",
         "Unity.Burst",
-        "SPF.Shell"
+        "SPF.Shell",
+        "SPF.Editor"
     ],
     "includePlatforms": [
         "Editor"

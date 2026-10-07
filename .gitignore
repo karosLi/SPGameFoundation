@@ -26,3 +26,4 @@ Tools/DotnetHarness/.gen/
 
 Tools/DotnetHarness/.deps/
 /Artifacts/
+/BurstSetupArtifacts/

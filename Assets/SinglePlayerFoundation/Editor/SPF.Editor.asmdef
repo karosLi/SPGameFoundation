@@ -4,7 +4,9 @@
     "references": [
         "SPF.Contracts",
         "SPF.L1Simulation",
-        "Unity.Mathematics"
+        "Unity.Mathematics",
+        "Unity.Burst",
+        "Unity.Collections"
     ],
     "includePlatforms": [
         "Editor"

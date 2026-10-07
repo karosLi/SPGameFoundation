@@ -57,3 +57,9 @@ Imported Resources clips 是共享借用资源，owner 不 Destroy/Unload；`Sfx
 - [AudioSource priority](https://docs.unity3d.com/2022.3/Documentation/ScriptReference/AudioSource-priority.html)：项目先做固定池仲裁，Unity 再按平台 voice 上限虚拟化；未修改用户平台配置。
 
 备选 AudioMixer assets 适合复杂 routing/effect snapshots，本轮三总线 gain/mute 已可用更小的播放器 API 表达，避免要求新 mixer 资产和全局单例。新引擎、外部音乐 API 和付费服务均无必要。
+
+## 精确软件检查点
+
+实现提交 `bfdd90a0f770857b655691a769690d03e6d3f1ac`（基于 `0a33448`）在最终冻结源上通过：**1,280 / 1,280 .NET、0失败、0跳过；10 / 10离线音频测试；真实 Unity2022.3.62f2 API 的 net8.0 / netstandard2.1 编译均0错误（各7条既有警告）；19 cold composition 与原 inventory 一致，两次输出逐字节相同**。75个 asmdef 无环。21项新增 .NET 音频合约测试计入上述总数。
+
+[机器可读验证清单](validation/MobileAudioSoftware-20261007.json)保存实现树、全部61个变更文件的哈希、测试程序集结果、日志哈希与待验证项。独立只读复查在修正影响音效、禁用/重绑、CancelAll拉弦、windup prime、远处不可听命中选择后无剩余P1/P2。此后文档记录提交不改变已测源码。原生新增14项导入断言和3项DSP/实际玩法fixture尚未在本工作器运行，不算已通过；并行功能集成后仍须对新提交重新跑CI。

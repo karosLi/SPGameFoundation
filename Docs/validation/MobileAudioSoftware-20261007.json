@@ -1,0 +1,458 @@
+{
+  "date_utc": "2026-10-07T11:10:46.281426+00:00",
+  "base_commit": "0a33448d023583100580a5968172fd7ec4b5380e",
+  "implementation_commit": "bfdd90a0f770857b655691a769690d03e6d3f1ac",
+  "implementation_tree": "5a60bea89eaa81a33ab331ebd6c66b46299fefd5",
+  "scope": "Audio-only software and offline authored PCM validation. Native Unity execution, perceived listening quality and physical Android/iOS are pending, not inferred from stubs or API compilation.",
+  "checks": {
+    "dotnet": {
+      "passed": 1280,
+      "failed": 0,
+      "skipped": 0,
+      "assemblies": [
+        {
+          "assembly": "BrawlerFoundation.Tests.EditMode.dll",
+          "passed": 124,
+          "failed": 0,
+          "skipped": 0,
+          "total": 124
+        },
+        {
+          "assembly": "DefenseFoundation.Tests.EditMode.dll",
+          "passed": 8,
+          "failed": 0,
+          "skipped": 0,
+          "total": 8
+        },
+        {
+          "assembly": "PlatformerFoundation.Tests.EditMode.dll",
+          "passed": 10,
+          "failed": 0,
+          "skipped": 0,
+          "total": 10
+        },
+        {
+          "assembly": "PuzzleFoundation.Tests.EditMode.dll",
+          "passed": 7,
+          "failed": 0,
+          "skipped": 0,
+          "total": 7
+        },
+        {
+          "assembly": "RpgFoundation.Tests.EditMode.dll",
+          "passed": 63,
+          "failed": 0,
+          "skipped": 0,
+          "total": 63
+        },
+        {
+          "assembly": "SPF.Tests.EditMode.dll",
+          "passed": 876,
+          "failed": 0,
+          "skipped": 0,
+          "total": 876
+        },
+        {
+          "assembly": "ShooterFoundation.Tests.EditMode.dll",
+          "passed": 16,
+          "failed": 0,
+          "skipped": 0,
+          "total": 16
+        },
+        {
+          "assembly": "SlingFoundation.Tests.EditMode.dll",
+          "passed": 4,
+          "failed": 0,
+          "skipped": 0,
+          "total": 4
+        },
+        {
+          "assembly": "SnakeFoundation.Tests.EditMode.dll",
+          "passed": 40,
+          "failed": 0,
+          "skipped": 0,
+          "total": 40
+        },
+        {
+          "assembly": "StoryFoundation.Tests.EditMode.dll",
+          "passed": 5,
+          "failed": 0,
+          "skipped": 0,
+          "total": 5
+        },
+        {
+          "assembly": "SurvivorFoundation.Tests.EditMode.dll",
+          "passed": 127,
+          "failed": 0,
+          "skipped": 0,
+          "total": 127
+        }
+      ],
+      "new_audio_tests": 21
+    },
+    "real_unity_api_compile": {
+      "version": "2022.3.62f2",
+      "target_frameworks": [
+        "net8.0",
+        "netstandard2.1"
+      ],
+      "all_assets_including_native_fixtures": true,
+      "errors_each": 0,
+      "preexisting_warnings_each": 7
+    },
+    "cold_compositions": {
+      "count": 19,
+      "matches_committed_inventory": true,
+      "repeated_bytes_identical": true,
+      "sha256": "a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30"
+    },
+    "offline_audio": {
+      "tests": 10,
+      "failed": 0,
+      "skipped": 0,
+      "isolated_byte_identical_rerenders": 2,
+      "record": "../../Tools/AudioAuthoring/validation.json"
+    },
+    "asmdefs": {
+      "count": 75,
+      "acyclic": true
+    },
+    "review": {
+      "method": "Independent read-only source review, followed by reinspection of all fixes",
+      "remaining_p1": 0,
+      "remaining_p2": 0,
+      "corrected": [
+        "Preserve non-primary and low-quality impacts while coalescing duplicate facts",
+        "Prevent disabled player or adapter rebind from restarting music",
+        "Stop draw on actual CancelAll without a Cancel cue",
+        "Allow future melee contact when binding during windup",
+        "Filter inaudible impact candidates and preserve Cast heavy mapping"
+      ]
+    }
+  },
+  "native_pending": [
+    "AudioImportTests:12 PCM SFX import/readback and2 Streaming music policies",
+    "NativeAudioPlaybackTests:real DSP/source output, loop, pause/background, crossfade/reversal, lifecycle and calibrated source playback allocation",
+    "SvAudioGameplayTests/BwAudioGameplayTests:actual gameplay release sound mapping, snapshot/rebind and pause contracts"
+  ],
+  "external_pending": [
+    "Human listening review",
+    "Physical Android/iOS routes, interruptions, output latency, streaming memory/CPU/thermal validation",
+    "Exact integrated commit CI after parent merges parallel features"
+  ],
+  "logs_sha256": {
+    "build-final.log": "5c6f4d7ee99162f4f9618bb68e2ba398aff520801ea72598b9644af323fe857c",
+    "tests-final.log": "d6032de367fa01aaad99d33d3aedeefb12ced5dfdc410c5e328c26bd0160890b",
+    "api-build.log": "534a69e7f4423675aa0ff0b01f224c673c64872df22e6a4d4c99b403dcc72955",
+    "netstandard-api-build.log": "faeb2541dcd500d9d7bb294c383d358ebf304b5df00b2aad8b9c9feb39124517",
+    "probe-build.log": "f314fbb0726d46a239eeeaed58bc671c483fef702eb201c32ac01b611f52b078",
+    "summary-final.log": "1aefbfa58b223fe340ed3273b0a582da35132fd5b9958d19bac5c911b0fedebe"
+  },
+  "implementation_files": [
+    {
+      "path": "Assets/BrawlerFoundation/Game/BwGameBootstrap.cs",
+      "bytes": 15703,
+      "sha256": "1e964cbacd158912932fb5410274a93a1009dfa34d1d78e2fba9b03310f30f6f"
+    },
+    {
+      "path": "Assets/BrawlerFoundation/Presentation/BwAudio.cs",
+      "bytes": 6754,
+      "sha256": "8e0aef0a69f4233e94075b8ac91a06b6585827e1a27f852b64d4c6b16ee5e079"
+    },
+    {
+      "path": "Assets/BrawlerFoundation/Tests/PlayMode/BwAudioGameplayTests.cs",
+      "bytes": 3379,
+      "sha256": "03c98ec1fe2f1e4f4d0143f37f18d690e89564e07ebb62f3941c41e7fd38c210"
+    },
+    {
+      "path": "Assets/RpgFoundation/Presentation/RpgAudio.cs",
+      "bytes": 12039,
+      "sha256": "e4d0d7efd61b8390c35afba260fc2094a74b664df48e82aa233267acd8909748"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Presentation/Audio/ImpactAudioBudget.cs",
+      "bytes": 1528,
+      "sha256": "ce7e735093425f9ac499bd6e87da9890f94a0c8f6fba3cf8da34e12cb7872512"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Presentation/Audio/MusicCrossfade.cs",
+      "bytes": 2650,
+      "sha256": "7c801ed5aa6f8a8acaa1b6a39d8576c1184c62c4cbf6b3ae5bf657148194b57b"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Presentation/Audio/SanctuaryAudioBank.cs",
+      "bytes": 1671,
+      "sha256": "5a2d7fd7a7c91bc0e942e66d78e67373c2a88c583b9af63927676ba94d778652"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Presentation/Audio/SoundPlayer.cs",
+      "bytes": 11264,
+      "sha256": "5ead608094c92250352bc2e8936ad7d259d1c23a6e9a48217af9942da175b984"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Presentation/Audio/VoicePool.cs",
+      "bytes": 4088,
+      "sha256": "cb6188c01b95061ea6b901485c1fb551c429e26fea6adbc2469cbdb334fdb9dc"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Presentation/Audio/WeaponAudioCursor.cs",
+      "bytes": 5531,
+      "sha256": "6c863f3a128c2c53390de68b2fd2b3b1e7c8da1ed1ee089e7e8360c81348bcaa"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/bow_draw.wav",
+      "bytes": 29804,
+      "sha256": "8f6816cf118f7d306c5601c09ea631faec93bebaaf8c68d4b00f6a9628d536d7"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/bow_draw.wav.meta",
+      "bytes": 547,
+      "sha256": "9240874ae66d4df9280c86712332f29ffc62eba3bc5e2a0810872feedda573f8"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/bow_release.wav",
+      "bytes": 19244,
+      "sha256": "47e96d25abb0ecd7fb9a5665e1ea4735e6d22ef3f382ec77f8b6f0b09f9e36d7"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/bow_release.wav.meta",
+      "bytes": 547,
+      "sha256": "f4149f60d7d5cb0f7f10afb894f4e61b36ec3debda4db176ea9aa52b68459e24"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/combat.wav",
+      "bytes": 5644844,
+      "sha256": "0530a60f61c72f5c23aac0e8d660977d7ab35dab3fde97e976f1b56aa158e38f"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/combat.wav.meta",
+      "bytes": 549,
+      "sha256": "d387e47618c3fd759aa2fdbc8e256fdd171301a401d3675ee7a3763f6a413320"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/equip.wav",
+      "bytes": 20684,
+      "sha256": "5a768ec89f2a32ed97a29db455b6071b16f0d43654f7545e04826976574d758a"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/equip.wav.meta",
+      "bytes": 547,
+      "sha256": "988474d6d40e597acd4a6e9b33a52d159c116e2463d9d3a205e1a0824f41548b"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/exploration.wav",
+      "bytes": 8467244,
+      "sha256": "4b199e193cb55cf19035c07bf21b02363633261fe0c8851aaa23111d39e7694f"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/exploration.wav.meta",
+      "bytes": 549,
+      "sha256": "2a83924942fc50a6442c7fa685b6b4b389803a1481d02e9df55ab5eb182a444a"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/heal.wav",
+      "bytes": 55244,
+      "sha256": "a0b2bf559637a08050b282f8cf0fc091f27528b7b8ec9f179c9e2e0864911c93"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/heal.wav.meta",
+      "bytes": 547,
+      "sha256": "f2ea6980dfa14a9014d38c0437419d3073ca9863299d5761551628f189a095cc"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/hurt.wav",
+      "bytes": 23084,
+      "sha256": "fa8e4be23e9936398cbf38711154f22fd4bb30130f1d47f511c2373510e6f7e0"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/hurt.wav.meta",
+      "bytes": 547,
+      "sha256": "df6ccdecbb15c3e82867aa40af00570bdddbc853b4581c6022178cb66cfda38e"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/impact_heavy.wav",
+      "bytes": 23084,
+      "sha256": "504368d5b7334dfad2ee5b8bfc87d4a2482e1240931ab63ce63958795445c157"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/impact_heavy.wav.meta",
+      "bytes": 547,
+      "sha256": "d11708a077712f16e311a9e92594db5eaf9d3aad232dea216deee0b3c742d4bc"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/impact_light.wav",
+      "bytes": 12044,
+      "sha256": "1d27d217e045a60346bd7e592ecf9e5bab6094fea1ca99fdbb9f2471c6988af5"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/impact_light.wav.meta",
+      "bytes": 547,
+      "sha256": "78c4e5111198581ceca80b39683f12900834ff5c94b260550991b16c6548c00e"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/knife_swing.wav",
+      "bytes": 12044,
+      "sha256": "78985a69621a5b4cfa010e0e482987a345ba54a7ddb2ab784bf75ce47cf63c0e"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/knife_swing.wav.meta",
+      "bytes": 547,
+      "sha256": "5ef9875f319f4598f89553abceb32b3f961ea9d194b69c6574baa0d169b1d27c"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/staff_cast.wav",
+      "bytes": 37484,
+      "sha256": "49f00a2de97d081789a904697c3f7817504d077b818885e85d41d51a2721539e"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/staff_cast.wav.meta",
+      "bytes": 547,
+      "sha256": "b863aa2682791e1791f54a444ffa1ad4b2125e9199bafabcd670693e03423d32"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/sword_swing.wav",
+      "bytes": 18764,
+      "sha256": "4c7e17999c20a681666fc47f595ad8aec7f96dafe2849b1883c48e2394b7b456"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/sword_swing.wav.meta",
+      "bytes": 547,
+      "sha256": "d02932d3fdb2745748e4a809c0fd402826887fbf7b1683407e803a840312cf7a"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/ui_cancel.wav",
+      "bytes": 14444,
+      "sha256": "df31125730e41219ad523a0bfde43fbe9cd15bc71eefb25d1b23ad4db9a59955"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/ui_cancel.wav.meta",
+      "bytes": 547,
+      "sha256": "f26b6a92195e9c9756f555f177f371c35e7eea94c6c1d31c4c2e24c8ca8118fc"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/ui_confirm.wav",
+      "bytes": 15404,
+      "sha256": "8864a1c117ceca0d8c89c87b24215947ed683b8e457e80fd0b7e017c4499dd61"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Resources/Audio/Sanctuary/ui_confirm.wav.meta",
+      "bytes": 547,
+      "sha256": "6d80dd3db156ed63b993155e105bcda7184e15e14dee9131b44ca9a612b92465"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Tests/EditMode/AudioImportTests.cs",
+      "bytes": 3109,
+      "sha256": "29e88eef9413ccdbc3cb45a3e27b106bb7f3a965a61a565642ca0982bd6b2dc6"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Tests/EditMode/MobileAudioTests.cs",
+      "bytes": 16662,
+      "sha256": "921f00e22ad2a2173ef5477d96222e8c971003c092457ec228453a9c0c079dd1"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Tests/PlayMode/Audio/NativeAudioPlaybackTests.cs",
+      "bytes": 5555,
+      "sha256": "db62f8308b825291fef956c68716ded6d9780d88dfaf7e5eb6df2b178838a8c3"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Tests/PlayMode/Audio/SPF.Audio.Tests.PlayMode.asmdef",
+      "bytes": 356,
+      "sha256": "09b480eab1f58cf0329372f5c3c70dbd293b05246e1f74168b3f7c1bef10e609"
+    },
+    {
+      "path": "Assets/SurvivorFoundation/Game/SvHud.cs",
+      "bytes": 17835,
+      "sha256": "5210002e95d4b6eb371a93ff0e84ec486905b9786b6ee189db634ccfe47ddc2b"
+    },
+    {
+      "path": "Assets/SurvivorFoundation/Presentation/SvAudio.cs",
+      "bytes": 6220,
+      "sha256": "1254e5579b111353aca05af6589b732925de7feddb6e92d39f2a91cba7492a9e"
+    },
+    {
+      "path": "Assets/SurvivorFoundation/Tests/PlayMode/SvAudioGameplayTests.cs",
+      "bytes": 3422,
+      "sha256": "074d2ff896fb83b1a9638517f7804ffc6b35ba0f8b7a80ee1fc79acd10b716a6"
+    },
+    {
+      "path": "Docs/MobileAudioSystem.md",
+      "bytes": 9056,
+      "sha256": "5cafdafd39ddb34956af12370c1a724bec10165ec479972ab49ad11664574261"
+    },
+    {
+      "path": "Docs/OriginalAudioAssets.md",
+      "bytes": 12340,
+      "sha256": "e3d07dfcf58fd76f65d146d70fabf15e7330afc6802f679d1b54f1cbe9780499"
+    },
+    {
+      "path": "Docs/RequestedCapabilityChecklist.md",
+      "bytes": 7769,
+      "sha256": "825dcccd4244219b54cde19ca4395917cd2cfcd59338b736f9b8733612f1a7ba"
+    },
+    {
+      "path": "README.md",
+      "bytes": 11720,
+      "sha256": "305a4c42371491aafac188733f5ccbd95aaa2463873f42f278a140927b5cba5a"
+    },
+    {
+      "path": "Tools/AudioAuthoring/.gitignore",
+      "bytes": 20,
+      "sha256": "e99f6ee4eb88882ea6589ecb717e10a41401763241b246b6821bc091cfe2227e"
+    },
+    {
+      "path": "Tools/AudioAuthoring/LICENSE-CC0.txt",
+      "bytes": 1251,
+      "sha256": "8bcfec7cc42220301add40e6570a0bf09ddbb38f1ccbf732e1c7db34a5d70c24"
+    },
+    {
+      "path": "Tools/AudioAuthoring/budgets.json",
+      "bytes": 765,
+      "sha256": "bd61c7134bdb74d04c74710285b0aef9954ad64a7381baf5106e1893aafa7917"
+    },
+    {
+      "path": "Tools/AudioAuthoring/events.json",
+      "bytes": 67488,
+      "sha256": "94128783794e5570eee793f6ee7d3aea7f1b33a66282bf9fd3bd35bcbe3c4994"
+    },
+    {
+      "path": "Tools/AudioAuthoring/generate.py",
+      "bytes": 17464,
+      "sha256": "52a4cb62bc4233a21065b42eeb562b4144f38416513516a28d7015155adc0ddc"
+    },
+    {
+      "path": "Tools/AudioAuthoring/manifest.json",
+      "bytes": 13541,
+      "sha256": "beb94d6b30740a6339c1e69dadcfe1b54000c180e07224e1a207e0bf98317a27"
+    },
+    {
+      "path": "Tools/AudioAuthoring/requirements.txt",
+      "bytes": 146,
+      "sha256": "2f6820ded623e5298946381aefdbaad84ae18a3ff5432f3305d0894d352efcbe"
+    },
+    {
+      "path": "Tools/AudioAuthoring/score.json",
+      "bytes": 8691,
+      "sha256": "b4aec1b3d8c5e3e4d4a1ac003a49a528f64cddf6eed25946c8d3d888cdfc975e"
+    },
+    {
+      "path": "Tools/AudioAuthoring/test_audio.py",
+      "bytes": 13474,
+      "sha256": "dec05277011ec5051fd6c66bd2d3de399c44e5e2889e355879bb28862dc3b2c8"
+    },
+    {
+      "path": "Tools/AudioAuthoring/validate.py",
+      "bytes": 2530,
+      "sha256": "7e18a24fe0dd0700c4f1f1fa3577ff8f3c6b3a89e6f4c3a4dc8a385f0e1946cc"
+    },
+    {
+      "path": "Tools/AudioAuthoring/validation.json",
+      "bytes": 7845,
+      "sha256": "e810231f7f5a36bcc4c78c59069a175367adce3c6fa4bc9b82a3ccf7fcedb7ba"
+    },
+    {
+      "path": "Tools/DotnetHarness/UnityStubs.Core.cs",
+      "bytes": 28359,
+      "sha256": "7b391912c7f024529db70ff359c04aabe0833c253f48ab1addb8a374e9bf56cc"
+    }
+  ]
+}

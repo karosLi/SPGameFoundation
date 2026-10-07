@@ -49,10 +49,10 @@ namespace SurvivorFoundation.Presentation
             return atlas.Add(SmoothSpriteArt.Downsample(pen.Canvas, Super));
         }
 
-        public static SvArt Build(int enemyKinds, Func<int, Color> enemyColor, bool includeWeaponProjectiles = false)
+        public static SvArt Build(int enemyKinds, Func<int, Color> enemyColor, bool includeWeaponProjectiles = false, bool includeDamageNumbers = false)
         {
             var art = new SvArt(); var atlas = new SpriteAtlasBuilder();
-            art.Font = new SpriteFont(atlas, 2);
+            art.Font = includeDamageNumbers ? SpriteFont.CreateSmooth(atlas) : new SpriteFont(atlas, 2);
             int firstHero = -1;
             for (int f = 0; f < 2; f++)
             {

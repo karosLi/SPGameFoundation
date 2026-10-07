@@ -184,7 +184,7 @@ namespace SurvivorFoundation.Presentation
             var world = session.World;
             var config = world.Resource(SvKeys.Config);
             m_Assets = new RenderAssets(RenderCapabilities.Detect());
-            m_Art = SvArt.Build(config.EnemyKinds, k => { var c = config.Enemies[k].Color; return new Color(c.x, c.y, c.z, 1f); }, NaturalCharacters ? SvArtStyle.SmoothOutline : ArtStyle, world.HasResource(SvWeapons.Key));
+            m_Art = SvArt.Build(config.EnemyKinds, k => { var c = config.Enemies[k].Color; return new Color(c.x, c.y, c.z, 1f); }, NaturalCharacters ? SvArtStyle.SmoothOutline : ArtStyle, world.HasResource(SvWeapons.Key), world.HasResource(AppliedDamageJournal.Key));
             var tier = m_Assets.Tier;
             if(StableTranslucentActors)m_Sanctuary=new SanctuaryBackdrop(tier,SanctuaryScene.Courtyard);
             if(NaturalCharacters&&world.HasResource(SvWeapons.Key))m_WeaponParticles=new WeaponParticlePresenter(tier, lowQuality: tier!=RenderTier.GpuDriven);

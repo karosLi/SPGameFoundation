@@ -96,7 +96,7 @@ namespace BrawlerFoundation.Presentation
             art.Star = atlas.Add(Fill(7, 7, c => { c.Rect(3, 0, 1, 7, C(255, 230, 90)); c.Rect(0, 3, 7, 1, C(255, 230, 90)); c.Rect(2, 2, 3, 3, C(255, 240, 160)); }));
             art.Puff = new SpriteClip(atlas.AddStrip(4, 12, 12, (c, f) => c.Ellipse(6, 6, 2.5f + f * 1.2f, 2.5f + f * 1.2f, C(255, 255, 255, (byte)(220 - f * 50)))), 4, 16f, false);
             if (includeWeaponProjectiles) art.WeaponProjectiles = WeaponProjectileArt.AddTo(atlas);
-            if (includeDamageNumbers) art.Font = new SpriteFont(atlas);
+            if (includeDamageNumbers) art.Font = SpriteFont.CreateSmooth(atlas);
             // Keep the opt-in catalog on bounded shelves rather than letting three small masks
             // double a mostly empty row's power-of-two width. Classic packing stays unchanged.
             art.Sheet = atlas.Build(maxWidth: includeWeaponProjectiles ? (smoothStage ? 512 : 256) : 1024,

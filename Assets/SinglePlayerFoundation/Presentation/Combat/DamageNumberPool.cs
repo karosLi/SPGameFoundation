@@ -80,7 +80,7 @@ namespace SPF.Presentation.Combat
                 if (same > m_Budget.PerTarget) { Remove(Victim(m_Labels[i].Target, true)); Stats.Evicted++; i = math.min(i, Active); }
             }
         }
-        static float Lifetime(bool critical) => critical ? .9f : .72f;
+        static float Lifetime(bool critical) => critical ? .65f : .72f;
         int Victim(EntityHandle target, bool sameTarget)
         {
             int candidate = -1;
@@ -161,15 +161,16 @@ namespace SPF.Presentation.Combat
                 int value = DisplayAmount(e.Amount); bool clipped = e.Amount > MaxDisplay;
                 int glyphs = DigitCount(value) + (e.Critical ? 1 : 0) + (clipped ? 1 : 0);
                 float t = e.Age / Lifetime(e.Critical);
-                float punch = e.Critical ? 1f + .22f * math.max(0, 1f - e.Age / .1f) : 1f;
-                float height = viewHeight * (e.Critical ? .035f : .025f) * punch;
+                float settle = math.max(0, 1f - e.Age / .18f);
+                float punch = 1f + (e.Critical ? 1.15f : .18f) * settle * settle;
+                float height = viewHeight * (e.Critical ? .028f : .025f) * punch;
                 float glyphWidth = height * (3f * font.Scale + 2f) / (5f * font.Scale + 2f);
                 float width = glyphWidth * (1f + .8f * (glyphs - 1));
                 float area = glyphs * glyphWidth * height / viewArea;
                 if (glyphs > m_Budget.Glyphs - Stats.Glyphs || glyphs > batch.Capacity - batch.Count || Stats.ScreenArea + area > m_Budget.ScreenArea)
                 { Stats.GlyphDrops++; continue; }
                 float side = (e.Target.Index & 1) == 0 ? -1f : 1f;
-                float2 center = e.Anchor + new float2(side * e.Age * (e.Critical ? .65f : .2f),
+                float2 center = e.Anchor + new float2(side * e.Age * .12f,
                     viewHeight * .025f + height * e.Lane * 1.25f + e.Age * (e.Critical ? 2.2f - .85f * e.Age : 1.1f));
                 if (center.x + width * .5f < view.x || center.x - width * .5f > view.z || center.y + height * .5f < view.y || center.y - height * .5f > view.w) continue;
                 bool placed = false; float4 rectangle = default;
@@ -187,7 +188,7 @@ namespace SPF.Presentation.Combat
                     if (!overlaps) { center = adjusted; placed = true; }
                 }
                 if (!placed) { Stats.OverlapDrops++; continue; }
-                var color = e.Critical ? new float4(1f, .64f, .24f, 1f) : new float4(.96f, .93f, .80f, 1f);
+                var color = e.Critical ? new float4(1f, .80f, .18f, 1f) : new float4(.96f, .93f, .80f, 1f);
                 color.w *= 1f - math.saturate((t - .55f) / .45f);
                 font.DrawNumber(batch, sheet, value, e.Critical ? '!' : '\0', clipped ? '+' : '\0', center, height, depth, color);
                 m_Placed[Stats.Visible++] = rectangle; Stats.Glyphs += glyphs; Stats.ScreenArea += area;

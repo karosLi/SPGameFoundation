@@ -30,11 +30,14 @@ namespace SurvivorFoundation.Presentation
         static readonly Color32 Outline = C(20, 16, 28);
 
         public static SvArt Build(int enemyKinds, Func<int, Color> enemyColor, SvArtStyle style = SvArtStyle.Pixel, bool includeWeaponProjectiles = false)
+            => Build(enemyKinds, enemyColor, style, includeWeaponProjectiles, false);
+
+        public static SvArt Build(int enemyKinds, Func<int, Color> enemyColor, SvArtStyle style, bool includeWeaponProjectiles, bool includeDamageNumbers)
         {
-            if (style == SvArtStyle.SmoothOutline) return SvSmoothArt.Build(enemyKinds, enemyColor, includeWeaponProjectiles);
+            if (style == SvArtStyle.SmoothOutline) return SvSmoothArt.Build(enemyKinds, enemyColor, includeWeaponProjectiles, includeDamageNumbers);
             var art = new SvArt();
             var atlas = new SpriteAtlasBuilder();
-            art.Font = new SpriteFont(atlas, 2);
+            art.Font = includeDamageNumbers ? SpriteFont.CreateSmooth(atlas) : new SpriteFont(atlas, 2);
             art.Hero = new SpriteClip(atlas.AddStrip(2, 14, 16, (c, f) =>
             {
                 int bob = f;

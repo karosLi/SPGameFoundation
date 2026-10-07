@@ -194,7 +194,7 @@ namespace BrawlerFoundation.Tests.PlayMode
             {
                 var c = pixels[i];
                 if (c.r > 170 && c.g > 160 && c.b > 140 && math.abs(c.r - c.g) < 35) normal++;
-                if (c.r > 160 && c.r > c.g * 1.15f && c.g > c.b * 1.3f && c.b < 160) critical++;
+                if (c.r > 160 && c.g > 130 && c.g > c.b * 1.3f && c.b < 170) critical++;
             }
         }
         static void AssertLabels(SPF.Presentation.Combat.DamageNumberPool pool)

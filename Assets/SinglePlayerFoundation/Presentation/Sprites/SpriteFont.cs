@@ -4,7 +4,7 @@ using UnityEngine;
 namespace SPF.Presentation.Sprites
 {
     /// <summary>
-    /// Tiny built-in 3x5 pixel font (digits and a few symbols) rendered into an atlas, for world-space numbers
+    /// Built-in 3x5 pixel font, with an explicit smooth outlined opt-in, rendered into an atlas for world-space numbers
     /// (damage, gold) drawn in the same sprite batch as everything else, i.e. no UI text per number.
     /// </summary>
     public sealed class SpriteFont
@@ -34,6 +34,17 @@ namespace SPF.Presentation.Sprites
                 canvas.Outline(new Color32(20, 12, 16, 255));
             });
         }
+
+        /// <summary>Optional original smooth outlined numerals for large damage pops. Existing pixel
+        /// constructor and glyph packing stay unchanged for every legacy consumer.</summary>
+        public static SpriteFont CreateSmooth(SpriteAtlasBuilder atlas)
+        {
+            if (atlas == null) throw new System.ArgumentNullException(nameof(atlas));
+            int first = atlas.Count;
+            for (int glyph = 0; glyph < Glyphs.Length; glyph++) atlas.Add(SmoothNumberGlyphs.Create(glyph));
+            return new SpriteFont(first, SmoothNumberGlyphs.Scale);
+        }
+        SpriteFont(int first, int scale) { m_First = first; Scale = scale; }
 
         public int Frame(char c)
         {

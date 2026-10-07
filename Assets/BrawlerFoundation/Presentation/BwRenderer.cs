@@ -34,6 +34,8 @@ namespace BrawlerFoundation.Presentation
         WeaponParticlePresenter m_WeaponParticles;
         long m_WeaponTick=-1;
         uint m_WeaponRevision;
+        SPF.L2.Skills.ActionPoseClock m_PoseClock;
+        uint m_PoseRevision;
         WeaponRuntime m_WeaponRuntime;
         float2[] m_WeaponTrailPoints;
         long[] m_WeaponTrailBirths;
@@ -124,13 +126,19 @@ namespace BrawlerFoundation.Presentation
             if (session != m_Session || m_BoundNatural != NaturalCharacters) Bind(session);
             var world = session.World;
             var game = world.Resource(BwKeys.Game);
+            if(NaturalCharacters&&world.HasResource(BwWeapons.PoseKey))
+            {
+                var poseClock=world.Resource(BwWeapons.PoseKey);
+                if(!ReferenceEquals(m_PoseClock,poseClock)||m_PoseRevision!=poseClock.Revision)m_Characters?.Clear();
+                m_PoseClock=poseClock;m_PoseRevision=poseClock.Revision;
+            }
             if(NaturalCharacters&&world.HasResource(BwWeapons.Key))
             {
                 var equipped=world.Resource(BwWeapons.Key);
                 if(!ReferenceEquals(m_WeaponRuntime,equipped)||m_WeaponRevision!=equipped.Revision)m_Characters?.Clear();
             }
             var rig = world.Resource(BwKeys.Rig);
-            float alpha = session.InterpolationAlpha;
+            float alpha = session.State == SessionState.Running && (game.Flow == BwFlow.Fighting || game.Flow == BwFlow.WaveClear) ? session.InterpolationAlpha : 1f;
             float tickDt = 1f / 60f;
             var bounds = new Bounds(Vector3.zero, new Vector3(1e5f, 1e5f, 100f));
             if (Camera != null && Camera.UpdateTarget == null) Camera.UpdateTarget = Frame;
@@ -282,7 +290,12 @@ namespace BrawlerFoundation.Presentation
                 if(f.State==FighterState.Attack&&f.Attack!=AttackKind.None)actionTarget=BrawlerFoundation.Systems.BwProbe.Tip(rig,f,world.Column(BwKeys.Anim)[i],p,m_Scratch,m_World);
                 if(armed&&f.State!=FighterState.Hit&&f.State!=FighterState.KO&&weapon.Stage!=WeaponStage.Idle)
                 {state=weapon.Stage==WeaponStage.Recovery?GameplayCharacterState.Recovery:GameplayCharacterState.Attack;phase=weapon.Phase;}
-                m_Characters.Submit(new GameplayCharacterInput {Weapon=weapon,Aim=!armed&&f.State==FighterState.Attack,AimTarget=actionTarget,Handle=handles[i],Root=p,Ground=ground,Velocity=velocity,Facing=f.Facing,
+                var skill=f.Team==0&&world.HasResource(BwWeapons.PoseKey)?world.Resource(BwWeapons.PoseKey):null;
+                int skillId=skill!=null&&skill.Running?skill.ContentId:0;
+                float skillPhase=skillId!=0?skill.Phase(alpha):0;uint skillPulse=skillId!=0?skill.Timeline.PulseId:0;
+                // Existing enemy kicks retain their own authoritative fighter action, independent of held equipment.
+                if(f.Attack==AttackKind.Kick&&f.State==FighterState.Attack){skillId=BwWeapons.KickPose;skillPhase=phase;}
+                m_Characters.Submit(new GameplayCharacterInput {MotionProfileId=f.Team==0?0:f.Variant==3?2:1,SkillPoseId=skillId,SkillPhase=skillPhase,SkillPulse=skillPulse,SkillWeight=skillId!=0?1:0,Weapon=weapon,Aim=!armed&&f.State==FighterState.Attack,AimTarget=actionTarget,Handle=handles[i],Root=p,Ground=ground,Velocity=velocity,Facing=f.Facing,
                     Scale=.9f,State=state,Phase=phase,Action=f.Attack==AttackKind.Kick?GameplayCharacterAction.Kick:GameplayCharacterAction.Punch,
                     Kind=f.Team==0?0:1,Flash=f.Flash,Tint=f.Team==0?new float4(1f):new float4(1f,1f-f.Variant*.035f,1f-f.Variant*.06f,1f),Depth=FighterDepth+ground.y*.01f});
                 m_NaturalShadows.Add(ground+new float2(0,.01f),new float2(.95f,.24f),m_Art.Sheet[m_Art.Shadow].Uv,ShadowDepth,new float4(0,0,0,.34f));

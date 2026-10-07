@@ -3,6 +3,7 @@ using SPF.L1.Skeleton;
 using SPF.L1.Spatial;
 using SPF.L2.Combat;
 using SPF.L2.Weapons;
+using SPF.L2.Skills;
 using SPF.Runtime.Scheduling;
 using SPF.Runtime.World;
 using Unity.Collections;
@@ -14,15 +15,33 @@ namespace BrawlerFoundation
     public static class BwWeapons
     {
         public static readonly ResourceKey<WeaponRuntime> Key=new ResourceKey<WeaponRuntime>("Bw.Weapons.V1");
+        public static readonly ResourceKey<ActionPoseClock> PoseKey=new ResourceKey<ActionPoseClock>("Bw.WeaponSkillPose.V1");
+        public const int KickPose=100,JumpPose=103,HealPose=105;
         public const int SwitchButton=4;
         public const float ActorScale=.9f;
+        public static void AdvancePose(SimWorld world)
+        {
+            var game=world.Resource(BwKeys.Game);var pose=world.Resource(PoseKey);var info=world.Column(BwKeys.Info);
+            int player=-1;for(int i=0;i<world.Table(BwKeys.Fighter).Count;i++)if(info[i].Team==0){player=i;break;}
+            if(player<0||game.Flow!=BwFlow.Fighting){pose.Cancel();return;}
+            var f=info[player];bool alive=f.Hp>0&&f.State!=FighterState.KO;
+            pose.Advance(true,alive&&f.State!=FighterState.Hit);
+            var slots=world.Resource(BwMobileSkills.Key);
+            if(alive&&f.State!=FighterState.Hit)
+            {
+                if((slots.Activated&(1u<<1))!=0)pose.Begin(KickPose,28);
+                else if((slots.Activated&(1u<<2))!=0)pose.Begin(JumpPose,46);
+                else if((slots.Activated&(1u<<3))!=0)pose.Begin(HealPose,18);
+                if(pose.ContentId==JumpPose&&world.Column(BwBeltKeys.Motion)[player].Height<=0&&world.Column(BwBeltKeys.Motion)[player].HeightVelocity<=0)pose.Cancel();
+            }
+        }
         public static void Advance(SimWorld world,in InputFrame input)
         {
-            var runtime=world.Resource(Key);var game=world.Resource(BwKeys.Game);var info=world.Column(BwKeys.Info);
+            var runtime=world.Resource(Key);var pose=world.Resource(PoseKey);var game=world.Resource(BwKeys.Game);var info=world.Column(BwKeys.Info);
             int player=-1;for(int i=0;i<world.Table(BwKeys.Fighter).Count;i++)if(info[i].Team==0){player=i;break;}
-            if(player<0){runtime.CancelAll();return;}
+            if(player<0){runtime.CancelAll();pose.Cancel();return;}
             var f=info[player];bool alive=f.Hp>0&&f.State!=FighterState.KO;
-            if(game.Flow!=BwFlow.Fighting){runtime.CancelAll();return;}
+            if(game.Flow!=BwFlow.Fighting){runtime.CancelAll();pose.Cancel();return;}
             runtime.Owner=world.Table(BwKeys.Fighter).Handles[player];
             if(alive&&input.WasPressed(SwitchButton))runtime.Cycle();
             bool kick=f.State==FighterState.Attack&&f.Attack==AttackKind.Kick;
@@ -48,14 +67,14 @@ namespace BrawlerFoundation.Systems
     {
         public override SimPhase Phase=>SimPhase.Resolve;
         public override int Order=>-10;
-        public override void Declare(AccessDeclaration a)=>a.Write(BwWeapons.Key).Read(BwKeys.Rig).Read(BwKeys.Fighter).Write(BwKeys.Info).Write(BwKeys.Anim).Write(BwBeltKeys.Motion).Read(BwBeltKeys.Ground).Write(BwBeltKeys.State).Write(BwKeys.Feedback);
+        public override void Declare(AccessDeclaration a)=>a.Write(BwWeapons.Key).Read(BwKeys.Rig).Read(BwKeys.Fighter).Write(BwKeys.Info).Write(BwKeys.Anim).Write(BwBeltKeys.Motion).Read(BwBeltKeys.Ground).Read(BwBeltKeys.PreviousGround).Write(BwBeltKeys.State).Write(BwKeys.Feedback);
         public override JobHandle OnTick(in SimContext context,JobHandle dependency)
         {
             dependency.Complete();var world=context.World;var game=world.Resource(BwKeys.Game);if(game.Flow!=BwFlow.Fighting)return dependency;
             var weapons=world.Resource(BwWeapons.Key);var belt=world.Resource(BwBeltKeys.State);belt.Rebuild(world);
             int player=-1;var info=world.Column(BwKeys.Info);for(int i=0;i<world.Table(BwKeys.Fighter).Count;i++)if(info[i].Team==0){player=i;break;}
             if(player<0||info[player].Hp<=0)return dependency;
-            var visitor=new ContactVisitor{World=world,Weapons=weapons,Info=info,Ground=world.Column(BwBeltKeys.Ground),Motion=world.Column(BwBeltKeys.Motion),Handles=world.Table(BwKeys.Fighter).Handles,Player=player};
+            var visitor=new ContactVisitor{World=world,Weapons=weapons,Info=info,Ground=world.Column(BwBeltKeys.Ground),PreviousGround=world.Column(BwBeltKeys.PreviousGround),Motion=world.Column(BwBeltKeys.Motion),Handles=world.Table(BwKeys.Fighter).Handles,Player=player};
             var p=weapons.Current;
             if(weapons.MeleeActive)
             {
@@ -68,19 +87,21 @@ namespace BrawlerFoundation.Systems
             {
                 var shot=weapons.Projectiles[i];if(!shot.Active)continue;
                 visitor.Projectile=true;visitor.Scope=i+1;visitor.Profile=weapons.Profile(shot.ContentId);visitor.Start=shot.Previous;visitor.End=shot.Position;visitor.Height=shot.Height;visitor.Direction=shot.Direction;visitor.Radius=visitor.Profile.Radius*shot.Scale;visitor.BestRow=-1;visitor.BestFraction=2;
-                CombatShapes.BeamBounds(visitor.Start,visitor.End,visitor.Radius+BwRules.BodyHalfWidth,out var min,out var max);belt.Grid.AsReader().QueryCells(min,max,ref visitor);
+                CombatShapes.BeamBounds(visitor.Start,visitor.End,visitor.Radius+BwRules.BodyHalfWidth+belt.MaxGroundStep,out var min,out var max);belt.Grid.AsReader().QueryCells(min,max,ref visitor);
                 if(visitor.BestRow>=0){visitor.Hit(visitor.BestRow,math.lerp(visitor.Start,visitor.End,visitor.BestFraction));weapons.StopProjectile(i);}
             }
             weapons.ExpireProjectiles();return dependency;
         }
         struct ContactVisitor:IGridVisitor
         {
-            public SimWorld World;public WeaponRuntime Weapons;public NativeArray<FighterInfo> Info;public NativeArray<float2> Ground;public NativeArray<BwBeltMotion> Motion;public NativeArray<EntityHandle> Handles;
+            public SimWorld World;public WeaponRuntime Weapons;public NativeArray<FighterInfo> Info;public NativeArray<float2> Ground,PreviousGround;public NativeArray<BwBeltMotion> Motion;public NativeArray<EntityHandle> Handles;
             public WeaponProfile Profile;public float2 Start,End,Direction;public float Height,Radius,BestFraction;public int Player,Scope,BestRow;public bool Projectile;
             public bool Visit(in GridEntry e)
             {
-                int row=e.Owner;var f=Info[row];if(f.Team==0||f.State==FighterState.KO||Height+Radius<Motion[row].Height+BwRules.HurtBottom||Height-Radius>Motion[row].Height+BwRules.HurtTop)return true;
-                if(!CombatSweep.PointCircle(Start,End,Ground[row],Radius+BwRules.BodyHalfWidth,out float fraction)||Weapons.CheckHit(Scope,Handles[row])!=HitRecordResult.Added)return true;
+                int row=e.Owner;var f=Info[row];if(f.Team==0||f.State==FighterState.KO)return true;
+                bool overlaps=Projectile?CombatSweep.Circles(Start,End,Radius,PreviousGround[row],Ground[row],BwRules.BodyHalfWidth,out float fraction):CombatSweep.PointCircle(Start,End,Ground[row],Radius+BwRules.BodyHalfWidth,out fraction);
+                float targetHeight=Projectile?math.lerp(Motion[row].PreviousHeight,Motion[row].Height,fraction):Motion[row].Height;
+                if(!overlaps||Height+Radius<targetHeight+BwRules.HurtBottom||Height-Radius>targetHeight+BwRules.HurtTop||Weapons.CheckHit(Scope,Handles[row])!=HitRecordResult.Added)return true;
                 if(Projectile){if(fraction<BestFraction||(fraction==BestFraction&&(BestRow<0||Handles[row].Index<Handles[BestRow].Index))){BestFraction=fraction;BestRow=row;}}
                 else Hit(row,Ground[row]);return true;
             }

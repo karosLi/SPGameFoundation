@@ -51,6 +51,24 @@ namespace BrawlerFoundation.Tests
             Assert.IsTrue(a.World.Registry.TryResolve(target,out _,out int row));Assert.AreEqual(9982,a.Info(row).Hp);
         }
         [Test]
+        public void ProjectileUsesSimultaneousMovingTargetSweepAndMeasuredBroadphasePadding()
+        {
+            using var t=Create(new float2(6.9f,0));Equip(t,WeaponProfiles.Staff);t.Press(0);t.Step(W(t).Current.ReleaseTick);
+            var shot=W(t).Projectiles[0];shot.Position=shot.Previous=new float2(6.6f,0);W(t).Projectiles[0]=shot;
+            var enemy=t.Info(1);enemy.VelocityX=50;t.World.Column(BwKeys.Info).Set(1,enemy);t.Step();
+            Assert.AreEqual(9976,t.Info(1).Hp,.001f);Assert.AreEqual(1,W(t).AcceptedHits);Assert.Greater(t.World.Resource(BwBeltKeys.State).MaxGroundStep,.8f);
+        }
+        [Test]
+        public void RealKickJumpHealActionsPublishDistinctFixedTickPoseContent()
+        {
+            using var t=Create(new float2(8,0));var pose=t.World.Resource(BwWeapons.PoseKey);
+            t.Press(BwButton.Kick);Assert.AreEqual(BwWeapons.KickPose,pose.ContentId);Assert.IsTrue(pose.Running);t.Step(30);
+            t.Press(BwBeltRules.JumpButton);Assert.AreEqual(BwWeapons.JumpPose,pose.ContentId);Assert.Greater(t.World.Column(BwBeltKeys.Motion)[0].Height,0);t.Step(60);Assert.IsFalse(pose.Running);
+            var f=t.Info(0);f.Hp=60;t.World.Column(BwKeys.Info).Set(0,f);t.Press(BwBeltRules.HealButton);Assert.AreEqual(84,t.Info(0).Hp);Assert.AreEqual(BwWeapons.HealPose,pose.ContentId);Assert.IsTrue(pose.Running);
+            var bytes=t.Session.CaptureSnapshot();using var b=Create(0,start:false);b.Session.RestoreSnapshot(bytes);t.Step(8);b.Step(8);CollectionAssert.AreEqual(t.Session.CaptureSnapshot(),b.Session.CaptureSnapshot());
+            f=t.Info(0);f.State=FighterState.Hit;f.StateTime=0;t.World.Column(BwKeys.Info).Set(0,f);t.Step();Assert.IsFalse(pose.Running);
+        }
+        [Test]
         public void VerticalWeaponContactKeepsTargetFacingInTheAuthoredTwoDirections()
         {
             using var t=Create(new float2(0,1.2f));t.Game.Input=new InputFrame{Pressed=1,Aim=new float2(0,1)};t.Step();t.Game.Input=default;t.Step(W(t).Current.Active.From);

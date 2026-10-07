@@ -95,7 +95,7 @@ namespace BrawlerFoundation.Systems
         {
             dependency.Complete();
             var world = context.World; var game = world.Resource(BwKeys.Game);
-            if (game.Flow != BwFlow.Fighting && game.Flow != BwFlow.WaveClear) { game.Input = default; if (world.HasResource(BwWeapons.Key)) world.Resource(BwWeapons.Key).CancelAll(); return dependency; }
+            if (game.Flow != BwFlow.Fighting && game.Flow != BwFlow.WaveClear) { game.Input = default; if (world.HasResource(BwWeapons.Key)) world.Resource(BwWeapons.Key).CancelAll(); if (world.HasResource(BwWeapons.PoseKey)) world.Resource(BwWeapons.PoseKey).Cancel(); return dependency; }
             bool fighting = game.Flow == BwFlow.Fighting;
             bool weapons = world.HasResource(BwWeapons.Key);
             var belt = world.Resource(BwBeltKeys.State); var slots = world.Resource(BwMobileSkills.Key); var rig = world.Resource(BwKeys.Rig);
@@ -185,6 +185,7 @@ namespace BrawlerFoundation.Systems
             }
             for (int i = 0; i < count; i++) { ground[i] = belt.SeparatedGround[i]; position[i] = BwBeltRules.Project(ground[i], motion[i].Height); }
             CollectDrops(world, game, belt, player, dt);
+            BwWeapons.AdvancePose(world);
             if (weapons) BwWeapons.Advance(world, input);
             return dependency;
         }
@@ -295,6 +296,7 @@ namespace BrawlerFoundation.Systems
                 if (Attacker.Team == 0) Game.Score += (int)Definition.Damage;
                 World.Resource(BwKeys.Feedback).TryAdd(new BwFeedback { Kind = BwFeedbackKind.Hit, Position = BwBeltRules.Project(new float2(Tip.x, Depth), Tip.y), Value = Definition.Damage });
                 Info[row] = target; Anim[row] = a; Motion[row] = m; Game.Version++;
+                if(target.Team==0){if(World.HasResource(BwWeapons.Key))World.Resource(BwWeapons.Key).CancelAll();if(World.HasResource(BwWeapons.PoseKey))World.Resource(BwWeapons.PoseKey).Cancel();}
                 return true;
             }
         }

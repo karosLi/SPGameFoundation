@@ -14,15 +14,25 @@ namespace SurvivorFoundation
     public static class SvWeapons
     {
         public static readonly ResourceKey<WeaponRuntime> Key=new ResourceKey<WeaponRuntime>("Sv.Weapons.V1");
+        public static readonly ResourceKey<ActionPoseClock> PoseKey=new ResourceKey<ActionPoseClock>("Sv.WeaponSkillPose.V1");
+        public const int PulsePose=101,BlinkPose=102;
         public const int AttackButton=2,SwitchButton=3;
         public const float ActorScale=.66f;
         public static SkillSlots CreateSkills()=>new SkillSlots(
             new SkillSlotDefinition(11,2,SkillActivation.Tap,90,2),new SkillSlotDefinition(12,3,SkillActivation.AimRelease,120,2),
             new SkillSlotDefinition(21,0,SkillActivation.Hold,1),new SkillSlotDefinition(22,1,SkillActivation.Tap,7));
+        public static void AdvancePose(SimWorld world)
+        {
+            var game=world.Resource(SvKeys.Game);var pose=world.Resource(PoseKey);
+            if(game.Flow!=SvFlow.Playing){if(game.Flow!=SvFlow.LevelUp)pose.Cancel();return;}
+            pose.Advance(true,game.Hp>0);
+            uint activated=world.Resource(SvMobileSkills.Key).Activated;
+            if(game.Hp>0){if((activated&2u)!=0)pose.Begin(BlinkPose,7);else if((activated&1u)!=0)pose.Begin(PulsePose,9);}
+        }
         public static void Advance(SimWorld world,in InputFrame input)
         {
-            var game=world.Resource(SvKeys.Game);var weapons=world.Resource(Key);
-            if(game.Flow!=SvFlow.Playing){if(game.Flow!=SvFlow.LevelUp)weapons.CancelAll();return;}
+            var game=world.Resource(SvKeys.Game);var weapons=world.Resource(Key);var pose=world.Resource(PoseKey);
+            if(game.Flow!=SvFlow.Playing){if(game.Flow!=SvFlow.LevelUp){weapons.CancelAll();pose.Cancel();}return;}
             if(input.WasPressed(SwitchButton)&&world.Resource(SvMobileSkills.Key).TryActivate(3,game.Hp>0))weapons.Cycle();
             weapons.Owner=new EntityHandle(-1,1);
             var p=weapons.Current;

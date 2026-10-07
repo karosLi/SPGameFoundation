@@ -60,6 +60,7 @@ namespace BrawlerFoundation
                 fighters.Column(BwBeltKeys.Ground).Column(BwBeltKeys.PreviousGround).Column(BwBeltKeys.Motion);
                 layout.Resource(BwBeltKeys.State, new BwBeltState(m_BeltConfig), levelScoped: true);
             }
+            if (m_BeltScroller) layout.Resource(BwWeapons.PoseKey, new SPF.L2.Skills.ActionPoseClock(), levelScoped: true);
             if (m_Weapons) layout.Resource(BwWeapons.Key, new SPF.L2.Weapons.WeaponRuntime(m_WeaponProfiles ?? SPF.L2.Weapons.WeaponProfiles.CreateDefaults(60), 60, targetsPerAttack: m_BeltConfig.TargetsPerAttack), levelScoped: true);
             layout.Resource(BwKeys.Rig, new BwRig());
             layout.Resource(BwKeys.Game, new BwGameState());

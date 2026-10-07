@@ -458,6 +458,7 @@ namespace SurvivorFoundation.Systems
             var input = game.Input;
             game.Input.Pressed = 0;
             game.HeroPrev = game.Hero;
+            if (world.HasResource(SvWeapons.PoseKey)) SvWeapons.AdvancePose(world);
             if (game.Flow != SvFlow.Playing) { if (world.HasResource(SvWeapons.Key)) SvWeapons.Advance(world, input); return dependency; }
             float dt = context.Time.DeltaTime;
             float2 move = input.Move;

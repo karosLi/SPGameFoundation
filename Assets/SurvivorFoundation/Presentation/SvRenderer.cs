@@ -49,6 +49,8 @@ namespace SurvivorFoundation.Presentation
         WeaponParticlePresenter m_WeaponParticles;
         long m_WeaponTick=-1;
         uint m_WeaponRevision;
+        SPF.L2.Skills.ActionPoseClock m_PoseClock;
+        uint m_PoseRevision;
         WeaponRuntime m_WeaponRuntime;
         float2[] m_WeaponTrailPoints;
         long[] m_WeaponTrailBirths;
@@ -170,12 +172,18 @@ namespace SurvivorFoundation.Presentation
             if (session != m_Session || ArtStyle != m_BoundStyle || NaturalCharacters != m_BoundNatural) Bind(session);
             var world = session.World;
             var game = world.Resource(SvKeys.Game);
+            if(NaturalCharacters&&world.HasResource(SvWeapons.PoseKey))
+            {
+                var poseClock=world.Resource(SvWeapons.PoseKey);
+                if(!ReferenceEquals(m_PoseClock,poseClock)||m_PoseRevision!=poseClock.Revision)m_Characters?.Clear();
+                m_PoseClock=poseClock;m_PoseRevision=poseClock.Revision;
+            }
             if(NaturalCharacters&&world.HasResource(SvWeapons.Key))
             {
                 var equipped=world.Resource(SvWeapons.Key);
                 if(!ReferenceEquals(m_WeaponRuntime,equipped)||m_WeaponRevision!=equipped.Revision)m_Characters?.Clear();
             }
-            float alpha = session.InterpolationAlpha;
+            float alpha = session.State == SessionState.Running && game.Flow == SvFlow.Playing ? session.InterpolationAlpha : 1f;
             float dt = Time.deltaTime;
             float time = Time.time;
             float2 hero = math.lerp(game.HeroPrev, game.Hero, alpha);
@@ -311,7 +319,7 @@ namespace SurvivorFoundation.Presentation
                 int i=m_CharacterSelection.Row(n);var e=info[i];float2 p=math.lerp(prev[i],pos[i],alpha),v=(pos[i]-prev[i])*30f;
                 float face=math.abs(v.x)>.02f?(v.x<0?-1:1):(hero.x<p.x?-1:1);
                 var state=e.Flash>.01f?GameplayCharacterState.Hit:math.lengthsq(v)>.001f?GameplayCharacterState.Run:GameplayCharacterState.Idle;
-                bool accepted=m_Characters.Submit(new GameplayCharacterInput {Handle=handles[i],Root=p,Ground=p,Velocity=v,Facing=face,Scale=math.clamp(e.Radius*1.22f,.28f,.85f),
+                bool accepted=m_Characters.Submit(new GameplayCharacterInput {MotionProfileId=e.Radius>=.65f?2:1,Handle=handles[i],Root=p,Ground=p,Velocity=v,Facing=face,Scale=math.clamp(e.Radius*1.22f,.28f,.85f),
                     State=state,Kind=1,Flash=math.saturate(e.Flash*8),Depth=ActorDepth+p.y*DepthPerY,
                     Tint=e.Has(EnemyFlags.Elite)?new float4(1.2f,.86f,.68f,1):new float4(1f,.93f+(e.Kind%3)*.035f,.85f+(e.Kind%2)*.12f,1)});
                 if(accepted){m_NaturalMask[i]=1;ArticulatedEnemies++;}
@@ -324,7 +332,9 @@ namespace SurvivorFoundation.Presentation
                     math.lengthsq(velocity)>.001f?GameplayCharacterState.Run:GameplayCharacterState.Idle;
                 var weapon=world.HasResource(SvWeapons.Key)?world.Resource(SvWeapons.Key).View(alpha):default;
                 if(weapon.Equipped&&game.Hp>0&&weapon.Stage!=WeaponStage.Idle)state=weapon.Stage==WeaponStage.Recovery?GameplayCharacterState.Recovery:GameplayCharacterState.Attack;
-                m_Characters.Submit(new GameplayCharacterInput {Weapon=weapon,Handle=new EntityHandle(-1,1),Root=hero,Ground=hero,Velocity=velocity,Facing=game.Facing.x<0?-1:1,
+                var skill=world.HasResource(SvWeapons.PoseKey)?world.Resource(SvWeapons.PoseKey):null;
+                int skillId=skill!=null&&skill.Running?skill.ContentId:0;
+                m_Characters.Submit(new GameplayCharacterInput {MotionProfileId=0,SkillPoseId=skillId,SkillPhase=skillId!=0?skill.Phase(alpha):0,SkillPulse=skillId!=0?skill.Timeline.PulseId:0,SkillWeight=skillId!=0?1:0,Weapon=weapon,Handle=new EntityHandle(-1,1),Root=hero,Ground=hero,Velocity=velocity,Facing=game.Facing.x<0?-1:1,
                     Scale=.66f,State=state,Phase=weapon.Equipped?weapon.Phase:math.saturate(castAge/12f),Action=GameplayCharacterAction.Cast,Kind=0,
                     Flash=game.Invulnerable>.01f?.5f:0,Depth=ActorDepth+hero.y*DepthPerY,Tint=new float4(1f)});
             }

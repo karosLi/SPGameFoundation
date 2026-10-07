@@ -40,8 +40,15 @@ namespace SurvivorFoundation.Tests.PlayMode
                     float2 canonical=game.State.Hero+new float2(side*weapons.Current.MuzzleOffset.x,weapons.Current.MuzzleOffset.y)*SvWeapons.ActorScale;Assert.Less(math.distance(canonical,socket.Muzzle),.17f);
                     for(int i=0;i<35;i++)game.Session.Step();Assert.Greater(weapons.AcceptedHits,0);Assert.AreEqual(0,world.Table(SvKeys.Bullet).Count,"classic hero bolt is disabled only for this explicit variant");
                 }
-                game.State.Input=new InputFrame{Pressed=3,Aim=new float2(1,0)};game.Session.Step();Assert.AreEqual(1,world.Resource(SvMobileSkills.Key).GetSnapshot(0).Charges);Assert.AreEqual(1,world.Resource(SvMobileSkills.Key).GetSnapshot(1).Charges);
+                game.State.Input=new InputFrame{Pressed=1};game.Session.Step();game.State.Input=default;game.Session.Step();
+                Assert.AreEqual(SvWeapons.PulsePose,world.Resource(SvWeapons.PoseKey).ContentId);yield return capture.Save("weapon-horde-skill-pulse-"+suffix,safe);
+                game.State.Input=new InputFrame{Pressed=2,Aim=new float2(1,0)};game.Session.Step();game.State.Input=default;game.Session.Step();
+                Assert.AreEqual(SvWeapons.BlinkPose,world.Resource(SvWeapons.PoseKey).ContentId);yield return capture.Save("weapon-horde-skill-blink-"+suffix,safe);
+                Assert.AreEqual(1,world.Resource(SvMobileSkills.Key).GetSnapshot(0).Charges);Assert.AreEqual(1,world.Resource(SvMobileSkills.Key).GetSnapshot(1).Charges);
                 byte[] before=game.Session.CaptureSnapshot();for(int i=0;i<6;i++)game.Renderer.RenderFrame();CollectionAssert.AreEqual(before,game.Session.CaptureSnapshot());Assert.IsNotNull(game.Renderer.WeaponParticles);
+                game.Session.Pause();game.Renderer.RenderFrame();Assert.IsTrue(game.Renderer.Characters.TryReadWeapon(new EntityHandle(-1,1),out var pausedSocket));
+                yield return null;yield return null;game.Renderer.RenderFrame();Assert.IsTrue(game.Renderer.Characters.TryReadWeapon(new EntityHandle(-1,1),out var heldSocket));
+                Assert.Less(math.distance(pausedSocket.Muzzle,heldSocket.Muzzle),.0001f,"paused interpolation must not oscillate a skill or held weapon");game.Session.Resume();
                 if(Environment.GetEnvironmentVariable("SPF_WEAPON_GAMEPLAY_SEQUENCE")=="1")
                 {
                     capture.Dispose();capture=new CanvasCapture(game.gameObject,game.CameraRig.Camera,360,640);game.Hud.MobileHud.SetPreviewViewport(360,640,new Rect(0,0,360,640));world.ClearLevel();game.State.Flow=SvFlow.Playing;game.State.Hero=game.State.HeroPrev=0;weapons.RequestEquip(WeaponProfiles.Staff);
@@ -53,10 +60,10 @@ namespace SurvivorFoundation.Tests.PlayMode
                         for(int i=0;i<90;i++)
                         {
                             while(Time.realtimeSinceStartupAsDouble<next)yield return null;
-                            game.State.Input=InputFrame.Latch(game.State.Input,new InputFrame{Move=i<40?new float2(.3f,.2f):new float2(-.3f,-.2f),Pressed=i==40?1u<<SvWeapons.SwitchButton:0});
-                            frames.Capture(weapons.Tick/30d);next=Time.realtimeSinceStartupAsDouble+1d/30;
+                            game.State.Input=InputFrame.Latch(game.State.Input,new InputFrame{Move=i<40?new float2(.8f,.6f):new float2(-.3f,-.2f),Pressed=i==40?1u<<SvWeapons.SwitchButton:0});
+                            double acquiredAt=Time.realtimeSinceStartupAsDouble;frames.Capture(weapons.Tick/30d);next=acquiredAt+1d/30;
                         }
-                        game.Session.ManualClock=true;frames.Write("weapon-horde-live-"+suffix,"Actual automatic-clock portrait horde: locomotion, staff charge/projectile, switch to bow draw/release while independent pulse/blink HUD remains. Target30Hz, measured timestamps retained.");
+                        game.Session.ManualClock=true;frames.Write("weapon-horde-live-"+suffix,"Actual automatic-clock portrait horde: run/walk, pulse/blink in contact captures, staff charge/projectile, switch to bow draw/release while independent pulse/blink HUD remains. Target30Hz, measured timestamps retained.");
                     }
                 }
                 LogAssert.NoUnexpectedReceived();

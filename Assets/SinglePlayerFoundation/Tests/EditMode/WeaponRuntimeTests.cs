@@ -70,6 +70,12 @@ namespace SPF.Tests.EditMode
             Step(r,r.Current.DurationTicks);Step(r,1,pressed:true);Assert.IsTrue(r.RecordHit(0,new EntityHandle(7,2),0));
         }
         [Test]
+        public void SkillPoseClockRejectsDurationsWithoutAVisibleInterpolatedInterval()
+        {
+            var pose=new SPF.L2.Skills.ActionPoseClock();Assert.Throws<ArgumentOutOfRangeException>(()=>pose.Begin(101,1));Assert.Throws<ArgumentOutOfRangeException>(()=>pose.Begin(101,2));
+            pose.Begin(101,3);pose.Advance(true,true);pose.Advance(true,true);Assert.IsTrue(pose.Running);Assert.Greater(pose.Phase(0),0);Assert.Less(pose.Phase(0),1);
+        }
+        [Test]
         public void OneTickProjectileLifetimeStillTravelsOneFullIntervalBeforeExpiry()
         {
             var profiles=WeaponProfiles.CreateDefaults(60);profiles[2].ProjectileLifeTicks=1;

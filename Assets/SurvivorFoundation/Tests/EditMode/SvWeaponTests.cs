@@ -34,6 +34,17 @@ namespace SurvivorFoundation.Tests
             t.Game.Input=default;t.Step(12);Assert.AreEqual(WeaponProfiles.Sword,W(t).Current.ContentId);Assert.AreEqual(4,t.World.Resource(SvMobileSkills.Key).Count);
         }
         [Test]
+        public void PulseAndBlinkExposeSeparateSavedPoseClocksAndPauseWithLevelUp()
+        {
+            using var t=Create();var pose=t.World.Resource(SvWeapons.PoseKey);t.Game.Input=new InputFrame{Pressed=1};t.Step();t.Game.Input=default;
+            Assert.AreEqual(SvWeapons.PulsePose,pose.ContentId);Assert.IsTrue(pose.Running);uint pulse=pose.Timeline.PulseId;
+            t.Game.Flow=SvFlow.LevelUp;int age=pose.Timeline.Tick;t.Step(20);Assert.AreEqual(age,pose.Timeline.Tick);
+            t.Game.Flow=SvFlow.Playing;t.Game.Input=new InputFrame{Pressed=2,Aim=new float2(1,0)};t.Step();t.Game.Input=default;
+            Assert.AreEqual(SvWeapons.BlinkPose,pose.ContentId);Assert.Greater(pose.Timeline.PulseId,pulse);Assert.AreEqual(3,t.Game.Hero.x,.001f);
+            var saved=t.Session.CaptureSnapshot();using var b=Create(false);b.Session.RestoreSnapshot(saved);t.Step(4);b.Step(4);CollectionAssert.AreEqual(t.Session.CaptureSnapshot(),b.Session.CaptureSnapshot());
+            t.Game.Hp=0;t.Game.Flow=SvFlow.Dead;t.Step();Assert.IsFalse(pose.Running);
+        }
+        [Test]
         public void TwelvePortraitSwitchCommandsUseSameAuthoritativeSkillGate()
         {
             using var t=Create();

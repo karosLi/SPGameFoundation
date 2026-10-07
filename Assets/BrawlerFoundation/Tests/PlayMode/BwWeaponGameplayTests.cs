@@ -43,11 +43,24 @@ namespace BrawlerFoundation.Tests.PlayMode
                     Assert.Less(math.distance(canonical,socket.Muzzle),.17f,"contact/release socket follows the same authored muzzle used by simulation");
                     for(int i=0;i<60;i++)game.Session.Step();Assert.Less(info[1].Hp,1000,"equipped weapon must hit the actual enemy");
                 }
+                world.ClearLevel();game.State.Flow=BwFlow.Fighting;game.State.Input=default;BwSpawner.Spawn(world,0,0,1,0);BwSpawner.Spawn(world,1,new float2(8,0),-1,0);
+                foreach(int button in new[]{BwButton.Kick,BwBeltRules.JumpButton,BwBeltRules.HealButton})
+                {
+                    if(button==BwBeltRules.HealButton){var injured=world.Column(BwKeys.Info)[0];injured.Hp=60;world.Column(BwKeys.Info).Set(0,injured);}
+                    game.State.Input=new InputFrame{Pressed=1u<<button};game.Session.Step();game.State.Input=default;for(int i=0;i<5;i++)game.Session.Step();
+                    int expected=button==BwButton.Kick?BwWeapons.KickPose:button==BwBeltRules.JumpButton?BwWeapons.JumpPose:BwWeapons.HealPose;
+                    Assert.AreEqual(expected,world.Resource(BwWeapons.PoseKey).ContentId);Assert.IsTrue(world.Resource(BwWeapons.PoseKey).Running);
+                    yield return capture.Save("weapon-belt-skill-"+expected+"-"+suffix,safe);
+                    for(int i=0;i<65;i++)game.Session.Step();
+                }
                 // A third-party Button click never releases the joystick's independent pointer.
                 game.MobileHud.Refresh();var pointer=new PointerEventData(EventSystem.current){pointerId=77,position=new Vector2(100,130)};game.Joystick.OnPointerDown(pointer);
                 Assert.IsTrue(game.Joystick.Pressed);UIDriver.Click(game.SwitchWeaponButton.gameObject);Assert.IsTrue(game.Joystick.Pressed);game.Joystick.OnPointerUp(pointer);game.Session.Step();
                 Assert.AreNotEqual(0,weapons.Equipment.PendingId);Assert.IsNotNull(game.Renderer.WeaponParticles);
                 byte[] before=game.Session.CaptureSnapshot();for(int i=0;i<6;i++)game.Renderer.RenderFrame();CollectionAssert.AreEqual(before,game.Session.CaptureSnapshot(),"repeated rendering cannot change weapon or hit state");
+                game.Session.Pause();game.Renderer.RenderFrame();Assert.IsTrue(game.Renderer.Characters.TryReadWeapon(weapons.Owner,out var pausedSocket));
+                yield return null;yield return null;game.Renderer.RenderFrame();Assert.IsTrue(game.Renderer.Characters.TryReadWeapon(weapons.Owner,out var heldSocket));
+                Assert.Less(math.distance(pausedSocket.Muzzle,heldSocket.Muzzle),.0001f,"paused interpolation must not oscillate the held weapon");game.Session.Resume();
                 if(Environment.GetEnvironmentVariable("SPF_WEAPON_GAMEPLAY_SEQUENCE")=="1")
                 {
                     capture.Dispose();capture=new CanvasCapture(game.gameObject,game.CameraRig.Camera,640,360);game.MobileHud.SetPreviewViewport(640,360,new Rect(0,0,640,360));
@@ -60,10 +73,10 @@ namespace BrawlerFoundation.Tests.PlayMode
                         for(int i=0;i<90;i++)
                         {
                             while(Time.realtimeSinceStartupAsDouble<next)yield return null;
-                            game.State.Input=InputFrame.Latch(game.State.Input,new InputFrame{Move=i<30?new float2(.3f,.25f):i<60?new float2(-.3f,-.25f):float2.zero,Held=1,Pressed=i==44?1u<<BwWeapons.SwitchButton:0});
-                            frames.Capture(weapons.Tick/60d);next=Time.realtimeSinceStartupAsDouble+1d/30;
+                            game.State.Input=InputFrame.Latch(game.State.Input,new InputFrame{Move=i<30?new float2(1f,.5f):i<60?new float2(-.3f,-.25f):float2.zero,Held=1,Pressed=i==44?1u<<BwWeapons.SwitchButton:0});
+                            double acquiredAt=Time.realtimeSinceStartupAsDouble;frames.Capture(weapons.Tick/60d);next=acquiredAt+1d/30;
                         }
-                        game.Session.ManualClock=true;frames.Write("weapon-belt-live-"+suffix,"Actual automatic-clock belt gameplay: move, bow draw/release, switch into blade, continuing attacks. Target30Hz, measured acquisition timestamps retained.");
+                        game.Session.ManualClock=true;frames.Write("weapon-belt-live-"+suffix,"Actual automatic-clock belt gameplay: run, walk, idle, kick/jump/heal in contact captures, bow draw/release, switch into blade, continuing attacks. Target30Hz, measured acquisition timestamps retained.");
                     }
                 }
                 LogAssert.NoUnexpectedReceived();

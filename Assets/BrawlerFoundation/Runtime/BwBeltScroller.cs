@@ -87,6 +87,7 @@ namespace BrawlerFoundation
         public NativeArray<BwBeltDrop> Drops;
         public int Coins, HealsCollected, RejectedDrops, RejectedSpawns;
         public int SeparationCandidates, HitCandidates, LastGridDropped;
+        public float MaxGroundStep; // derived broadphase padding for simultaneous moving-target sweeps
         public int ActiveDrops { get { int n = 0; for (int i = 0; i < Drops.Length; i++) if (Drops[i].RemainingTicks > 0) n++; return n; } }
         public BwBeltState(BwBeltConfig config)
         {
@@ -107,14 +108,14 @@ namespace BrawlerFoundation
         }
         public void Rebuild(SimWorld world)
         {
-            int n = 0; var info = world.Column(BwKeys.Info); var ground = world.Column(BwBeltKeys.Ground);
+            int n = 0; var info = world.Column(BwKeys.Info); var ground = world.Column(BwBeltKeys.Ground); var previous = world.Column(BwBeltKeys.PreviousGround); MaxGroundStep = 0;
             for (int i = 0; i < world.Table(BwKeys.Fighter).Count; i++)
-                if (info[i].State != FighterState.KO) Grid.Staging.Set(n++, new GridEntry { Owner = i, Position = ground[i], Radius = BwRules.BodyHalfWidth });
+                if (info[i].State != FighterState.KO) { MaxGroundStep = math.max(MaxGroundStep, math.distance(previous[i], ground[i])); Grid.Staging.Set(n++, new GridEntry { Owner = i, Position = ground[i], Radius = BwRules.BodyHalfWidth }); }
             Grid.StagingCount.Set(0, n); Grid.ScheduleBuild(default).Complete(); LastGridDropped = Grid.DroppedLastBuild;
         }
         public void OnReset()
         {
-            Grid.OnReset(); for (int i = 0; i < Drops.Length; i++) Drops[i] = default;
+            MaxGroundStep = 0; Grid.OnReset(); for (int i = 0; i < Drops.Length; i++) Drops[i] = default;
             Coins = HealsCollected = RejectedDrops = RejectedSpawns = SeparationCandidates = HitCandidates = LastGridDropped = 0;
         }
         public void WriteSnapshot(BinaryWriter w)

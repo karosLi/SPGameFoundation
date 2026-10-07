@@ -1,0 +1,25 @@
+SPDX-License-Identifier: CC0-1.0
+
+Original Sanctuary audio package, 2026.
+
+To the extent possible under law, copyright and related or neighboring rights
+in this package's original compositions, synthesis/foley definitions, score,
+event data, generator, tests, generated WAV files, importer metadata and
+associated authoring documentation are waived under CC0 1.0 Universal.
+
+CC0 1.0 legal text:
+https://creativecommons.org/publicdomain/zero/1.0/legalcode.en
+Human-readable deed:
+https://creativecommons.org/publicdomain/zero/1.0/
+
+No third-party recordings, sample libraries, MIDI compositions or copied
+melodies were used. All instrument/foley labels describe original mathematical
+synthesis; they do not claim recordings of physical instruments or a human
+performance. No generative-music service or external pretrained music model
+was used. Original creation is the provenance claim, not a guarantee that
+every short note sequence is globally unique.
+
+This dedication does not relicense the rest of the repository, Unity, Python,
+NumPy, SciPy, or their dependencies. Tooling dependencies retain their own
+licenses. Unity API/documentation is referenced but not incorporated as audio.
+The files are provided without warranties, as described by CC0.

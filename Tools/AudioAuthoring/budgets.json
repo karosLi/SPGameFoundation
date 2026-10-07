@@ -1,0 +1,20 @@
+{
+  "scope": "Source PCM and offline regression gates; not perceptual, codec, loudness, latency, or physical-device certification.",
+  "bgm_file_bytes_max": 10485760,
+  "sfx_file_bytes_max": 65536,
+  "all_source_wav_bytes_max": 16777216,
+  "sfx_source_wav_bytes_max": 307200,
+  "sfx_float32_payload_bytes_max": 655360,
+  "delivery_file_bytes_exclusive_max": 20971520,
+  "bgm_sample_peak_dbfs_max": -2.0,
+  "sfx_sample_peak_dbfs_max": -2.5,
+  "oversampled_peak_dbfs_max": -1.0,
+  "bgm_rms_dbfs_range": [-20.0, -11.0],
+  "sfx_rms_dbfs_range": [-30.0, -10.0],
+  "absolute_dc_max": 0.00001,
+  "bgm_seam_step_max": 0.04,
+  "bgm_seam_slope_error_max": 0.01,
+  "bgm_mono_rms_ratio_min": 0.8,
+  "bgm_stereo_correlation_max": 0.9999,
+  "sfx_edge_adjacent_step_max": 0.005
+}

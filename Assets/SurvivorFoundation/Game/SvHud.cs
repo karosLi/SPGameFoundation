@@ -145,7 +145,7 @@ namespace SurvivorFoundation.Game
             StartButton.onClick.AddListener(() => m_Game.StartRun());
 
             foreach (var button in root.GetComponentsInChildren<Button>(true))
-                button.onClick.AddListener(() => m_Game.Audio?.Player.Play(m_Game.Audio.Click));
+                button.onClick.AddListener(() => m_Game.Audio?.Player.Play(button == HudMenuButton || button == MenuButton ? m_Game.Audio.Cancel : m_Game.Audio.Click));
         }
 
         static void HeaderRect(RectTransform rect, float minX, float maxX, float top, float bottom)

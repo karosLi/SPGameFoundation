@@ -31,8 +31,7 @@ namespace BrawlerFoundation.Game
 
         ModeDefinition m_Mode;
         GameplayModuleAsset m_Module;
-        SoundPlayer m_Sound;
-        int m_Swing, m_Hit, m_Ko, m_Wave, m_Lose;
+        public BwAudio Audio { get; private set; }
         bool m_ScriptedInputOwner;
         BwFlow m_Flow = (BwFlow)255;
 
@@ -130,14 +129,8 @@ namespace BrawlerFoundation.Game
             Renderer.SetQualityLevel(Governor.Level);
             Governor.LevelChanged += Renderer.SetQualityLevel;
             Renderer.Camera = CameraRig;
-            Renderer.Feedback += OnFeedback;
 
-            m_Sound = SoundPlayer.Create(transform, 8);
-            m_Swing = m_Sound.Register("swing", SfxDef.Create(SfxWave.Noise, 1500f, 600f, 0.08f, 0.25f).WithNoise(1f, 0.2f), maxVoices: 2);
-            m_Hit = m_Sound.Register("hit", SfxDef.Create(SfxWave.Noise, 700f, 120f, 0.12f, 0.55f).WithNoise(1f, 0.7f), maxVoices: 3, minInterval: 0.04f);
-            m_Ko = m_Sound.Register("ko", SfxDef.Create(SfxWave.Triangle, 500f, 70f, 0.5f, 0.5f), maxVoices: 2);
-            m_Wave = m_Sound.Register("wave", SfxDef.Create(SfxWave.Square, 392f, 784f, 0.4f, 0.35f).WithDuty(0.25f), maxVoices: 1, priority: 2);
-            m_Lose = m_Sound.Register("lose", SfxDef.Create(SfxWave.Triangle, 300f, 60f, 0.9f, 0.45f), maxVoices: 1, priority: 3);
+            Audio = BwAudio.Create(transform, Renderer);
 
             InputRouter = gameObject.AddComponent<InputRouter>();
             InputRouter.Sink = frame =>
@@ -212,12 +205,12 @@ namespace BrawlerFoundation.Game
             MenuPanel = UIFactory.Panel(root, "MenuPanel", new Color(.025f, .07f, .075f, .84f), Vector2.zero, Vector2.one);
             UIFactory.Label(MenuPanel, "Title", m_WeaponCombat ? "WEAPONS / BRAWL" : m_BeltScroller ? "BELT / BRAWL" : m_MobileCombat ? "BRAWL / MOBILE" : "BRAWL", m_MobileCombat ? 60 : 150, TextAnchor.MiddleCenter, new Vector2(0f, 0.6f), new Vector2(1f, 0.85f));
             StartButton = UIFactory.Button(MenuPanel, "StartButton", "FIGHT", new Vector2(0, -20), new Vector2(460, 140), SanctuaryUiTheme.Coral, new Vector2(0.5f, 0.5f));
-            StartButton.onClick.AddListener(() => State?.Send(BwCommandKind.Start));
+            StartButton.onClick.AddListener(() => { Audio.Confirm(); State?.Send(BwCommandKind.Start); });
 
             EndPanel = UIFactory.Panel(root, "EndPanel", new Color(.025f, .07f, .075f, .84f), Vector2.zero, Vector2.one);
             EndText = UIFactory.Label(EndPanel, "EndText", "", 110, TextAnchor.MiddleCenter, new Vector2(0f, 0.6f), new Vector2(1f, 0.85f));
             AgainButton = UIFactory.Button(EndPanel, "AgainButton", "AGAIN", new Vector2(0, -20), new Vector2(460, 140), SanctuaryUiTheme.Coral, new Vector2(0.5f, 0.5f));
-            AgainButton.onClick.AddListener(() => State?.Send(BwCommandKind.Start));
+            AgainButton.onClick.AddListener(() => { Audio.Confirm(); State?.Send(BwCommandKind.Start); });
         }
 
         void Update()
@@ -270,18 +263,6 @@ namespace BrawlerFoundation.Game
                 if (slot == 2 && m_Game.m_BeltScroller) return CombatControlGraphic.JumpGlyph;
                 if (slot == 3 && m_Game.m_BeltScroller) return CombatControlGraphic.HealGlyph;
                 return snapshot.Definition.IconId;
-            }
-        }
-
-        void OnFeedback(BwFeedback e)
-        {
-            switch (e.Kind)
-            {
-                case BwFeedbackKind.Swing: m_Sound.Play(m_Swing); break;
-                case BwFeedbackKind.Hit: m_Sound.Play(m_Hit); break;
-                case BwFeedbackKind.KO: m_Sound.Play(m_Ko); break;
-                case BwFeedbackKind.Wave: m_Sound.Play(m_Wave); break;
-                case BwFeedbackKind.Lose: m_Sound.Play(m_Lose); break;
             }
         }
 

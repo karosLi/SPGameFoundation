@@ -126,12 +126,14 @@ namespace UnityEngine
     }
 
     public class Behaviour : Component { public bool enabled { get; set; } = true; public bool isActiveAndEnabled => enabled; }
+    public enum AudioDataLoadState { Unloaded, Loading, Loaded, Failed }
     public sealed class AudioClip : Object
     {
         float[] m_Data = new float[0];
         public int samples { get; private set; }
         public int channels { get; private set; }
         public int frequency { get; private set; }
+        public AudioDataLoadState loadState => AudioDataLoadState.Loaded;
         public float length => frequency > 0 ? samples / (float)frequency : 0f;
         public static AudioClip Create(string name, int lengthSamples, int channels, int frequency, bool stream)
             => new AudioClip { name = name, samples = lengthSamples, channels = channels, frequency = frequency, m_Data = new float[lengthSamples * channels] };
@@ -147,9 +149,13 @@ namespace UnityEngine
         public float spatialBlend { get; set; }
         public bool playOnAwake { get; set; } = true;
         public bool loop { get; set; }
+        public int priority { get; set; }
+        bool m_Paused;
         public bool isPlaying { get; private set; }
         public void Play() => isPlaying = true;
-        public void Stop() => isPlaying = false;
+        public void Stop() { isPlaying = false; m_Paused = false; }
+        public void Pause() { m_Paused = isPlaying; isPlaying = false; }
+        public void UnPause() { if (m_Paused) isPlaying = true; m_Paused = false; }
     }
     public sealed class AudioListener : Behaviour { }
     public class MonoBehaviour : Behaviour

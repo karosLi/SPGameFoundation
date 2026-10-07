@@ -1,0 +1,1 @@
+{"name":"SPF.Audio.Tests.PlayMode","rootNamespace":"SPF.Audio.Tests.PlayMode","references":["UnityEngine.TestRunner","UnityEditor.TestRunner","SPF.Contracts","SPF.Presentation","SPF.Testing"],"includePlatforms":[],"overrideReferences":true,"precompiledReferences":["nunit.framework.dll"],"autoReferenced":false,"defineConstraints":["UNITY_INCLUDE_TESTS"]}

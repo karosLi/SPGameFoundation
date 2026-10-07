@@ -47,6 +47,13 @@ namespace SPF.Presentation.Audio
         }
 
         public int SoundOf(int voice) => m_Voices[voice].Sound;
+        public void Stop(int voice) { m_Voices[voice] = new Voice { Sound = -1 }; }
+        public void Clear()
+        {
+            for (int i = 0; i < m_Voices.Length; i++) Stop(i);
+            for (int i = 0; i < m_Limits.Count; i++)
+            { var limit = m_Limits[i]; limit.LastPlay = float.NegativeInfinity; m_Limits[i] = limit; }
+        }
 
         public int ActiveVoices(float now)
         {
@@ -58,6 +65,9 @@ namespace SPF.Presentation.Audio
         /// <summary>Voice to play <paramref name="sound"/> on, or -1 when it must not play now.</summary>
         public int Acquire(int sound, float now, float duration, int priority = 0)
         {
+            if (sound < 0 || sound >= m_Limits.Count || float.IsNaN(now) || float.IsInfinity(now)
+                || float.IsNaN(duration) || float.IsInfinity(duration) || duration <= 0f)
+            { Rejected++; return -1; }
             var limits = m_Limits[sound];
             if (now - limits.LastPlay < limits.MinInterval) { Rejected++; return -1; }
 

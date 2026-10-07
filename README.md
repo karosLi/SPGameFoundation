@@ -48,6 +48,10 @@ Unity 2022.3 2D 单机小游戏基座（面向移动端），保留贪吃蛇、A
 
 两档渲染均有真实 Unity 测试与截图；优先移动玩法已接入[青铜遗迹原创美术第一轮](Docs/SanctuaryArtDirection.md)，其余玩法保留程序美术。各提交的原生视觉验收状态见记录；桌面渲染证据不代表 Android/iOS 真机性能。
 
+## 原创移动音频
+
+Sv / Bw / RPG 复用有界 SoundPlayer：12 个原创分层 SFX、探索/战斗两首循环 BGM、三总线、两路音乐淡化和权威武器事实接入。源码、PCM/loop 检查及 native/device 待验收边界见 [移动音频系统](Docs/MobileAudioSystem.md) 和 [原创素材与试听](Docs/OriginalAudioAssets.md)。
+
 ## 共享移动技能 HUD（可选示例）
 
 - **SPF → Mobile Skill HUD → Create Landscape Brawler Scene**：可见摇杆、按住连拳、双充能踢击，沿用真实骨骼攻击与命中。

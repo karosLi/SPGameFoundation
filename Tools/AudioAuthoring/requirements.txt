@@ -1,0 +1,4 @@
+# Offline authoring / numeric QA only. Not Unity player dependencies.
+# Reference run: Python 3.12.14 on Linux x86_64.
+numpy==2.3.5
+scipy==1.17.0

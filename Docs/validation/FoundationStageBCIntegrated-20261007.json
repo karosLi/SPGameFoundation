@@ -1,0 +1,196 @@
+{
+  "verifiedRuntimeLocal": "40a432345d0970a1911cd668d20c78ab76b6d331",
+  "verifiedRuntimeTree": "b2d1dc6b70c76d7a9a7c0633fbd79fbf1d0c3b64",
+  "dotnet": {
+    "passed": 1196,
+    "failed": 0,
+    "projects": 76,
+    "assemblies": [
+      {
+        "name": "BrawlerFoundation.Tests.EditMode.dll",
+        "passed": 120,
+        "failed": 0
+      },
+      {
+        "name": "DefenseFoundation.Tests.EditMode.dll",
+        "passed": 8,
+        "failed": 0
+      },
+      {
+        "name": "PlatformerFoundation.Tests.EditMode.dll",
+        "passed": 10,
+        "failed": 0
+      },
+      {
+        "name": "PuzzleFoundation.Tests.EditMode.dll",
+        "passed": 7,
+        "failed": 0
+      },
+      {
+        "name": "RpgFoundation.Tests.EditMode.dll",
+        "passed": 63,
+        "failed": 0
+      },
+      {
+        "name": "SPF.Tests.EditMode.dll",
+        "passed": 803,
+        "failed": 0
+      },
+      {
+        "name": "ShooterFoundation.Tests.EditMode.dll",
+        "passed": 16,
+        "failed": 0
+      },
+      {
+        "name": "SlingFoundation.Tests.EditMode.dll",
+        "passed": 4,
+        "failed": 0
+      },
+      {
+        "name": "SnakeFoundation.Tests.EditMode.dll",
+        "passed": 40,
+        "failed": 0
+      },
+      {
+        "name": "StoryFoundation.Tests.EditMode.dll",
+        "passed": 5,
+        "failed": 0
+      },
+      {
+        "name": "SurvivorFoundation.Tests.EditMode.dll",
+        "passed": 120,
+        "failed": 0
+      }
+    ]
+  },
+  "unityApiCompile": {
+    "sources": 510,
+    "references": 95,
+    "errors": 0,
+    "existingFieldWarnings": 7,
+    "nativeExecution": false
+  },
+  "coldCompositions": {
+    "count": 19,
+    "twoRunsByteIdentical": true,
+    "outputSha256": "a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30",
+    "baselineRewritten": false
+  },
+  "baselineSourceChanges": [
+    {
+      "path": "Assets/BrawlerFoundation/Presentation/BwRenderer.cs",
+      "baselineSha256": "690fe981d2f265380e8add74c6f3c930abc1342d3ab8648cea67c2a18dead239",
+      "observedSha256": "0541f6d267f850a663293a738b5917631992051f984db393098c4d0367963659"
+    },
+    {
+      "path": "Assets/BrawlerFoundation/Runtime/BwModule.cs",
+      "baselineSha256": "1936ed6fae8db35b9dae78502a88a1c5b057beb86a2e1b5a0aa189b4488c3ab1",
+      "observedSha256": "030355e5fbbbbb6ee265d16d307db0f068b9e457f522304aeeab505fc0920e8d"
+    },
+    {
+      "path": "Assets/BrawlerFoundation/Runtime/Systems/BwBeltSystems.cs",
+      "baselineSha256": "0d6b880da4ba4c954940c9cf15abcf47ae4510d18a8ba8c321876e79cef65182",
+      "observedSha256": "7fedede7d5e4ed730187dd70490f3b0c793166dfbfb48fe40840507dab967fd2"
+    },
+    {
+      "path": "Assets/RpgFoundation/Runtime/Systems/ActorSystems.cs",
+      "baselineSha256": "7da2ffee2912b21c3989abc487b2b78125ea5df62468d2ed7cbd29954411fed9",
+      "observedSha256": "decaab11093fd307da873d36d65b1ffd81bb8d5550cfe2da75e9490f2e992963"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/Composition/IGameplayModule.cs",
+      "baselineSha256": "392f9cdf1b20a5309a0d9aa8803b3f0e72eb9edd570782d56b9ce37224a82d85",
+      "observedSha256": "de4c0d1681ef846a63a82c86d9feaceb4128e41c08c7241071475df0439cd4be"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/Composition/ModeDefinition.cs",
+      "baselineSha256": "1152a158ef7a48308196eb3227887568b91792b010f2f09ff8a0b57b5f608d77",
+      "observedSha256": "f09c3fbe593bb0414b95c037f66920278463541d8447c60c89bf1dcd76b3dae3"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/Composition/WorldComposer.cs",
+      "baselineSha256": "a95999e58b4d7c3b736ffcbcdd81e218d4b38b715912bd4f4af0ec9cdd69bdb8",
+      "observedSha256": "b5b7d979e71d8305735056f63fc3c565eabd3137bba905bc00d2109d0db21707"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/Scheduling/TickPipeline.cs",
+      "baselineSha256": "40b835f9a51ebbbbd66ef2e61ee4a9cb88b251de66f1c289b60fa427f020f428",
+      "observedSha256": "30bf30543c7c1d1a1df45bace461c267e637af74828edbe2b10c053d2bdb5ac4"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/Session/SessionHost.cs",
+      "baselineSha256": "13ca34477ed31e6372b3c8fabf7ab7489b248251ae61ee67423a91abe0939682",
+      "observedSha256": "2acfecea895b8eb0fc26d931ee18452eea353538b3e42fc991c9c576aab343d9"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/Session/SimSession.cs",
+      "baselineSha256": "789737ee148f57b2658e160254f3b09aff66a8fbf491dd6ffeb1d7805c70c40f",
+      "observedSha256": "9601f3ec9a0f0e95e86ac0928fc07cf0ef37580975cf8870e1ce03e478fa1667"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/World/EntityRegistry.cs",
+      "baselineSha256": "a6c7679051510f659ecc2332fafb43c8186a9d7b607aab3302c8810307ff4057",
+      "observedSha256": "dced172286a260fe42e770df6cf5b9fea8d50782d3c2635e314eaf23f78bdd18"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/World/SimTable.cs",
+      "baselineSha256": "8c78262e70a58d576c10c79cafe87505442f1cfa69e7a74ec2c74e2146c78586",
+      "observedSha256": "261906dd3b8f797e0b9da72ec7bd11e23e89c0cc14079e8421fcde129d685914"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/World/SimWorld.cs",
+      "baselineSha256": "b0186c0e9c34994b0dcbf91b4a06a5937c7e4fe39b70af883c0b92748ba5b143",
+      "observedSha256": "fb100ef9e1acf718848b54deaaf031043f05062f5e56ec32c410162954649f99"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Runtime/World/WorldLayout.cs",
+      "baselineSha256": "c51cfc47e7f8d704f7c29183d894b08ef72c05dffa907c77ca31f592f1c740bb",
+      "observedSha256": "cf8c5aff08842bdff438965fe8a27ac09a317ed7dc2a990c21d5c671870f58c8"
+    },
+    {
+      "path": "Assets/SinglePlayerFoundation/Tests/EditMode/SessionHostTests.cs",
+      "baselineSha256": "274d7de536f399ee1476e9f3ae05e72c3b3416da185fe41f7e81d6a7812bd25e",
+      "observedSha256": "4cdcc9ebfd70c5d2791ef8596000dd0541b12ffd0880d1e8871a0ccd6554e828"
+    },
+    {
+      "path": "Assets/SnakeFoundation/Runtime/Systems/GridSystems.cs",
+      "baselineSha256": "4e2ef09f143d2e840755a9f0c151be279eee1c40e8b3efdd7f59d813f11dbfd8",
+      "observedSha256": "1635e39842f442f1965aca81fd6a46d277d17260834583a69392e695ea1915e4"
+    },
+    {
+      "path": "Assets/SnakeFoundation/Runtime/Systems/PopulationSystem.cs",
+      "baselineSha256": "d1133d461aad13235be00cec535322b4a1719995db89331431cee4967dc2c217",
+      "observedSha256": "c224f3f47499846e833d874475518dd7b9b64f00a4c75a003d844127f3c702aa"
+    },
+    {
+      "path": "Assets/SnakeFoundation/Runtime/Systems/ResolveSystem.cs",
+      "baselineSha256": "1e62a34690bf55295ca6a6dcb09ee2b7592caa2dfe775210fe195b0a60358984",
+      "observedSha256": "33fbae5fa20f7b1c79cd3a8c7167f509df053be20a679f1375aa1831efee1e76"
+    },
+    {
+      "path": "Assets/SurvivorFoundation/Presentation/SvRenderer.cs",
+      "baselineSha256": "ad5edeb5fa9ba8d701fab8fbeea2619368ed961cd0811ed3efaec506b442b305",
+      "observedSha256": "5db5dbab2c4747ffa71681a370cc5eb366958e2168d6df2629e01a39ca35667c"
+    },
+    {
+      "path": "Assets/SurvivorFoundation/Runtime/SvModule.cs",
+      "baselineSha256": "e8e655aa16682edf0a507049b3ab5ed7f501266603ff48d47af09b436523e948",
+      "observedSha256": "642d315d012e2432744bbb8abe8a0209bcf522cf4d5646b1554fccf0e38fc968"
+    }
+  ],
+  "evidenceLogSha256": {
+    "build-final.log": "bb725530a0dbea37166fd196a65f395e96c95c19bb856734317bd54cdffb57f0",
+    "tests-final.log": "55702859c366b366f2269818f7d6d0afbe47639c19c9db61932950dcaa200bbf",
+    "api-build.log": "36975fb6e7fa4c8be4b09e9062f7f4492f51b1f8f863c79732062e65be054443",
+    "probe-build.log": "6e20677d9cde6e5ec188d727cf1ca3c370b45dc7b6b2b6edb0e85f1140b641bb"
+  },
+  "native": {
+    "thisRuntime": "not_run_before_publication",
+    "previousP1Head": "b75d4234a4b6547f30ba4e44e3aaf9d7bf7e4c43",
+    "previousDotnet": "1132 passed",
+    "previousUnityRun": 37600770862,
+    "previousUnityAttempt1": "failure with unfinished test step and no logs/XML/artifacts",
+    "previousUnityAttempt2": "queued without assigned runner at 2026-10-07T09:52:00Z"
+  },
+  "physicalAndroidIos": "not_run"
+}

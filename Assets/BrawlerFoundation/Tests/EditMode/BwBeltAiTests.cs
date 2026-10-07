@@ -7,6 +7,13 @@ namespace BrawlerFoundation.Tests
 {
     public class BwBeltAiTests
     {
+        static BwBeltConfig TreeConfig() { var config = BwBeltConfig.Default; config.UseDecisionTree = true; return config; }
+        [Test] public void DirectPolicyRemainsDefaultAndTreeIsExplicitlySelected()
+        {
+            Assert.IsFalse(BwBeltConfig.Default.UseDecisionTree);
+            using var tree = new BwTestWorld(belt: TreeConfig());
+            Assert.IsTrue(tree.World.Resource(BwBeltKeys.State).Config.UseDecisionTree);
+        }
         // Frozen policy from 1c9731a; no shared predicates with the evaluated tree.
         internal static BwBeltIntent Legacy(bool eligible, float2 delta, float reach, float cooldown) =>
             !eligible ? BwBeltIntent.Hold : math.abs(delta.x) > reach || math.abs(delta.y) > .38f ? BwBeltIntent.Approach :
@@ -40,7 +47,7 @@ namespace BrawlerFoundation.Tests
         [TestCase(FighterState.Hit)] [TestCase(FighterState.KO)] [TestCase(FighterState.Attack)]
         public void ActualFighterSystemDoesNotRestartAnAttackWhileLocked(FighterState state)
         {
-            using var t = new BwTestWorld(belt: BwBeltConfig.Default);
+            using var t = new BwTestWorld(belt: TreeConfig());
             t.World.ClearLevel(); t.Game.Flow = BwFlow.Fighting;
             BwSpawner.Spawn(t.World, 0, float2.zero, 1, 0);
             BwSpawner.Spawn(t.World, 1, new float2(.8f, 0), -1, 2);
@@ -50,8 +57,8 @@ namespace BrawlerFoundation.Tests
         }
         [Test] public void ActualFullTicksMatchFrozenLegacyAndRestoreExactly()
         {
-            using var a = new BwTestWorld(belt: BwBeltConfig.Default);
-            using var b = new BwTestWorld(belt: BwBeltConfig.Default, legacyAi: true);
+            using var a = new BwTestWorld(belt: TreeConfig());
+            using var b = new BwTestWorld(belt: TreeConfig(), legacyAi: true);
             for (int tick = 0; tick < 240; tick++)
             {
                 var input = new InputFrame { Held = 1, Move = new float2(tick % 100 < 50 ? .45f : -.45f, tick % 80 < 40 ? .2f : -.2f) };

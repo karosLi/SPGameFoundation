@@ -15,6 +15,8 @@ namespace RpgFoundation
         public List<SkillEntry> Skills = SkillEntry.Defaults();
         public LootSection Loot = new LootSection();
         public CapacitySection Capacity = new CapacitySection();
+        [Tooltip("Opt-in bounded decision-tree pilot. Direct policy remains the default until native cost evidence supports adoption.")]
+        public bool UseDecisionTree;
 
         public static RpgConfig CreateDefault()
         {

@@ -144,7 +144,7 @@ namespace BrawlerFoundation.Tests
         [Category("Performance")]
         public void CompleteTickFrozenLegacyVersusDecisionTreeAbba(int fighters, bool clustered)
         {
-            var config = BwBeltConfig.Default; config.Fighters = config.TargetsPerAttack = fighters;
+            var config = BwBeltConfig.Default; config.UseDecisionTree = true; config.Fighters = config.TargetsPerAttack = fighters;
             config.Waves = config.FirstWaveEnemies = 1;
             using var tree = new BwTestWorld(start: false, belt: config);
             using var legacy = new BwTestWorld(start: false, belt: config, legacyAi: true);

@@ -15,6 +15,8 @@ namespace BrawlerFoundation
     public struct BwBeltConfig
     {
         public int Fighters, TargetsPerAttack, Drops, Waves, FirstWaveEnemies;
+        // Same policy outputs; opt-in implementation choice, not additional saved simulation state.
+        public bool UseDecisionTree;
         public static BwBeltConfig Default => new BwBeltConfig { Fighters = 64, TargetsPerAttack = 64, Drops = 32, Waves = 3, FirstWaveEnemies = 4 };
         public void Validate()
         {

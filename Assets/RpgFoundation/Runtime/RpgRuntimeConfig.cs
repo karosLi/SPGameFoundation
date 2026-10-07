@@ -65,6 +65,7 @@ namespace RpgFoundation
     public sealed class RpgRuntimeConfig : IDisposable
     {
         public RpgSettings Settings;
+        public bool UseDecisionTree;
         public NativeArray<MonsterDef> Monsters;
         public NativeArray<DecisionNode> CombatDecisionProgram; // immutable derived configuration, not snapshot state
         public NativeArray<WeaponDef> Weapons;     // indexed by WeaponKind
@@ -94,6 +95,7 @@ namespace RpgFoundation
                     ScalingPerFloor = source.Dungeon.ScalingPerFloor,
                     Levels = new LevelCurve { Base = h.XpBase, Growth = h.XpGrowth, MaxLevel = h.MaxLevel },
                 },
+                UseDecisionTree = source.UseDecisionTree,
                 Dungeon = source.Dungeon,
                 Loot = source.Loot,
                 Capacity = source.Capacity,

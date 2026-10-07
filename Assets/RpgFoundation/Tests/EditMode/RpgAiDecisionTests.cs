@@ -47,6 +47,13 @@ namespace RpgFoundation.Tests
                 Assert.AreEqual(Legacy(skill, ranged, sees, inRange, sees && distance < reach * .45f), RpgDecisions.Select(program, facts, out _));
             }
         }
+        [Test] public void DefaultConfigurationKeepsDirectPolicyAndOptInIsBaked()
+        {
+            using var direct = new RpgTestWorld(start: false);
+            using var tree = new RpgTestWorld(start: false, tweak: c => c.UseDecisionTree = true);
+            Assert.IsFalse(direct.Config.UseDecisionTree); Assert.IsFalse(direct.Runtime.UseDecisionTree);
+            Assert.IsTrue(tree.Runtime.UseDecisionTree);
+        }
         [Test] public void InvalidProgramFailsToHoldWithoutAnAttack()
         {
             Assert.AreEqual(RpgCombatIntent.Hold, RpgDecisions.Select(default, 31, out var trace));
@@ -54,8 +61,8 @@ namespace RpgFoundation.Tests
         }
         [Test] public void FullTicksMatchFrozenLegacyAndMidChaseRestoreRemainsByteExact()
         {
-            using var a = new RpgTestWorld(seed: 23, runSeed: 61, tweak: c => c.Hero.Health = 100000);
-            using var b = new RpgTestWorld(seed: 23, runSeed: 61, tweak: c => c.Hero.Health = 100000, legacyAi: true);
+            using var a = new RpgTestWorld(seed: 23, runSeed: 61, tweak: c => { c.Hero.Health = 100000; c.UseDecisionTree = true; });
+            using var b = new RpgTestWorld(seed: 23, runSeed: 61, tweak: c => { c.Hero.Health = 100000; c.UseDecisionTree = true; }, legacyAi: true);
             for (int tick = 0; tick < 180; tick++)
             {
                 var input = new InputFrame { Move = new float2(tick % 40 < 20 ? .4f : -.4f, .15f), Held = 1u << RpgButton.Attack };

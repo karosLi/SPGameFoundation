@@ -40,7 +40,7 @@ namespace RpgFoundation.Systems
             {
                 Loadout = context.Column(RpgKeys.Loadout),
                 Skills = config.Skills,
-                DecisionProgram = config.CombatDecisionProgram,
+                DecisionProgram = config.CombatDecisionProgram, UseDecisionTree = config.UseDecisionTree,
                 Position = context.Column(RpgKeys.Position),
                 Info = context.Column(RpgKeys.Info),
                 Stats = context.Column(RpgKeys.Stats),
@@ -73,6 +73,7 @@ namespace RpgFoundation.Systems
             [ReadOnly] public NativeArray<DecisionNode> DecisionProgram;
             public TileMapView Map;
             public FlowFieldView Flow;
+            public bool UseDecisionTree;
             public int HeroRow;
             [ReadOnly] public NativeArray<MonsterDef> Monsters;
             public float DeltaTime;
@@ -129,21 +130,45 @@ namespace RpgFoundation.Systems
                         if (brain.LostSight > 4f && brain.Provoked <= 0f) { Enter(ref brain, AIState.Return); break; }
                         bool inRange = dist <= reach && (sees || dist < 1.5f);
                         byte skill = Loadout[i].S0;
-                        // Gather once using the original short-circuit predicate. No new world scans,
-                        // random draws, cadence changes or action-timeline ownership are introduced.
-                        bool skillReady = skill > 0 && combat.SkillCooldown.x <= 0f && sees && dist < Skills[skill - 1].Radius * 0.85f;
-                        uint facts = RpgDecisions.Facts(skillReady, def.Ranged, sees, inRange, dist, reach);
-                        var selected = RpgDecisions.Select(DecisionProgram, facts, out _);
-                        if ((selected & RpgCombatIntent.Skill) != 0)
+                        if (!UseDecisionTree)
                         {
-                            combat.Action = ActorAction.Skill;
-                            combat.RequestSlot = 0;
+                            if (skill > 0 && combat.SkillCooldown.x <= 0f && sees && dist < Skills[skill - 1].Radius * 0.85f)
+                            {
+                                // Area skill (the boss's slam): telegraphed cast when the hero is close.
+                                combat.Action = ActorAction.Skill;
+                                combat.RequestSlot = 0;
+                            }
+                            else if (def.Ranged)
+                            {
+                                // Archers: keep between half and full range, shoot when in sight.
+                                if (sees && dist < reach * 0.45f) intent = -math.normalizesafe(toHero);
+                                else if (!inRange) intent = Approach(p, toHero, dist, sees);
+                                if (inRange && sees) combat.Action = ActorAction.Attack;
+                            }
+                            else
+                            {
+                                if (!inRange) intent = Approach(p, toHero, dist, sees);
+                                else combat.Action = ActorAction.Attack;
+                            }
                         }
                         else
                         {
-                            if ((selected & RpgCombatIntent.Retreat) != 0) intent = -math.normalizesafe(toHero);
-                            else if ((selected & RpgCombatIntent.Approach) != 0) intent = Approach(p, toHero, dist, sees);
-                            if ((selected & RpgCombatIntent.Attack) != 0) combat.Action = ActorAction.Attack;
+                            // Gather once using the original short-circuit predicate. No new world scans,
+                            // random draws, cadence changes or action-timeline ownership are introduced.
+                            bool skillReady = skill > 0 && combat.SkillCooldown.x <= 0f && sees && dist < Skills[skill - 1].Radius * 0.85f;
+                            uint facts = RpgDecisions.Facts(skillReady, def.Ranged, sees, inRange, dist, reach);
+                            var selected = RpgDecisions.Select(DecisionProgram, facts, out _);
+                            if ((selected & RpgCombatIntent.Skill) != 0)
+                            {
+                                combat.Action = ActorAction.Skill;
+                                combat.RequestSlot = 0;
+                            }
+                            else
+                            {
+                                if ((selected & RpgCombatIntent.Retreat) != 0) intent = -math.normalizesafe(toHero);
+                                else if ((selected & RpgCombatIntent.Approach) != 0) intent = Approach(p, toHero, dist, sees);
+                                if ((selected & RpgCombatIntent.Attack) != 0) combat.Action = ActorAction.Attack;
+                            }
                         }
                         brain.State = inRange ? AIState.Attack : AIState.Chase;
                         if (hero) Facing[i] = math.normalizesafe(toHero, Facing[i]);

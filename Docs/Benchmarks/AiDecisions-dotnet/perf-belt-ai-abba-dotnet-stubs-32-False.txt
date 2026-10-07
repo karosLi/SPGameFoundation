@@ -1,6 +1,6 @@
 Belt full tick ABBA | runtime=dotnet-stubs | fighters=32 | clustered=False
 A=frozen 1c9731a executor; B=bounded decision tree; warmup=90; four 120-tick windows restored to the same authored density, identical input/cadence.
-Legacy: mean=0.09215 p50=0.08742 p95=0.12702 worst=0.33649 ms
-Tree: mean=0.09446 p50=0.09204 p95=0.12058 worst=0.14682 ms
+Legacy: mean=0.10728 p50=0.10550 p95=0.14181 worst=0.17841 ms
+Tree: mean=0.10927 p50=0.10419 p95=0.14978 worst=0.20289 ms
 All complete snapshots byte-exact=PASS.
 Includes ordered fighter/player/weapon logic, completed grids, separation, hits, loot, feedback drain and sync. No render/device evidence. Timing report-only; a policy tree is a reuse feature, not an automatic speedup.

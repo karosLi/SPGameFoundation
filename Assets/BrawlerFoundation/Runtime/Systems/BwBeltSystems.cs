@@ -155,8 +155,10 @@ namespace BrawlerFoundation.Systems
                         // spatial separation below supplies crowd avoidance without all-pairs scans.
                         float2 delta = playerGround - p; f.Facing = delta.x >= 0 ? 1 : -1;
                         float reach = f.Variant == 2 ? 1.2f : .92f;
-                        var decision = BwBeltDecisions.Select(belt.DecisionProgram,
-                            BwBeltDecisions.Facts(true, delta, reach, f.Cooldown), out _);
+                        var decision = belt.Config.UseDecisionTree
+                            ? BwBeltDecisions.Select(belt.DecisionProgram, BwBeltDecisions.Facts(true, delta, reach, f.Cooldown), out _)
+                            : math.abs(delta.x) > reach || math.abs(delta.y) > .38f ? BwBeltIntent.Approach
+                            : f.Cooldown <= 0 ? BwBeltIntent.Attack : BwBeltIntent.Hold;
                         if (decision == BwBeltIntent.Approach)
                         {
                             float2 target = playerGround + new float2(-f.Facing * (reach - .1f), (handles[i].Index % 3 - 1) * .18f);

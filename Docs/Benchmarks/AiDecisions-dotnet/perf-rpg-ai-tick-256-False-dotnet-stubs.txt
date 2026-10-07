@@ -1,6 +1,6 @@
 runtime=dotnet-stubs
 RPG complete tick ABBA; A=frozen 1c9731a AI executor; B=bounded tree; both use corrected canonical queues. monsters=256; clustered=False; warmup=90; each window=120 ticks at 30Hz, restored same evolved snapshot.
-Legacy: mean=3.08886 p50=3.04175 p95=3.48671 worst=3.82032 ms
-Tree: mean=3.18068 p50=3.11820 p95=3.67861 worst=4.13913 ms
+Legacy: mean=3.49678 p50=3.41693 p95=4.23442 worst=10.08135 ms
+Tree: mean=3.20581 p50=3.15891 p95=3.70004 worst=4.62336 ms
 Exact complete snapshots all four windows=PASS.
 Includes original perception/line-of-sight, both NPC/player actions, navigation, collisions, damage, lifecycle, scheduler and completed jobs; feedback drained identically. All decision rates identical. No render/GPU/device evidence. Stub timings do not prove Burst; timing is report-only and tree reuse is not a speed claim.

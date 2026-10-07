@@ -60,7 +60,7 @@ namespace RpgFoundation.Tests
         [Category("Performance")]
         public void CompleteTickLegacyVersusTreeAbba(int monsters, bool clustered)
         {
-            Action<RpgConfig> configure = c => { c.Hero.Health = 1000000; foreach (var m in c.Monsters) m.Health = 1000000; };
+            Action<RpgConfig> configure = c => { c.Hero.Health = 1000000; c.UseDecisionTree = true; foreach (var m in c.Monsters) m.Health = 1000000; };
             using var tree = new RpgTestWorld(seed: 71, runSeed: 91, tweak: configure);
             using var legacy = new RpgTestWorld(seed: 71, runSeed: 91, tweak: configure, legacyAi: true);
             Populate(tree, monsters, clustered); Populate(legacy, monsters, clustered);

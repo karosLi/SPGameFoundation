@@ -110,3 +110,25 @@
 相关官方依据：[Unity 2022.3 纹理导入设置](https://docs.unity3d.com/2022.3/Documentation/Manual/class-TextureImporter.html)、[Unity 纹理数据与 CPU 可读副本说明](https://unity.com/blog/engine-platform/accessing-texture-data-efficiently)、[Unity UGUI 性能建议](https://unity.com/how-to/unity-ui-optimization-tips)。本项目据此选择导入时限尺寸 / 压缩、无需读回的背景关闭 Read/Write、静态 UI 网格与尽量小的透明覆盖；不把通用建议当作本项目的测量结果。
 
 并行的[移动动作与弹丸协调审视](MobileActionCoordinationAudit.md)记录新 projectile 美术的具体状态矩阵、socket 和命中语义，合并时按其精确提交核对。该实现草案在原装备图集中加入箭杆 / 箭头 / 尾羽及小法术核，每发仍为现有批次中的一个 quad；32 发的有效打包记录为 1024 字节，DataTexture 前缀填充另计。箭的画面高度增加以容纳尾羽，必须承认覆盖面积增加；配置碰撞圆仍以权威中心为准，不自动等于箭头像素轮廓。1024 / 256 粒子容量、32 socket、64 command 以及 12% / 7% 保守 quad 面积预算保持不变；新弹丸实际原生像素和遮挡 / 命中对齐审视尚待对应提交采集。
+
+## 完整取回后的原生审视：54477736
+
+[运行 37572161333](https://github.com/karosLi/SPGameFoundation/actions/runs/37572161333)的 23 个证据分片已全部下载、按声明大小与 SHA-256 校验，并由 `Tools/ci/evidence_parts.py restore` 恢复：1038 文件，ZIP 371,637,879 字节，完整 SHA-256 `8a8f2b29878578f39076008e0519a468d33dc75dbc2d972d480a76bc440d9094`。这是新美术 / 旧步态的基线，不是后续修复的结果。
+
+精确 XML：EditMode **882 passed / 0 failed / 5 skipped**；PlayMode **140 passed / 3 failed / 1 skipped**。失败为取消态 DataTexture 像素对比度，以及两个后端的 Horde 武器采集 fixture 使用 kind 0 触发 index -1。此运行没有有效的 grounded-Horde 步态基线。RPG 开局此轮通过，但不能否定 94c5d180 暴露的请求 / Tick 时序竞争；修复仍须独立回归。
+
+实际查看的两档截图均位于恢复后的 `Artifacts/Screenshots/`：
+
+| 范围 | 文件 | 观察 |
+| --- | --- | --- |
+| 横屏纵深动作 | `MobileHud/belt-landscape-depth-ready-{gpu,datatex}.png` | 1280×720；远景栏杆与可走地面衔接清楚，两张像素一致；暖白英雄与珊瑚怪物比旧同色细剪影更易分辨 |
+| 飞剑怪潮 | `MobileHud/survivor-sword-horde-portrait-{gpu,datatex}.png` | 720×1280；剑环中心与主角可辨，青石和纹章真实加载；密集全量血条及较高状态卡仍让上方画面拥挤 |
+| 守点怪潮 | `guard-portrait-{gpu,datatex}.png` | 720×1280；石质信标 / 青绿核与友方范围圈可辨，怪物轮廓有类别差异；保留程序 cutout 风格，不宣称已达最终商业美术验收 |
+| 飞机 | `shooter-playing-{gpu,datatex}.png` | 540×960；河谷中心足够安静，飞机、细弹、光束、拾取及青铜 UI 可辨；这些静帧没有证明纵向循环所有相位 |
+| 取消输入 | `MobileHud/survivor-portrait-safearea-cancel-datatex.png` | 真实确认 CANCEL 文本与图标同色导致低亮度；后续只恢复文本亮度，保留警示色和原断言 |
+
+两份 `WeaponMotion/grounded-belt-live-{gpu,fallback}` 各含 160 原始采集帧、`acquisition.csv` 和 `gait.csv`。已按真实 PTS 编码 1× 视频，未插帧：GPU 采集跨度 7.623935042 秒、20.855 Hz；DataTexture 7.358870042 秒、21.607 Hz；编码时间戳最大误差 0.0005 ms。各视频 161 帧是 160 原始帧加一个末帧停留，不是生成运动帧。同步 Editor readback 影响采样速度，不能将这些 Hz 称为手机帧率。
+
+基线 CSV 中，筛选真正移动且非权威跳跃的 Walk 样本，GPU 英雄 / 两个敌人分别有 22/111、17/85、20/66 个双脚非支撑样本；DataTexture 为 12/85、14/79、19/71。该证据交由步态修复验收作匹配比较；不在美术层压低身体 bob、改变镜头或后期插帧掩盖。新 grounded-Horde 只能交付新版本实采，不能伪造缺失的旧版配对。
+
+当前结论：原创场景、UI 与角色改动已经进入四类真实玩法，可确认集成的第一轮视觉提升；取消态、动作连续性、新弹丸 / 命中，以及密集 UI 的最终取舍仍按各自精确提交继续验证。没有把概念图、源 sprite 预览或旧截图冒充修复后的运行证据。

@@ -1,0 +1,21 @@
+----------------------------------------------------------------------
+Ran 78 tests in 4.445s
+
+OK
+{
+  "status": "PLAN_ONLY",
+  "native": "NOT_RUN",
+  "request": "Latios2022Lab/followup-request.json",
+  "workflow": ".github/workflows/latios-followup.yml",
+  "stages": {
+    "repeat-clean-import": [
+      "import"
+    ],
+    "mac-il2cpp-smoke": [
+      "import",
+      "player-build",
+      "player-run"
+    ]
+  },
+  "source_commit": "ce8756f86c4955db1fe970bbfc43bd351641ba1d"
+}

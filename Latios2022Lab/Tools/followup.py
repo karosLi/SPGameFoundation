@@ -249,7 +249,10 @@ def check_gate(gate, repo=REPO):
         require(repeat.get('stage') == 'repeat-clean-import' and repeat.get('status') == 'PASSED'
                 and repeat.get('fresh_project') is True and repeat.get('repeat_clean_import') == 'PASSED',
                 'Fresh repeat-clean-import has not passed.')
-        require(repeat.get('editor_evidence') == gate['editor_evidence'], 'Repeat used different Editor prerequisites.')
+        # CI restores identical immutable evidence into different run-specific review directories.
+        require({k: v for k, v in repeat.get('editor_evidence', {}).items() if k != 'root'}
+                == {k: v for k, v in gate['editor_evidence'].items() if k != 'root'},
+                'Repeat used different Editor prerequisites.')
         repeated = check_phase_output(phase_outputs(repeat_root, 'import', 'on'), gate, 'import', 'on', inputs)
         original = json.loads((phase_outputs(root, 'import', 'on') / 'launch.json').read_text())
         require(repeated['experiment']['workspace'] != original['experiment']['workspace']
@@ -443,12 +446,14 @@ def run_player(project, output, gate, identity):
     ci.write_json(output / 'player-launch.json', launch)
 
 
-def execute(gate_path, workspace, editor):
+def execute(gate_path, workspace, editor, queue_check=None):
     gate_path = canonical(gate_path)
     gate_hash = ci.digest(gate_path)
     gate = json.loads(gate_path.read_text())
     inputs = check_gate(gate)
     check_remote(gate)
+    if queue_check is not None:
+        queue_check()
     require(sys.platform == 'darwin', 'Only the approved existing Mac runner may execute.')
     workspace = ci.validate_workspace(REPO, workspace)
     editor = canonical(editor)
@@ -487,6 +492,8 @@ def execute(gate_path, workspace, editor):
             require(ci.digest(gate_path) == gate_hash and ci.digest(runtime_path) == runtime_hash,
                     'Conditional gate changed during execution.')
             check_gate(gate); check_remote(gate)
+            if queue_check is not None:
+                queue_check()
             current = frozen_inputs(project)
             require(current == inputs and ci.product_fingerprint(REPO) == baseline
                     and ci.product_fingerprint(working) == baseline, 'Frozen native/product inputs changed.')

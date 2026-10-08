@@ -1,0 +1,43 @@
+{
+  "archive_sha256": "b1fb3ba53fb4b43eeeb581c264eee41fa1d05444e8126ad3022be6d7b246661d",
+  "archive_size": 82893355,
+  "artifacts": [
+    {
+      "id": 11566886854,
+      "name": "latios-s1a-37813671446-1-patched-local-variant-part00",
+      "sha256": "ffbd4f486133157c7e81f8e76b4aec3b691ee2eddc7983a8a2c63fe1b25a70e4",
+      "size_in_bytes": 16846049
+    },
+    {
+      "id": 11566802102,
+      "name": "latios-s1a-37813671446-1-patched-local-variant-part01",
+      "sha256": "c70b6d98fc9d310ba1702bea6bcace7cb03f7fa46f2095d4db375ff5e4ea4c14",
+      "size_in_bytes": 16846049
+    },
+    {
+      "id": 11566502689,
+      "name": "latios-s1a-37813671446-1-patched-local-variant-part02",
+      "sha256": "33bdcc7e157ad163dcf2ae9387cc1454bf06583fa01e854425d8a4468cfb3af6",
+      "size_in_bytes": 16846049
+    },
+    {
+      "id": 11566093857,
+      "name": "latios-s1a-37813671446-1-patched-local-variant-part03",
+      "sha256": "c4949b0e3666922c9473d1a5a8290971da99bf29e6b2eb12445c09fed75f108f",
+      "size_in_bytes": 16846049
+    },
+    {
+      "id": 11565809527,
+      "name": "latios-s1a-37813671446-1-patched-local-variant-part04",
+      "sha256": "f2b21fa225c12034c504063b69f7550d9df317d19a860deeb18b53ae9a0cdb30",
+      "size_in_bytes": 15853324
+    }
+  ],
+  "attempt": 1,
+  "evidence_manifest_sha256": "15bc13c0715233b7863ad726058697bfeea6cb661f06b623615bcdb7dea26386",
+  "head_sha": "b6ef271fc8eded93c6e79c0dfcf90917b72b7945",
+  "parts_manifest_sha256": "057131583ed2d701e0c5910af6df6b065d16a8ce4e661ef7b84ba70e5e23710b",
+  "run_id": 37813671446,
+  "run_url": "https://github.com/karosLi/SPGameFoundation/actions/runs/37813671446/attempts/1",
+  "workflow": ".github/workflows/latios-lab.yml"
+}

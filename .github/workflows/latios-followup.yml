@@ -1,0 +1,345 @@
+name: Latios conditional repeat and player
+
+# Source preparation cannot launch: only a separate request-only release on this exact branch does.
+on:
+  push:
+    branches: [dot/latios-lab-validate]
+    paths: [Latios2022Lab/followup-request.json]
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+
+# Share the existing Editor experiment's reservation group; never cancel another native run.
+concurrency:
+  group: latios-s1a-control
+  cancel-in-progress: false
+
+jobs:
+  followup-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      tool_commit: ${{ steps.release.outputs.tool_commit }}
+      stage: ${{ steps.release.outputs.stage }}
+    steps:
+      - name: Initialize hosted prerequisite paths
+        shell: bash
+        run: |
+          : "${RUNNER_TEMP:?Missing runner temporary directory}"
+          : "${GITHUB_RUN_ID:?Missing run ID}" "${GITHUB_RUN_ATTEMPT:?Missing run attempt}"
+          printf 'FOLLOWUP_REVIEW=%s/latios-followup-review-%s-%s-hosted\n' "$RUNNER_TEMP" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+        with:
+          path: latios-followup-release
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify request-only release chain
+        id: release
+        env:
+          UNITY_SELF_HOSTED: ${{ vars.UNITY_SELF_HOSTED }}
+        shell: bash
+        run: |
+          test "$UNITY_SELF_HOSTED" = true || { echo "Approved native runner is disabled; follow-up remains NOT_RUN"; exit 1; }
+          python3 latios-followup-release/Tools/ci/latios_followup_ci.py release --release-repo "$GITHUB_WORKSPACE/latios-followup-release" --github-output "$GITHUB_OUTPUT"
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.release.outputs.tool_commit }}
+          path: latios-followup-tools
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Run unchanged and conditional static gates without Unity
+        shell: bash
+        run: |
+          cd latios-followup-tools
+          python3 -m unittest discover -s Tools/ci -p 'test_latios*.py' -v
+          python3 -m unittest discover -s Latios2022Lab/Tools -p 'test_*.py' -v
+      - name: Restore and verify original prerequisite evidence
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          python3 latios-followup-tools/Tools/ci/latios_followup_ci.py validate --release-repo "$GITHUB_WORKSPACE/latios-followup-release" --review "$FOLLOWUP_REVIEW"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-prerequisite-review
+          path: ${{ env.FOLLOWUP_REVIEW }}/prerequisite-summary.json
+          compression-level: 0
+          if-no-files-found: ignore
+
+  conditional-native:
+    needs: followup-gate
+    runs-on: [self-hosted, unity]
+    timeout-minutes: 120
+    env:
+      FOLLOWUP_RELEASE: latios-followup-release-${{ github.run_id }}-${{ github.run_attempt }}
+      FOLLOWUP_TOOLS: latios-followup-tools-${{ github.run_id }}-${{ github.run_attempt }}
+      UNITY_EDITOR_PATH: ${{ vars.UNITY_EDITOR_PATH }}
+    steps:
+      - name: Initialize conditional paths on assigned Mac
+        shell: bash
+        run: |
+          : "${RUNNER_TEMP:?Missing runner temporary directory}"
+          : "${GITHUB_RUN_ID:?Missing run ID}" "${GITHUB_RUN_ATTEMPT:?Missing run attempt}"
+          printf 'FOLLOWUP_REVIEW=%s/latios-followup-review-%s-%s-native\n' "$RUNNER_TEMP" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
+          printf 'FOLLOWUP_WORKSPACE=%s/latios-followup-%s-%s\n' "$RUNNER_TEMP" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
+          printf 'FOLLOWUP_EVIDENCE=%s/latios-followup-evidence-%s-%s\n' "$RUNNER_TEMP" "$GITHUB_RUN_ID" "$GITHUB_RUN_ATTEMPT" >> "$GITHUB_ENV"
+      - uses: actions/checkout@v4
+        with:
+          path: ${{ env.FOLLOWUP_RELEASE }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.followup-gate.outputs.tool_commit }}
+          path: ${{ env.FOLLOWUP_TOOLS }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Revalidate prerequisites and execute only released conditional stage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          args=()
+          if [ -n "$UNITY_EDITOR_PATH" ]; then args+=(--editor "$UNITY_EDITOR_PATH"); fi
+          python3 "$FOLLOWUP_TOOLS/Tools/ci/latios_followup_ci.py" execute --release-repo "$GITHUB_WORKSPACE/$FOLLOWUP_RELEASE" --review "$FOLLOWUP_REVIEW" --workspace "$FOLLOWUP_WORKSPACE" "${args[@]}"
+      - name: Package original conditional evidence and small summary
+        if: always()
+        shell: bash
+        run: |
+          python3 "$FOLLOWUP_TOOLS/Tools/ci/latios_followup_ci.py" package --workspace "$FOLLOWUP_WORKSPACE" --output "$FOLLOWUP_EVIDENCE"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-early-review
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/early/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part00
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part00/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part01
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part01/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part02
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part02/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part03
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part03/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part04
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part04/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part05
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part05/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part06
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part06/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part07
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part07/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part08
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part08/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part09
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part09/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part10
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part10/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part11
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part11/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part12
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part12/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part13
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part13/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part14
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part14/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part15
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part15/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part16
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part16/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part17
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part17/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part18
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part18/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part19
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part19/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part20
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part20/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part21
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part21/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part22
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part22/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part23
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part23/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part24
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part24/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part25
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part25/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part26
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part26/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part27
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part27/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part28
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part28/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part29
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part29/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part30
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part30/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: latios-followup-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.followup-gate.outputs.stage }}-part31
+          path: ${{ env.FOLLOWUP_EVIDENCE }}/parts/part31/
+          compression-level: 0
+          if-no-files-found: ignore

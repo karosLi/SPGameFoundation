@@ -1,0 +1,51 @@
+# Request-only conditional follow-up CI
+
+This is preparation for the existing sole Mac runner. No `followup-request.json` is shipped, no native queue is allocated and no repeat/player result is claimed. Publish and review this source first; the lead issues each later request only after higher-priority work and the shared queue are clear.
+
+The earlier standalone preparation was published as `b8c3de952beed8d52974ddcaa22f748c73c232ca`, tree `e615c5db1d982202b179595749441601d2ab6699`. Its local precursor `8f3686c` has that tree, but is not the remote identity. This new CI preparation will have its own published SHA. The frozen native source remains **`b6ef271fc8eded93c6e79c0dfcf90917b72b7945`**, tree **`dbda0866da350caa91029ce2d1cae855c61ce06b`**. Neither source C# nor the original experiment/workflow/request is changed.
+
+## Separate preparation and release
+
+The new [workflow](../../.github/workflows/latios-followup.yml) runs only for pushes to `dot/latios-lab-validate` touching `Latios2022Lab/followup-request.json`. Source/docs/workflow preparation pushes do not match that path. There is no dispatch, PR or automatic next-stage trigger. The original `latios-lab.yml` and `ci-request.json` remain unchanged; the existing root branch exclusion remains unchanged. The ordinary hosted .NET harness still runs normally.
+
+1. Publish and inspect the new preparation source. Its diff from the frozen native commit may contain only the explicitly named conditional tools/workflow and bounded Lab documentation. Product inputs, all C#/asmdefs/fixtures, original launchers and original workflows are excluded from that allowance.
+2. Commit only `followup-request.json`, naming the **published preparation SHA** in `tool_commit`. The release must be a direct request-only child or a linear chain of at most 32 request-only children of that prepared commit. Every intermediate commit is checked; merges or a code change mixed into the release are refused.
+3. Hosted validation first verifies that release chain, then checks out the exact approved preparation separately. Its `HEAD` equals `tool_commit`; it does not try to make a gate commit refer to itself. Both checkouts must retain the same immutable release request object.
+4. Hosted validation runs the unchanged/new Python gates, verifies live P0/run/queue state, downloads and restores exact original prerequisite artifacts, verifies their native source/phase/package evidence and emits a small `VERIFIED_PREREQUISITES_ONLY` summary. Only success admits the sole `[self-hosted, unity]` job.
+5. The Mac independently checks out the release and approved tool SHA, restores/verifies prerequisites into its own new review directory, rechecks the reservation and executes only the named stage in another new native workspace. It never reuses the hosted or original project/cache.
+
+The workflow shares `latios-s1a-control` concurrency with the original Editor workflow and never cancels another run. The repository-wide active-run guard covers the root native suite, both Latios workflows and `unity-shooter-native-allocation-diagnostic.yml`. The current conditional run is exempt. The only other exempt definition is the byte-identical known hosted-only `.NET harness` workflow, SHA-256 `a844f9e971a09577f782d1617f6fefc79835545943ea52b678722cf6c7093a9f`, checked at that active run's exact commit. A hosted first job alone cannot prove that later jobs are hosted, so unknown or unavailable workflow definitions fail closed. Admission and every native phase recheck this guard; the lead's real reservation is still required because API observations are not an atomic machine lock.
+
+## Request fields
+
+The request is bounded to 256 KiB and has schema `latios-followup-ci-v1`. It retains the standalone gate's explicit `repository`, `tool_commit`, frozen `source_commit`/`source_tree`, `stage`, `allowed_phases`, `target`, `architecture`, `burst`, exact P0 identity/review URL/status, `runner_reserved`, `coordinator`, `expires_utc` and exact patched Local `experiment` object. Unknown fields are rejected. P0 commit and evidence URL must agree with the frozen b6 release; expiry and reservation must be fresh, not copied as current approval from historical evidence.
+
+Transport fields replace local filesystem evidence roots:
+
+- `editor_evidence_reviewed: true` is the lead's explicit review of the original package/source/native evidence.
+- `editor_artifacts` must equal the checked-in [original artifact binding](Validation/20261008-patched-local-editor/editor-artifact-binding.json). That descriptor contains only known artifact/run IDs, sizes and digests; it grants no reservation or approval.
+- Player requests additionally require `repeat_evidence_reviewed: true` and `repeat_artifacts`, describing the completed, separately reviewed repeat run. The descriptor identifies the repeat workflow's actual release SHA, run/attempt, contiguous part IDs/names/sizes/hashes, ZIP size/hash, part-manifest hash and original producer-manifest hash.
+
+`repeat-clean-import` permits exactly `["import"]`. A later `mac-il2cpp-smoke` request permits exactly `["import", "player-build", "player-run"]`. There is no automatic stage advancement. Player admission verifies that the repeat receipt belongs to its successful workflow run, exact request bytes, repeat-only release and same native source; that release must be an ancestor of the player release. Every repeat's actual `followup-ci.json` binds run, attempt, release SHA, approved tool SHA and request SHA. Identical immutable Editor evidence may be restored into different review directories; only that local root spelling is ignored when comparing prerequisites.
+
+## Original evidence retrieval and bounded output
+
+[The retrieval module](../../Tools/ci/latios_followup_artifacts.py) uses the official [Actions artifact API](https://docs.github.com/en/rest/actions/artifacts?apiVersion=2022-11-28#download-an-artifact), with only the existing job-scoped `actions: read` and `contents: read` permissions. It accepts IDs rather than caller download URLs, verifies the completed run/attempt/repository/workflow/head and all artifact API metadata, then checks wrapper byte counts and official SHA-256 digests. Artifact names bind the exact run and attempt. No manual credentials or persisted tokens are used.
+
+The authenticated API redirect is captured without following it. The returned signed production Actions blob URL is fetched in a separate unauthenticated, nonredirecting request. Tokens and signed URLs are neither printed nor stored, including failure messages. An unsupported/expired route is a blocker, not an alternate-login or credential request.
+
+Each wrapper contains only its expected part and identical manifest. Bounds are 32 parts, 16 MiB per payload, 512 MiB total ZIP, 50,000 restored regular files and 2 GiB restored bytes. Unsafe, duplicate, linked, encrypted or oversized entries are rejected before the unchanged `evidence_parts.py` restorer is called. Complete archive/member digests and the producer inventory's exact coverage are checked. Original wrappers and nonsensitive hash receipts remain in the run's separate review directory.
+
+The conditional output retains original native logs, source/package/real-lock snapshots, settings deltas, player result/app inventory and CI provenance. Packaging verifies that evidence belongs to this exact run/attempt/release, rejects stale/symlink ancestry, and uses the existing 32-part/16 MiB and early-review bounds. A small original `followup-summary.json` is attached beside the early ZIP. Failures preserve their original evidence; failure before an owned workspace exists may have only the Actions diagnostic log and cannot masquerade as native execution. Neither previous evidence nor product caches are deleted.
+
+## Architecture observation and remaining limits
+
+The frozen `LabPlayerBuild` selects StandaloneOSX, IL2CPP, OptimizeSize and Development, but does not select a CPU. The actual b6 normalized settings contain `platformArchitecture: {}`; retained `EditorBuildSettings` lists scene/config entries, not the desktop architecture choice. No `EditorUserBuildSettings` binary was retained. The [2022.3 macOS build documentation](https://docs.unity3d.com/2022.3/Documentation/Manual/macos-building.html) lists Intel, Apple Silicon and universal choices but does not prove this fresh project's default. The observed arm64 Editor process is not player-architecture evidence.
+
+The lead therefore chooses the first explicit `arm64` or `x86_64` release scope with that uncertainty visible. The tool does not guess/edit binary Editor settings or silently retarget. It must observe the chosen slice with `lipo` and launch it through the matching `arch` selector; a mismatch stops. A desktop x86_64 or arm64 result proves only that selected Mac CPU and bounded frozen DisposeWorld/pair/query smoke. It does not prove ARM mobile, full lifecycle coverage, optional modules or S2 adoption. Missing IL2CPP/module/SDK remains a real blocker; no installation, signing/security change or persistent Editor preference mutation is attempted.
+
+## Local validation
+
+The preparation passed **79 Lab Python tests, 78 CI/artifact Python tests and 15 unchanged evidence-restoration tests**, plus YAML parsing and independent review. Fixtures cover request-only ancestry, self-reference separation, changed native/product/workflow inputs, expiry/review/stage rejection, diagnostic/unknown queues versus the exact hosted harness, fresh workspace/evidence ownership, stale packaging, artifact/run/attempt/digest mismatch, redirect auth stripping, traversal/link/duplicate/CRC and archive limits. They launch no Unity and make no live artifact request.
+
+The new parser also checked all five retained real b6 wrappers, their official metadata, the bound 82,893,355-byte archive and all 327 inner members, plus all 326 original producer hashes. Existing restored bytes were reused read-only to avoid a redundant 623 MiB copy. The real b6→published b8 source lineage/P0 anchors were checked against Git objects. [The local receipt](Validation/20261008-followup-ci/local-verification.json) records exact source hashes, logs and scope. Workflow acceptance, repeat import and IL2CPP build/execution remain **NOT_RUN** until the lead publishes and independently releases them.

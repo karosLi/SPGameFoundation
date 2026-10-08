@@ -1,0 +1,59 @@
+{
+  "architecture": "Not inferred from arm64 Editor: frozen helper does not select CPU; actual normalized platformArchitecture is empty and no EditorUserBuildSettings retained. Lead chooses explicit Mac CPU; lipo/arch must match, without retargeting.",
+  "commands": [
+    "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s Latios2022Lab/Tools -p 'test_*.py' -q",
+    "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s Tools/ci -p 'test_latios*.py' -q",
+    "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s Tools/ci -p test_evidence_parts.py -q"
+  ],
+  "exact_git_objects_checked": true,
+  "frozen_native_commit": "b6ef271fc8eded93c6e79c0dfcf90917b72b7945",
+  "frozen_native_tree": "dbda0866da350caa91029ce2d1cae855c61ce06b",
+  "log_sha256": {
+    "ci-artifact-tests.log": "3aeceb114ffc9e75151752b12ab3322de9c1ad57701c4a7691633af713c288be",
+    "lab-tests.log": "0c83c1ff1571334490f2b62e5fcc4204a2a14055bacd41c6fb76051965af8499",
+    "restoration-tests.log": "a060b16bfbc1024376212effe9d6e5f6e7642ed093edfe96d4676d578b5b47ba"
+  },
+  "native": "NOT_RUN",
+  "original_evidence_checked": {
+    "archive_bytes": 82893355,
+    "archive_sha256": "b1fb3ba53fb4b43eeeb581c264eee41fa1d05444e8126ad3022be6d7b246661d",
+    "duplicate_restoration": false,
+    "inner_members": 327,
+    "live_network": false,
+    "official_wrappers": 5,
+    "producer_originals": 326
+  },
+  "prior_published_preparation_commit": "b8c3de952beed8d52974ddcaa22f748c73c232ca",
+  "prior_published_preparation_tree": "e615c5db1d982202b179595749441601d2ab6699",
+  "review": "Independent final recheck found no remaining actionable blocker after stale/symlink workspace and packaging regressions. Global queue callback includes Mac diagnostic and rejects unproven runner scope; exact hosted-only harness is allowed.",
+  "scope": "Offline tests and original archived evidence only; no followup request, queue allocation, remote artifact request, native execution or push",
+  "source_sha256": {
+    ".github/workflows/latios-followup.yml": "6cd93fd6f67dbfe7cdc17edbfd6e56d233ae30a1efb265b8802926a927923911",
+    "Latios2022Lab/Docs/Validation/20261008-patched-local-editor/editor-artifact-binding.json": "267f17ad2625b1554e101255ad4c563ba86315eed1e0fc89cef5de1124b6d76e",
+    "Latios2022Lab/Tools/followup.py": "8051bec29e79995084c0b400e3ed71c126487d0469989dcead1f47840608ee82",
+    "Latios2022Lab/Tools/test_followup.py": "33540c6cce5068eeb51876615927ad6b79bb7316b9608077e392e6650cf8970f",
+    "Tools/ci/latios_followup_artifacts.py": "3b4dcfd1a51aaf43d684a965a5a037d9fa502347b65381e27172a81a48b1508d",
+    "Tools/ci/latios_followup_ci.py": "6de6fa9ff21f345d2646b587ecd7ad56d268f792c9f1f778b1ce7cd482650339",
+    "Tools/ci/test_latios_followup_artifacts.py": "a3f7faf97751543b0ab911afae973dbec948db28991c950014759a466dfc4223",
+    "Tools/ci/test_latios_followup_ci.py": "2fe049cee10c5242954a6ad1cf9be17fe314a2cad6fcab7c5251ab861a4d91a5"
+  },
+  "status": "LOCAL_CI_PREPARATION_VERIFIED",
+  "tests": {
+    "ci_and_artifacts": 78,
+    "lab": 79,
+    "new_artifact_cases": 28,
+    "new_ci_cases": 17,
+    "unchanged_restoration": 15
+  },
+  "unchanged": [
+    "all26 frozen fixture/meta hashes",
+    "all C# and asmdefs",
+    "variant source/patch/spec",
+    "original lab.py and cleanup_variant.py",
+    "latios-lab.yml and ci-request.json",
+    "root workflows",
+    "evidence_parts.py and latios_lab_ci.py"
+  ],
+  "verified_at": "2026-10-08T19:15:13.812576+00:00",
+  "yaml": "Parsed exact request-only branch/path, hosted prerequisite and one self-hosted unity job"
+}

@@ -98,6 +98,8 @@ Current artifact names include `latios-s1a-<run>-<attempt>-<git-control-or-arm>-
 
 ## Conditional repeat and player preparation
 
+The separate [request-only CI bridge](../Latios2022Lab/Docs/ConditionalFollowupCI-20261008.md) now prepares hosted original-artifact verification and the same sole Mac runner route. It preserves this Editor workflow/request and ships no executable follow-up request. Preparation publication alone cannot trigger native work; repeat and player require later, separate request-only releases naming the exact published tool SHA.
+
 `Latios2022Lab/Tools/followup.py` is a separate, default-closed local runner. It does not change this workflow, issue a CI request, reserve a runner, edit frozen C# or promote the old control. [The milestone](../Latios2022Lab/Docs/PatchedLocalEditorMilestone-20261008.md) records precise native scope and all retained evidence hashes.
 
 No arguments print a plan only. `--check --gate /absolute/released.json` verifies local prerequisites without remote calls or native launch. `--execute --gate /absolute/released.json --workspace /new/absolute/workspace --editor /absolute/installed/Unity` also verifies live P0/Editor workflow state and both native queues before each phase. Only the execution lead may use it after reserving the existing Mac. No valid release example is committed.

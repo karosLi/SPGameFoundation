@@ -147,7 +147,7 @@ class FollowupTests(unittest.TestCase):
         repeat = self.root / 'repeat'; repeat.mkdir()
         summary = dict(source_commit=gate['source_commit'], source_tree=gate['source_tree'], experiment=gate['experiment'],
                        evidence_label='patched-local-variant', stage='repeat-clean-import', status='PASSED', fresh_project=True,
-                       repeat_clean_import='PASSED', editor_evidence=gate['editor_evidence'])
+                       repeat_clean_import='PASSED', editor_evidence=dict(gate['editor_evidence'], root='/synthetic/prior-restoration'))
         f.ci.write_json(repeat / 'followup-summary.json', summary)
         output = self.synthetic_phase(repeat, gate, 'import', 'on', '/synthetic/repeat')
         gate['repeat_evidence'] = self.binding(repeat)

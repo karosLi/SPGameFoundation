@@ -19,12 +19,20 @@ LATIOS_COMMIT = "381a77dbf774ff603014d5695ef6c06abaa25d96"
 LATIOS_URL = "https://github.com/Dreaming381/Latios-Framework.git#" + LATIOS_COMMIT
 PINS = {"com.unity.entities": "1.3.5", "com.unity.entities.graphics": "1.4.2",
         "com.unity.burst": "1.8.18", "com.unity.audio.dspgraph": "0.1.0-preview.22",
-        "com.unity.render-pipelines.universal": "14.0.11", "com.unity.test-framework": "1.1.33"}
+        "com.unity.render-pipelines.universal": "14.0.12", "com.unity.test-framework": "1.4.5"}
 
 PINS.update({"com.unity.modules." + name: "1.0.0" for name in (
     "animation", "audio", "assetbundle", "imageconversion", "imgui", "jsonserialize",
     "particlesystem", "physics", "physics2d", "ui", "uielements", "unitywebrequest")})
 PINS["com.unity.ugui"] = "1.0.0"
+# The first native lock verified these dependency versions. Keep them explicit in
+# validation without claiming to have produced the next Unity-resolved lock.
+RESOLVED_PINS = dict(PINS, **{"com.unity.collections": "2.5.1",
+                            "com.unity.mathematics": "1.3.2",
+                            "com.unity.serialization": "3.1.1"})
+# Unity 2022.3.62f2 on the approved ARM64 Mac inserted this installed toolchain.
+# It is not an authored dependency or permission to install another toolchain.
+EDITOR_MANIFEST_ADDITIONS = {"com.unity.toolchain.macos-arm64-linux-x86_64": "2.0.5"}
 
 
 def require(condition, message):
@@ -52,9 +60,48 @@ def check_lock(path):
     require(entry.get('source') == 'git', "Latios must resolve as the pinned Git package.")
     require(entry.get('hash') == LATIOS_COMMIT, "Resolved Latios commit differs from the pin.")
     require(entry.get('version') == LATIOS_URL, "Resolved Latios URL differs from the pin.")
-    for name, version in PINS.items():
+    for name, version in RESOLVED_PINS.items():
         require(lock.get(name, {}).get('version') == version, "Unexpected resolved package: " + name)
+    for name, version in EDITOR_MANIFEST_ADDITIONS.items():
+        if name in lock:
+            require(lock[name].get('version') == version and lock[name].get('source') == 'registry',
+                    "Unexpected Editor-added toolchain: " + name)
     return lock
+
+
+def check_manifest(manifest, lock=None):
+    require(set(manifest) == {'dependencies'}, 'Unexpected manifest configuration.')
+    expected = dict(PINS, **{'com.latios.latiosframework': LATIOS_URL})
+    dependencies = manifest['dependencies']
+    require(all(dependencies.get(name) == version for name, version in expected.items()), 'Manifest pins drifted.')
+    additions = {name: version for name, version in dependencies.items() if name not in expected}
+    for name, version in additions.items():
+        require(name in EDITOR_MANIFEST_ADDITIONS and EDITOR_MANIFEST_ADDITIONS[name] == version,
+                'Unexpected manifest addition: ' + name)
+        require(lock is not None and lock.get(name, {}).get('version') == version
+                and lock[name].get('source') == 'registry',
+                'Editor-added toolchain requires its matching real lock: ' + name)
+    return additions
+
+
+def check_test_assembly(data):
+    references = data.get('references', [])
+    require(len(references) == len(set(references)), 'Duplicate assembly references: ' + data['name'])
+    require(not data.get('optionalUnityReferences'), 'Legacy test references would duplicate explicit runners: ' + data['name'])
+    require({'UnityEngine.TestRunner', 'UnityEditor.TestRunner'} <= set(references), 'Missing explicit test runner reference.')
+    require(data.get('overrideReferences') is True and data.get('precompiledReferences') == ['nunit.framework.dll'],
+            'Test assemblies must reference NUnit explicitly.')
+    require(data.get('autoReferenced') is False and data.get('defineConstraints') == ['UNITY_INCLUDE_TESTS'],
+            'Test assembly inclusion must remain explicit.')
+
+
+def check_registered_packages(path, lock):
+    records = json.loads(path.read_text())['packages']
+    registered = {record['name']: record['version'] for record in records}
+    require(len(registered) == len(records), 'Duplicate registered package inventory.')
+    for name, version in RESOLVED_PINS.items():
+        require(registered.get(name) == version and lock[name]['version'] == version,
+                'Registered package and reviewed pin/lock disagree: ' + name)
 
 
 def parse_project_version(text):
@@ -80,25 +127,26 @@ def check_defines(settings):
 def preflight(project=PROJECT):
     validate_paths(project)
     revision = parse_project_version((project / 'ProjectSettings/ProjectVersion.txt').read_text())
+    lock_path = project / 'Packages/packages-lock.json'
+    lock = check_lock(lock_path) if lock_path.exists() else None
     manifest = json.loads((project / 'Packages/manifest.json').read_text())
-    require(manifest['dependencies'] == dict(PINS, **{'com.latios.latiosframework': LATIOS_URL}), 'Manifest pins drifted.')
+    additions = check_manifest(manifest, lock)
     settings = (project / 'ProjectSettings/ProjectSettings.asset').read_text()
     check_defines(settings)
     assemblies = []
     for path in (project / 'Assets').rglob('*.asmdef'):
         data = json.loads(path.read_text())
         require(not any(name.startswith('SPF.') for name in data.get('references', [])), 'Lab cannot depend on SPF assemblies.')
+        if data['name'] in ('Latios2022Lab.Editor', 'Latios2022Lab.PlayMode'):
+            check_test_assembly(data)
         assemblies.append(data['name'])
     require(len(assemblies) == len(set(assemblies)) == 4, 'Expected four independent lab assemblies.')
     for path in (project / 'Assets').rglob('*'):
         if path.suffix != '.meta':
             require(Path(str(path) + '.meta').is_file(), 'Missing Unity metadata: ' + str(path))
-    lock_path = project / 'Packages/packages-lock.json'
-    if lock_path.exists():
-        check_lock(lock_path)
     return {'status': 'STATIC_PREFLIGHT_ONLY', 'editor': EDITOR_VERSION, 'latios_commit': LATIOS_COMMIT,
             'project': str(project), 'editor_revision': revision, 'resolved_lock': 'present; pins checked' if lock_path.exists() else 'NOT_RESOLVED',
-            'native': 'NOT_RUN', 'assemblies': sorted(assemblies)}
+            'editor_manifest_additions': additions, 'native': 'NOT_RUN', 'assemblies': sorted(assemblies)}
 
 
 def read_gate(path, project, phase):
@@ -212,12 +260,14 @@ def main(argv=None):
         code = subprocess.run(command, cwd=PROJECT, env=env, check=False).returncode
         require(product_fingerprint() == before, 'Root product Packages/ProjectSettings changed: stop and investigate.')
         require(code == 0, 'Unity failed with exit code ' + str(code) + '; preserve ' + str(output))
-        check_lock(PROJECT / 'Packages/packages-lock.json')
+        lock = check_lock(PROJECT / 'Packages/packages-lock.json')
+        check_manifest(json.loads((PROJECT / 'Packages/manifest.json').read_text()), lock)
         (output / 'lab-inputs-after.json').write_text(json.dumps({str(p.relative_to(PROJECT)): sha(p) for directory in ('Packages', 'ProjectSettings') for p in (PROJECT / directory).rglob('*') if p.is_file()}, indent=2) + '\n')
         if args.phase in ('editmode', 'playmode'):
             check_results(output / 'tests.xml', args.phase)
         elif args.phase == 'import':
             require((output / 'environment.json').is_file(), 'Import produced no verified environment inventory.')
+            check_registered_packages(output / 'environment.json', lock)
         else:
             require('Result=Succeeded' in (output / 'build.txt').read_text(), 'No successful build report. Player execution remains NOT_RUN.')
         evidence = {str(p.relative_to(output)): sha(p) for p in output.rglob('*') if p.is_file()}

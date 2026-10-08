@@ -311,14 +311,15 @@ def package(workspace, output):
     evidence.package_evidence(source, output / 'parts')
     early = output / 'early'
     candidate = output / 'early-review.candidate.zip'
-    # Small XML, locks, source pins and summaries are immediately reviewable. Full logs stay in parts.
+    # Complete small XML, locks, normalized lab settings, source pins and summaries
+    # remain reviewable even when the later full-part upload fails.
     # Log excerpts are explicitly labelled and hash-linked to the complete retained original.
     with zipfile.ZipFile(candidate, 'w', zipfile.ZIP_DEFLATED) as archive:
         for path in sorted(source.rglob('*')):
             if not path.is_file():
                 continue
             relative = path.relative_to(source).as_posix()
-            if path.suffix in ('.xml', '.json', '.txt'):
+            if path.suffix in ('.xml', '.json', '.txt') or relative.startswith('lab-inputs/ProjectSettings/'):
                 archive.write(path, relative)
             elif path.suffix == '.log':
                 with path.open('rb') as stream:

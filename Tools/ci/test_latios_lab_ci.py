@@ -202,6 +202,23 @@ class ExecutionTests(unittest.TestCase):
             self.assertFalse((oversized / 'early').exists())
             self.assertTrue((oversized / 'parts/part00/evidence-manifest.json').exists())
 
+    def test_early_evidence_preserves_complete_normalized_project_settings(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            workspace = Path(tmp) / 'run'
+            artifacts = workspace / 'Artifacts'
+            settings = artifacts / 'lab-inputs/ProjectSettings/ProjectSettings.asset'
+            settings.parent.mkdir(parents=True)
+            original = b'%YAML 1.1\nPlayerSettings:\n  scriptingDefineSymbols:\n    Standalone: ENTITY_STORE_V1\n'
+            settings.write_bytes(original)
+            (artifacts / 'unrelated.asset').write_bytes(b'not a lab setting')
+            output = Path(tmp) / 'output'; output.mkdir()
+            ci.package(workspace, output)
+            with zipfile.ZipFile(output / 'early/early.zip') as archive:
+                self.assertEqual(original, archive.read('lab-inputs/ProjectSettings/ProjectSettings.asset'))
+                self.assertNotIn('unrelated.asset', archive.namelist())
+            manifest = json.loads((output / 'parts/part00/evidence-manifest.json').read_text())
+            self.assertTrue(manifest['parts'])
+
     def test_first_failure_preserved_without_later_phase_or_player(self):
         with tempfile.TemporaryDirectory() as tmp:
             repo = Path(tmp) / 'checkout'; repo.mkdir()

@@ -1,12 +1,12 @@
 # Latios 2022 S1a laboratory
 
-Status: **prepared, not imported or compiled in Unity**. This is the isolated historical control group from [the integration blueprint](../Docs/LatiosUnity2022IntegrationBlueprint.md#7-轨道二-建立真实的-latios-2022-兼容线). It is not an SPF backend and does not establish S1a completion.
+Status: **first native import failed; corrected candidate awaits native execution**. [Run 37715538586](https://github.com/karosLi/SPGameFoundation/actions/runs/37715538586/attempts/1) stopped at duplicate references in the two owned test asmdefs; all tests remained NOT_RUN. [Diagnosis and preserved first lock](Docs/ImportCorrection-20261008.md). This is the isolated historical control group from [the integration blueprint](../Docs/LatiosUnity2022IntegrationBlueprint.md#7-轨道二-建立真实的-latios-2022-兼容线). It is not an SPF backend and does not establish S1a completion.
 
 - Unity: exactly **2022.3.62f2**
 - Latios: **0.11.5**, commit `381a77dbf774ff603014d5695ef6c06abaa25d96`
 - Declared control dependencies: Entities 1.3.5, Entities Graphics 1.4.2, Burst 1.8.18, DSPGraph 0.1.0-preview.22
-- Host-project choices: URP 14.0.11 and Test Framework 1.1.33; required standard engine modules are declared explicitly
-- Collections/Mathematics: left to the pinned dependency graph to resolve. Expected historical values 2.5.1/1.3.2 are research evidence, not a generated lock.
+- Host-project choices: URP 14.0.12, matching this Editor's actual registered built-in package, and Test Framework 1.4.5, required by Collections 2.5.1 and observed in the first lock; required standard engine modules remain explicit
+- Collections/Mathematics/Serialization: dependency graph remains 2.5.1/1.3.2/3.1.1, confirmed in the first failed import. The launcher checks those versions without manufacturing a lock for the corrected input.
 - The initial PlayerSettings file is a small authored input, not an Editor-produced settings dump. Unity must normalize it, and the native environment check must confirm the actual defines and .NET Standard API.
 
 The entire upstream package remains a Git dependency. Optional runtime installers are not called. This still brings its other assemblies, generators, native plug-ins, Graphics and DSPGraph dependencies into package import/compilation. No renderer, audio, text or animation compatibility is inferred from Core/Psyshock tests. [Module/platform matrix](Docs/CompatibilityMatrix.md).
@@ -22,7 +22,9 @@ python3 -m unittest discover -s Latios2022Lab/Tools -p 'test_*.py' -v
 
 Neither command imports packages or starts Unity. The [deliberate CI launcher](../Docs/Latios2022LabCI.md) requires a separately reviewed release request on its exact lab-only branch; ordinary stage pushes do not run the lab. The existing root `Assets`, `Packages`, `ProjectSettings`, `Library` and test launcher are not used by this lab.
 
-`Packages/packages-lock.json` is deliberately absent until Unity creates it. Never copy a sample lock, manufacture one from this README, or report manifest pins as resolved versions. The real lock must subsequently be reviewed and committed separately with exact environment evidence.
+The first genuine lock is preserved verbatim under [Docs/Validation](Docs/Validation/20261008-first-import/provenance.json), outside active `Packages`. It belongs to the failed source and is not promoted to a successful control. Active `Packages/packages-lock.json` remains absent until Unity resolves the corrected manifest. Never copy a sample lock, manufacture one from this README, or report manifest pins as resolved versions. Review the next real lock and actual registered versions before committing it separately with exact environment evidence.
+
+After import, the launcher accepts only the observed `com.unity.toolchain.macos-arm64-linux-x86_64` 2.0.5 manifest addition, and only with a matching registry entry in the actual lock. This keeps later phases usable after the Editor's known normalization; it does not add the toolchain to authored input or authorize installation. Other additions, pin changes and manifest configuration changes fail closed.
 
 ## After P0 and runner release
 

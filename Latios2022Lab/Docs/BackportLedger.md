@@ -3,7 +3,7 @@
 ## Control group
 
 - Upstream: [Dreaming381/Latios-Framework 0.11.5](https://github.com/Dreaming381/Latios-Framework/tree/381a77dbf774ff603014d5695ef6c06abaa25d96), exact `381a77dbf774ff603014d5695ef6c06abaa25d96`.
-- Source host metadata: [package.json](https://github.com/Dreaming381/Latios-Framework/blob/381a77dbf774ff603014d5695ef6c06abaa25d96/package.json) specifies Entities 1.3.5, Graphics 1.4.2, Burst 1.8.18 and DSPGraph 0.1.0-preview.22; minimum Editor 2022.3.36f1. Exact target 2022.3.62f2 still needs execution.
+- Source host metadata: [package.json](https://github.com/Dreaming381/Latios-Framework/blob/381a77dbf774ff603014d5695ef6c06abaa25d96/package.json) specifies Entities 1.3.5, Graphics 1.4.2, Burst 1.8.18 and DSPGraph 0.1.0-preview.22; minimum Editor 2022.3.36f1. Exact target 2022.3.62f2 reached a first import failure; corrected-source compilation and execution remain pending.
 - Documentation snapshot: [bc3be505](https://github.com/Dreaming381/Latios-Framework-Documentation/tree/bc3be50530180ad6ee8dd10fa7388a7854131f6b).
 - Local preparation baseline: SPF `9fc4e2b7e20a17e5586a68f756e92f8102f99339`. No SPF root package/settings changes.
 - Upstream code modifications: **none**. Vendored implementation/binaries: **none**. Independent lab tests/tools reference the package API; only the two exact notices are copied.
@@ -39,7 +39,13 @@ UPM will fetch the whole original package and its notices later. A player/packag
 
 ## Review ledger for future changes
 
-For each future compatibility fix or new capability, record upstream commit/file, concrete product need, failure/old oracle, new oracle, dependency closure, modified files, preserved notices, native/Burst/AOT result and platform limits. Keep compatibility fixes separate from feature backports. The first entry remains **pending real S1a import results**.
+For each future compatibility fix or new capability, record upstream commit/file, concrete product need, failure/old oracle, new oracle, dependency closure, modified files, preserved notices, native/Burst/AOT result and platform limits. Keep compatibility fixes separate from feature backports.
+
+### S1a host import correction, 2026-10-08
+
+The [first run and source-based diagnosis](ImportCorrection-20261008.md) isolate owned duplicate test-runner references as the compilation setup blocker. Both Lab test asmdefs now use explicit runners and NUnit, without legacy `optionalUnityReferences`. Host Test Framework 1.4.5 and URP 14.0.12 declarations reflect verified dependency/registered-package evidence. Launcher checks retain the unchanged original Latios/Entities/Graphics/Burst graph, reject unreviewed normalization, and compare registered versions with the new genuine lock. The first failed-run lock is preserved verbatim outside active `Packages`.
+
+No upstream implementation, package patch, experimental Properties dependency, feature backport, test semantics or threshold was changed. The Properties orphan text is informational output in the exact Editor source, not proof of an additional fatal error. Original notices are unchanged. Static validation passes; native import, 49+1 test cases in both Burst modes, repeat clean control, AOT/player and physical-device results for this corrected candidate remain **NOT RUN**. This is a host correction, not S1a completion or S1b.
 
 ## Source-identified control-group risk (not yet a native finding)
 

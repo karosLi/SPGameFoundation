@@ -1,0 +1,52 @@
+{
+  "schema": 1,
+  "scope": "Verbatim first-failed-import evidence only. Not the active Lab manifest or a successful resolved control lock.",
+  "run_url": "https://github.com/karosLi/SPGameFoundation/actions/runs/37715538586/attempts/1",
+  "run_id": 37715538586,
+  "attempt": 1,
+  "native_job_id": 113111075188,
+  "early_artifact_id": 11524140132,
+  "source_commit": "83c3b065e69a704d9018ad78d1ccfaefbbdcb5a9",
+  "source_tree": "7740635acd6275938308f9b4661ea6392e41ae36",
+  "unity": "2022.3.62f2",
+  "unity_revision": "7670c08855a9",
+  "os": "macOS 26.4 (25E246)",
+  "architecture": "arm64",
+  "unity_exit_code": 1,
+  "launcher_exit_code": 2,
+  "import_burst_on": "FAILED",
+  "editmode_burst_on": "NOT_RUN",
+  "editmode_burst_off": "NOT_RUN",
+  "playmode_burst_on": "NOT_RUN",
+  "playmode_burst_off": "NOT_RUN",
+  "files": {
+    "manifest.json": {
+      "sha256": "0e6e9f9cc35b3d13024b48ad6de67453b0fe6225d0e27f36d1ec61cff782e171",
+      "bytes": 1045,
+      "artifact_member": "lab-inputs/Packages/manifest.json"
+    },
+    "packages-lock.json": {
+      "sha256": "955e3e70496009cca5bf391596eda8fa8cdfbf381fe86f0f63afe8874ebd8e0c",
+      "bytes": 9648,
+      "artifact_member": "lab-inputs/Packages/packages-lock.json"
+    }
+  },
+  "native_log": {
+    "artifact_member": "native/20261008T015911Z-import-on-c0f18229/unity.log",
+    "sha256": "06c0ebea3a6788c93bec22337a0ed02282eda0c9a7aac98dfd0d3cb333396f94",
+    "bytes": 29641,
+    "retrieval": "Complete original bytes recovered from early head excerpt; original SHA256 verified."
+  },
+  "launcher_log": {
+    "artifact_member": "00-import-on-console.log",
+    "sha256": "672daba45fcfacea2caebb0b1bd5d2a65ed791312fb03fdee6b0abd0ba15ec68",
+    "bytes": 1325,
+    "retrieval": "Complete original bytes recovered from early head excerpt; original SHA256 verified."
+  },
+  "limitations": [
+    "No environment.json or test XML was produced.",
+    "Full part00 upload failed (CreateArtifact timeout then read EADDRNOTAVAIL); no numbered part was finalized.",
+    "Normalized ProjectSettings .asset bytes were not included in early artifact and have not been retrieved or reviewed.",
+    "A new corrected manifest must be resolved by Unity before an active packages-lock.json can be committed."
+  ]
+}

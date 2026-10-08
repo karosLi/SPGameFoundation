@@ -1,6 +1,6 @@
 # Deliberately released S1a Editor CI
 
-Status: launcher/static tests prepared; **no Unity run, resolved lock, native pass or S1a completion is claimed by this change**. The existing [lab protocol](../Latios2022Lab/README.md) and [blueprint](LatiosUnity2022IntegrationBlueprint.md) remain the acceptance authority.
+Status, 2026-10-08: [first native import failed](../Latios2022Lab/Docs/ImportCorrection-20261008.md); its lock/logs are preserved, all test phases remain NOT_RUN. The corrected candidate has static checks only and no S1a completion claim. The existing [lab protocol](../Latios2022Lab/README.md) and [blueprint](LatiosUnity2022IntegrationBlueprint.md) remain the acceptance authority.
 
 Preparation correction (2026-10-08): the owned `LabPlayerBuild` Editor helper now
 fully qualifies `UnityEditor.Build.Il2CppCodeGeneration.OptimizeSize`. The exact
@@ -17,7 +17,7 @@ Only the execution lead may release the approved existing Mac runner, after insp
 
 1. Prepare `dot/latios-lab-validate` from the **exact verified P0 Git commit**. Cherry-pick only the lab preparation/review and this CI change. Do not use the integration branch containing A1–A3 runtime changes. The validator compares actual Git trees and ancestry against P0 and rejects product `Assets`, `Packages`, `ProjectSettings`, unrelated tools/docs or other workflow changes.
 2. Review the prepared lab source commit. The allowed delta from P0 consists only of `Latios2022Lab/**`, `Tools/ci/latios_lab_ci.py`, `Tools/ci/test_latios_lab_ci.py`, `.github/workflows/latios-lab.yml`, `Docs/Latios2022LabPreparation.md`, `Docs/Latios2022LabCI.md`, and the exact one-line root-workflow exclusion described below. Symlinks/submodules in lab/CI source are rejected.
-3. After P0 and runner release, add/update `Latios2022Lab/ci-request.json` in a **separate gate-only commit**. `approved_source_commit` points to the reviewed prepared commit. All its fields must come from actual inspection/reservation, never a template claiming success. No passing request is shipped in source.
+3. After P0 and runner release, add/update `Latios2022Lab/ci-request.json` in a **separate gate-only commit**. `approved_source_commit` points to the reviewed prepared commit. All its fields must come from actual inspection/reservation, never a template claiming success. Correction source removes the prior short-lived request; the new release must be a gate-only child of the reviewed correction, preserving fast-forward history from the old release.
 4. Push that release commit to the exact branch. Only changes to this request path trigger the lab push workflow. Other stage pushes do not. Manual dispatch exists for an execution lead using GitHub UI/API; it still requires the same exact branch, committed gate, prepared source and P0 checks. The current connector does not expose dispatch; no dispatch call is assumed here.
 5. A hosted static job validates the gate, live read-only GitHub Actions run/attempt/job/step, source delta and Python checks before queuing native work. The native job revalidates P0, expiry and the absence of queued/running SPF native workflow work before every phase. The coordinator's reservation is still necessary: an API queue snapshot is not an atomic cross-workflow lock.
 
@@ -61,7 +61,7 @@ Each phase has a 30-minute wall-clock limit. A timeout sends TERM, then KILL aft
 
 The lab's own `Artifacts` evidence set preserves original phase directories, full Unity/launcher logs, XML, environment inventory, actual package lock and normalized lab settings, gate and source pins. Collection runs even after a failing launcher exits before its success hash file. `evidence-sha256.json` inventories all retained evidence. No Library/cache or environment/credential dump is uploaded.
 
-- `latios-s1a-early-review` includes a ZIP capped at 16 MiB. **Complete XML, JSON and text metadata are included regardless of the old 1 MiB metadata-priority cutoff.** Original log files are represented here by explicitly labelled 64 KiB head/tail excerpts linked to the complete originals by SHA-256; excerpts never replace originals.
+- `latios-s1a-early-review` includes a ZIP capped at 16 MiB. **Complete XML, JSON, text metadata and every retained file under `lab-inputs/ProjectSettings/` are included**, including normalized `.asset` settings. Original log files are represented here by explicitly labelled 64 KiB head/tail excerpts linked to the complete originals by SHA-256; excerpts never replace originals.
 - `latios-s1a-part00` through `part31` use the existing [bounded evidence format](CiEvidence.md): at most 32 binary payloads of at most 16 MiB, plus their repeated manifests. Full logs and original XML/settings/locks remain there. The root packager is unchanged.
 - Exceeding either bound is a reported failure, never silent dropping. If early ZIP exceeds its cap, the full parts are already packaged and remain independently uploadable; the oversized early ZIP is not published. Packaging/upload steps run after native failure. A gate failure before workspace creation may have only the Actions diagnostic log and cannot be reported as native execution.
 

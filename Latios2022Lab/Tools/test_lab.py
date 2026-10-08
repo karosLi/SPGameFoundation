@@ -100,15 +100,59 @@ class LauncherTests(unittest.TestCase):
 
     def test_lock_parser_rejects_floating_git_and_dependency_drift(self):
         # Synthetic parser inputs live only in a temporary directory, never Packages/.
-        data = {'dependencies': {k: {'version': v} for k, v in lab.PINS.items()}}
+        data = {'dependencies': {k: {'version': v} for k, v in lab.RESOLVED_PINS.items()}}
         data['dependencies']['com.latios.latiosframework'] = dict(source='git', hash=lab.LATIOS_COMMIT, version=lab.LATIOS_URL)
         with tempfile.TemporaryDirectory() as tmp:
             p = Path(tmp) / 'synthetic-parser-input.json'
             p.write_text(json.dumps(data)); lab.check_lock(p)
             for name, key, value in [('com.latios.latiosframework', 'hash', 'main'),
-                                      ('com.unity.burst', 'version', '1.8.27')]:
+                                      ('com.unity.burst', 'version', '1.8.27'),
+                                      ('com.unity.collections', 'version', '2.5.2'),
+                                      ('com.unity.test-framework', 'version', '1.1.33')]:
                 bad = copy.deepcopy(data); bad['dependencies'][name][key] = value; p.write_text(json.dumps(bad))
                 with self.assertRaises(ValueError): lab.check_lock(p)
+
+    def test_manifest_accepts_only_observed_toolchain_with_matching_lock(self):
+        manifest = json.loads((lab.PROJECT / 'Packages/manifest.json').read_text())
+        self.assertEqual({}, lab.check_manifest(manifest))
+        toolchain, version = next(iter(lab.EDITOR_MANIFEST_ADDITIONS.items()))
+        manifest['dependencies'][toolchain] = version
+        lock = {toolchain: dict(version=version, source='registry')}
+        self.assertEqual({toolchain: version}, lab.check_manifest(manifest, lock))
+        for bad_lock in (None, {}, {toolchain: dict(version='2.0.6', source='registry')},
+                         {toolchain: dict(version=version, source='local')}):
+            with self.subTest(lock=bad_lock), self.assertRaises(ValueError):
+                lab.check_manifest(manifest, bad_lock)
+        for extra in ({'com.unity.toolchain.macos-arm64-linux-x86_64': '2.0.6'},
+                      {'com.unity.entities': '1.3.8'}, {'unreviewed.package': '1.0.0'},
+                      {'unreviewed.package': None}):
+            bad = copy.deepcopy(manifest); bad['dependencies'].update(extra)
+            with self.subTest(extra=extra), self.assertRaises(ValueError): lab.check_manifest(bad, lock)
+        manifest['scopedRegistries'] = []
+        with self.assertRaises(ValueError): lab.check_manifest(manifest, lock)
+
+    def test_legacy_duplicate_runner_configuration_and_missing_nunit_are_rejected(self):
+        for kind in ('Editor', 'PlayMode'):
+            path = lab.PROJECT / ('Assets/Latios2022Tests/' + kind + '/Latios2022Lab.' + kind + '.asmdef')
+            data = json.loads(path.read_text()); lab.check_test_assembly(data)
+            for mutation in ({'optionalUnityReferences': ['TestAssemblies']},
+                             {'precompiledReferences': []}, {'overrideReferences': False},
+                             {'defineConstraints': []}, {'autoReferenced': True},
+                             {'references': data['references'] + ['UnityEngine.TestRunner']}):
+                with self.subTest(kind=kind, mutation=mutation), self.assertRaises(ValueError):
+                    lab.check_test_assembly(dict(data, **mutation))
+
+    def test_registered_package_inventory_cannot_hide_urp_lock_mismatch(self):
+        records = [{'name': name, 'version': version} for name, version in lab.RESOLVED_PINS.items()]
+        lock = {r['name']: {'version': r['version']} for r in records}
+        with tempfile.TemporaryDirectory() as tmp:
+            p = Path(tmp) / 'synthetic-environment.json'
+            p.write_text(json.dumps({'packages': records})); lab.check_registered_packages(p, lock)
+            lock['com.unity.render-pipelines.universal']['version'] = '14.0.11'
+            with self.assertRaisesRegex(ValueError, 'disagree'): lab.check_registered_packages(p, lock)
+            lock['com.unity.render-pipelines.universal']['version'] = '14.0.12'
+            p.write_text(json.dumps({'packages': records + [records[0]]}))
+            with self.assertRaisesRegex(ValueError, 'Duplicate'): lab.check_registered_packages(p, lock)
 
     def test_test_results_reject_skips_and_wrong_discovery_count(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -177,8 +177,9 @@ Packaging now sorts the complete inventory globally before writing the ZIP:
    `playmode-results.xml`, and tagged retries such as `editmode-noburst-results.xml`.
 2. Small metadata (at most 1 MiB per file): `.xml`, `.csv`, `.tsv`, `.json`, `.txt`,
    `.md`, `.log`, and `.ffconcat`
-3. JPEG review files: `.jpg` or `.jpeg`, without a size cutoff
-4. All remaining files, including PNGs, raw captures and oversized non-result XML
+3. Lossless `.png` frames directly in the two `Screenshots/WeaponMotion/blade-grip-isolated-{gpu,fallback}` directories, without a size cutoff
+4. JPEG review files: `.jpg` or `.jpeg`, without a size cutoff
+5. All remaining files, including other PNGs, raw captures and oversized non-result XML
    or other metadata
 
 Result filename and suffix matching are case-insensitive; within each tier the exact
@@ -193,6 +194,18 @@ truncated or split into replacement members. The standard restore command still
 requires **all** ZIP parts.
 This is not an independently extractable-part format or a promise that a partial
 archive is fully verified.
+
+The targeted PNG priority follows the interrupted 3c45520 upload: its close-up
+tests passed, but those frames were in the unpublished tail. Promoting the two
+exact directories changes ordering only; prefix lookalikes and nested directories
+do not receive priority. Metadata remains ahead of the images. The original run's
+manifest stays immutable, and its recovery uses the original pinned packager;
+this ordering applies only to subsequent runs. It does not convert incomplete
+old evidence into a visual pass or guarantee a network upload succeeds.
+The focused exact-directory ordering case fails against the previous packager.
+The updated tooling passes all **34** Python tests (19 archive, 15 encoder),
+including byte-exact restoration and unchanged-source checks. Native upload of
+the new ordering remains pending; no C# or capture behavior changed.
 
 The result-priority regression uses XML over 1 MiB alongside small metadata,
 oversized unrelated XML and media, checks actual ZIP/header/manifest order across

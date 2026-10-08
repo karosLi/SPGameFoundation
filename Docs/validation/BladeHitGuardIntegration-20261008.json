@@ -62,5 +62,14 @@
   "native_and_visual": "PENDING on this source. Original3c native FAILED and incomplete upload remain separate. Recovery run37794904867 is queued without an assigned runner; no new native run submitted.",
   "original_evidence_url": "https://github.com/karosLi/SPGameFoundation/actions/runs/37788743514/attempts/1",
   "recovery_url": "https://github.com/karosLi/SPGameFoundation/actions/runs/37794904867",
-  "physical_android_ios": "PENDING"
+  "physical_android_ios": "PENDING",
+  "subsequent_transport_only_validation": {
+    "archive_tests": 19,
+    "encoder_tests": 15,
+    "failed": 0,
+    "baseline_new_ordering_case": "fails as expected",
+    "packager_sha256": "e18e85041cccc34063f575bbad9742032293a888ca174de97efe30b5604bbbd5",
+    "test_sha256": "696c57c8bce9cb9d806ff47621ec346eab38631ee4454823593c50aa9b7765cb",
+    "scope": "Only ordering changes: results, metadata, exact two grip PNG directories, JPEG, other files. No capture/file/limit changes. Original3c recovery still uses its original pinned packager."
+  }
 }

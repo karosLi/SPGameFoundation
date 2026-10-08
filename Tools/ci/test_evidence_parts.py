@@ -117,6 +117,42 @@ class EvidencePartsTests(unittest.TestCase):
                     for p in (self.restored / "Artifacts").rglob("*") if p.is_file()}
         self.assertEqual(fixtures, restored)
 
+    def test_only_exact_grip_png_groups_precede_jpegs_and_restore_unchanged(self):
+        fixtures = {
+            "editmode-results.xml": b"<test-run passed='1'/>",
+            "Screenshots/WeaponMotion/blade-grip-isolated-gpu/capture.json": b"{}",
+            "Screenshots/WeaponMotion/blade-grip-isolated-gpu/frame0000.png": b"lossless GPU frame",
+            "Screenshots/WeaponMotion/blade-grip-isolated-fallback/frame0000.PNG": b"lossless fallback frame",
+            "Screenshots/00-review.jpg": b"ordinary review frame",
+            "Screenshots/WeaponMotion/blade-grip-isolated-gpu-extra/frame0000.png": b"other group",
+            "Screenshots/WeaponMotion/blade-grip-isolated-gpu/nested/frame0000.png": b"nested group",
+            "Screenshots/ordinary.png": b"ordinary PNG",
+        }
+        for name in reversed(sorted(fixtures)):
+            self.write(name, fixtures[name])
+        expected = ["Artifacts/" + name for name in (
+            "editmode-results.xml",
+            "Screenshots/WeaponMotion/blade-grip-isolated-gpu/capture.json",
+            "Screenshots/WeaponMotion/blade-grip-isolated-fallback/frame0000.PNG",
+            "Screenshots/WeaponMotion/blade-grip-isolated-gpu/frame0000.png",
+            "Screenshots/00-review.jpg",
+            "Screenshots/WeaponMotion/blade-grip-isolated-gpu-extra/frame0000.png",
+            "Screenshots/WeaponMotion/blade-grip-isolated-gpu/nested/frame0000.png",
+            "Screenshots/ordinary.png",
+        )]
+        manifest = evidence.package_evidence(self.source, self.parts)
+        self.assertEqual(expected, [entry["path"] for entry in manifest["files"]])
+        combined = b"".join((self.parts / "part{:02d}".format(index) / part["name"]).read_bytes()
+                            for index, part in enumerate(manifest["parts"]))
+        with zipfile.ZipFile(io.BytesIO(combined)) as zipped:
+            self.assertEqual(expected, zipped.namelist())
+            for name, content in fixtures.items():
+                self.assertEqual(content, zipped.read("Artifacts/" + name))
+        evidence.restore_evidence(self.parts, self.restored)
+        for name, content in fixtures.items():
+            self.assertEqual(content, (self.source / name).read_bytes())
+            self.assertEqual(content, (self.restored / "Artifacts" / name).read_bytes())
+
     def test_large_native_results_precede_metadata_and_media_without_losing_evidence(self):
         # Real native NUnit XML can exceed the small-metadata limit. Random base64
         # keeps valid XML large even after ZIP compression; media crosses part00.

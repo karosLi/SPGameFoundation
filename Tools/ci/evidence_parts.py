@@ -18,6 +18,10 @@ BLOCK_BYTES = 1024 * 1024
 MAX_MANIFEST_BYTES = 1024 * 1024
 PRIORITY_METADATA_BYTES = 1024 * 1024
 METADATA_SUFFIXES = frozenset((".xml", ".csv", ".tsv", ".json", ".txt", ".md", ".log", ".ffconcat"))
+EARLY_PNG_DIRECTORIES = frozenset((
+    "Artifacts/Screenshots/WeaponMotion/blade-grip-isolated-gpu",
+    "Artifacts/Screenshots/WeaponMotion/blade-grip-isolated-fallback",
+))
 MANIFEST_NAME = "evidence-manifest.json"
 ARCHIVE_NAME = "evidence.zip"
 
@@ -56,7 +60,7 @@ def walk_error(error):
 
 
 def evidence_priority(relative, size):
-    """Order test results, small metadata, JPEG reviews, then other evidence.
+    """Order results, metadata, targeted grip PNGs, JPEGs, then other evidence.
 
     Native runners name their XML reports *-results.xml, including tagged retries.
     Results and JPEGs have no size cutoff; other metadata has an inclusive 1 MiB
@@ -70,6 +74,10 @@ def evidence_priority(relative, size):
         priority = -1
     elif suffix in METADATA_SUFFIXES and size <= PRIORITY_METADATA_BYTES:
         priority = 0
+    elif suffix == ".png" and path.parent.as_posix() in EARLY_PNG_DIRECTORIES:
+        # Keep the existing ranks while admitting these lossless diagnostic frames
+        # immediately after metadata. This changes order only, never file contents.
+        priority = 0.5
     elif suffix in (".jpg", ".jpeg"):
         priority = 1
     else:

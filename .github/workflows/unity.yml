@@ -12,6 +12,7 @@ on:
 
 jobs:
   unity-tests:
+    if: github.ref != 'refs/heads/dot/ci-evidence-recovery' && github.head_ref != 'dot/ci-evidence-recovery' && github.base_ref != 'dot/ci-evidence-recovery'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:

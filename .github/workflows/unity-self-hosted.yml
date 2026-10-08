@@ -16,7 +16,7 @@ on:
 
 jobs:
   unity-tests:
-    if: vars.UNITY_SELF_HOSTED == 'true'
+    if: vars.UNITY_SELF_HOSTED == 'true' && github.ref != 'refs/heads/dot/ci-evidence-recovery' && github.head_ref != 'dot/ci-evidence-recovery' && github.base_ref != 'dot/ci-evidence-recovery'
     runs-on: [self-hosted, unity]
     permissions:
       contents: write   # publish-screenshots.sh pushes to the ci-screenshots/<branch> branch only

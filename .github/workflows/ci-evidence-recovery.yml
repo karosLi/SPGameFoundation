@@ -1,0 +1,194 @@
+name: Recover exact native evidence 37788743514
+
+# One authorized recovery push. No checkout, Unity, cleanup, or replacement artifacts.
+on:
+  push:
+    branches: [dot/ci-evidence-recovery]
+permissions:
+  contents: read
+concurrency:
+  group: spf-exact-evidence-recovery
+  cancel-in-progress: false
+jobs:
+  recover:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dot/ci-evidence-recovery' && vars.UNITY_SELF_HOSTED == 'true'
+    runs-on: [self-hosted, unity]
+    timeout-minutes: 30
+    steps:
+      - name: Verify preserved source and rebuild the exact original evidence bytes
+        id: recover
+        shell: bash --noprofile --norc -e -o pipefail {0}
+        run: |
+          python3 -I -B -u - <<'PY'
+          import hashlib, json, os, pathlib, platform, signal, stat, subprocess
+          ROOT = pathlib.Path("/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/SPGameFoundation/SPGameFoundation")
+          TEMP = pathlib.Path("/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp")
+          SOURCE = "3c45520db5d6e0474ab0f56aef7d1225d2312a56"
+          SCRIPT_SHA = "6c71c8b8eaea0531db1e917c5059589ecf5c37f6534d96cf438cd2c335d05010"
+          MANIFEST_SHA = "a144bd7337469aca7c0972befed9e697a3a071ac085baa9306da654ac90eb88a"
+          ARCHIVE_SHA = "e3b946c8b210ee987b7759a9f2fb9b848f0c1ff7a87d7d157eb2d1f8f355c04d"
+          def require(ok, message):
+              if not ok: raise ValueError(message)
+          def safe_directory(path):
+              current = pathlib.Path(path.anchor)
+              for component in path.parts[1:]:
+                  current /= component
+                  require(stat.S_ISDIR(current.lstat().st_mode), "Non-directory or symlink ancestor")
+              return path
+          def digest(path):
+              value = hashlib.sha256()
+              with path.open("rb") as stream:
+                  for block in iter(lambda: stream.read(1048576), b""): value.update(block)
+              return value.hexdigest()
+          def deadline(signum, frame): raise TimeoutError("Recovery preparation exceeded five minutes")
+          signal.signal(signal.SIGALRM, deadline)
+          signal.alarm(300)
+          require(platform.system() == "Darwin", "Approved Mac required")
+          require(os.environ.get("RUNNER_NAME") == "karoslideMacBook-Pro", "Different runner")
+          require(os.environ.get("GITHUB_EVENT_NAME") == "push" and os.environ.get("GITHUB_REF") == "refs/heads/dot/ci-evidence-recovery", "Wrong trigger")
+          require(os.environ.get("GITHUB_WORKSPACE") == str(ROOT) and os.environ.get("RUNNER_TEMP") == str(TEMP), "Different runner paths")
+          safe_directory(ROOT); safe_directory(TEMP)
+          require(subprocess.check_output(["git", "-C", str(ROOT), "rev-parse", "HEAD"], text=True).strip() == SOURCE, "Source checkout moved; originals must be inspected")
+          script_path = ROOT / "Tools/ci/evidence_parts.py"
+          safe_directory(script_path.parent)
+          require(stat.S_ISREG(script_path.lstat().st_mode), "Packager is not a regular file")
+          packager_bytes = script_path.read_bytes()
+          require(hashlib.sha256(packager_bytes).hexdigest() == SCRIPT_SHA, "Packager does not match captured source")
+          source = safe_directory(ROOT / "Artifacts")
+          count = total = 0
+          for directory, directories, files in os.walk(source, followlinks=False):
+              for name in directories:
+                  require(stat.S_ISDIR((pathlib.Path(directory)/name).lstat().st_mode), "Non-directory or symlink in evidence")
+              for name in files:
+                  metadata = (pathlib.Path(directory)/name).lstat()
+                  require(stat.S_ISREG(metadata.st_mode), "Non-regular evidence file")
+                  count += 1; total += metadata.st_size
+                  require(count <= 3285 and total <= 558079331, "Evidence inventory exceeds frozen run")
+          require((count,total) == (3285,558079331), "Missing or changed original evidence")
+          fs = os.statvfs(TEMP)
+          print("CAPACITY_AVAILABLE_BYTES", fs.f_bavail * fs.f_frsize)
+          require(fs.f_bavail * fs.f_frsize >= 2 * 539665186 + 268435456, "Insufficient temporary capacity")
+          run_id = os.environ.get("GITHUB_RUN_ID", ""); attempt = os.environ.get("GITHUB_RUN_ATTEMPT", "")
+          require(run_id.isdecimal() and attempt.isdecimal(), "Missing recovery identity")
+          out = TEMP / ("spf-recover-37788743514-1-" + run_id + "-" + attempt)
+          require(not out.exists() and not out.is_symlink(), "Recovery destination already exists")
+          namespace = {"__name__": "verified_evidence_packager", "__file__": str(script_path)}
+          exec(compile(packager_bytes, str(script_path), "exec"), namespace)
+          manifest = namespace["package_evidence"](source, out)
+          require(manifest["archive"] == {"name":"evidence.zip","size":539665186,"sha256":ARCHIVE_SHA}, "Rebuilt archive does not match original")
+          require(len(manifest["parts"]) == 33 and len(manifest["files"]) == 3285, "Wrong original inventory")
+          combined = hashlib.sha256(); combined_size = 0
+          for index, part in enumerate(manifest["parts"]):
+              folder = out / ("part%02d" % index)
+              require(sorted(p.name for p in folder.iterdir()) == ["evidence-manifest.json", part["name"]], "Unexpected output entry")
+              require(digest(folder / "evidence-manifest.json") == MANIFEST_SHA, "Original manifest bytes do not match")
+              path = folder / part["name"]
+              require(path.stat().st_size == part["size"] and digest(path) == part["sha256"], "Part integrity mismatch")
+              with path.open("rb") as stream:
+                  for block in iter(lambda: stream.read(1048576), b""):
+                      combined.update(block); combined_size += len(block)
+          require(combined_size == 539665186 and combined.hexdigest() == ARCHIVE_SHA, "Combined bytes differ from original archive")
+          with open(os.environ["GITHUB_OUTPUT"], "a") as output:
+              output.write("directory=" + str(out) + "\n")
+          print("RECOVERY_VERIFIED original_run=37788743514 attempt=1 source=" + SOURCE + " archive=" + ARCHIVE_SHA + " upload_only=part22..part32")
+          signal.alarm(0)
+          PY
+      - name: Recover original part22
+        uses: actions/upload-artifact@v4
+        timeout-minutes: 2
+        if: always() && steps.recover.outcome == 'success'
+        with:
+          name: recovered-37788743514-a1-${{ github.run_id }}-part22
+          path: ${{ steps.recover.outputs.directory }}/part22/
+          compression-level: 0
+          if-no-files-found: error
+      - name: Recover original part23
+        uses: actions/upload-artifact@v4
+        timeout-minutes: 2
+        if: always() && steps.recover.outcome == 'success'
+        with:
+          name: recovered-37788743514-a1-${{ github.run_id }}-part23
+          path: ${{ steps.recover.outputs.directory }}/part23/
+          compression-level: 0
+          if-no-files-found: error
+      - name: Recover original part24
+        uses: actions/upload-artifact@v4
+        timeout-minutes: 2
+        if: always() && steps.recover.outcome == 'success'
+        with:
+          name: recovered-37788743514-a1-${{ github.run_id }}-part24
+          path: ${{ steps.recover.outputs.directory }}/part24/
+          compression-level: 0
+          if-no-files-found: error
+      - name: Recover original part25
+        uses: actions/upload-artifact@v4
+        timeout-minutes: 2
+        if: always() && steps.recover.outcome == 'success'
+        with:
+          name: recovered-37788743514-a1-${{ github.run_id }}-part25
+          path: ${{ steps.recover.outputs.directory }}/part25/
+          compression-level: 0
+          if-no-files-found: error
+      - name: Recover original part26
+        uses: actions/upload-artifact@v4
+        timeout-minutes: 2
+        if: always() && steps.recover.outcome == 'success'
+        with:
+          name: recovered-37788743514-a1-${{ github.run_id }}-part26
+          path: ${{ steps.recover.outputs.directory }}/part26/
+          compression-level: 0
+          if-no-files-found: error
+      - name: Recover original part27
+        uses: actions/upload-artifact@v4
+        timeout-minutes: 2
+        if: always() && steps.recover.outcome == 'success'
+        with:
+          name: recovered-37788743514-a1-${{ github.run_id }}-part27
+          path: ${{ steps.recover.outputs.directory }}/part27/
+          compression-level: 0
+          if-no-files-found: error
+      - name: Recover original part28
+        uses: actions/upload-artifact@v4
+        timeout-minutes: 2
+        if: always() && steps.recover.outcome == 'success'
+        with:
+          name: recovered-37788743514-a1-${{ github.run_id }}-part28
+          path: ${{ steps.recover.outputs.directory }}/part28/
+          compression-level: 0
+          if-no-files-found: error
+      - name: Recover original part29
+        uses: actions/upload-artifact@v4
+        timeout-minutes: 2
+        if: always() && steps.recover.outcome == 'success'
+        with:
+          name: recovered-37788743514-a1-${{ github.run_id }}-part29
+          path: ${{ steps.recover.outputs.directory }}/part29/
+          compression-level: 0
+          if-no-files-found: error
+      - name: Recover original part30
+        uses: actions/upload-artifact@v4
+        timeout-minutes: 2
+        if: always() && steps.recover.outcome == 'success'
+        with:
+          name: recovered-37788743514-a1-${{ github.run_id }}-part30
+          path: ${{ steps.recover.outputs.directory }}/part30/
+          compression-level: 0
+          if-no-files-found: error
+      - name: Recover original part31
+        uses: actions/upload-artifact@v4
+        timeout-minutes: 2
+        if: always() && steps.recover.outcome == 'success'
+        with:
+          name: recovered-37788743514-a1-${{ github.run_id }}-part31
+          path: ${{ steps.recover.outputs.directory }}/part31/
+          compression-level: 0
+          if-no-files-found: error
+      - name: Recover original part32
+        uses: actions/upload-artifact@v4
+        timeout-minutes: 2
+        if: always() && steps.recover.outcome == 'success'
+        with:
+          name: recovered-37788743514-a1-${{ github.run_id }}-part32
+          path: ${{ steps.recover.outputs.directory }}/part32/
+          compression-level: 0
+          if-no-files-found: error

@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "validated_source_commit": "1d66085def66fdf20ba124c1a1ced804bafaa1d1",
+  "validated_source_tree": "858e66b63ec0cf23b57555fe2278c66693ac8895",
+  "completed_utc": "2026-10-08T15:05:10Z",
+  "source_sha256": {
+    "Assets/SinglePlayerFoundation/Presentation/Animation/GameplayCharacterMotion.cs": "5e3235491269ffeb7caab1f2fb1516a6bc1a83c0142f06642b0adc6e6dc24649",
+    "Assets/SinglePlayerFoundation/Presentation/Animation/WeaponMotion.cs": "c062e9d73e28ae4ed6414d766043f3307764d29f8b4b8e9f19091e64725a7502",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/BladeHitAimGuardTests.cs": "e1625d75b6ce60b257d8049a414bfdb0b8f0a21306eb392a51051abf8940eb7c",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/BladeControlledRecoveryTests.cs": "4b47a309d96c7cb18d6fb800610cd5eca77e021c8087216fcb5027538a560dfd"
+  },
+  "harness": {
+    "projects": 78,
+    "build_errors": 0,
+    "build_warnings": 0,
+    "passed": 1690,
+    "failed": 0,
+    "retained_explicit_not_executed": [
+      {
+        "case": "RecordConfigColdAllocationAndRetainedPayload",
+        "outcome": "NotExecuted"
+      },
+      {
+        "case": "RecordDefaultRawSnapshotDigest",
+        "outcome": "NotExecuted"
+      },
+      {
+        "case": "SearchShots",
+        "outcome": "NotExecuted"
+      },
+      {
+        "case": "RecordDefaultRawSnapshotDigest",
+        "outcome": "NotExecuted"
+      },
+      {
+        "case": "RecordConfigColdAllocationAndRetainedPayload",
+        "outcome": "NotExecuted"
+      },
+      {
+        "case": "ExportFrames",
+        "outcome": "NotExecuted"
+      }
+    ],
+    "trx_files": 27,
+    "build_log_sha256": "fc2bb91e97b30123ba8d7ef21a6bf8e52800647844e46f5d73c91749c36cf84f",
+    "test_log_sha256": "cf228f721bcc7a8ffb592cbfe2e84e96092a821899190806eae7d540d6d1f602",
+    "summary_sha256": "1a251a4b7b6281d1348a755a934be43d28e7d69f3ace4180ea95f7c112118b3b"
+  },
+  "native_conditional_compile": {
+    "errors": 0,
+    "warnings": 1,
+    "warning": "existing host NUnit3.13 vs pinned official Unity NUnit3.5 dependency warning",
+    "engine_jobs_burst": "harness stubs; not Unity execution",
+    "defines": [
+      "UNITY_2022_3_OR_NEWER",
+      "UNITY_INCLUDE_TESTS",
+      "UNITY_EDITOR"
+    ],
+    "official_nunit_sha256": "e388e140954de12970384331d1730e95b4613ef53c3326b6f8fa0fffdbc9314f",
+    "log_sha256": "23be2008eb9998c9de8659a3451138a22e63a42724c95ebead69d2d8fe4878a6"
+  },
+  "native_and_visual": "PENDING on this source. Original3c native FAILED and incomplete upload remain separate. Recovery run37794904867 is queued without an assigned runner; no new native run submitted.",
+  "original_evidence_url": "https://github.com/karosLi/SPGameFoundation/actions/runs/37788743514/attempts/1",
+  "recovery_url": "https://github.com/karosLi/SPGameFoundation/actions/runs/37794904867",
+  "physical_android_ios": "PENDING"
+}

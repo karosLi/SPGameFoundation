@@ -34,3 +34,11 @@ GPU f116–123、fallback f115–121 受击期间，身体 Facing=+1，武器锁
 - `other-weapons-equality.json` 记录冻结基线与最终候选的逐字节比较：普通刀body==aim 23,724个样本，剑/杖/弓各10,080个样本；每帧包含attachment、全部骨骼和packed sprite。普通刀覆盖guard/动作/完整换向/取消/装备；非刀另覆盖身体反向的Hit。比较源和二进制均留存。
 
 这是.NET桩逻辑验证及数值/字节对照，未运行新Unity原生、aggregate、native录制或发布。`3c45520` 的下指片段仍然是失败证据，不能被逻辑绿灯覆盖。最终集成提交仍需两档真实连续像素、正常1×及逐帧审查；Android/iOS物理设备门槛仍保留。
+
+## Integrated validation and native evidence boundary
+
+The integrated source `1d66085def66fdf20ba124c1a1ced804bafaa1d1` includes the independent cached-angle oracle correction as well as this production fix. One complete .NET harness run finished on 2026-10-08 at 15:05:10 UTC: **1,690 passed, zero failed**, with the original six Explicit cases retained. All 78 generated projects built with zero warnings/errors. The native-conditional test compilation passed with zero errors and the previously disclosed host-NUnit version warning; its engine/Jobs/Burst APIs remain stubs. [Receipt and source/log hashes](validation/BladeHitGuardIntegration-20261008.json).
+
+The [original 3c45520 native run](https://github.com/karosLi/SPGameFoundation/actions/runs/37788743514/attempts/1) remains FAILED: EditMode 1,720 passed / one cross-execution-domain angle assertion failed / five skips; PlayMode 175 passed / zero failed / one skip. Only 22 of its 33 evidence parts were published. The fresh ordinary pixels exposed this Hit/aim mismatch; missing isolated-turn and moving-held-attack pixels cannot be treated as reviewed. Its one existing CS0414 compiler warning was printed twice in EditMode.
+
+The separately published [source-preserving recovery](https://github.com/karosLi/SPGameFoundation/actions/runs/37794904867) was still queued with no assigned runner at this documentation checkpoint. It must match the original manifest and archive before retrieving the missing eleven parts. No normal native run has been queued on the new source, because it would remove the original Artifacts first. Current-source native behavior, actual 1×/diagnostic footage, subjective visual acceptance and physical Android/iOS gates remain pending. Software replay improvements do not replace those checks.

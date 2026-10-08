@@ -341,7 +341,7 @@ namespace SurvivorFoundation.Presentation
                 {
                     var profile = BlobShadowProfile.Default;
                     BlobShadow.Add(m_Shadows, m_Art.Sheet[m_Art.Shadow].Uv, hero, GroundDepth - 1f, profile);
-                    DrawHealth(hero + new float2(0f, 1.55f), 1.1f, game.Hp / math.max(1f, game.MaxHp), new float4(0.43f, 0.86f, 0.45f, 1f));
+                    DrawHealth(HeroHealthPosition(world, hero), 1.1f, game.Hp / math.max(1f, game.MaxHp), new float4(0.43f, 0.86f, 0.45f, 1f));
                 }
                 if (s.Variant == SvVariant.GuardBeacon)
                 {
@@ -417,7 +417,9 @@ namespace SurvivorFoundation.Presentation
                 DamageLayout.ReserveActor(new float4(p + new float2(-half, size * .3f), p + new float2(half, top)));
             }
             var game = world.Resource(SvKeys.Game); float2 hero = math.lerp(game.HeroPrev, game.Hero, alpha);
-            DamageLayout.ReserveActor(new float4(hero + new float2(-.6f, .6f), hero + new float2(.6f, 1.75f)));
+            float2 health = HeroHealthPosition(world, hero);
+            DamageLayout.ReserveActor(new float4(hero.x - .6f, math.min(hero.y + .6f, health.y - .1f),
+                hero.x + .6f, math.max(hero.y + 1.75f, health.y + .1f)));
             var settings = world.Resource(SvKeys.Config).Settings;
             if (settings.Variant == SvVariant.GuardBeacon)
                 DamageLayout.ReserveActor(new float4(settings.BeaconPosition + new float2(-1.05f, 0), settings.BeaconPosition + new float2(1.05f, 2.9f)));
@@ -710,6 +712,14 @@ namespace SurvivorFoundation.Presentation
                 }
                 Written[0] = n;
             }
+        }
+
+        float2 HeroHealthPosition(SimWorld world, float2 hero)
+        {
+            // Armed natural heroes raise hands, staff and bow through the old overhead bar.
+            // Keep a fixed ground-relative gap below both planted feet, throughout equip/turn/
+            // attack/recovery. Do not chase the weapon pose or consume more top-HUD clearance.
+            return hero + new float2(0f, NaturalCharacters && world.HasResource(SvWeapons.Key) ? -.45f : 1.55f);
         }
 
         void DrawHealth(float2 position, float width, float fraction, float4 color)

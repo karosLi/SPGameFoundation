@@ -4,6 +4,7 @@ using System.Collections;
 using System.IO;
 using NUnit.Framework;
 using SPF.Contracts;
+using SPF.Contracts.Weapons;
 using SPF.L2.Weapons;
 using SPF.Presentation;
 using SPF.Presentation.Animation;

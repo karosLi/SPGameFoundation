@@ -1,5 +1,9 @@
 # Shooter native allocation diagnostic
 
+The current isolated workflow runs the [ordinary-counter A/B platform control](ShooterAllocationPlatformControl.md).
+The allocation-stack and Editor-inclusive captures below are retained historical
+experiments; the long Editor-inclusive route is not being repeated.
+
 This is an intrusive allocation-attribution run, **not the full native gate** and not
 a production optimization. It investigates the retained Shooter steady-window
 failure: remote `ef332695fc19ee4ddc0f3b26556b70d3b077b2fb`, native run `37802878017`,
@@ -9,9 +13,9 @@ ownership remains unknown. The diagnostic starts from the identical local tree a
 `373ecd933d71cde15293c83ab2acb26006cee87f` (`79edca80f06beffe903dab6b42a0e90d3699315e`). A passing diagnostic
 does not close that failure or replace full, uninstrumented validation on the final head.
 
-## Isolated execution
+## Historical isolated allocation-stack execution
 
-`.github/workflows/unity-shooter-native-allocation-diagnostic.yml` responds only to a
+The allocation-stack version of `.github/workflows/unity-shooter-native-allocation-diagnostic.yml` responded only to a
 push to the exact branch `diagnostic/shooter-native-allocation-20261008`. It uses the
 existing licensed `[self-hosted, unity]` runner and requires the existing
 `UNITY_SELF_HOSTED=true` repository variable. `UNITY_EDITOR_PATH` remains optional.
@@ -95,9 +99,9 @@ Scene teardown still runs if restoration reports an error.
 complete attribution: missing stacks and unresolved addresses are counted, observer
 bytes are included, and omitted EditorLoop work cannot be excluded by elimination.
 [Allocation callstack recording adds overhead](https://docs.unity3d.com/2022.3/Documentation/ScriptReference/Profiling.Profiler-enableAllocationCallstacks.html).
-The optional `SPF_SHOOTER_GC_INCLUDE_EDITOR=1` enables an explicitly reviewed follow-on
-capture. The dedicated workflow now enables it to investigate the measured coverage
-gap below; ordinary tests still force capture off.
+The optional `SPF_SHOOTER_GC_INCLUDE_EDITOR=1` enabled the reviewed follow-on capture
+described below. The current dedicated workflow forces it off for the platform
+control; ordinary tests also force capture off.
 
 ## First native capture and Editor-inclusive follow-on
 
@@ -201,7 +205,7 @@ and negative cases, and three restoration cases verified saved settings includin
 injected history-setter failure. These checks preserve a synthetic failed three-frame
 budget rather than converting it to success. They establish exporter behavior only;
 the first native diagnostic's results are recorded above. The Editor-inclusive
-follow-on and subsequent ordinary gate remain pending.
+follow-on failed completeness as recorded below; ordinary acceptance is separate.
 
 For the Editor-inclusive workflow change, shell syntax and all 10 launch-isolation
 checks passed. Two additional fake-editor checks verified the switch reaches the
@@ -212,3 +216,29 @@ covered both original/requested Editor states, both history-preference states an
 an injected history-restoration failure; each preserved the fixed capture bounds
 and restored the original Editor state. These are compile/stub checks, not native
 proof that the expanded capture fits its buffer or identifies the missing bytes.
+
+## Editor-inclusive native result
+
+Run [`37825087420`](https://github.com/karosLi/SPGameFoundation/actions/runs/37825087420),
+remote `ddf56e9db526c27a8a136209247098cb4719bdbb`, completed with both cases failing
+diagnostic mapping/calibration. Each had 204 source observations but zero mapped
+frames and zero captured control markers. The governor's 0/180 readings are invalid
+evidence because retained positive controls were also absent. No product or engine
+allocation source was established.
+
+Both raw files retain 300 consecutive records, spanning only 31.21 ms (GPU) and
+38.89 ms (DataTexture), rather than the approximately 3.4-second source/control
+window. All requested metadata GUIDs and probe marker names are absent. Binary
+timing fields were cross-checked against all 408 native frame-duration rows from
+the earlier valid capture. The loss timing and counter-mode semantics remain
+distinct uncertainties; retaining more history alone would not validate the counter.
+
+The launcher sampled peak RSS of 9,402 MB once per second. The separate shutdown
+`ALLOC_PROFILER_EDITOR` report shows 28.21 GB allocator high-water usage, not process
+resident memory. The 64 MiB stream parameter does not cap whole-process RSS.
+Further long Editor captures and history/memory expansion are stopped.
+
+Artifact `11570673620` and all 22 members verified. Archive: 2,124,283 bytes,
+SHA-256 `f75005ba1b3963c70592efdfc0b8897d12cb3bc2d13d90420fa2aefb058b2c93`.
+The next bounded investigation is the default-off [platform control](ShooterAllocationPlatformControl.md);
+its results cannot substitute for the unchanged original Shooter allocation gate.

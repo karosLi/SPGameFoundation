@@ -14,27 +14,41 @@ FILTER = "ShooterFoundation.Tests.PlayMode.ShooterPlayTests.WarmSteadyFrameAndPr
 BRANCH = "diagnostic/shooter-native-allocation-20261008"
 
 FAKE_EDITOR = r'''#!/usr/bin/env python3
-import json, os, sys
+import json, os, sys, time
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
 args = sys.argv[1:]
+time.sleep(float(os.environ.get("FAKE_SLEEP", "0")))
 with open(os.environ["FAKE_CALLS"], "a") as output:
     output.write(json.dumps({"args": args, "capture": os.environ.get("SPF_SHOOTER_GC_CAPTURE"),
                              "story": os.environ.get("SPF_STORY_GC_CAPTURE"),
-                             "ability": os.environ.get("SPF_ABILITY_GAMEPLAY_SEQUENCE")}) + "\n")
+                             "ability": os.environ.get("SPF_ABILITY_GAMEPLAY_SEQUENCE"),
+                             "platform_control": os.environ.get("SPF_SHOOTER_PLATFORM_CONTROL"),
+                             "include_editor": os.environ.get("SPF_SHOOTER_GC_INCLUDE_EDITOR")}) + "\n")
 Path(args[args.index("-logFile") + 1]).write_text("Fake editor only; no native evidence.\n")
 mode = os.environ.get("FAKE_XML", "both")
 if mode != "missing":
     root = ET.Element("test-run", result="Passed")
-    tiers = ["GpuDriven", "DataTexture"] if mode != "one" else ["GpuDriven"]
+    platform_control = os.environ.get("SPF_SHOOTER_PLATFORM_CONTROL") == "1"
+    tiers = ["platform"] if platform_control else (["GpuDriven", "DataTexture"] if mode != "one" else ["GpuDriven"])
     for tier in tiers:
         name = "ShooterFoundation.Tests.PlayMode.ShooterPlayTests.WarmSteadyFrameAndPresentationOnlyQuality(" + tier + ")"
+        if platform_control:
+            name = "ShooterFoundation.Tests.PlayMode.ShooterPlatformControlTests.MatchedEmptyPlatformWindows"
         if mode == "unrelated":
             name = "Other.Test(" + tier + ")"
         ET.SubElement(root, "test-case", fullname=name,
                       result={"skipped": "Skipped", "failed": "Failed"}.get(mode, "Passed"))
     ET.ElementTree(root).write(args[args.index("-testResults") + 1])
+    if platform_control:
+        for name in ("A-raw-recorder", "B-frame-governor"):
+            if mode == "missing_b" and name.startswith("B"): continue
+            folder = Path("Artifacts/GC/platform-control") / name
+            folder.mkdir(parents=True, exist_ok=True)
+            (folder / "summary.json").write_text(json.dumps({"condition": name, "observationCount": 204,
+                "windowFrames": 179 if mode == "short_window" else 180,
+                "establishesProductGate": False, "measurementValid": mode != "invalid_control"}))
 sys.exit(int(os.environ.get("FAKE_EXIT", "0")))
 '''
 
@@ -79,13 +93,14 @@ class LocalUnityLaunchTests(unittest.TestCase):
         return result, calls
 
     def test_normal_run_is_full_and_forces_capture_off(self):
-        result, calls = self.run_launcher(SPF_SHOOTER_GC_CAPTURE="1")
+        result, calls = self.run_launcher(SPF_SHOOTER_GC_CAPTURE="1", SPF_SHOOTER_PLATFORM_CONTROL="1")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual(len(calls), 2)
         self.assertEqual([call["args"][call["args"].index("-testPlatform") + 1] for call in calls],
                          ["editmode", "playmode"])
         for call in calls:
             self.assertEqual(call["capture"], "0")
+            self.assertEqual(call["platform_control"], "0")
             self.assertNotIn("-testFilter", call["args"])
         self.assertIn("-nographics", calls[0]["args"])
         self.assertNotIn("-nographics", calls[1]["args"])
@@ -113,6 +128,48 @@ class LocalUnityLaunchTests(unittest.TestCase):
         result, calls = self.run_launcher("--shooter-gc-diagnostic", FAKE_EXIT="2")
         self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
         self.assertEqual(len(calls), 1)
+
+    def test_platform_control_is_one_fixed_invocation_without_intrusive_capture(self):
+        result, calls = self.run_launcher("--shooter-platform-control", SPF_SHOOTER_GC_CAPTURE="1", SPF_SHOOTER_GC_INCLUDE_EDITOR="1")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0]["platform_control"], "1")
+        self.assertEqual(calls[0]["capture"], "0")
+        self.assertEqual(calls[0]["include_editor"], "0")
+        args = calls[0]["args"]
+        self.assertEqual(args[args.index("-testFilter") + 1], "ShooterFoundation.Tests.PlayMode.ShooterPlatformControlTests.MatchedEmptyPlatformWindows")
+        self.assertNotIn("-nographics", args)
+        self.assertNotIn("--burst-disable-compilation", args)
+        metadata = (self.project / "Artifacts/shooter-platform-control-run.txt").read_text()
+        self.assertIn("warmup_observation_control_frames=708", metadata)
+        self.assertIn("teardown_yields=2", metadata)
+        self.assertIn("rss_stop_mb=4096", metadata)
+
+    def test_platform_incomplete_or_uncalibrated_evidence_is_not_success(self):
+        for mode in ("missing_b", "short_window", "invalid_control", "skipped", "unrelated"):
+            with self.subTest(mode=mode):
+                result, _ = self.run_launcher("--shooter-platform-control", FAKE_XML=mode)
+                self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+
+    def test_platform_failure_is_not_retried(self):
+        result, calls = self.run_launcher("--shooter-platform-control", FAKE_EXIT="2", FAKE_XML="failed")
+        self.assertEqual(result.returncode, 2, result.stdout + result.stderr)
+        self.assertEqual(len(calls), 1)
+
+    def test_platform_rss_limit_stops_only_fixture_process_without_retry(self):
+        self.executable("ps", "#!/bin/sh\nprintf '5000000\\n'\n")
+        result, calls = self.run_launcher("--shooter-platform-control", FAKE_SLEEP="10")
+        self.assertEqual(result.returncode, 124, result.stdout + result.stderr)
+        self.assertEqual(calls, [])
+        self.assertIn("RSS exceeded 4096 MiB", result.stdout)
+        self.assertIn("monitor_stop=", (self.project / "Artifacts/shooter-platform-control-run.txt").read_text())
+
+    def test_platform_missing_rss_is_fail_closed(self):
+        self.executable("ps", "#!/bin/sh\nexit 1\n")
+        result, calls = self.run_launcher("--shooter-platform-control", FAKE_SLEEP="10")
+        self.assertEqual(result.returncode, 124, result.stdout + result.stderr)
+        self.assertEqual(calls, [])
+        self.assertIn("RSS unavailable", result.stdout)
 
     def test_signal_failure_has_no_retry_or_burst_disabled_fallback(self):
         result, calls = self.run_launcher("--shooter-gc-diagnostic", FAKE_EXIT="137", FAKE_XML="missing")
@@ -183,7 +240,10 @@ class DiagnosticWorkflowTests(unittest.TestCase):
         self.assertIn("github.ref == 'refs/heads/" + BRANCH + "'", diagnostic)
         self.assertNotIn("workflow_dispatch:", diagnostic)
         self.assertNotIn("pull_request:", diagnostic)
-        self.assertIn("run: Tools/ci/local-unity-tests.sh --shooter-gc-diagnostic", diagnostic)
+        self.assertIn("run: Tools/ci/local-unity-tests.sh --shooter-platform-control", diagnostic)
+        self.assertIn("SPF_SHOOTER_GC_CAPTURE: '0'", diagnostic)
+        self.assertIn("SPF_SHOOTER_GC_INCLUDE_EDITOR: '0'", diagnostic)
+        self.assertIn("SPF_SHOOTER_PLATFORM_CONTROL: '1'", diagnostic)
         self.assertIn("contents: read", diagnostic)
         self.assertNotIn("contents: write", diagnostic)
         self.assertNotIn("publish-screenshots", diagnostic)

@@ -1,6 +1,6 @@
-name: Shooter native allocation diagnostic (NOT full gate)
+name: Shooter allocation platform control (NOT product gate)
 
-# Intrusive attribution only. Push this exact branch to run once on the existing
+# Fixed ordinary-counter A/B control only. Push this branch to run once on the existing
 # licensed native runner. Ordinary native workflows explicitly exclude this branch.
 on:
   push:
@@ -16,8 +16,9 @@ jobs:
     timeout-minutes: 60
     env:
       UNITY_EDITOR_PATH: ${{ vars.UNITY_EDITOR_PATH }}
-      SPF_SHOOTER_GC_CAPTURE: '1'
-      SPF_SHOOTER_GC_INCLUDE_EDITOR: '1'
+      SPF_SHOOTER_GC_CAPTURE: '0'
+      SPF_SHOOTER_PLATFORM_CONTROL: '1'
+      SPF_SHOOTER_GC_INCLUDE_EDITOR: '0'
       SPF_STORY_GC_CAPTURE: '0'
       SPF_WEAPON_GAMEPLAY_SEQUENCE: '0'
       SPF_ABILITY_GAMEPLAY_SEQUENCE: '0'
@@ -25,30 +26,30 @@ jobs:
       - uses: actions/checkout@v4
         with:
           clean: false
-      - name: Capture both Shooter tiers once with Burst
+      - name: Measure raw-recorder and governor empty controls once
         shell: bash
-        run: Tools/ci/local-unity-tests.sh --shooter-gc-diagnostic
+        run: Tools/ci/local-unity-tests.sh --shooter-platform-control
       - name: Diagnostic summary (NOT full native gate)
         if: always()
         shell: bash
         run: |
           {
-            echo "Intrusive Shooter allocation diagnostic only; NOT full native gate."
+            echo "Ordinary-counter A/B platform control only; NOT product gate."
             echo "Head: $GITHUB_SHA; run: $GITHUB_RUN_ID; attempt: $GITHUB_RUN_ATTEMPT"
-            echo "Both tiers; original 180-frame window and maximum 2 allocating frames unchanged."
+            echo "Each condition: 150 warmup, 180 observations, 24 post-window calibration frames. Original Shooter gate unchanged."
             echo "Policy: one editor invocation requiring Burst, no retry or Burst-disabled fallback."
-            for f in Artifacts/shooter-diagnostic-run.txt Artifacts/GC/shooter-*/steady-window-summary.txt; do
+            for f in Artifacts/shooter-platform-control-run.txt Artifacts/GC/platform-control/*/summary.json; do
               [ -f "$f" ] || continue
               echo "$(basename "$f") (first 80 lines):"
               head -n 80 "$f"
             done
-            for f in Artifacts/playmode-shooter-gc-diagnostic-results.xml; do
+            for f in Artifacts/playmode-shooter-platform-control-results.xml; do
               [ -f "$f" ] || continue
               grep -m1 -o '<test-run[^>]*>' "$f" | cut -c1-2000 || true
             done
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Package bounded diagnostic evidence
-        # Includes GC raw/settings/CSV, ordinary samples, run metadata, XML and log.
+        # Includes every control CSV/settings/summary, run metadata, XML and log.
         # All files are retained; the existing 40 x 16 MiB cap fails on overflow.
         id: evidence
         if: always()

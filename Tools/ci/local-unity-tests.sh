@@ -8,17 +8,23 @@ cd "$(dirname "$0")/../.."
 # This is an exact, closed mode rather than a general-purpose test-filter override.
 MODE=full
 if [ "$#" -gt 1 ]; then
-  echo "::error::Usage: $0 [--shooter-gc-diagnostic]"; exit 2
+  echo "::error::Usage: $0 [--shooter-gc-diagnostic|--shooter-platform-control]"; exit 2
 fi
 case "$#:${1:-}" in
-  0:) export SPF_SHOOTER_GC_CAPTURE=0 ;;
+  0:) export SPF_SHOOTER_GC_CAPTURE=0 SPF_SHOOTER_PLATFORM_CONTROL=0 ;;
   1:--shooter-gc-diagnostic)
     MODE=shooter-gc-diagnostic
     export SPF_SHOOTER_GC_CAPTURE=1
+    export SPF_SHOOTER_PLATFORM_CONTROL=0
     export SPF_STORY_GC_CAPTURE=0
     export SPF_WEAPON_GAMEPLAY_SEQUENCE=0 SPF_ABILITY_GAMEPLAY_SEQUENCE=0
     ;;
-  *) echo "::error::Usage: $0 [--shooter-gc-diagnostic]"; exit 2 ;;
+  1:--shooter-platform-control)
+    MODE=shooter-platform-control
+    export SPF_SHOOTER_PLATFORM_CONTROL=1 SPF_SHOOTER_GC_CAPTURE=0 SPF_SHOOTER_GC_INCLUDE_EDITOR=0
+    export SPF_STORY_GC_CAPTURE=0 SPF_WEAPON_GAMEPLAY_SEQUENCE=0 SPF_ABILITY_GAMEPLAY_SEQUENCE=0
+    ;;
+  *) echo "::error::Usage: $0 [--shooter-gc-diagnostic|--shooter-platform-control]"; exit 2 ;;
 esac
 A=Artifacts; rm -rf "$A"; mkdir -p "$A"
 if [ "$MODE" = shooter-gc-diagnostic ]; then
@@ -28,6 +34,15 @@ if [ "$MODE" = shooter-gc-diagnostic ]; then
     printf 'github_sha=%s\nref=%s\nrun_id=%s\nrun_attempt=%s\n' "${GITHUB_SHA:-local}" "${GITHUB_REF:-local}" "${GITHUB_RUN_ID:-local}" "${GITHUB_RUN_ATTEMPT:-local}"
     printf 'started_utc=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
   } > "$A/shooter-diagnostic-run.txt"
+fi
+if [ "$MODE" = shooter-platform-control ]; then
+  {
+    printf 'purpose=ordinary-counter A/B calibration/platform control; NOT product gate\n'
+    printf 'head=%s\ngithub_sha=%s\nref=%s\nrun_id=%s\nrun_attempt=%s\n' "$(git rev-parse HEAD 2>/dev/null || printf unknown)" "${GITHUB_SHA:-local}" "${GITHUB_REF:-local}" "${GITHUB_RUN_ID:-local}" "${GITHUB_RUN_ATTEMPT:-local}"
+    printf 'started_utc=%s\neditor_invocations=1\nretry=false\nburst_disabled_fallback=false\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    printf 'conditions=A-raw-recorder,B-frame-governor\nwarmup_per_condition=150\nobservations_per_condition=180\ncontrol_frames_per_condition=24\nwarmup_observation_control_frames=708\nteardown_yields=2\n'
+    printf 'rss_stop_mb=4096\nrss_sampling_seconds=1\nprocess_timeout_seconds=600\nprofiler_settings_changed=false\n'
+  } > "$A/shooter-platform-control-run.txt"
 fi
 VERSION=$(sed -n 's/^m_EditorVersion: *//p' ProjectSettings/ProjectVersion.txt | tr -d '\r')
 EDITOR="${UNITY_EDITOR_PATH:-}"
@@ -54,7 +69,7 @@ if [ "$(uname)" = Darwin ] && [ "$(sysctl -n hw.optional.arm64 2>/dev/null)" = 1
   if lipo -archs "$EDITOR" 2>/dev/null | grep -qw arm64; then
     LAUNCH=(arch -arm64)
   else
-    if [ "$MODE" = shooter-gc-diagnostic ]; then
+    if [ "$MODE" != full ]; then
       echo "::error::Shooter diagnostic requires the arm64 Unity editor on Apple Silicon for native Burst execution"; exit 1
     fi
     echo "::warning::Unity at $EDITOR has no arm64 slice; install the Apple Silicon editor for Burst to work"
@@ -131,14 +146,34 @@ run() {
   echo "::group::${platform} tests${tag:+ ($tag)}"
   ${LAUNCH[@]+"${LAUNCH[@]}"} "$EDITOR" -batchmode "$@" -projectPath "$PROJECT" -runTests -testPlatform "$platform" \
     -testResults "$PROJECT/$A/${platform}${tag:+-$tag}-results.xml" -logFile "$PROJECT/$A/${platform}${tag:+-$tag}.log" &
-  local pid=$! peak=0 rss
+  local pid=$! peak=0 rss started=$SECONDS stop_reason=""
+  if [ "$MODE" = shooter-platform-control ]; then
+    printf 'elapsedSeconds,rssKiB\n' > "$A/platform-control-resident-samples.csv"
+  fi
   # Sample the editor's resident memory so a runaway allocation is visible even if the OS kills it.
   while kill -0 $pid 2>/dev/null; do
     rss=$(ps -o rss= -p $pid 2>/dev/null | tr -d ' ')
+    case "$rss" in ''|*[!0-9]*) rss="" ;; esac
     if [ -n "$rss" ] && [ "$rss" -gt "$peak" ]; then peak=$rss; fi
+    if [ "$MODE" = shooter-platform-control ]; then
+      if ! kill -0 "$pid" 2>/dev/null; then break; fi
+      printf '%s,%s\n' "$((SECONDS - started))" "${rss:--1}" >> "$A/platform-control-resident-samples.csv"
+      if [ -z "$rss" ]; then stop_reason="RSS unavailable";
+      elif [ "$rss" -gt 4194304 ]; then stop_reason="RSS exceeded 4096 MiB stop threshold";
+      elif [ "$((SECONDS - started))" -ge 600 ]; then stop_reason="600 second process timeout"; fi
+      if [ -n "$stop_reason" ]; then
+        printf 'monitor_stop=%s\n' "$stop_reason" >> "$A/shooter-platform-control-run.txt"
+        echo "::error::Platform control stopped: $stop_reason; no retry and no valid measurement claim."
+        kill "$pid" 2>/dev/null || true
+        sleep 2
+        kill -9 "$pid" 2>/dev/null || true
+        break
+      fi
+    fi
     sleep 1
   done
   wait $pid; local code=$?
+  if [ -n "$stop_reason" ]; then code=124; fi
   echo "exit code ${code} (0 = passed, 2 = test failures, other = editor error); peak RSS $((peak / 1024)) MB"
   echo "::endgroup::"
   if [ $code -ne 0 ]; then
@@ -196,6 +231,39 @@ run_platform() {
   fi
   return $code
 }
+
+if [ "$MODE" = shooter-platform-control ]; then
+  FILTER=ShooterFoundation.Tests.PlayMode.ShooterPlatformControlTests.MatchedEmptyPlatformWindows
+  printf 'unity_version=%s\neditor=%s\nhost=%s\ntest_filter=%s\n' "$VERSION" "$EDITOR" "$(uname -sm)" "$FILTER" >> "$A/shooter-platform-control-run.txt"
+  kill_leftover_editors
+  clear_burst_cache
+  run playmode shooter-platform-control -testFilter "$FILTER"; DIAGNOSTIC=$?
+  printf 'editor_exit_code=%s\n' "$DIAGNOSTIC" >> "$A/shooter-platform-control-run.txt"
+  python3 - "$A/playmode-shooter-platform-control-results.xml" "$FILTER" "$A/GC/platform-control" <<'PY'
+import json
+from pathlib import Path
+import sys
+import xml.etree.ElementTree as ET
+try:
+    cases = ET.parse(sys.argv[1]).getroot().findall(".//test-case")
+    if len(cases) != 1 or cases[0].get("fullname") != sys.argv[2] or cases[0].get("result") not in ("Passed", "Failed"):
+        raise ValueError("expected precisely the one executed A/B platform-control test")
+    for name in ("A-raw-recorder", "B-frame-governor"):
+        report = json.loads((Path(sys.argv[3]) / name / "summary.json").read_text())
+        if report.get("condition") != name or report.get("observationCount") != 204 or report.get("windowFrames") != 180:
+            raise ValueError("incomplete or wrong condition: " + name)
+        if report.get("establishesProductGate") is not False or report.get("measurementValid") is not True:
+            raise ValueError("invalid calibration/sampling: " + name)
+    print("Both fixed platform conditions complete and calibrated; this does not establish the Shooter product gate.")
+    if cases[0].get("result") == "Failed": sys.exit(2)
+except (OSError, ValueError, ET.ParseError) as error:
+    print("::error::Incomplete platform control: " + str(error)); sys.exit(1)
+PY
+  RESULTS=$?
+  printf 'result_scope_validation_exit_code=%s\n' "$RESULTS" >> "$A/shooter-platform-control-run.txt"
+  [ "$DIAGNOSTIC" -ne 0 ] || DIAGNOSTIC=$RESULTS
+  exit "$DIAGNOSTIC"
+fi
 
 if [ "$MODE" = shooter-gc-diagnostic ]; then
   FILTER=ShooterFoundation.Tests.PlayMode.ShooterPlayTests.WarmSteadyFrameAndPresentationOnlyQuality

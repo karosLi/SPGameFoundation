@@ -1,0 +1,32 @@
+{
+  "recording_commit": "da289055a2f5be17175503997b0f149ec288a166",
+  "recording_tree": "de75e4c83423faa201ad5b34d3e2adfe69d68abc",
+  "equivalent_local_base": "2ff81e93aa8ff70c82050090fd41e6455bab8c91",
+  "oracle_source_commit": "70162a1ddd1758978d26d2c5bf47dc96f00e6bc2",
+  "identical_non_document_non_test_paths": 567,
+  "canonical_path_mode_blob_sha256": "ae6a05a6c6de58a4a465432a4af6fd73cd697700969eff5f2387ce0c1301fc67",
+  "comparison": "Every tracked non-Docs/non-Tests path, file mode and Git blob SHA is identical. Only frozen test sources, fixture and docs differ.",
+  "changed_paths": [
+    "Assets/SinglePlayerFoundation/Tests/EditMode/BladeGripArtTests.cs",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/FrozenBladeArtF46c765.meta",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/FrozenBladeArtF46c765/BlobShadow.cs",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/FrozenBladeArtF46c765/BlobShadow.cs.meta",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/FrozenBladeArtF46c765/NaturalCharacterArt.cs",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/FrozenBladeArtF46c765/NaturalCharacterArt.cs.meta",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/FrozenBladeArtF46c765/PixelCanvas.cs",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/FrozenBladeArtF46c765/PixelCanvas.cs.meta",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/FrozenBladeArtF46c765/SmoothSpriteArt.cs",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/FrozenBladeArtF46c765/SmoothSpriteArt.cs.meta",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/FrozenBladeArtF46c765/SpriteAtlas.cs",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/FrozenBladeArtF46c765/SpriteAtlas.cs.meta",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/FrozenBladeArtF46c765/WeaponArt.cs",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/FrozenBladeArtF46c765/WeaponArt.cs.meta",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/FrozenBladeArtF46c765/provenance.json",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/FrozenBladeArtF46c765/provenance.json.meta",
+    "Docs/BladeControlledRecovery.md"
+  ],
+  "reused_native_video_run": 37753629087,
+  "video_archive_sha256": "882921c5f20f1b8cc0159d8b6acdcf5a7bca27af5385980d98f6e6c12b75c3ab",
+  "scope": "The new validation branch does not enable the optional large weapon/movement recordings. All necessary native/graphics regressions still execute. Exactly two opt-in BwMovement capture cases reuse the successful da28905 result and corresponding actual source recordings.",
+  "limits": "Production identity supports reuse of these recorded scenarios; it is not user naturalness or physical-device approval."
+}

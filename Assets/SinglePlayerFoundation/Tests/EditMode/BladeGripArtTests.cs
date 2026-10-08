@@ -9,6 +9,7 @@ using SPF.Presentation.Sprites;
 using SPF.Testing;
 using Unity.Mathematics;
 using UnityEngine;
+using FrozenArt=SPF.Tests.EditMode.FrozenBladeArtF46c765;
 
 namespace SPF.Tests.EditMode
 {
@@ -38,27 +39,47 @@ namespace SPF.Tests.EditMode
             unchecked {foreach(var pixel in canvas.Pixels) {hash=(hash^pixel.r)*1099511628211UL;hash=(hash^pixel.g)*1099511628211UL;hash=(hash^pixel.b)*1099511628211UL;hash=(hash^pixel.a)*1099511628211UL;}}
             return hash;
         }
-        // FNV-1a RGBA bytes captured from the exact pre-edit f46c765 source, not regenerated expectations.
+        // Fixed .NET harness goldens remain an additional control on that runtime. Native Unity
+        // executes the independent frozen f46c765 generator below on its own math/runtime surface.
+#if SPF_DOTNET_HARNESS
         static readonly ulong[] OriginalHashes={
             0x3E9DE82B7F5F03B8,0x5A7E9039FF029C33,0x67F20B0CB7E4E47E,0xB409F6CAB09D12A1,
             0xB93E991DFC52FF16,0xCF00C0B4061AF8F1,0xB93E991DFC52FF16,0xDCCE1FC7E305CE78,
             0x454E7F383D94D273,0x1A9CA1609B74361E,0xCD4EA91FDB3597AB,0x3C074C4BD9523B17,
             0x28CBCADB4B261551,0x6127244C022419B4,0x28CBCADB4B261551,0xCA331734079453EE,
             0xA13503AD2C350C00,0x651CE18F97C37341,0xE17DAD9A6A855FD2,0x5E1941DF5A552C7A};
-        static SpriteSheet OriginalAtlas(NaturalCharacterArt art,bool weapons)
+#endif
+        static int FirstPixelMismatch(Color32[] actual,Color32[] expected)
         {
-            var builder=new SpriteAtlasBuilder();
-            for(int role=0;role<2;role++)for(int part=0;part<8;part++)builder.Add(art.Canvases[role][part]);
-            if(weapons)for(int weapon=0;weapon<WeaponArt.Count;weapon++)builder.Add(WeaponArt.Draw(weapon));
-            var white=new PixelCanvas(4,4);white.Rect(0,0,4,4,new Color32(255,255,255,255));builder.Add(white);
-            var disc=new PixelCanvas(48,48);disc.Ellipse(24,24,22,22,new Color32(255,255,255,255));builder.Add(SmoothSpriteArt.Downsample(disc,2));
-            builder.Add(BlobShadow.CreateCanvas(64,64));builder.Add(BlobShadow.CreateCanvas());
-            return builder.Build(1024,FilterMode.Bilinear,2,true);
+            if(actual.Length!=expected.Length)return math.min(actual.Length,expected.Length);
+            for(int i=0;i<actual.Length;i++) {
+                var a=actual[i];var b=expected[i];
+                if(a.r!=b.r||a.g!=b.g||a.b!=b.b||a.a!=b.a)return i;
+            }
+            return -1;
+        }
+        static void AssertOriginalCanvas(PixelCanvas actual,FrozenArt.PixelCanvas expected,int index)
+        {
+            Assert.That(actual.Width,Is.EqualTo(expected.Width),"original canvas width "+index);
+            Assert.That(actual.Height,Is.EqualTo(expected.Height),"original canvas height "+index);
+            Assert.That(FirstPixelMismatch(actual.Pixels,expected.Pixels),Is.EqualTo(-1),"same-runtime frozen original RGBA bytes "+index);
+#if SPF_DOTNET_HARNESS
+            Assert.That(PixelHash(actual),Is.EqualTo(OriginalHashes[index]),"fixed .NET original RGBA hash "+index);
+#endif
+            // Positive controls use the exact byte comparator above. An isolated change in any
+            // channel, including transparent RGB, must be detected; neither input is modified.
+            var mutated=(Color32[])actual.Pixels.Clone();int at=mutated.Length/2;
+            for(int channel=0;channel<4;channel++) {
+                var value=actual.Pixels[at];
+                if(channel==0)value.r^=1;else if(channel==1)value.g^=1;else if(channel==2)value.b^=1;else value.a^=1;
+                mutated[at]=value;
+                Assert.That(FirstPixelMismatch(mutated,expected.Pixels),Is.EqualTo(at),"RGBA mutation detector "+index+" channel "+channel);
+            }
         }
         [TestCase(false)] [TestCase(true)]
         public void OriginalAtlasPixelsUvsAndTextureBudgetRemainExact(bool weapons)
         {
-            using var art=new NaturalCharacterArt(weapons);using var original=OriginalAtlas(art,weapons);
+            using var art=new NaturalCharacterArt(weapons);using var frozen=new FrozenArt.NaturalCharacterArt(weapons);var original=frozen.Sheet;
             Assert.That(art.Sheet.Size,Is.EqualTo(new int2(1024,weapons?512:256)));
             Assert.That(art.Sheet.Count,Is.EqualTo(weapons?26:20));Assert.That(art.Sheet.Size,Is.EqualTo(original.Size));
             for(int frame=0;frame<original.Count;frame++)
@@ -67,8 +88,8 @@ namespace SPF.Tests.EditMode
                 Assert.That(art.Sheet[frame].Uv,Is.EqualTo(original[frame].Uv),"old UV "+frame);
                 Assert.That(art.Sheet[frame].Pixels,Is.EqualTo(original[frame].Pixels),"old dimensions "+frame);
             }
-            for(int role=0;role<2;role++)for(int part=0;part<8;part++)Assert.That(PixelHash(art.Canvases[role][part]),Is.EqualTo(OriginalHashes[role*8+part]),"original RGBA bytes "+role+"/"+part);
-            for(int weapon=0;weapon<WeaponArt.Count;weapon++)Assert.That(PixelHash(WeaponArt.Draw(weapon)),Is.EqualTo(OriginalHashes[16+weapon]),"original weapon RGBA bytes "+weapon);
+            for(int role=0;role<2;role++)for(int part=0;part<8;part++)AssertOriginalCanvas(art.Canvases[role][part],frozen.Canvases[role][part],role*8+part);
+            for(int weapon=0;weapon<WeaponArt.Count;weapon++)AssertOriginalCanvas(WeaponArt.Draw(weapon),FrozenArt.WeaponArt.Draw(weapon),16+weapon);
             if(weapons)
             {
                 Assert.That(art.BladeGripFrames,Is.EqualTo(new[]{24,25}));
@@ -76,7 +97,7 @@ namespace SPF.Tests.EditMode
                 Assert.That(art.Sheet.Origins[25],Is.EqualTo(new int2(2,462)));
                 for(int kind=0;kind<2;kind++)Assert.That(art.Sheet[art.BladeGripFrames[kind]].Pixels,Is.EqualTo(new int2(40,32)));
             }
-            TestContext.WriteLine("Atlas RGBA32 bytes="+(art.Sheet.Size.x*art.Sheet.Size.y*4)+" old frames="+original.Count+" exact; original 20 canvas hashes exact.");
+            TestContext.WriteLine("Atlas RGBA32 bytes="+(art.Sheet.Size.x*art.Sheet.Size.y*4)+" old frames="+original.Count+" exact; all 20 canvases byte-identical to frozen f46c765 on this runtime; 80 single-channel mutations detected.");
         }
         [TestCase(0)] [TestCase(1)]
         public void ClosedGripHasPaddedThumbAndSeparateCurledFingersAtHilt(int kind)
@@ -178,7 +199,7 @@ namespace SPF.Tests.EditMode
         [Test]
         public void NativeAtlasKeepsEveryOriginalTexelAndPrivateExtrusionGutter()
         {
-            using var art=new NaturalCharacterArt(true);using var original=OriginalAtlas(art,true);
+            using var art=new NaturalCharacterArt(true);using var frozen=new FrozenArt.NaturalCharacterArt(true);var original=frozen.Sheet;
             var pixels=art.Sheet.Texture.GetPixels32();var before=original.Texture.GetPixels32();
             for(int frame=0;frame<original.Count;frame++)
             {

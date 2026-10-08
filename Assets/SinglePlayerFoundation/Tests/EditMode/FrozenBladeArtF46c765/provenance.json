@@ -1,0 +1,54 @@
+{
+  "baseline_commit": "f46c7651193186126bcaa9f3f6537002293b7e2c",
+  "purpose": "Independent same-runtime pre-edit original art and atlas test oracle; never production code.",
+  "files": {
+    "NaturalCharacterArt.cs": {
+      "source": "Assets/SinglePlayerFoundation/Presentation/Animation/NaturalCharacterArt.cs",
+      "source_sha256": "047454d065c6b2525bfb93999257a297d818de64bea8041fe4048081fe83db28",
+      "frozen_sha256": "e6d4fba5222d4023fea9aba796650b2875ee1eb6815f444958a5dd954dcbd770",
+      "transform": "Add provenance comment and SPF Presentation type imports; relocate sole namespace to SPF.Tests.EditMode.FrozenBladeArtF46c765. No executable source edits.",
+      "added_imports": [
+        "SPF.Presentation.Animation"
+      ]
+    },
+    "WeaponArt.cs": {
+      "source": "Assets/SinglePlayerFoundation/Presentation/Animation/WeaponArt.cs",
+      "source_sha256": "0f5ddfe6d7be7ff62771faf4c5f102121b373f863c15a4798198294d66b88953",
+      "frozen_sha256": "daea523de6ef57f11477399bf083efd045d4958a84bc1b6bced37a3dcd29566b",
+      "transform": "Add provenance comment and SPF Presentation type imports; relocate sole namespace to SPF.Tests.EditMode.FrozenBladeArtF46c765. No executable source edits.",
+      "added_imports": []
+    },
+    "PixelCanvas.cs": {
+      "source": "Assets/SinglePlayerFoundation/Presentation/Sprites/PixelCanvas.cs",
+      "source_sha256": "9c0307245a54bb5d67d3ab2b0ef195d1e7aa4b12a526e72a4c4dc38fb6afc5ea",
+      "frozen_sha256": "13b4911eabc481e5d339cd2515676d855ee861b7c1f00999a9e3d033d54b8ad6",
+      "transform": "Add provenance comment and SPF Presentation type imports; relocate sole namespace to SPF.Tests.EditMode.FrozenBladeArtF46c765. No executable source edits.",
+      "added_imports": []
+    },
+    "SmoothSpriteArt.cs": {
+      "source": "Assets/SinglePlayerFoundation/Presentation/Sprites/SmoothSpriteArt.cs",
+      "source_sha256": "fbb653ae866c2e6c95ae93484ba6314d1aab850a60ca3bfe6841edca84a9ba31",
+      "frozen_sha256": "c932e9eee5841f4c40d0e31ac9eba16b3223b3293ab6923db8a20097e2e90b24",
+      "transform": "Add provenance comment and SPF Presentation type imports; relocate sole namespace to SPF.Tests.EditMode.FrozenBladeArtF46c765. No executable source edits.",
+      "added_imports": []
+    },
+    "SpriteAtlas.cs": {
+      "source": "Assets/SinglePlayerFoundation/Presentation/Sprites/SpriteAtlas.cs",
+      "source_sha256": "58ba1311a8ab41e7ddf55908312808b4113c1384d40f2e23346f90a2e85b3b50",
+      "frozen_sha256": "2945b3b649dcc7513f46ed4e8a05e8a0d1efbece4b3f2fb21bdd72a1e8067af5",
+      "transform": "Add provenance comment and SPF Presentation type imports; relocate sole namespace to SPF.Tests.EditMode.FrozenBladeArtF46c765. No executable source edits.",
+      "added_imports": [
+        "SPF.Presentation"
+      ]
+    },
+    "BlobShadow.cs": {
+      "source": "Assets/SinglePlayerFoundation/Presentation/Sprites/BlobShadow.cs",
+      "source_sha256": "18bc5bf45c98c96f932b4d716f78889e2448fcc8f6fd38bb698b138c5c9709d8",
+      "frozen_sha256": "fe43d602e6e3fbdccdffb5599c953d9679ca4b0641f3e75a5361c4da14a9530b",
+      "transform": "Add provenance comment and SPF Presentation type imports; relocate sole namespace to SPF.Tests.EditMode.FrozenBladeArtF46c765. No executable source edits.",
+      "added_imports": [
+        "SPF.Presentation.Sprites"
+      ]
+    }
+  }
+}

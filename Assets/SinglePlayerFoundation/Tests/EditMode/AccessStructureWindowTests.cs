@@ -14,7 +14,10 @@ using Unity.Jobs;
 
 namespace SPF.Tests.EditMode
 {
+#if SPF_DOTNET_HARNESS
+    // Unity's bundled NUnit subset executes these fixtures serially and omits this attribute.
     [NonParallelizable]
+#endif
     public class AccessStructureWindowTests
     {
         static readonly TableKey Things = new TableKey("AccessWindow.Things");

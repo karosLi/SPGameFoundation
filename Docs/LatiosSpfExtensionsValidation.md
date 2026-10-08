@@ -36,3 +36,13 @@
 - 已交付 fc1 的真实连续片段；密集横屏血条/数字及少量竖屏 HUD 边缘遮挡仍列为局部可读性待办，不把静态数学或软件绿色结果升级为最终美术自然度认可。
 
 集成分支为 `dot/latios-extension-a1-a3`。后续实验按[实施记录](LatiosImplementationProgress.md)和原方案门槛独立推进；S1a 未通过前不采用 S1b/S2，A4 没有新增语义需求时不扩展通用命令系统。
+
+## 2026-10-08 原生恢复与 NUnit 兼容修正
+
+原运行 [37651341654](https://github.com/karosLi/SPGameFoundation/actions/runs/37651341654) 于 2026-10-07 20:26:14 UTC 终止为 cancelled；没有 artifact 或可证实的 Unity 执行，取消原因未确认。
+
+随后在 `dot/mobile-feedback-legibility` 发布已集成的 [ed07fad9](https://github.com/karosLi/SPGameFoundation/commit/ed07fad9d80f6d223ec425a8edf1d0e6d43f60b8)，包含 A1–A3 和已完成 1,554 项软件检查的有界可读性修正。[原生运行 37708237734](https://github.com/karosLi/SPGameFoundation/actions/runs/37708237734) 实际完成 runner setup、checkout 并启动 Unity，随后在编译阶段失败：`AccessStructureWindowTests` 的 `NonParallelizable` 属性不存在于 Unity 定制 NUnit。两个日志已完整恢复、逐文件 hash 核验；归档 24,870 bytes，SHA-256 `4921ccb9cbc90de4eba577b57cf627c840caeae450270ce05466d56c94232318`。没有测试 XML 或画面，不计为测试执行。
+
+修正采用仓库其他 workload 夹具已有做法：仅在 `SPF_DOTNET_HARNESS` 下保留该属性。检查了实际固定 [Unity Test Framework 1.1.33 源包](https://packages.unity.com/com.unity.test-framework/-/com.unity.test-framework-1.1.33.tgz)：`CompositeWorkItem.RunChildren` 顺序枚举子项，完整耗尽当前 `child.Execute()` 后才进入下一项；`UnityTestAssemblyRunner.Run` 执行这个工作项树。原生串行执行仍保持，host NUnit 的显式串行要求也保留。
+
+本次只修改属性的条件编译与本记录，夹具方法、SetUp/TearDown 对共享开关的保存/恢复、断言、阈值及生产源均未改变。静态核对确认 host 条件展开与修正前逐行相同，原生只少了不支持的属性。先前真实 Unity API 编译没有覆盖这一原生 NUnit 夹具兼容问题，不能把它当作原生测试程序集已编译的证明。修正提交仍需完整原生复验；S1a 门槛不因此提前通过。

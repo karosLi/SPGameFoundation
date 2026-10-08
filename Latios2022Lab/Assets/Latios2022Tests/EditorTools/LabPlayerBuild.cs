@@ -17,7 +17,7 @@ namespace Latios2022Lab
                 throw new InvalidOperationException("First smoke build is a desktop IL2CPP control. Mobile builds need their separate platform gate.");
             var group = BuildPipeline.GetBuildTargetGroup(target);
             PlayerSettings.SetScriptingBackend(group, ScriptingImplementation.IL2CPP);
-            PlayerSettings.SetIl2CppCodeGeneration(UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(group), Il2CppCodeGeneration.OptimizeSize);
+            PlayerSettings.SetIl2CppCodeGeneration(UnityEditor.Build.NamedBuildTarget.FromBuildTargetGroup(group), UnityEditor.Build.Il2CppCodeGeneration.OptimizeSize);
             Directory.CreateDirectory("Assets/Latios2022Tests/Generated");
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             new GameObject("Latios S1a smoke").AddComponent<LabPlayerSmoke>();

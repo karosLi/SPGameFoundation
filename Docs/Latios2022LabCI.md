@@ -2,6 +2,15 @@
 
 Status: launcher/static tests prepared; **no Unity run, resolved lock, native pass or S1a completion is claimed by this change**. The existing [lab protocol](../Latios2022Lab/README.md) and [blueprint](LatiosUnity2022IntegrationBlueprint.md) remain the acceptance authority.
 
+Preparation correction (2026-10-08): the owned `LabPlayerBuild` Editor helper now
+fully qualifies `UnityEditor.Build.Il2CppCodeGeneration.OptimizeSize`. The exact
+[2022.3.62f2 source](https://github.com/Unity-Technologies/UnityCsReference/blob/2022.3.62f2/Editor/Mono/EditorUserBuildSettings.bindings.cs#L24-L40)
+declares the enum in `UnityEditor.Build`; the helper previously imported only
+`UnityEditor.Build.Reporting`. This fixes source-level name resolution before the
+first import. It does not change the original Latios package pin, the 49+1 test
+semantics, player build policy, root project or any actual native result. The
+reviewed source commit used by a later request must include this correction.
+
 ## Release process and exact scope
 
 Only the execution lead may release the approved existing Mac runner, after inspecting the precise P0 native XML/logs/artifacts and confirming the queue is free. A green workflow alone is insufficient: review its actual Burst execution and any fallback/skip evidence. This workflow does not provision runners, install Unity/modules, sign in, install credentials, change security settings or write persistent Burst preferences.

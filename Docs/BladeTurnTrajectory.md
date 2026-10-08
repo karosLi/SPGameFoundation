@@ -22,7 +22,7 @@
 - 刀 guard 的左右归属随既有 `motion.Turn` 连续变化，当前动作的 `aimWeight` 在接触时收敛到权威朝向。没有新增振荡器、自由时间轴或速度调参。
 - 同一 Turn 参数拥有主臂镜像。用当前相位的 incoming guard 作参考，肘在身体中线经过紧凑折叠，两个真实骨段长度保持不变；不会用瞬间反转固定 IK 分支来转身。+1 时退回原求解。肩滑只消费当前动作的 guard 参考，不会把虚拟瞄准转弧误当成需要额外肩滑的抬高手。
 - 腕仍受原 `±0.85 rad` 限制，武器的位置和方向仍取最终 Hand。接触时 `aimWeight=1`、`ArmBend=1`，原 IK 与标准 socket 路径生效，接触时刻/位置不改。
-- 取消沿用原有 0.2 s Hermite 衰减窗口，同时保存 arm reference 和 turn ownership。新增 4 个 float2 与 4 个 float 值字段（48 字节字段数据/已注册表现角色），容量固定，不进入权威存档。若换向与取消都发生于两个绘制帧之间，先转换参考的镜像坐标再继承，覆盖真实 30 Hz 情况。
+- 取消沿用原有 0.2 s Hermite 衰减窗口，同时保存 arm reference 和 turn ownership。新增 4 个 float2 与 4 个 float 值字段（每个预分配表现槽增加48字节字段数据，按Capacity保留而非当前可见人数；实际结构对齐/分配量另测），容量固定，不进入权威存档。若换向与取消都发生于两个绘制帧之间，先转换参考的镜像坐标再继承，覆盖真实 30 Hz 情况。
 - 未持武器时 turn ownership 为中立 1、速度为 0；新增折叠还受 WeaponWeight 控制，装备本身不产生假转身。刀取消时残余通用 punch lean 使用同一 EquipAge 淡入，避免肩部瞬跳；真实 Kick 不走这条修正。
 - 两种 IK 路径互斥执行，无新增数组、池、临时集合、逐帧托管分配或迭代求解。未修改相机、拖尾、阶段跳过或性能阈值。
 
@@ -38,3 +38,11 @@
 - `native-domain/compile-frozen.log`：官方 Unity NUnit 引用及非 harness 条件域编译审计；这是编译审计，不是 Unity 原生执行。
 
 本分支没有运行新的 Unity、aggregate 或 push。候选的两档真实 1× 近景、逐帧骨骼/刀轨迹和原生完整性能门槛仍需集成分支验证；上述逻辑绿灯不能代替用户对动作自然度的接受。Android/iOS 物理设备门槛仍保留。
+
+## 集成软件检查点
+
+运行时代码与独立的观察窗口修正合并后，78个程序集编译通过，0警告/错误；一次完整aggregate为 **1,681通过、0失败**，保留原六项Explicit诊断。12个非空测试程序集和15个空PlayMode harness结果分别记录，空结果不提供原生覆盖。新旧motion与observer条件域均用官方Unity NUnit/UTF审计，0错误、各一条既有host版本引用警告；engine仍为桩。[精确源、哈希及范围](validation/BladeTurnIntegration-20261008.json)。
+
+观察器现在处于renderer500与下一Tick launcher32000之间的1000窗口，进入时必须没有pending tick，且不能推进时钟；原武器ID、快照和sprite身份断言均保留。原5d两次失败、完整近景反例和存储恢复后的22项复验结果见[原生审查](BladeCloseupNativeReview.md)。只读磁盘诊断分支没有合入产品候选。
+
+此次生产代码已变化，必须在新精确head上重跑完整native并取得新的普通和近景两档录像；不得把旧影片当作修正后结果。待新实际像素、正常1×/明确慢放和用户判断完成后，才能扩大视觉结论。

@@ -1,0 +1,32 @@
+{
+  "sourceCommit": "1fb3a98c4d1580c3ba706c355aeb0e6794a09ca2",
+  "sourceTree": "1dda68c109da01a719ccc703dcf4f5b1cbdcdd2c",
+  "baseRemote": "5d1db3e27b5db45658febbd4d4a122a1d8e40328",
+  "sourceSha256": {
+    "Assets/SinglePlayerFoundation/Presentation/Animation/WeaponMotion.cs": "1585ec12320be9287b938632b2b024ea1d0a09044095f5bc786d15dd3646d480",
+    "Assets/SinglePlayerFoundation/Presentation/Animation/GameplayCharacterMotion.cs": "4d7aaa360bb5504c0b0f25658d7c01d53cb561320bd0fbadbbdfdfb521d50b71",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/BladeTurnTrajectoryTests.cs": "40a1c25d5a716eff87ad75457973d8060522739d1ac13e0bb6a200765332bc81",
+    "Assets/BrawlerFoundation/Tests/PlayMode/BwBladeGripCloseupCaptureDriver.cs": "974512c11e1d42c2abbe722dff13805492842789e9876b50f88fe340b5b45227",
+    "Assets/BrawlerFoundation/Tests/PlayMode/BwBladeGripCloseupCaptureDriver.cs.meta": "b8cd9a9d772b499533e4f5d0c1b511744c60177b924a2f4a80b1d0738760123a",
+    "Assets/BrawlerFoundation/Tests/PlayMode/BwBladeGripCloseupCaptureTests.cs": "24b64267000a95cd6f4ec247414304688599000aa2aa2dcc92f10639cf0dc1a7"
+  },
+  "aggregate": {
+    "exit": 0,
+    "projects": 78,
+    "buildWarnings": 0,
+    "buildErrors": 0,
+    "passed": 1681,
+    "failed": 0,
+    "retainedExplicitNotExecuted": 6,
+    "nonemptyTestAssemblies": 12,
+    "emptyNativeHarnessAssemblies": 15
+  },
+  "nativeConditionalAudits": {
+    "motion": "0errors/1knownNUnitversionwarning",
+    "observer": "0errors/1knownNUnitversionwarning",
+    "officialNunitSha256": "e388e140954de12970384331d1730e95b4613ef53c3326b6f8fa0fffdbc9314f",
+    "limit": "Engine APIs use stubs; not actual Unity execution."
+  },
+  "native": "Pending fresh fullrun. Production changed: old normal and closeup films cannot count as AFTER. Fullrequiredtests andallnormal+closeuprecordings required.",
+  "diagnosticBranch": "Readonlystoragebranch not merged. No diagnostic CI job guards included in this product candidate."
+}

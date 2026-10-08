@@ -1,0 +1,5 @@
+Shooter swept-collision microbenchmark
+Enemies 1024; sweeps 4096; direct Cartesian pairs 4194304
+Grid narrow-phase candidates 4290; hits 3036; candidate ratio 0.102%
+Warmup 10; samples 30; p50 0.168 ms; p95 0.189 ms
+Includes grid query and exact moving-circle narrow phase. Excludes grid build, rendering and upload. Desktop/harness results do not establish mobile performance, Burst behavior under .NET stubs, thermal stability or battery use.

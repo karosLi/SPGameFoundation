@@ -1,0 +1,12 @@
+Quadtree sensitivity; runtime=unity-native-editmode; distribution=uniform; seed=1234; entries=512; queries=512; warmup=4; samples=16
+Same arrays; rotated configuration order; full scheduled build+query+completion; instrumentation separate. Compare configurations only within this fixture, not against the different-size primary grid matrix.
+bucket=8; maxDepth=8; total_ms=p50=0.0524;p95=0.1129;worst=0.1129; nodes=194; depth=4; saturated=0; raw_entries=11257; visits=4692; hits=4692; bytes=34876; queryBurst=1; buildBurst=1
+bucket=8; maxDepth=12; total_ms=p50=0.0510;p95=0.0785;worst=0.0785; nodes=194; depth=4; saturated=0; raw_entries=11257; visits=4692; hits=4692; bytes=34876; queryBurst=1; buildBurst=1
+bucket=8; maxDepth=16; total_ms=p50=0.0502;p95=0.0618;worst=0.0618; nodes=194; depth=4; saturated=0; raw_entries=11257; visits=4692; hits=4692; bytes=34876; queryBurst=1; buildBurst=1
+bucket=16; maxDepth=8; total_ms=p50=0.0505;p95=0.0690;worst=0.0690; nodes=85; depth=3; saturated=0; raw_entries=14862; visits=4692; hits=4692; bytes=29756; queryBurst=1; buildBurst=1
+bucket=16; maxDepth=12; total_ms=p50=0.0493;p95=0.0910;worst=0.0910; nodes=85; depth=3; saturated=0; raw_entries=14862; visits=4692; hits=4692; bytes=29756; queryBurst=1; buildBurst=1
+bucket=16; maxDepth=16; total_ms=p50=0.0479;p95=0.0933;worst=0.0933; nodes=85; depth=3; saturated=0; raw_entries=14862; visits=4692; hits=4692; bytes=29756; queryBurst=1; buildBurst=1
+bucket=32; maxDepth=8; total_ms=p50=0.0536;p95=0.0967;worst=0.0967; nodes=45; depth=3; saturated=0; raw_entries=23357; visits=4692; hits=4692; bytes=27196; queryBurst=1; buildBurst=1
+bucket=32; maxDepth=12; total_ms=p50=0.0526;p95=0.0684;worst=0.0684; nodes=45; depth=3; saturated=0; raw_entries=23357; visits=4692; hits=4692; bytes=27196; queryBurst=1; buildBurst=1
+bucket=32; maxDepth=16; total_ms=p50=0.0514;p95=0.0565;worst=0.0565; nodes=45; depth=3; saturated=0; raw_entries=23357; visits=4692; hits=4692; bytes=27196; queryBurst=1; buildBurst=1
+Report-only; no runtime tree adoption and no native/mobile claim from stubs. Primary matrix parameters were fixed in advance, not selected from this tuning pass.

@@ -1,0 +1,4 @@
+=== renderer CPU (GpuDriven), 60 big snakes, trail spacing per radius 0 ===
+reuse off: 0.106 ms/frame over 241 frames (rebuilds 241, reuses 0), visible snakes 6
+reuse on : 0.087 ms/frame over 240 frames (rebuilds 120, reuses 120), visible snakes 5
+saving: 17.8%

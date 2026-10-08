@@ -1,0 +1,6 @@
+Belt full tick ABBA | runtime=unity-native-editmode | fighters=128 | clustered=True
+A=frozen 1c9731a executor; B=bounded decision tree; warmup=90; four 120-tick windows restored to the same authored density, identical input/cadence.
+Legacy: mean=0.79945 p50=0.60120 p95=1.83220 worst=5.06240 ms
+Tree: mean=0.81537 p50=0.61420 p95=1.91080 worst=4.95240 ms
+All complete snapshots byte-exact=PASS.
+Includes ordered fighter/player/weapon logic, completed grids, separation, hits, loot, feedback drain and sync. No render/device evidence. Timing report-only; a policy tree is a reuse feature, not an automatic speedup.

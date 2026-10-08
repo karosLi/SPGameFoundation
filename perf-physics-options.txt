@@ -1,0 +1,3 @@
+=== Physics2D options ===
+12-box stack, minimum solver iterations to stand: warm start 7, cold 0
+settled 105-box pyramid, step ms: sleeping islands 0.019, sleep disabled 0.109 (5.8x)

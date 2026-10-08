@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Standard-library tests: python3 -m unittest discover -s Tools/ci -p 'test_*.py'."""
 
+import base64
 import hashlib
 import io
 import json
@@ -69,7 +70,7 @@ class EvidencePartsTests(unittest.TestCase):
         self.assertEqual(len(originals), len(manifest["files"]))
         self.assertFalse((self.restored / "Library").exists())
 
-    def test_archive_and_manifest_prioritize_metadata_then_jpegs_globally(self):
+    def test_archive_and_manifest_prioritize_results_metadata_then_jpegs_globally(self):
         fixtures = {
             "00-raw.png": b"PNG evidence retained",
             "01-oversized.xml": b"x" * (evidence.PRIORITY_METADATA_BYTES + 1),
@@ -91,9 +92,10 @@ class EvidencePartsTests(unittest.TestCase):
         for name in reversed(sorted(fixtures)):
             self.write(name, fixtures[name])
         expected = ["Artifacts/" + name for name in (
+            "z-results.xml",
             "reports/at-limit.XML", "reports/data.tsv", "reports/perf.txt", "reports/summary.md",
             "z-capture/.metadata.JSON", "z-capture/acquisition.csv", "z-capture/empty.log",
-            "z-capture/frames.ffconcat", "z-results.xml",
+            "z-capture/frames.ffconcat",
             "z-capture/frame0000.JPG", "z-capture/frame0001.jpeg", "z-capture/large.jpg",
             "00-raw.png", "01-oversized.xml", "02-unknown.bin",
         )]
@@ -114,6 +116,68 @@ class EvidencePartsTests(unittest.TestCase):
         restored = {p.relative_to(self.restored / "Artifacts").as_posix(): p.read_bytes()
                     for p in (self.restored / "Artifacts").rglob("*") if p.is_file()}
         self.assertEqual(fixtures, restored)
+
+    def test_large_native_results_precede_metadata_and_media_without_losing_evidence(self):
+        # Real native NUnit XML can exceed the small-metadata limit. Random base64
+        # keeps valid XML large even after ZIP compression; media crosses part00.
+        results = b"<test-run><output>" + base64.b64encode(os.urandom(1024 * 1024)) + b"</output></test-run>"
+        self.assertGreater(len(results), evidence.PRIORITY_METADATA_BYTES)
+        fixtures = {
+            "00-summary.json": b'{"failed": 1}',
+            "01-unrelated.xml": b"x" * (evidence.PRIORITY_METADATA_BYTES + 1),
+            "Screenshots/frame.jpg": b"JPEG review fixture",
+            "Screenshots/frame.png": os.urandom(evidence.PART_BYTES),
+            "editmode-results.xml": results,
+            "nested/PlayMode-noburst-results.XML": results,
+        }
+        for name in reversed(sorted(fixtures)):
+            self.write(name, fixtures[name])
+        expected = ["Artifacts/" + name for name in (
+            "editmode-results.xml", "nested/PlayMode-noburst-results.XML",
+            "00-summary.json", "Screenshots/frame.jpg", "01-unrelated.xml", "Screenshots/frame.png",
+        )]
+        manifest = evidence.package_evidence(self.source, self.parts)
+        self.assertEqual(expected, [entry["path"] for entry in manifest["files"]])
+        self.assertEqual(2, len(manifest["parts"]))
+        combined = b"".join((self.parts / "part{:02d}".format(index) / part["name"]).read_bytes()
+                            for index, part in enumerate(manifest["parts"]))
+        with zipfile.ZipFile(io.BytesIO(combined)) as zipped:
+            self.assertEqual(expected, zipped.namelist())
+            self.assertEqual(expected, [info.filename for info in sorted(
+                zipped.infolist(), key=lambda info: info.header_offset)])
+            # These complete result members fit in part00; this is fixture-specific.
+            self.assertLess(zipped.getinfo("Artifacts/00-summary.json").header_offset, evidence.PART_BYTES)
+            for name, content in fixtures.items():
+                self.assertEqual(content, zipped.read("Artifacts/" + name))
+        evidence.restore_evidence(self.parts, self.restored)
+        for name, content in fixtures.items():
+            self.assertEqual(content, (self.source / name).read_bytes())
+            self.assertEqual(content, (self.restored / "Artifacts" / name).read_bytes())
+
+    def test_result_priority_uses_result_filename_not_arbitrary_xml_size(self):
+        for name in ("editmode-results.xml", "playmode-results.xml", "editmode-noburst-results.xml",
+                     "nested/PlayMode-noburst-results.XML", "font-probe-missing-canvas-results.xml"):
+            path = "Artifacts/" + name
+            for size in (0, evidence.PRIORITY_METADATA_BYTES, evidence.PART_BYTES + 1):
+                with self.subTest(path=path, size=size):
+                    self.assertEqual((-1, path), evidence.evidence_priority(path, size))
+        for name in ("results.xml", "report.xml", "editmode-results.xml.bin", "editmode-results.xml/other.xml"):
+            path = "Artifacts/" + name
+            self.assertEqual((2, path), evidence.evidence_priority(path, evidence.PRIORITY_METADATA_BYTES + 1))
+
+    def test_first_result_can_span_parts_and_still_restores_completely(self):
+        results = b"<test-run><output>" + base64.b64encode(os.urandom(3000)) + b"</output></test-run>"
+        self.write("editmode-results.xml", results)
+        self.write("00-summary.json", b'{"failed": 1}')
+        with mock.patch.object(evidence, "PART_BYTES", 1024):
+            manifest = evidence.package_evidence(self.source, self.parts)
+            self.assertEqual("Artifacts/editmode-results.xml", manifest["files"][0]["path"])
+            combined = b"".join(path.read_bytes() for path in sorted(self.parts.rglob("*.part*")))
+            with zipfile.ZipFile(io.BytesIO(combined)) as zipped:
+                self.assertGreater(zipped.getinfo("Artifacts/editmode-results.xml").compress_size, evidence.PART_BYTES)
+            evidence.restore_evidence(self.parts, self.restored)
+        self.assertEqual(results, (self.restored / "Artifacts/editmode-results.xml").read_bytes())
+        self.assertEqual(b'{"failed": 1}', (self.restored / "Artifacts/00-summary.json").read_bytes())
 
     def test_priority_size_boundary_applies_only_to_metadata(self):
         limit = evidence.PRIORITY_METADATA_BYTES

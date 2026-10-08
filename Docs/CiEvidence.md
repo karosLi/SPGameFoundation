@@ -162,21 +162,38 @@ Bit-identical MP4 bytes across FFmpeg/libx264 versions are not promised.
 
 Packaging now sorts the complete inventory globally before writing the ZIP:
 
-1. Small metadata (at most 1 MiB per file): `.xml`, `.csv`, `.tsv`, `.json`, `.txt`,
+1. Native test-result XML named `*-results.xml`, without a size cutoff. This is
+   the native runners' naming contract, including `editmode-results.xml`,
+   `playmode-results.xml`, and tagged retries such as `editmode-noburst-results.xml`.
+2. Small metadata (at most 1 MiB per file): `.xml`, `.csv`, `.tsv`, `.json`, `.txt`,
    `.md`, `.log`, and `.ffconcat`
-2. JPEG review files: `.jpg` or `.jpeg`, without a size cutoff
-3. All remaining files, including PNGs, raw captures and oversized metadata
+3. JPEG review files: `.jpg` or `.jpeg`, without a size cutoff
+4. All remaining files, including PNGs, raw captures and oversized non-result XML
+   or other metadata
 
-Suffix matching is case-insensitive; within each tier the exact relative POSIX path
-is the deterministic tie-breaker. Both ZIP member order and manifest order follow
+Result filename and suffix matching are case-insensitive; within each tier the exact
+relative POSIX path is the deterministic tie-breaker. Both ZIP member order and manifest order follow
 this key. No files are omitted, recompressed into a different image format by the
 packager, or excluded from the existing SHA-256 inventory. The archive size cap
-remains 32 x 16 MiB. Priority puts compact results and motion reviews earlier in the
-upload stream, but the standard restore command still requires **all** ZIP parts.
+remains 32 x 16 MiB. Priority puts all result XML ahead of binary media, including
+reports over 1 MiB, but does not promise that every result fits in `part00`: a first
+member whose compressed bytes and ZIP header exceed 16 MiB necessarily spans parts,
+and several result files can also exceed that first part together. Files are never
+truncated or split into replacement members. The standard restore command still
+requires **all** ZIP parts.
 This is not an independently extractable-part format or a promise that a partial
 archive is fully verified.
 
-Verification added for this change:
+The result-priority regression uses XML over 1 MiB alongside small metadata,
+oversized unrelated XML and media, checks actual ZIP/header/manifest order across
+the real 16 MiB boundary, and verifies byte-exact restoration and unchanged sources.
+A separate bounded-part fixture verifies restoration when the first result itself
+spans parts. These checks preserve the existing safety, hash and capacity tests.
+The focused tests failed on the previous ordering; after the fix, all 33 Python
+CI-tooling tests pass (18 archive and 15 encoder tests). This is transport validation;
+it does not establish new Unity or .NET test results.
+
+Earlier JPEG/metadata-priority verification:
 
 - The native `BufferedFrameCaptureTests.DeferredEncodingKeepsDistinctActualFramesAndBoundedCapacity`
   fixture checks default PNG raw-pixel equality, real JPEG file headers/decoding,

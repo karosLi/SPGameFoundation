@@ -56,14 +56,19 @@ def walk_error(error):
 
 
 def evidence_priority(relative, size):
-    """Order small metadata, JPEG reviews, then all other evidence by POSIX path.
+    """Order test results, small metadata, JPEG reviews, then other evidence.
 
-    Metadata suffixes are case-insensitive and the 1 MiB limit is per file,
-    inclusive. JPEGs have no size cutoff. This only orders complete ZIP members;
-    binary parts remain slices of one archive and all are required to restore it.
+    Native runners name their XML reports *-results.xml, including tagged retries.
+    Results and JPEGs have no size cutoff; other metadata has an inclusive 1 MiB
+    per-file limit. Filename/suffix matching is case-insensitive, with the exact
+    POSIX path breaking ties. Complete ZIP members can span binary parts; all
+    parts are still required for verified restoration.
     """
-    suffix = PurePosixPath(relative).suffix.lower()
-    if suffix in METADATA_SUFFIXES and size <= PRIORITY_METADATA_BYTES:
+    path = PurePosixPath(relative)
+    suffix = path.suffix.lower()
+    if path.name.lower().endswith("-results.xml"):
+        priority = -1
+    elif suffix in METADATA_SUFFIXES and size <= PRIORITY_METADATA_BYTES:
         priority = 0
     elif suffix in (".jpg", ".jpeg"):
         priority = 1

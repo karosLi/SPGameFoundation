@@ -1,0 +1,11 @@
+=== item grid queries: block lists vs linked nodes (Burst, single thread) ===
+-- 12-snake death crossing (realistic dense): food 12636, 8192 queries (half in the hot spot, half on food)
+   fresh   radius    3 m: blocks     51.4 ns  linked     50.7 ns  (x0.99), 2.4 entries/query
+   fresh   radius   20 m: blocks    292.5 ns  linked    247.9 ns  (x0.85), 51.3 entries/query
+   churned radius    3 m: blocks     41.9 ns  linked     49.3 ns  (x1.18), 2.4 entries/query
+   churned radius   20 m: blocks    287.9 ns  linked    244.5 ns  (x0.85), 51.3 entries/query
+-- 2000 food in 40 x 40 m (synthetic stress): food 14634, 8192 queries (half in the hot spot, half on food)
+   fresh   radius    3 m: blocks    300.0 ns  linked    320.9 ns  (x1.07), 21.3 entries/query
+   fresh   radius   20 m: blocks   1457.2 ns  linked   1558.7 ns  (x1.07), 516.0 entries/query
+   churned radius    3 m: blocks    303.3 ns  linked    330.9 ns  (x1.09), 21.3 entries/query
+   churned radius   20 m: blocks   1462.9 ns  linked   1676.3 ns  (x1.15), 516.0 entries/query

@@ -1,0 +1,12 @@
+=== Survivor render stress (GpuDriven) ===
+enemies 3000  bullets 17654  gems 0
+frame ms mean 16.67  worst 16.73  (editor, vsync / target frame rate apply)
+sprites per frame up to 13080 (bullets drawn up to 10747); instance upload 215.7 KiB per frame
+GC: 0 of 240 frames allocated, 0 bytes total (HUD text included)
+sim: schedule 0.090 ms, sync wait 0.004 ms (last tick)
+=== Survivor render stress (DataTexture) ===
+enemies 3000  bullets 17654  gems 0
+frame ms mean 16.67  worst 16.72  (editor, vsync / target frame rate apply)
+sprites per frame up to 13061 (bullets drawn up to 10730); instance upload 256.4 KiB per frame
+GC: 0 of 240 frames allocated, 0 bytes total (HUD text included)
+sim: schedule 0.085 ms, sync wait 0.003 ms (last tick)

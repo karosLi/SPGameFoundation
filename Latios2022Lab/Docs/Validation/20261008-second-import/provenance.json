@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "scope": "Verbatim second failed import inputs; not a successful control lock or an active Packages input.",
+  "run_url": "https://github.com/karosLi/SPGameFoundation/actions/runs/37723875083/attempts/1",
+  "run_id": 37723875083,
+  "attempt": 1,
+  "native_job_id": 113137530365,
+  "source_commit": "bc10273e8fd78cd4047cb0c52a39c823c4dbcf9e",
+  "source_tree": "de348dba5bbbf91735611cec2306d210bfa26439",
+  "local_equivalent": "50865ccdba0be3c8d151ef1359ab2c83802ae4ed",
+  "launch_source_clean": true,
+  "launch_inputs_match_source": 40,
+  "unity": "2022.3.62f2",
+  "unity_revision": "7670c08855a9",
+  "architecture": "arm64",
+  "first_failed_phase": "import Burst on",
+  "test_phases": "all four NOT_RUN",
+  "unique_csharp_error": "Assets/Latios2022Tests/Runtime/PsyshockProbe.cs(46,17): error CS1654: Cannot modify members of 'bodies' because it is a 'using variable'",
+  "files": {
+    "manifest.json": {
+      "sha256": "23d86f1a2a637a6d3c943974b807b7b87cec6481ad8d9fd04086c0a9487cccce",
+      "bytes": 1044,
+      "artifact_member": "lab-inputs/Packages/manifest.json"
+    },
+    "packages-lock.json": {
+      "sha256": "0226f8bb362698bb4dfab670ca76a49f260b08d248721bfe086c34ba9a0365e7",
+      "bytes": 9648,
+      "artifact_member": "lab-inputs/Packages/packages-lock.json"
+    }
+  },
+  "unity_log": {
+    "sha256": "82eec5ed7dd4aa45fd29fa8a0212b4f8124943b3095cca4b5e13cb8d62cb1658",
+    "bytes": 304854
+  },
+  "artifact_wrappers": [
+    {
+      "id": 11527441776,
+      "name": "latios-s1a-part00",
+      "size_in_bytes": 56674,
+      "digest": "sha256:5e7a7e9768011a6903bbbe7f40e6cc6777b365e9c3ff168d1a9ac2760344675a"
+    },
+    {
+      "id": 11527431895,
+      "name": "latios-s1a-early-review",
+      "size_in_bytes": 38660,
+      "digest": "sha256:e19f29d697d70dee303dc7310985ba40d2a957f2160d2c2f31bf12430d812f22"
+    }
+  ],
+  "restoration": {
+    "parts": 1,
+    "files": 29,
+    "original_files_hash_verified": 28,
+    "archive_bytes": 50581,
+    "archive_sha256": "bf3e4755dfb78e9dd80d300325584cc87901c86dc8d338954878de2a86e2a274"
+  },
+  "normalized_input_review": "Actual Packages and ProjectSettings passed static preflight. Native CaptureEnvironment and all test execution did not run.",
+  "limitations": [
+    "No test XML or environment.json was produced.",
+    "The strict original upstream cleanup assertion was not reached.",
+    "The proposed try/finally correction has no native execution evidence."
+  ]
+}

@@ -1,6 +1,6 @@
 # Deliberately released S1a Editor CI
 
-Status, 2026-10-08: [first native import failed](../Latios2022Lab/Docs/ImportCorrection-20261008.md); its lock/logs are preserved, all test phases remain NOT_RUN. The corrected candidate has static checks only and no S1a completion claim. The existing [lab protocol](../Latios2022Lab/README.md) and [blueprint](LatiosUnity2022IntegrationBlueprint.md) remain the acceptance authority.
+Status, 2026-10-08: [second native import failed at owned CS1654](../Latios2022Lab/Docs/NativeArrayOwnershipCorrection-20261008.md); its complete 29-file archive is restored and verified, including normalized settings. All test phases remain NOT_RUN. The bounded try/finally correction has static checks only and no S1a completion claim. The existing [lab protocol](../Latios2022Lab/README.md) and [blueprint](LatiosUnity2022IntegrationBlueprint.md) remain the acceptance authority.
 
 Preparation correction (2026-10-08): the owned `LabPlayerBuild` Editor helper now
 fully qualifies `UnityEditor.Build.Il2CppCodeGeneration.OptimizeSize`. The exact

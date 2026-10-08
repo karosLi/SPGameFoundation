@@ -1,6 +1,6 @@
 # Latios 2022 S1a laboratory
 
-Status: **first native import failed; corrected candidate awaits native execution**. [Run 37715538586](https://github.com/karosLi/SPGameFoundation/actions/runs/37715538586/attempts/1) stopped at duplicate references in the two owned test asmdefs; all tests remained NOT_RUN. [Diagnosis and preserved first lock](Docs/ImportCorrection-20261008.md). This is the isolated historical control group from [the integration blueprint](../Docs/LatiosUnity2022IntegrationBlueprint.md#7-轨道二-建立真实的-latios-2022-兼容线). It is not an SPF backend and does not establish S1a completion.
+Status: **second native import failed at owned CS1654; bounded ownership correction awaits native execution**. [Run 37723875083](https://github.com/karosLi/SPGameFoundation/actions/runs/37723875083/attempts/1) passed assembly-reference setup, then rejected an indexed write to the using-declared `bodies` NativeArray. [Diagnosis, complete evidence and try/finally correction](Docs/NativeArrayOwnershipCorrection-20261008.md). All native tests remain NOT_RUN. The [first failed control](Docs/ImportCorrection-20261008.md) is preserved. This is the isolated historical control group from [the integration blueprint](../Docs/LatiosUnity2022IntegrationBlueprint.md#7-轨道二-建立真实的-latios-2022-兼容线), not an SPF backend or S1a completion.
 
 - Unity: exactly **2022.3.62f2**
 - Latios: **0.11.5**, commit `381a77dbf774ff603014d5695ef6c06abaa25d96`

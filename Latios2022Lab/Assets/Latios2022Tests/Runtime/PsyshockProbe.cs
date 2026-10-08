@@ -38,68 +38,75 @@ namespace Latios2022Lab
         {
             var spheres = Fixture(fixture);
             using var world = LabWorld.Create("S1a query identities");
-            using var bodies = new NativeArray<ColliderBody>(spheres.Length, Allocator.TempJob);
-            // Maximum possible unordered pairs. AddNoResize must fail rather than drop results.
-            using var pairs = new NativeList<int2>(math.max(1, spheres.Length * (spheres.Length - 1) / 2), Allocator.TempJob);
-            for (int i = 0; i < spheres.Length; i++)
-            {
-                bodies[i] = new ColliderBody {
-                    collider = new SphereCollider(float3.zero, spheres[i].w),
-                    transform = new TransformQvvs(spheres[i].xyz, quaternion.identity),
-                    entity = world.EntityManager.CreateEntity() // real, distinct entities, no alias-check bypass
-                };
-            }
-            var config = Physics.BuildCollisionLayer(bodies)
-                .WithWorldBounds(new float3(-4f), new float3(4f))
-                .WithSubdivisions(subdivisions, subdivisions, subdivisions);
-            CollisionLayer layer = default;
-            JobHandle pending = default;
-            bool created = false;
+            var bodies = new NativeArray<ColliderBody>(spheres.Length, Allocator.TempJob);
             try
             {
-                if (execution == LayerExecution.Immediate)
-                    config.RunImmediate(out layer, Allocator.TempJob);
-                else if (execution == LayerExecution.Single)
-                    pending = config.ScheduleSingle(out layer, Allocator.TempJob);
-                else
-                    pending = config.ScheduleParallel(out layer, Allocator.TempJob);
-                created = true;
-                var processor = new CollectPairs { Pairs = pairs.AsParallelWriter() };
-                if (execution == LayerExecution.Immediate)
-                    Physics.FindPairs(layer, processor).RunImmediate();
-                else if (execution == LayerExecution.Single)
-                    pending = Physics.FindPairs(layer, processor).ScheduleSingle(pending);
-                else
-                    pending = Physics.FindPairs(layer, processor).ScheduleParallel(pending);
-                pending.Complete();
-                var actual = new HashSet<int>();
-                for (int i = 0; i < pairs.Length; i++)
+                // Maximum possible unordered pairs. AddNoResize must fail rather than drop results.
+                using var pairs = new NativeList<int2>(math.max(1, spheres.Length * (spheres.Length - 1) / 2), Allocator.TempJob);
+                for (int i = 0; i < spheres.Length; i++)
                 {
-                    var pair = pairs[i];
-                    if (pair.x < 0 || pair.y >= spheres.Length || pair.x >= pair.y)
-                        throw new InvalidOperationException("Invalid normalized source-index pair.");
-                    if (!actual.Add(pair.x * spheres.Length + pair.y))
-                        throw new InvalidOperationException("Duplicate candidate pair.");
+                    bodies[i] = new ColliderBody {
+                        collider = new SphereCollider(float3.zero, spheres[i].w),
+                        transform = new TransformQvvs(spheres[i].xyz, quaternion.identity),
+                        entity = world.EntityManager.CreateEntity() // real, distinct entities, no alias-check bypass
+                    };
                 }
-                var expected = new HashSet<int>();
-                for (int a = 0; a < spheres.Length; a++)
-                    for (int b = a + 1; b < spheres.Length; b++)
+                var config = Physics.BuildCollisionLayer(bodies)
+                    .WithWorldBounds(new float3(-4f), new float3(4f))
+                    .WithSubdivisions(subdivisions, subdivisions, subdivisions);
+                CollisionLayer layer = default;
+                JobHandle pending = default;
+                bool created = false;
+                try
+                {
+                    if (execution == LayerExecution.Immediate)
+                        config.RunImmediate(out layer, Allocator.TempJob);
+                    else if (execution == LayerExecution.Single)
+                        pending = config.ScheduleSingle(out layer, Allocator.TempJob);
+                    else
+                        pending = config.ScheduleParallel(out layer, Allocator.TempJob);
+                    created = true;
+                    var processor = new CollectPairs { Pairs = pairs.AsParallelWriter() };
+                    if (execution == LayerExecution.Immediate)
+                        Physics.FindPairs(layer, processor).RunImmediate();
+                    else if (execution == LayerExecution.Single)
+                        pending = Physics.FindPairs(layer, processor).ScheduleSingle(pending);
+                    else
+                        pending = Physics.FindPairs(layer, processor).ScheduleParallel(pending);
+                    pending.Complete();
+                    var actual = new HashSet<int>();
+                    for (int i = 0; i < pairs.Length; i++)
                     {
-                        // Independent axis tests, not Physics.AabbFrom/Physics.Overlaps.
-                        float3 amin = spheres[a].xyz - spheres[a].w;
-                        float3 amax = spheres[a].xyz + spheres[a].w;
-                        float3 bmin = spheres[b].xyz - spheres[b].w;
-                        float3 bmax = spheres[b].xyz + spheres[b].w;
-                        if (math.all(amin <= bmax) && math.all(bmin <= amax))
-                            expected.Add(a * spheres.Length + b);
+                        var pair = pairs[i];
+                        if (pair.x < 0 || pair.y >= spheres.Length || pair.x >= pair.y)
+                            throw new InvalidOperationException("Invalid normalized source-index pair.");
+                        if (!actual.Add(pair.x * spheres.Length + pair.y))
+                            throw new InvalidOperationException("Duplicate candidate pair.");
                     }
-                if (!actual.SetEquals(expected))
-                    throw new InvalidOperationException("FindPairs differs from inclusive brute-force AABB oracle.");
+                    var expected = new HashSet<int>();
+                    for (int a = 0; a < spheres.Length; a++)
+                        for (int b = a + 1; b < spheres.Length; b++)
+                        {
+                            // Independent axis tests, not Physics.AabbFrom/Physics.Overlaps.
+                            float3 amin = spheres[a].xyz - spheres[a].w;
+                            float3 amax = spheres[a].xyz + spheres[a].w;
+                            float3 bmin = spheres[b].xyz - spheres[b].w;
+                            float3 bmax = spheres[b].xyz + spheres[b].w;
+                            if (math.all(amin <= bmax) && math.all(bmin <= amax))
+                                expected.Add(a * spheres.Length + b);
+                        }
+                    if (!actual.SetEquals(expected))
+                        throw new InvalidOperationException("FindPairs differs from inclusive brute-force AABB oracle.");
+                }
+                finally
+                {
+                    pending.Complete();
+                    if (created) layer.Dispose();
+                }
             }
             finally
             {
-                pending.Complete();
-                if (created) layer.Dispose();
+                bodies.Dispose();
             }
         }
 

@@ -1,5 +1,7 @@
 # 共享基座兼容矩阵：Stage A 源码基线
 
+2026-10-08 后续变更：[Belt SmoothAttackV1](BeltAttackMobility.md) 只在武器/组合技能/伤害字用户入口默认启用实际走打；低层 `BwBeltConfig.Default`、经典/原始 Belt、保存布局和既有 fixture 保持旧策略。新策略通过三种完整 envelope 的规则内容指纹区分；裸快照必须由调用者配对同一策略。下文历史默认工厂盘点不代表此新策略的原生验收。
+
 日期：2026-10-07（UTC）。本表落实[分层语义扩展计划](SharedFoundationSemanticExtensionPlan.md)的 P0 / 阶段 A，记录实际已存在的组合与兼容边界，不引入新运行时协议，不修改旧玩法、默认配置或 fixture。
 
 ## 1. 基线、范围与证据分层

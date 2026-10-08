@@ -1,5 +1,7 @@
 # Confirmed capability acceptance checklist
 
+2026-10-08 addition: [Belt SmoothAttackV1](BeltAttackMobility.md) enables actual player movement throughout held weapon attacks with fixed aim, versioned gameplay identity and preserved legacy configs. New session-level regression/allocation coverage is implemented; the combined candidate still requires native two-tier movement/socket footage and physical-device gates. Earlier native results below do not cover this new policy.
+
 Latest fully verified software/native checkpoint: [e86ee87 results and evidence](MobileFoundationFollowupValidation.md): **1,050 .NET passes, 1,084 native EditMode passes and154 graphics PlayMode passes, zero failures** (5/1 documented native skips). Collision/AI comparison, original art, grounded gait, compact HUD, projectile alignment/FX and collision-debug follow-ups are integrated and verified within their recorded scope. Physical mobile testing remains separate. The user has now authorized the [layered semantic extension plan](SharedFoundationSemanticExtensionPlan.md).
 
 This is a finite implementation/verification checklist for the user's supplied reference archetypes. Examples prove reusable foundation interfaces; they are not independent copied engines. Status is scoped to the evidence named here, not a claim that a display demo is integrated gameplay.

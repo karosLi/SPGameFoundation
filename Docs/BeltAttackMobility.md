@@ -1,0 +1,32 @@
+# Belt player attack mobility v1
+
+The playable weapon, composed-ability and damage-number Belt bootstraps now select `BwBeltPlayerMobility.SmoothAttackV1`. The left stick translates the player throughout an attack, including uninterrupted held attacks. This is an explicit gameplay/replay change, separate from the read-only humanoid animation work.
+
+## Actual defect and finite change
+
+Previously `BeltFighterSystem` initialized movement to zero every tick, sampled the stick only in Idle/Walk, then multiplied movement by 0.22 during Attack. Weapon progression happened afterward. An uninterrupted held attack could therefore move on admission and remain at zero translation for all subsequent windup, active and recovery ticks. The 0.22 constant was not a measured continuous attack velocity.
+
+The new policy samples the current analog stick on every player attack tick. At full stick, player speed remains 3.2 world units/s outside attacks. Attack windup uses 0.75 (2.40 units/s), active uses 0.70 (2.24 units/s), and recovery uses 0.80 (2.56 units/s). The exact values are authored v1 tuning, not a general performance threshold. Analog magnitude and diagonal normalization still apply; walls and existing actor separation determine final displacement. `GroundVelocity` retains its existing pre-clamp velocity meaning, so measure effective speed from authoritative ground deltas.
+
+Weapon mobility reads the actual saved weapon timeline at the **start of movement**, before its ordinary one-step advance. Initial weapon admission uses normal movement because the action is not yet admitted; the following ticks use the real windup/active/recovery phase. Kick/unarmed attacks use the existing fighter action clock after its ordinary tick increment (or zero on admission). Equipment swaps have no attack phase and allow normal movement. There is no prediction of weapon admission or duplicate timeline advance.
+
+The pipeline stays movement → clamp/separation → pose/weapon progression → contact resolution. Ranged release still spawns at the final root's canonical muzzle on the unchanged marker; melee range, contact window, damage, hit history, cooldown and skill admission are unchanged. Changing movement direction cannot rotate a committed weapon aim or kick facing. A new attack may capture its next aim under the existing rule. Stick release immediately removes controlled translation. Hit/KO ignore control while existing knockback and its decay remain active. Composed heal commitment remains stationary and uses its existing release/interruption rules. Monster movement/attack policy is unchanged.
+
+No new runtime resource, table column, dynamic container, generic locomotion layer or shared weapon/motion system is introduced. The new branch is a fixed amount of scalar arithmetic in the existing main-thread player movement path. Capacities, mobile landscape controls and render fallback budgets remain as before.
+
+## Selection and compatibility
+
+- Low-level `BwBeltConfig.Default` remains `Legacy = 0`, including zero-initialized older config data. `BwBeltConfig.SmoothAttack` selects `SmoothAttackV1 = 1` with the existing capacities. Factories receiving a config honor that explicit choice. Unknown policy values fail validation.
+- `BwGameBootstrap.CreateWeaponBelt()`, `CreateComposedAbilityBelt()` and `CreateDamageNumbersBelt()` select SmoothAttackV1 for user-facing play. Each accepts `playerMobility: BwBeltPlayerMobility.Legacy` for a historical comparison. Plain/classic/mobile/unarmed Belt bootstraps keep their prior policy.
+- The saved layouts/readers/writers of `FighterInfo`, `BwBeltMotion`, `BwBeltState`, weapon equipment and other resources remain unchanged. The legacy canonical envelope descriptor bytes and existing frozen fixtures remain exact.
+- The weapon, composed-ability and damage-number envelope recipes share the rule-content writer. SmoothAttackV1 appends an explicit policy ID, integration-order/phase identity and three scales to the authoritative content domain; its schema and raw-compatibility domain remain unchanged. Cross-policy envelope restore fails **before** session mutation. There is no automatic migration or reinterpretation.
+- A bare raw snapshot has never encoded this external mobility policy and cannot detect a cross-policy restore. Its caller must retain and select the same policy/config. Use the matching game-local envelope recipe for persisted cross-session saves/replays. Do not label raw layout equality as behavioral compatibility.
+- Historical same-input/same-speed animation recordings must explicitly select Legacy. New SmoothAttack recordings demonstrate the intentional gameplay speed change and cannot be presented as a speed-matched comparison against a locked legacy attack.
+
+## Validation and limits
+
+`BwBeltAttackMobilityTests.HeldAttackContinuouslyReadsStickInsteadOfLockingAfterAdmission` first failed against the unchanged movement implementation: expected positive unobstructed movement; observed exactly **0** after admission. The implementation is covered by actual session tests for all four weapon phases and chained pulses, analog/reverse/released stick, walls, preserved committed facing/aim, hit/KO knockback, canceled bow/equipment recovery, moving muzzle birth, unchanged melee marker/one-hit settlement, moving kick, repeated composed skill requests/heal interruption, pause/restart, exact same-policy replay, all three cross-policy envelope gates, untouched enemies and calibrated allocation controls.
+
+The new sustained moving-bow probe uses 360 measured ticks after 360 warm-up ticks and measured **0 current-thread managed bytes**, with **33,536/0** retained-array/empty controls before and after. The complete .NET harness on this source passed **1,613 executed tests, 0 failed**, including **192 Brawler tests** and **1,034 shared foundation tests**; all 78 generated assembly projects compiled. Existing lower-level motion, collision, frozen snapshot, safety and allocation tests are retained. This is the single final full aggregate after the movement implementation; the integration owner associates it with the final commit.
+
+Native Unity EditMode, PlayMode, both graphics tiers, real joystick cancellation/rebinding and continuous contact/socket pixel review must run on the combined candidate. .NET stubs do not prove visual naturalness, native Burst/GPU behavior, or physical Android/iOS performance. Physical-device touch, thermal, battery, sustained frame time and native/full-frame allocation remain external gates.

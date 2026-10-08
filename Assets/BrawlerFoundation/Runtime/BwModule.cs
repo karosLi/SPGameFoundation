@@ -131,7 +131,7 @@ namespace BrawlerFoundation
         public override void RegisterSystems(SystemRegistry registry)
         {
             if (m_BeltScroller)
-            { registry.Add(new BeltFlowSystem()).Add(new BeltFighterSystem(m_ComposedAbilities)).Add(new BeltCombatSystem()); if (m_Weapons) registry.Add(new BeltWeaponSystem()); if (m_ComposedAbilities) registry.Add(new BeltComposedAbilitySystem()); return; }
+            { registry.Add(new BeltFlowSystem()).Add(new BeltFighterSystem(m_ComposedAbilities, m_Weapons)).Add(new BeltCombatSystem()); if (m_Weapons) registry.Add(new BeltWeaponSystem()); if (m_ComposedAbilities) registry.Add(new BeltComposedAbilitySystem()); return; }
             registry.Add(new FlowSystem()).Add(new FighterSystem()).Add(new CombatSystem());
             if (m_MobileSkills) registry.Add(new MobileSkillSystem());
         }

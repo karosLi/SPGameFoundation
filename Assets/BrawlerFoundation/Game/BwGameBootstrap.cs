@@ -25,6 +25,7 @@ namespace BrawlerFoundation.Game
         [SerializeField] bool m_MobileCombat;
         [SerializeField] bool m_BeltScroller;
         [SerializeField] bool m_WeaponCombat;
+        [SerializeField] BwBeltPlayerMobility m_PlayerMobility = BwBeltPlayerMobility.SmoothAttackV1;
         bool m_ComposedAbilities;
         bool m_DamageNumbers;
         SPF.L2.Combat.CriticalDamageRule m_DamageCriticalRule;
@@ -64,12 +65,14 @@ namespace BrawlerFoundation.Game
         /// <summary>Scripted input for tests and demos (replaces the stick; buttons add up).</summary>
         public System.Func<InputFrame> Script { get; set; }
 
-        public static BwGameBootstrap Create(bool ui = true, bool sharedCombat = false, bool mobileCombat = false, bool beltScroller = false, bool naturalCharacters = false, bool weaponCombat = false)
+        public static BwGameBootstrap Create(bool ui = true, bool sharedCombat = false, bool mobileCombat = false, bool beltScroller = false, bool naturalCharacters = false, bool weaponCombat = false,
+            BwBeltPlayerMobility playerMobility = BwBeltPlayerMobility.SmoothAttackV1)
         {
             var go = new GameObject("BrawlerGame");
             go.SetActive(false);
             var game = go.AddComponent<BwGameBootstrap>();
             game.m_CreateUI = ui;
+            game.m_PlayerMobility = playerMobility;
             game.m_SharedCombat = sharedCombat || mobileCombat || beltScroller;
             game.m_MobileCombat = mobileCombat || beltScroller;
             game.m_WeaponCombat = weaponCombat; beltScroller |= weaponCombat;
@@ -87,27 +90,29 @@ namespace BrawlerFoundation.Game
 
         public static BwGameBootstrap CreateBeltScroller(bool ui = true) => Create(ui, beltScroller: true);
 
-        public static BwGameBootstrap CreateWeaponBelt(bool ui = true) => Create(ui, beltScroller: true, weaponCombat: true);
+        public static BwGameBootstrap CreateWeaponBelt(bool ui = true, BwBeltPlayerMobility playerMobility = BwBeltPlayerMobility.SmoothAttackV1)
+            => Create(ui, beltScroller: true, weaponCombat: true, playerMobility: playerMobility);
 
-        public static BwGameBootstrap CreateComposedAbilityBelt(bool ui = true, BwComposedAbilityConfig? abilities = null)
+        public static BwGameBootstrap CreateComposedAbilityBelt(bool ui = true, BwComposedAbilityConfig? abilities = null,
+            BwBeltPlayerMobility playerMobility = BwBeltPlayerMobility.SmoothAttackV1)
         {
             var config = abilities ?? BwComposedAbilityConfig.Default; config.Validate();
             var go = new GameObject("ComposedAbilityBelt"); go.SetActive(false);
             var game = go.AddComponent<BwGameBootstrap>(); game.m_CreateUI = ui;
-            game.m_ComposedAbilities = true; game.m_AbilityConfig = config;
+            game.m_ComposedAbilities = true; game.m_AbilityConfig = config; game.m_PlayerMobility = playerMobility;
             game.m_WeaponCombat = game.m_BeltScroller = game.m_MobileCombat = game.m_SharedCombat = game.m_NaturalCharacters = true;
             go.SetActive(true); return game;
         }
 
         /// <summary>Existing composed belt with optional settled normal/critical damage labels.</summary>
         public static BwGameBootstrap CreateDamageNumbersBelt(bool ui = true, BwComposedAbilityConfig? abilities = null,
-            SPF.L2.Combat.CriticalDamageRule? criticalRule = null)
+            SPF.L2.Combat.CriticalDamageRule? criticalRule = null, BwBeltPlayerMobility playerMobility = BwBeltPlayerMobility.SmoothAttackV1)
         {
             var config = abilities ?? BwComposedAbilityConfig.Default; config.Validate();
             var rule = criticalRule ?? SPF.L2.Combat.CriticalDamageRule.Default; rule.Validate();
             var go = new GameObject("DamageNumbersBelt"); go.SetActive(false);
             var game = go.AddComponent<BwGameBootstrap>(); game.m_CreateUI = ui;
-            game.m_DamageNumbers = game.m_ComposedAbilities = true; game.m_DamageCriticalRule = rule; game.m_AbilityConfig = config;
+            game.m_DamageNumbers = game.m_ComposedAbilities = true; game.m_DamageCriticalRule = rule; game.m_AbilityConfig = config; game.m_PlayerMobility = playerMobility;
             game.m_WeaponCombat = game.m_BeltScroller = game.m_MobileCombat = game.m_SharedCombat = game.m_NaturalCharacters = true;
             go.SetActive(true); return game;
         }
@@ -118,7 +123,11 @@ namespace BrawlerFoundation.Game
             Governor.SetFrameRates(60, 30);
             if (m_WeaponCombat) m_BeltScroller = true;
             if (m_BeltScroller) { m_MobileCombat = true; m_NaturalCharacters = true; }
-            m_Mode = m_DamageNumbers ? BwMode.CreateDamageNumbersBelt(BwBeltConfig.Default, m_AbilityConfig, m_DamageCriticalRule, out m_Module) : m_ComposedAbilities ? BwMode.CreateComposedAbilityBelt(BwBeltConfig.Default, m_AbilityConfig, out m_Module) : m_WeaponCombat ? BwMode.CreateWeaponBelt(BwBeltConfig.Default, out m_Module) : m_BeltScroller ? BwMode.CreateBeltScroller(BwBeltConfig.Default, out m_Module) : m_MobileCombat ? BwMode.CreateMobileCombat(out m_Module) : m_SharedCombat
+            // Playable weapon/ability examples opt into the versioned gameplay policy. Low-level
+            // factories still honor their supplied config, including the frozen legacy Default.
+            var beltConfig = m_WeaponCombat ? BwBeltConfig.SmoothAttack : BwBeltConfig.Default;
+            if (m_WeaponCombat) beltConfig.PlayerMobility = m_PlayerMobility;
+            m_Mode = m_DamageNumbers ? BwMode.CreateDamageNumbersBelt(beltConfig, m_AbilityConfig, m_DamageCriticalRule, out m_Module) : m_ComposedAbilities ? BwMode.CreateComposedAbilityBelt(beltConfig, m_AbilityConfig, out m_Module) : m_WeaponCombat ? BwMode.CreateWeaponBelt(beltConfig, out m_Module) : m_BeltScroller ? BwMode.CreateBeltScroller(beltConfig, out m_Module) : m_MobileCombat ? BwMode.CreateMobileCombat(out m_Module) : m_SharedCombat
                 ? BwMode.CreateSharedCombat(BwSharedCombatConfig.Default, out m_Module)
                 : BwMode.Create(out m_Module);
             var sim = new GameObject("Simulation");

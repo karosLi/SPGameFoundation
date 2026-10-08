@@ -7,8 +7,8 @@ using SPF.Runtime.World;
 
 namespace BrawlerFoundation
 {
-    /// <summary>Optional envelope entry point for the actual weapon-belt composition. Default bootstrap,
-    /// raw snapshots, save slots and fixtures are unchanged. Re-describes live baked content each call.</summary>
+    /// <summary>Optional envelope entry point for the actual weapon-belt composition. Raw snapshot
+    /// layout and legacy descriptors are unchanged. Re-describes live baked content each call.</summary>
     public static class BwWeaponSave
     {
         public static byte[] Capture(SimSession session, string runtimeId, int maxPayloadBytes = SaveEnvelope.DefaultMaxPayloadBytes)
@@ -75,6 +75,14 @@ namespace BrawlerFoundation
                 w.Write(a.Channels.Length);for(int i=0;i<a.Channels.Length;i++){w.Write(a.Channels[i].x);w.Write(a.Channels[i].y);}
                 w.Write(a.Clips.Length);for(int i=0;i<a.Clips.Length;i++){w.Write(a.Clips[i].Duration);w.Write(a.Clips[i].Loop);}
                 for(int i=0;i<4;i++){var d=rig.Attack((AttackKind)i);w.Write(d.Duration);w.Write(d.ActiveFrom);w.Write(d.ActiveTo);w.Write(d.Damage);w.Write(d.Knockback);w.Write(d.Bone);}
+                // Keep the historical policy's canonical bytes exact. New gameplay rules are an
+                // explicit content-domain extension; raw-v1 Belt resource bytes are not a rule gate.
+                if(c.PlayerMobility == BwBeltPlayerMobility.SmoothAttackV1)
+                {
+                    w.Write("brawler.player-attack-mobility"); w.Write((byte)c.PlayerMobility);
+                    w.Write("weapon-start-tick.phase;move-separate-step-resolve;committed-facing");
+                    w.Write(BwBeltRules.AttackWindupMoveScale); w.Write(BwBeltRules.AttackActiveMoveScale); w.Write(BwBeltRules.AttackRecoveryMoveScale);
+                }
         }
         internal static void WriteVisuals(BinaryWriter w, SimSession session)
         {

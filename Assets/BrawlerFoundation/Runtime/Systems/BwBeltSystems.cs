@@ -2,6 +2,7 @@ using SPF.Contracts;
 using SPF.L1.Skeleton;
 using SPF.L1.Spatial;
 using SPF.L2.Combat;
+using SPF.L2.Weapons;
 using SPF.Runtime.Scheduling;
 using SPF.Runtime.World;
 using Unity.Collections;
@@ -87,15 +88,17 @@ namespace BrawlerFoundation.Systems
 
     sealed class BeltFighterSystem : SimSystemBase
     {
-        readonly bool m_ComposedAbilities;
-        public BeltFighterSystem(bool composedAbilities = false) { m_ComposedAbilities = composedAbilities; }
+        readonly bool m_ComposedAbilities, m_Weapons;
+        public BeltFighterSystem(bool composedAbilities = false, bool weapons = false)
+        { m_ComposedAbilities = composedAbilities; m_Weapons = weapons; }
         public override SimPhase Phase => SimPhase.Move;
         public override void Declare(AccessDeclaration access)
         {
             access.Read(BwKeys.Fighter).Write(BwKeys.Info).Write(BwKeys.Anim)
                 .Write(BwKeys.Position).Write(BwKeys.Prev).Write(BwBeltKeys.Ground).Write(BwBeltKeys.PreviousGround).Write(BwBeltKeys.Motion)
-                .Write(BwMobileSkills.Key).Write(BwBeltKeys.State).Read(BwKeys.Rig);
-            if (m_ComposedAbilities) access.Write(BwComposedAbilityState.Key).Write(BwWeapons.PoseKey).Write(BwWeapons.Key).Write(BwKeys.Game);
+                .Write(BwMobileSkills.Key).Write(BwBeltKeys.State).Read(BwKeys.Rig).Write(BwWeapons.PoseKey).Write(BwKeys.Game);
+            if (m_Weapons) access.Write(BwWeapons.Key);
+            if (m_ComposedAbilities) access.Write(BwComposedAbilityState.Key);
         }
         public override JobHandle OnTick(in SimContext context, JobHandle dependency)
         {
@@ -107,6 +110,8 @@ namespace BrawlerFoundation.Systems
             bool fighting = game.Flow == BwFlow.Fighting;
             bool weapons = world.HasResource(BwWeapons.Key);
             var belt = world.Resource(BwBeltKeys.State); var slots = world.Resource(BwMobileSkills.Key); var rig = world.Resource(BwKeys.Rig);
+            var equipmentRuntime = weapons ? world.Resource(BwWeapons.Key) : null;
+            bool smoothAttack = belt.Config.PlayerMobility == BwBeltPlayerMobility.SmoothAttackV1;
             slots.AdvanceTick(fighting);
             var input = game.Input; game.Input.Pressed = 0;
             var info = world.Column(BwKeys.Info); var anim = world.Column(BwKeys.Anim); var ground = world.Column(BwBeltKeys.Ground);
@@ -192,7 +197,18 @@ namespace BrawlerFoundation.Systems
                 }
                 if (f.State == FighterState.KO) a.Play(rig.KO, .08f);
                 if (f.State == FighterState.Hit || f.State == FighterState.KO) { m.BufferedAttack.Clear(); m.ComboGraceTicks = 0; }
-                if (f.State == FighterState.Attack) move *= .22f;
+                if (f.State == FighterState.Attack)
+                {
+                    if (isPlayer && smoothAttack && f.Hp > 0)
+                    {
+                        // Locomotion and attack admission are independent. Sample the current stick
+                        // every tick, without turning the committed attack/aim. Weapon progression
+                        // remains AFTER movement/separation, so releases use the final root socket.
+                        move = math.normalizesafe(input.Move) * math.min(1f, math.length(input.Move)) *
+                            BwRules.PlayerSpeed * AttackMoveScale(f, rig, equipmentRuntime);
+                    }
+                    else move *= .22f;
+                }
                 m.GroundVelocity = move + new float2(f.VelocityX, 0);
                 p = BwBeltRules.ClampGround(p + m.GroundVelocity * dt); f.VelocityX *= math.exp(-7f * dt);
                 if (m.Height > 0 || m.HeightVelocity > 0)
@@ -216,6 +232,24 @@ namespace BrawlerFoundation.Systems
         }
         static void BeginAttack(ref FighterInfo f, ref Animator2D a, BwRig rig, AttackKind kind)
         { f.State = FighterState.Attack; f.Attack = kind; f.StateTime = 0; f.QueuedPunch = false; f.HitMask = 0; a.Play(rig.ClipFor(kind), .04f, restart: true); }
+        static float AttackMoveScale(in FighterInfo fighter, BwRig rig, WeaponRuntime weapon)
+        {
+            if (fighter.Attack != AttackKind.None)
+            {
+                var attack = rig.Attack(fighter.Attack);
+                return fighter.StateTime < attack.ActiveFrom ? BwBeltRules.AttackWindupMoveScale :
+                    fighter.StateTime < attack.ActiveTo ? BwBeltRules.AttackActiveMoveScale : BwBeltRules.AttackRecoveryMoveScale;
+            }
+            if (weapon != null && weapon.Equipment.Timeline.Running)
+            {
+                // Use the authoritative start-of-movement phase, never an interpolated view or a
+                // prediction of admission/cancellation. This also covers uninterrupted held chains.
+                int tick = weapon.Equipment.Timeline.Tick; var profile = weapon.Current;
+                return tick < profile.Active.From ? BwBeltRules.AttackWindupMoveScale :
+                    tick < profile.Active.Until ? BwBeltRules.AttackActiveMoveScale : BwBeltRules.AttackRecoveryMoveScale;
+            }
+            return 1f; // Equipment swaps have no attack commitment.
+        }
         struct SeparateVisitor : IGridVisitor
         {
             public int Row, Candidates; public float2 Self, Push; public float Height;

@@ -15,6 +15,8 @@ The belt player uses J / ATTACK, Q / SWITCH, with the existing kick, jump, heal 
 
 ## Tick and hit contract
 
+The player-facing Belt weapon/ability examples select the versioned [SmoothAttackV1 mobility policy](BeltAttackMobility.md): the stick moves during windup/contact/recovery while committed attack aim stays fixed. Low-level legacy configs and speed-matched historical recordings retain the old policy explicitly; snapshot layout equality does not imply replay compatibility across these policies.
+
 A new action captures aim once. Consecutive held/automatic actions capture their next aim at the new pulse boundary; the current action cannot turn halfway through its contact or release. Presses use a short fixed-tick buffer. Switching cancels windup before contact, waits through the committed interval, then runs the destination weapon's equip duration. Repeated switch input can update the pending item. Death/interruption clears buffered input, pending equipment, contact history and live owned projectiles. Level-up/session pause does not advance the weapon clock.
 
 Melee uses one explicit committed contact sample: `ContactWindow = [Active.From, Active.From + 1)`. Its canonical grip-to-tip segment is queried once through the host grid; stable full entity handles deduplicate overlapping cells. `Active` also describes visible follow-through and the switch lock. Targets entering later during follow-through are not damaged. This is a deliberate one-contact melee model, not a continuously swept blade volume. A future multi-tick cutting mechanic needs an authoritative shared trajectory.

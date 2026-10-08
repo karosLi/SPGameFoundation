@@ -11,16 +11,24 @@ using Unity.Mathematics;
 
 namespace BrawlerFoundation
 {
+    // Gameplay/replay policy, not a presentation quality setting. Zero preserves existing content.
+    public enum BwBeltPlayerMobility : byte { Legacy = 0, SmoothAttackV1 = 1 }
+
     [Serializable]
     public struct BwBeltConfig
     {
         public int Fighters, TargetsPerAttack, Drops, Waves, FirstWaveEnemies;
         // Same policy outputs; opt-in implementation choice, not additional saved simulation state.
         public bool UseDecisionTree;
+        public BwBeltPlayerMobility PlayerMobility;
         public static BwBeltConfig Default => new BwBeltConfig { Fighters = 64, TargetsPerAttack = 64, Drops = 32, Waves = 3, FirstWaveEnemies = 4 };
+        public static BwBeltConfig SmoothAttack
+        { get { var c = Default; c.PlayerMobility = BwBeltPlayerMobility.SmoothAttackV1; return c; } }
         public void Validate()
         {
             new BwSharedCombatConfig { Fighters = Fighters, TargetsPerAttack = TargetsPerAttack }.Validate();
+            if (PlayerMobility != BwBeltPlayerMobility.Legacy && PlayerMobility != BwBeltPlayerMobility.SmoothAttackV1)
+                throw new ArgumentOutOfRangeException(nameof(PlayerMobility));
             if (Fighters < 2 || Drops < 1 || Drops > 256 || Waves < 1 || Waves > 32 || FirstWaveEnemies < 1 || FirstWaveEnemies > Fighters - Waves)
                 throw new ArgumentOutOfRangeException(nameof(Fighters), "Belt waves, drops and fighters must fit fixed capacities.");
         }
@@ -54,6 +62,7 @@ namespace BrawlerFoundation
 
     public static class BwBeltRules
     {
+        public const float AttackWindupMoveScale = .75f, AttackActiveMoveScale = .70f, AttackRecoveryMoveScale = .80f;
         public const float DepthHalf = 2.4f, DepthProjection = .55f, BodyDepth = .28f;
         public const int JumpButton = 2, HealButton = 3;
         public static float2 Project(float2 ground, float height) => new float2(ground.x, ground.y * DepthProjection + height);

@@ -1,0 +1,1666 @@
+{
+  "audit": "Read-only source, original evidence, native XML and compilation semantics audit",
+  "run_id": 37813671446,
+  "attempt": 1,
+  "source_commit": "b6ef271fc8eded93c6e79c0dfcf90917b72b7945",
+  "local_precursor_commit": "33a92bc3c8cc3d23bbf99c34190491d9e2722184",
+  "tree": "dbda0866da350caa91029ce2d1cae855c61ce06b",
+  "source_binding": {
+    "frozen_inventory_count": 44,
+    "patched_matches_local_control_frozen_inventory": true,
+    "all_frozen_files_match_reviewed_worktree": true,
+    "csharp_count": 11,
+    "asmdef_count": 4
+  },
+  "source_hashes": {
+    "Assets/Latios2022Tests/Editor/CoreTests.cs": "fa100d3d5b764f3d243f3f259f40b16988713db1d9497e808e35bd413def5bf4",
+    "Assets/Latios2022Tests/Editor/Latios2022Lab.Editor.asmdef": "fd8cd8b50d0979908f82bda87cfca7604956d6c7182293e90bb557ff9d1c7dcb",
+    "Assets/Latios2022Tests/Editor/PsyshockTests.cs": "b50626c09002353027e085c3bb16f9adaae354ac745f6097b6fc1dae6d70e74c",
+    "Assets/Latios2022Tests/EditorTools/LabEnvironment.cs": "5038e47213fbd5bfd62bd52416e0c44ef2f687afc7f9ec9143b94d8a2bbe54cf",
+    "Assets/Latios2022Tests/EditorTools/LabPlayerBuild.cs": "b03662dc92b6a922efafb240993b2b0934f4e25044bcf50541dd5a1126205f3a",
+    "Assets/Latios2022Tests/EditorTools/Latios2022Lab.EditorTools.asmdef": "0d9294444253e6b4d408a6ca8d2d0c5f876ef807c3bf849c15bfeea4c584a678",
+    "Assets/Latios2022Tests/PlayMode/Latios2022Lab.PlayMode.asmdef": "dea470f2d225ec4c8b7a5618bb6c610fa9bbed33f43eb12cfbcce35b0888e823",
+    "Assets/Latios2022Tests/PlayMode/PlayModeTests.cs": "f3b97a1be7a6e917a4f1305e32d644555978ce97e54df70ad1aa69063d86786c",
+    "Assets/Latios2022Tests/Runtime/CollectionProbe.cs": "c438517d078bb123381c67ba508e65a8b18430b94255ac7d8534ce4f5057ee9b",
+    "Assets/Latios2022Tests/Runtime/LabCollection.cs": "a667221f9032cd13870d842ca6af42384398c1af4140b355c5a5348501eca069",
+    "Assets/Latios2022Tests/Runtime/LabPlayerSmoke.cs": "a0f110ce8ee87bb8530500658a106a1a8cc34c2133449b932e2c49a992e5cb03",
+    "Assets/Latios2022Tests/Runtime/LabRunPolicy.cs": "2173e39e37e073b49623bb976abc0aae6eeedfc3460b7c1e4c49c669e041967d",
+    "Assets/Latios2022Tests/Runtime/LabWorld.cs": "f627b34ed475dc9dadd60f9378e809b6f1a2c4e4f31046a494681f8713910370",
+    "Assets/Latios2022Tests/Runtime/Latios2022Lab.Runtime.asmdef": "9d0b0c01433ac9170f05469ec944c815314b04ddc8cda216cf4918915982c6a0",
+    "Assets/Latios2022Tests/Runtime/PsyshockProbe.cs": "55aa253aa446743da4db0f76054ea537ebf3d77b44fc70bbb69598c9f5b93ae1"
+  },
+  "native_phases": [
+    {
+      "path": "native/20261008T170708Z-import-on-2878423a/launch.json",
+      "launch_sha256": "d06884124a42cc9dcd10206b7a10256af3872b042ae7295b7a2c6445c28302c4",
+      "frozen_oracles_verified": 26,
+      "frozen_inputs_directly_verified": 41,
+      "variant_files": "Three variant-definition files are outside launch.inputs_sha256 and retained/verified separately in package snapshot evidence.",
+      "command": [
+        "/usr/bin/arch",
+        "-arm64",
+        "/Applications/Unity/Hub/Editor/2022.3.62f2/Unity.app/Contents/MacOS/Unity",
+        "-batchmode",
+        "-projectPath",
+        "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/source/Latios2022Lab",
+        "-buildTarget",
+        "StandaloneOSX",
+        "-logFile",
+        "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/source/Latios2022Lab/Artifacts/20261008T170708Z-import-on-2878423a/unity.log",
+        "--burst-force-sync-compilation",
+        "-quit",
+        "-executeMethod",
+        "Latios2022Lab.LabEnvironment.CaptureEnvironment"
+      ]
+    },
+    {
+      "path": "native/20261008T171146Z-editmode-on-0c3f40cf/launch.json",
+      "launch_sha256": "f3fdc829133832646d2b2555c1252386b34d6b1acef03a90e2e73f67320b8e91",
+      "frozen_oracles_verified": 26,
+      "frozen_inputs_directly_verified": 41,
+      "variant_files": "Three variant-definition files are outside launch.inputs_sha256 and retained/verified separately in package snapshot evidence.",
+      "command": [
+        "/usr/bin/arch",
+        "-arm64",
+        "/Applications/Unity/Hub/Editor/2022.3.62f2/Unity.app/Contents/MacOS/Unity",
+        "-batchmode",
+        "-projectPath",
+        "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/source/Latios2022Lab",
+        "-buildTarget",
+        "StandaloneOSX",
+        "-logFile",
+        "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/source/Latios2022Lab/Artifacts/20261008T171146Z-editmode-on-0c3f40cf/unity.log",
+        "--burst-force-sync-compilation",
+        "-runTests",
+        "-testPlatform",
+        "EditMode",
+        "-assemblyNames",
+        "Latios2022Lab.Editor",
+        "-testResults",
+        "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/source/Latios2022Lab/Artifacts/20261008T171146Z-editmode-on-0c3f40cf/tests.xml"
+      ],
+      "tests_xml": "native/20261008T171146Z-editmode-on-0c3f40cf/tests.xml",
+      "xml_sha256": "a3f75a218db8c6f2228a9923c0413755f537a85a0d662750560c4b52df934307",
+      "xml_attributes": {
+        "id": "2",
+        "testcasecount": "49",
+        "result": "Passed",
+        "total": "49",
+        "passed": "49",
+        "failed": "0",
+        "inconclusive": "0",
+        "skipped": "0",
+        "asserts": "0",
+        "engine-version": "3.5.0.0",
+        "clr-version": "4.0.30319.42000",
+        "start-time": "2026-10-08 17:11:59Z",
+        "end-time": "2026-10-08 17:11:59Z",
+        "duration": "0.402548"
+      },
+      "identities_match_source_cartesian_product": true,
+      "test_results": {
+        "Latios2022Lab.CoreTests.ExceptionAfterSchedulingStillOwnsTheDisposalDependency": "Passed",
+        "Latios2022Lab.CoreTests.ReenterPlayModeTwiceWithDomainReload": "Passed",
+        "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(1,Remove)": "Passed",
+        "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(1,DestroyEntity)": "Passed",
+        "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(1,DisposeWorld)": "Passed",
+        "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(8,Remove)": "Passed",
+        "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(8,DestroyEntity)": "Passed",
+        "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(8,DisposeWorld)": "Passed",
+        "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(64,Remove)": "Passed",
+        "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(64,DestroyEntity)": "Passed",
+        "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(64,DisposeWorld)": "Passed",
+        "Latios2022Lab.CoreTests.TwoOwnedWorldsAndQvvsInstallationCanUpdateAndDispose": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(0,Immediate,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(0,Immediate,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(0,Immediate,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(0,Single,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(0,Single,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(0,Single,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(0,Parallel,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(0,Parallel,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(0,Parallel,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(1,Immediate,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(1,Immediate,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(1,Immediate,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(1,Single,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(1,Single,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(1,Single,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(1,Parallel,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(1,Parallel,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(1,Parallel,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(2,Immediate,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(2,Immediate,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(2,Immediate,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(2,Single,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(2,Single,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(2,Single,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(2,Parallel,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(2,Parallel,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(2,Parallel,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(3,Immediate,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(3,Immediate,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(3,Immediate,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(3,Single,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(3,Single,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(3,Single,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(3,Parallel,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(3,Parallel,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(3,Parallel,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ScheduledRayAndSignedDistanceMatchKnownGeometryAndBurstMode": "Passed"
+      }
+    },
+    {
+      "path": "native/20261008T171210Z-editmode-off-a8d0b71e/launch.json",
+      "launch_sha256": "59475dbc40dbc1087e37936d2f393f9bd3ff0665168da3291c6499fb9799f6bd",
+      "frozen_oracles_verified": 26,
+      "frozen_inputs_directly_verified": 41,
+      "variant_files": "Three variant-definition files are outside launch.inputs_sha256 and retained/verified separately in package snapshot evidence.",
+      "command": [
+        "/usr/bin/arch",
+        "-arm64",
+        "/Applications/Unity/Hub/Editor/2022.3.62f2/Unity.app/Contents/MacOS/Unity",
+        "-batchmode",
+        "-projectPath",
+        "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/source/Latios2022Lab",
+        "-buildTarget",
+        "StandaloneOSX",
+        "-logFile",
+        "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/source/Latios2022Lab/Artifacts/20261008T171210Z-editmode-off-a8d0b71e/unity.log",
+        "--burst-force-sync-compilation",
+        "--burst-disable-compilation",
+        "-runTests",
+        "-testPlatform",
+        "EditMode",
+        "-assemblyNames",
+        "Latios2022Lab.Editor",
+        "-testResults",
+        "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/source/Latios2022Lab/Artifacts/20261008T171210Z-editmode-off-a8d0b71e/tests.xml"
+      ],
+      "tests_xml": "native/20261008T171210Z-editmode-off-a8d0b71e/tests.xml",
+      "xml_sha256": "1f849da3e17c88520265f2fa04a657984ac5de2fe9c8a6054b77b4f4af4d5845",
+      "xml_attributes": {
+        "id": "2",
+        "testcasecount": "49",
+        "result": "Passed",
+        "total": "49",
+        "passed": "49",
+        "failed": "0",
+        "inconclusive": "0",
+        "skipped": "0",
+        "asserts": "0",
+        "engine-version": "3.5.0.0",
+        "clr-version": "4.0.30319.42000",
+        "start-time": "2026-10-08 17:12:19Z",
+        "end-time": "2026-10-08 17:12:19Z",
+        "duration": "0.2731327"
+      },
+      "identities_match_source_cartesian_product": true,
+      "test_results": {
+        "Latios2022Lab.CoreTests.ExceptionAfterSchedulingStillOwnsTheDisposalDependency": "Passed",
+        "Latios2022Lab.CoreTests.ReenterPlayModeTwiceWithDomainReload": "Passed",
+        "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(1,Remove)": "Passed",
+        "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(1,DestroyEntity)": "Passed",
+        "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(1,DisposeWorld)": "Passed",
+        "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(8,Remove)": "Passed",
+        "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(8,DestroyEntity)": "Passed",
+        "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(8,DisposeWorld)": "Passed",
+        "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(64,Remove)": "Passed",
+        "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(64,DestroyEntity)": "Passed",
+        "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(64,DisposeWorld)": "Passed",
+        "Latios2022Lab.CoreTests.TwoOwnedWorldsAndQvvsInstallationCanUpdateAndDispose": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(0,Immediate,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(0,Immediate,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(0,Immediate,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(0,Single,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(0,Single,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(0,Single,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(0,Parallel,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(0,Parallel,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(0,Parallel,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(1,Immediate,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(1,Immediate,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(1,Immediate,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(1,Single,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(1,Single,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(1,Single,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(1,Parallel,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(1,Parallel,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(1,Parallel,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(2,Immediate,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(2,Immediate,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(2,Immediate,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(2,Single,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(2,Single,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(2,Single,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(2,Parallel,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(2,Parallel,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(2,Parallel,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(3,Immediate,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(3,Immediate,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(3,Immediate,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(3,Single,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(3,Single,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(3,Single,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(3,Parallel,1)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(3,Parallel,2)": "Passed",
+        "Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle(3,Parallel,4)": "Passed",
+        "Latios2022Lab.PsyshockTests.ScheduledRayAndSignedDistanceMatchKnownGeometryAndBurstMode": "Passed"
+      }
+    },
+    {
+      "path": "native/20261008T171228Z-playmode-on-fe4ec0be/launch.json",
+      "launch_sha256": "2b64a020480d1ee6208283b42f3b628f4a548674209442faacba52c83018cffd",
+      "frozen_oracles_verified": 26,
+      "frozen_inputs_directly_verified": 41,
+      "variant_files": "Three variant-definition files are outside launch.inputs_sha256 and retained/verified separately in package snapshot evidence.",
+      "command": [
+        "/usr/bin/arch",
+        "-arm64",
+        "/Applications/Unity/Hub/Editor/2022.3.62f2/Unity.app/Contents/MacOS/Unity",
+        "-batchmode",
+        "-projectPath",
+        "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/source/Latios2022Lab",
+        "-buildTarget",
+        "StandaloneOSX",
+        "-logFile",
+        "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/source/Latios2022Lab/Artifacts/20261008T171228Z-playmode-on-fe4ec0be/unity.log",
+        "--burst-force-sync-compilation",
+        "-runTests",
+        "-testPlatform",
+        "PlayMode",
+        "-assemblyNames",
+        "Latios2022Lab.PlayMode",
+        "-testResults",
+        "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/source/Latios2022Lab/Artifacts/20261008T171228Z-playmode-on-fe4ec0be/tests.xml"
+      ],
+      "tests_xml": "native/20261008T171228Z-playmode-on-fe4ec0be/tests.xml",
+      "xml_sha256": "bd296a5d00873cd17b9ae301f80f893a3d4adefe4e017aadb5c7ad8980aea1aa",
+      "xml_attributes": {
+        "id": "2",
+        "testcasecount": "1",
+        "result": "Passed",
+        "total": "1",
+        "passed": "1",
+        "failed": "0",
+        "inconclusive": "0",
+        "skipped": "0",
+        "asserts": "0",
+        "engine-version": "3.5.0.0",
+        "clr-version": "4.0.30319.42000",
+        "start-time": "2026-10-08 17:12:38Z",
+        "end-time": "2026-10-08 17:12:38Z",
+        "duration": "0.0895119"
+      },
+      "identities_match_source_cartesian_product": true,
+      "test_results": {
+        "Latios2022Lab.PlayModeTests.RepeatedOwnedWorldsLeaveNoCollectionState": "Passed"
+      }
+    },
+    {
+      "path": "native/20261008T171248Z-playmode-off-75e38205/launch.json",
+      "launch_sha256": "6ae8ebf74d2c1a31e73833123f0dfa380e1fd3aa16a76ce4add4e33a016c7b9e",
+      "frozen_oracles_verified": 26,
+      "frozen_inputs_directly_verified": 41,
+      "variant_files": "Three variant-definition files are outside launch.inputs_sha256 and retained/verified separately in package snapshot evidence.",
+      "command": [
+        "/usr/bin/arch",
+        "-arm64",
+        "/Applications/Unity/Hub/Editor/2022.3.62f2/Unity.app/Contents/MacOS/Unity",
+        "-batchmode",
+        "-projectPath",
+        "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/source/Latios2022Lab",
+        "-buildTarget",
+        "StandaloneOSX",
+        "-logFile",
+        "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/source/Latios2022Lab/Artifacts/20261008T171248Z-playmode-off-75e38205/unity.log",
+        "--burst-force-sync-compilation",
+        "--burst-disable-compilation",
+        "-runTests",
+        "-testPlatform",
+        "PlayMode",
+        "-assemblyNames",
+        "Latios2022Lab.PlayMode",
+        "-testResults",
+        "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/source/Latios2022Lab/Artifacts/20261008T171248Z-playmode-off-75e38205/tests.xml"
+      ],
+      "tests_xml": "native/20261008T171248Z-playmode-off-75e38205/tests.xml",
+      "xml_sha256": "6e52a6f64e23a63f7bb6e9979c8ff7cbbca8c63b97284fd659299482a2fb2e50",
+      "xml_attributes": {
+        "id": "2",
+        "testcasecount": "1",
+        "result": "Passed",
+        "total": "1",
+        "passed": "1",
+        "failed": "0",
+        "inconclusive": "0",
+        "skipped": "0",
+        "asserts": "0",
+        "engine-version": "3.5.0.0",
+        "clr-version": "4.0.30319.42000",
+        "start-time": "2026-10-08 17:12:55Z",
+        "end-time": "2026-10-08 17:12:55Z",
+        "duration": "0.0951669"
+      },
+      "identities_match_source_cartesian_product": true,
+      "test_results": {
+        "Latios2022Lab.PlayModeTests.RepeatedOwnedWorldsLeaveNoCollectionState": "Passed"
+      }
+    }
+  ],
+  "original_failures": [
+    {
+      "control": "original_git_control",
+      "path": "/workspace/scratch/dc59b980bb73/integration-validation/resume-20261008/latios-s1a-bda5bc7/attempt2/restored/Artifacts/native/20261008T102031Z-editmode-on-10fa0e06/tests.xml",
+      "xml_sha256": "5155021b0f1ea8676202cc2a499ae2de31c3c6c91793940f9090a8153496ae58",
+      "xml_attributes": {
+        "id": "2",
+        "testcasecount": "49",
+        "result": "Failed(Child)",
+        "total": "49",
+        "passed": "45",
+        "failed": "4",
+        "inconclusive": "0",
+        "skipped": "0",
+        "asserts": "0",
+        "engine-version": "3.5.0.0",
+        "clr-version": "4.0.30319.42000",
+        "start-time": "2026-10-08 10:20:46Z",
+        "end-time": "2026-10-08 10:20:46Z",
+        "duration": "0.5475769"
+      },
+      "failures": [
+        {
+          "name": "Latios2022Lab.CoreTests.ReenterPlayModeTwiceWithDomainReload",
+          "message": "System.InvalidOperationException : Destroyed collection owner retained a cleanup entity after the reactive update.",
+          "stack": "  at Latios2022Lab.CollectionProbe.Run (System.Int32 batchSize, Latios2022Lab.CollectionExit exit) [0x00172] in /Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37761086135-2/source/Latios2022Lab/Assets/Latios2022Tests/Runtime/CollectionProbe.cs:79 \n  at Latios2022Lab.CoreTests+<ReenterPlayModeTwiceWithDomainReload>d__3.MoveNext () [0x000c2] in /Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37761086135-2/source/Latios2022Lab/Assets/Latios2022Tests/Editor/CoreTests.cs:64 \n  at UnityEngine.TestTools.TestEnumerator+<Execute>d__7.MoveNext () [0x0004e] in ./Library/PackageCache/com.unity.test-framework@1.4.5/UnityEngine.TestRunner/NUnitExtensions/Attributes/TestEnumerator.cs:44 "
+        },
+        {
+          "name": "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(1,DestroyEntity)",
+          "message": "System.InvalidOperationException : Destroyed collection owner retained a cleanup entity after the reactive update.",
+          "stack": "  at Latios2022Lab.CollectionProbe.Run (System.Int32 batchSize, Latios2022Lab.CollectionExit exit) [0x00172] in /Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37761086135-2/source/Latios2022Lab/Assets/Latios2022Tests/Runtime/CollectionProbe.cs:79 \n  at Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal (System.Int32 batchSize, Latios2022Lab.CollectionExit exit) [0x00007] in /Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37761086135-2/source/Latios2022Lab/Assets/Latios2022Tests/Editor/CoreTests.cs:21 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <cac1dea318b4499fb9eaf77618617c23>:0 "
+        },
+        {
+          "name": "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(8,DestroyEntity)",
+          "message": "System.InvalidOperationException : Destroyed collection owner retained a cleanup entity after the reactive update.",
+          "stack": "  at Latios2022Lab.CollectionProbe.Run (System.Int32 batchSize, Latios2022Lab.CollectionExit exit) [0x00172] in /Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37761086135-2/source/Latios2022Lab/Assets/Latios2022Tests/Runtime/CollectionProbe.cs:79 \n  at Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal (System.Int32 batchSize, Latios2022Lab.CollectionExit exit) [0x00007] in /Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37761086135-2/source/Latios2022Lab/Assets/Latios2022Tests/Editor/CoreTests.cs:21 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <cac1dea318b4499fb9eaf77618617c23>:0 "
+        },
+        {
+          "name": "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(64,DestroyEntity)",
+          "message": "System.InvalidOperationException : Destroyed collection owner retained a cleanup entity after the reactive update.",
+          "stack": "  at Latios2022Lab.CollectionProbe.Run (System.Int32 batchSize, Latios2022Lab.CollectionExit exit) [0x00172] in /Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37761086135-2/source/Latios2022Lab/Assets/Latios2022Tests/Runtime/CollectionProbe.cs:79 \n  at Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal (System.Int32 batchSize, Latios2022Lab.CollectionExit exit) [0x00007] in /Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37761086135-2/source/Latios2022Lab/Assets/Latios2022Tests/Editor/CoreTests.cs:21 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <cac1dea318b4499fb9eaf77618617c23>:0 "
+        }
+      ]
+    },
+    {
+      "control": "unpatched_local_control",
+      "path": "/workspace/scratch/dc59b980bb73/integration-validation/resume-20261008/latios-local-control-fe946e2/restored/Artifacts/native/20261008T133929Z-editmode-on-1ffce769/tests.xml",
+      "xml_sha256": "5c16e5642a83158cd2678423bfdbeb0be245a5175c72420d618408273fb2af82",
+      "xml_attributes": {
+        "id": "2",
+        "testcasecount": "49",
+        "result": "Failed(Child)",
+        "total": "49",
+        "passed": "45",
+        "failed": "4",
+        "inconclusive": "0",
+        "skipped": "0",
+        "asserts": "0",
+        "engine-version": "3.5.0.0",
+        "clr-version": "4.0.30319.42000",
+        "start-time": "2026-10-08 13:39:43Z",
+        "end-time": "2026-10-08 13:39:43Z",
+        "duration": "0.4062373"
+      },
+      "failures": [
+        {
+          "name": "Latios2022Lab.CoreTests.ReenterPlayModeTwiceWithDomainReload",
+          "message": "System.InvalidOperationException : Destroyed collection owner retained a cleanup entity after the reactive update.",
+          "stack": "  at Latios2022Lab.CollectionProbe.Run (System.Int32 batchSize, Latios2022Lab.CollectionExit exit) [0x00172] in /Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37785324983-1/source/Latios2022Lab/Assets/Latios2022Tests/Runtime/CollectionProbe.cs:79 \n  at Latios2022Lab.CoreTests+<ReenterPlayModeTwiceWithDomainReload>d__3.MoveNext () [0x000c2] in /Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37785324983-1/source/Latios2022Lab/Assets/Latios2022Tests/Editor/CoreTests.cs:64 \n  at UnityEngine.TestTools.TestEnumerator+<Execute>d__7.MoveNext () [0x0004e] in ./Library/PackageCache/com.unity.test-framework@1.4.5/UnityEngine.TestRunner/NUnitExtensions/Attributes/TestEnumerator.cs:44 "
+        },
+        {
+          "name": "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(1,DestroyEntity)",
+          "message": "System.InvalidOperationException : Destroyed collection owner retained a cleanup entity after the reactive update.",
+          "stack": "  at Latios2022Lab.CollectionProbe.Run (System.Int32 batchSize, Latios2022Lab.CollectionExit exit) [0x00172] in /Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37785324983-1/source/Latios2022Lab/Assets/Latios2022Tests/Runtime/CollectionProbe.cs:79 \n  at Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal (System.Int32 batchSize, Latios2022Lab.CollectionExit exit) [0x00007] in /Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37785324983-1/source/Latios2022Lab/Assets/Latios2022Tests/Editor/CoreTests.cs:21 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <cac1dea318b4499fb9eaf77618617c23>:0 "
+        },
+        {
+          "name": "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(8,DestroyEntity)",
+          "message": "System.InvalidOperationException : Destroyed collection owner retained a cleanup entity after the reactive update.",
+          "stack": "  at Latios2022Lab.CollectionProbe.Run (System.Int32 batchSize, Latios2022Lab.CollectionExit exit) [0x00172] in /Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37785324983-1/source/Latios2022Lab/Assets/Latios2022Tests/Runtime/CollectionProbe.cs:79 \n  at Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal (System.Int32 batchSize, Latios2022Lab.CollectionExit exit) [0x00007] in /Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37785324983-1/source/Latios2022Lab/Assets/Latios2022Tests/Editor/CoreTests.cs:21 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <cac1dea318b4499fb9eaf77618617c23>:0 "
+        },
+        {
+          "name": "Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal(64,DestroyEntity)",
+          "message": "System.InvalidOperationException : Destroyed collection owner retained a cleanup entity after the reactive update.",
+          "stack": "  at Latios2022Lab.CollectionProbe.Run (System.Int32 batchSize, Latios2022Lab.CollectionExit exit) [0x00172] in /Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37785324983-1/source/Latios2022Lab/Assets/Latios2022Tests/Runtime/CollectionProbe.cs:79 \n  at Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal (System.Int32 batchSize, Latios2022Lab.CollectionExit exit) [0x00007] in /Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37785324983-1/source/Latios2022Lab/Assets/Latios2022Tests/Editor/CoreTests.cs:21 \n  at (wrapper managed-to-native) System.Reflection.RuntimeMethodInfo.InternalInvoke(System.Reflection.RuntimeMethodInfo,object,object[],System.Exception&)\n  at System.Reflection.RuntimeMethodInfo.Invoke (System.Object obj, System.Reflection.BindingFlags invokeAttr, System.Reflection.Binder binder, System.Object[] parameters, System.Globalization.CultureInfo culture) [0x0006a] in <cac1dea318b4499fb9eaf77618617c23>:0 "
+        }
+      ]
+    }
+  ],
+  "compiler_snapshots": [
+    {
+      "snapshot": "00-import-on",
+      "index_sha256": "4079c3320d94eb1a44f470af6b92ed4a5a415edf2d6f66546bb2f1e6cd6d0e58",
+      "files_verified": 12,
+      "bytes_verified": 138660,
+      "generated_sources": {
+        "Latios2022Lab.Editor": 0,
+        "Latios2022Lab.EditorTools": 0,
+        "Latios2022Lab.PlayMode": 0,
+        "Latios2022Lab.Runtime": 0
+      },
+      "responses": [
+        {
+          "assembly": "Latios2022Lab.Runtime",
+          "sha256": "a3c500bf4c699702a81b5e140740ad310ee28fa78e48afc381d113bcd3afcec7",
+          "critical_defines_verified": [
+            "UNITY_EDITOR",
+            "ENABLE_UNITY_COLLECTIONS_CHECKS",
+            "ENTITY_STORE_V1",
+            "UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS"
+          ],
+          "direct_references_verified": {
+            "Unity.Entities": true,
+            "Unity.Collections": true,
+            "Unity.Burst": true
+          },
+          "source_files": [
+            "Assets/Latios2022Tests/Runtime/CollectionProbe.cs",
+            "Assets/Latios2022Tests/Runtime/LabCollection.cs",
+            "Assets/Latios2022Tests/Runtime/LabPlayerSmoke.cs",
+            "Assets/Latios2022Tests/Runtime/LabRunPolicy.cs",
+            "Assets/Latios2022Tests/Runtime/LabWorld.cs",
+            "Assets/Latios2022Tests/Runtime/PsyshockProbe.cs"
+          ],
+          "latios_generators": [
+            "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/variant-packages/com.latios.latiosframework/Core/SourceGenerators/LatiosFramework.SourceGen.dll"
+          ]
+        },
+        {
+          "assembly": "Latios2022Lab.EditorTools",
+          "sha256": "d22fbb85bf264172e2fd44847e9af5b58c0342529dae0329f41cd9c0c713abc1",
+          "critical_defines_verified": [
+            "UNITY_EDITOR",
+            "ENABLE_UNITY_COLLECTIONS_CHECKS",
+            "ENTITY_STORE_V1",
+            "UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS"
+          ],
+          "direct_references_verified": {
+            "Unity.Entities": true,
+            "Unity.Collections": true,
+            "Unity.Burst": true
+          },
+          "source_files": [
+            "Assets/Latios2022Tests/EditorTools/LabEnvironment.cs",
+            "Assets/Latios2022Tests/EditorTools/LabPlayerBuild.cs"
+          ],
+          "latios_generators": [
+            "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/variant-packages/com.latios.latiosframework/Core/SourceGenerators/LatiosFramework.SourceGen.dll"
+          ]
+        },
+        {
+          "assembly": "Latios2022Lab.Editor",
+          "sha256": "ce3eab71e45d9d57352bddb157c445d5b9a0fe51420e522677e64bd687c246ee",
+          "critical_defines_verified": [
+            "UNITY_EDITOR",
+            "ENABLE_UNITY_COLLECTIONS_CHECKS",
+            "ENTITY_STORE_V1",
+            "UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS"
+          ],
+          "direct_references_verified": {
+            "Unity.Entities": true,
+            "Unity.Collections": true,
+            "Unity.Burst": true
+          },
+          "source_files": [
+            "Assets/Latios2022Tests/Editor/CoreTests.cs",
+            "Assets/Latios2022Tests/Editor/PsyshockTests.cs"
+          ],
+          "latios_generators": [
+            "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/variant-packages/com.latios.latiosframework/Core/SourceGenerators/LatiosFramework.SourceGen.dll"
+          ]
+        },
+        {
+          "assembly": "Latios2022Lab.PlayMode",
+          "sha256": "9b707fff588cbefdf3e2166ee83b98b7b32b4fd2817755149420fff86e9a23f8",
+          "critical_defines_verified": [
+            "UNITY_EDITOR",
+            "ENABLE_UNITY_COLLECTIONS_CHECKS",
+            "ENTITY_STORE_V1",
+            "UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS"
+          ],
+          "direct_references_verified": {
+            "Unity.Entities": true,
+            "Unity.Collections": true,
+            "Unity.Burst": true
+          },
+          "source_files": [
+            "Assets/Latios2022Tests/PlayMode/PlayModeTests.cs"
+          ],
+          "latios_generators": [
+            "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/variant-packages/com.latios.latiosframework/Core/SourceGenerators/LatiosFramework.SourceGen.dll"
+          ]
+        }
+      ],
+      "issues": []
+    },
+    {
+      "snapshot": "01-editmode-on",
+      "index_sha256": "4079c3320d94eb1a44f470af6b92ed4a5a415edf2d6f66546bb2f1e6cd6d0e58",
+      "files_verified": 12,
+      "bytes_verified": 138660,
+      "generated_sources": {
+        "Latios2022Lab.Editor": 0,
+        "Latios2022Lab.EditorTools": 0,
+        "Latios2022Lab.PlayMode": 0,
+        "Latios2022Lab.Runtime": 0
+      },
+      "responses": [
+        {
+          "assembly": "Latios2022Lab.Runtime",
+          "sha256": "a3c500bf4c699702a81b5e140740ad310ee28fa78e48afc381d113bcd3afcec7",
+          "critical_defines_verified": [
+            "UNITY_EDITOR",
+            "ENABLE_UNITY_COLLECTIONS_CHECKS",
+            "ENTITY_STORE_V1",
+            "UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS"
+          ],
+          "direct_references_verified": {
+            "Unity.Entities": true,
+            "Unity.Collections": true,
+            "Unity.Burst": true
+          },
+          "source_files": [
+            "Assets/Latios2022Tests/Runtime/CollectionProbe.cs",
+            "Assets/Latios2022Tests/Runtime/LabCollection.cs",
+            "Assets/Latios2022Tests/Runtime/LabPlayerSmoke.cs",
+            "Assets/Latios2022Tests/Runtime/LabRunPolicy.cs",
+            "Assets/Latios2022Tests/Runtime/LabWorld.cs",
+            "Assets/Latios2022Tests/Runtime/PsyshockProbe.cs"
+          ],
+          "latios_generators": [
+            "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/variant-packages/com.latios.latiosframework/Core/SourceGenerators/LatiosFramework.SourceGen.dll"
+          ]
+        },
+        {
+          "assembly": "Latios2022Lab.EditorTools",
+          "sha256": "d22fbb85bf264172e2fd44847e9af5b58c0342529dae0329f41cd9c0c713abc1",
+          "critical_defines_verified": [
+            "UNITY_EDITOR",
+            "ENABLE_UNITY_COLLECTIONS_CHECKS",
+            "ENTITY_STORE_V1",
+            "UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS"
+          ],
+          "direct_references_verified": {
+            "Unity.Entities": true,
+            "Unity.Collections": true,
+            "Unity.Burst": true
+          },
+          "source_files": [
+            "Assets/Latios2022Tests/EditorTools/LabEnvironment.cs",
+            "Assets/Latios2022Tests/EditorTools/LabPlayerBuild.cs"
+          ],
+          "latios_generators": [
+            "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/variant-packages/com.latios.latiosframework/Core/SourceGenerators/LatiosFramework.SourceGen.dll"
+          ]
+        },
+        {
+          "assembly": "Latios2022Lab.Editor",
+          "sha256": "ce3eab71e45d9d57352bddb157c445d5b9a0fe51420e522677e64bd687c246ee",
+          "critical_defines_verified": [
+            "UNITY_EDITOR",
+            "ENABLE_UNITY_COLLECTIONS_CHECKS",
+            "ENTITY_STORE_V1",
+            "UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS"
+          ],
+          "direct_references_verified": {
+            "Unity.Entities": true,
+            "Unity.Collections": true,
+            "Unity.Burst": true
+          },
+          "source_files": [
+            "Assets/Latios2022Tests/Editor/CoreTests.cs",
+            "Assets/Latios2022Tests/Editor/PsyshockTests.cs"
+          ],
+          "latios_generators": [
+            "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/variant-packages/com.latios.latiosframework/Core/SourceGenerators/LatiosFramework.SourceGen.dll"
+          ]
+        },
+        {
+          "assembly": "Latios2022Lab.PlayMode",
+          "sha256": "9b707fff588cbefdf3e2166ee83b98b7b32b4fd2817755149420fff86e9a23f8",
+          "critical_defines_verified": [
+            "UNITY_EDITOR",
+            "ENABLE_UNITY_COLLECTIONS_CHECKS",
+            "ENTITY_STORE_V1",
+            "UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS"
+          ],
+          "direct_references_verified": {
+            "Unity.Entities": true,
+            "Unity.Collections": true,
+            "Unity.Burst": true
+          },
+          "source_files": [
+            "Assets/Latios2022Tests/PlayMode/PlayModeTests.cs"
+          ],
+          "latios_generators": [
+            "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/variant-packages/com.latios.latiosframework/Core/SourceGenerators/LatiosFramework.SourceGen.dll"
+          ]
+        }
+      ],
+      "issues": []
+    },
+    {
+      "snapshot": "02-editmode-off",
+      "index_sha256": "4079c3320d94eb1a44f470af6b92ed4a5a415edf2d6f66546bb2f1e6cd6d0e58",
+      "files_verified": 12,
+      "bytes_verified": 138660,
+      "generated_sources": {
+        "Latios2022Lab.Editor": 0,
+        "Latios2022Lab.EditorTools": 0,
+        "Latios2022Lab.PlayMode": 0,
+        "Latios2022Lab.Runtime": 0
+      },
+      "responses": [
+        {
+          "assembly": "Latios2022Lab.Runtime",
+          "sha256": "a3c500bf4c699702a81b5e140740ad310ee28fa78e48afc381d113bcd3afcec7",
+          "critical_defines_verified": [
+            "UNITY_EDITOR",
+            "ENABLE_UNITY_COLLECTIONS_CHECKS",
+            "ENTITY_STORE_V1",
+            "UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS"
+          ],
+          "direct_references_verified": {
+            "Unity.Entities": true,
+            "Unity.Collections": true,
+            "Unity.Burst": true
+          },
+          "source_files": [
+            "Assets/Latios2022Tests/Runtime/CollectionProbe.cs",
+            "Assets/Latios2022Tests/Runtime/LabCollection.cs",
+            "Assets/Latios2022Tests/Runtime/LabPlayerSmoke.cs",
+            "Assets/Latios2022Tests/Runtime/LabRunPolicy.cs",
+            "Assets/Latios2022Tests/Runtime/LabWorld.cs",
+            "Assets/Latios2022Tests/Runtime/PsyshockProbe.cs"
+          ],
+          "latios_generators": [
+            "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/variant-packages/com.latios.latiosframework/Core/SourceGenerators/LatiosFramework.SourceGen.dll"
+          ]
+        },
+        {
+          "assembly": "Latios2022Lab.EditorTools",
+          "sha256": "d22fbb85bf264172e2fd44847e9af5b58c0342529dae0329f41cd9c0c713abc1",
+          "critical_defines_verified": [
+            "UNITY_EDITOR",
+            "ENABLE_UNITY_COLLECTIONS_CHECKS",
+            "ENTITY_STORE_V1",
+            "UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS"
+          ],
+          "direct_references_verified": {
+            "Unity.Entities": true,
+            "Unity.Collections": true,
+            "Unity.Burst": true
+          },
+          "source_files": [
+            "Assets/Latios2022Tests/EditorTools/LabEnvironment.cs",
+            "Assets/Latios2022Tests/EditorTools/LabPlayerBuild.cs"
+          ],
+          "latios_generators": [
+            "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/variant-packages/com.latios.latiosframework/Core/SourceGenerators/LatiosFramework.SourceGen.dll"
+          ]
+        },
+        {
+          "assembly": "Latios2022Lab.Editor",
+          "sha256": "ce3eab71e45d9d57352bddb157c445d5b9a0fe51420e522677e64bd687c246ee",
+          "critical_defines_verified": [
+            "UNITY_EDITOR",
+            "ENABLE_UNITY_COLLECTIONS_CHECKS",
+            "ENTITY_STORE_V1",
+            "UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS"
+          ],
+          "direct_references_verified": {
+            "Unity.Entities": true,
+            "Unity.Collections": true,
+            "Unity.Burst": true
+          },
+          "source_files": [
+            "Assets/Latios2022Tests/Editor/CoreTests.cs",
+            "Assets/Latios2022Tests/Editor/PsyshockTests.cs"
+          ],
+          "latios_generators": [
+            "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/variant-packages/com.latios.latiosframework/Core/SourceGenerators/LatiosFramework.SourceGen.dll"
+          ]
+        },
+        {
+          "assembly": "Latios2022Lab.PlayMode",
+          "sha256": "9b707fff588cbefdf3e2166ee83b98b7b32b4fd2817755149420fff86e9a23f8",
+          "critical_defines_verified": [
+            "UNITY_EDITOR",
+            "ENABLE_UNITY_COLLECTIONS_CHECKS",
+            "ENTITY_STORE_V1",
+            "UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS"
+          ],
+          "direct_references_verified": {
+            "Unity.Entities": true,
+            "Unity.Collections": true,
+            "Unity.Burst": true
+          },
+          "source_files": [
+            "Assets/Latios2022Tests/PlayMode/PlayModeTests.cs"
+          ],
+          "latios_generators": [
+            "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/variant-packages/com.latios.latiosframework/Core/SourceGenerators/LatiosFramework.SourceGen.dll"
+          ]
+        }
+      ],
+      "issues": []
+    },
+    {
+      "snapshot": "03-playmode-on",
+      "index_sha256": "4079c3320d94eb1a44f470af6b92ed4a5a415edf2d6f66546bb2f1e6cd6d0e58",
+      "files_verified": 12,
+      "bytes_verified": 138660,
+      "generated_sources": {
+        "Latios2022Lab.Editor": 0,
+        "Latios2022Lab.EditorTools": 0,
+        "Latios2022Lab.PlayMode": 0,
+        "Latios2022Lab.Runtime": 0
+      },
+      "responses": [
+        {
+          "assembly": "Latios2022Lab.Runtime",
+          "sha256": "a3c500bf4c699702a81b5e140740ad310ee28fa78e48afc381d113bcd3afcec7",
+          "critical_defines_verified": [
+            "UNITY_EDITOR",
+            "ENABLE_UNITY_COLLECTIONS_CHECKS",
+            "ENTITY_STORE_V1",
+            "UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS"
+          ],
+          "direct_references_verified": {
+            "Unity.Entities": true,
+            "Unity.Collections": true,
+            "Unity.Burst": true
+          },
+          "source_files": [
+            "Assets/Latios2022Tests/Runtime/CollectionProbe.cs",
+            "Assets/Latios2022Tests/Runtime/LabCollection.cs",
+            "Assets/Latios2022Tests/Runtime/LabPlayerSmoke.cs",
+            "Assets/Latios2022Tests/Runtime/LabRunPolicy.cs",
+            "Assets/Latios2022Tests/Runtime/LabWorld.cs",
+            "Assets/Latios2022Tests/Runtime/PsyshockProbe.cs"
+          ],
+          "latios_generators": [
+            "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/variant-packages/com.latios.latiosframework/Core/SourceGenerators/LatiosFramework.SourceGen.dll"
+          ]
+        },
+        {
+          "assembly": "Latios2022Lab.EditorTools",
+          "sha256": "d22fbb85bf264172e2fd44847e9af5b58c0342529dae0329f41cd9c0c713abc1",
+          "critical_defines_verified": [
+            "UNITY_EDITOR",
+            "ENABLE_UNITY_COLLECTIONS_CHECKS",
+            "ENTITY_STORE_V1",
+            "UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS"
+          ],
+          "direct_references_verified": {
+            "Unity.Entities": true,
+            "Unity.Collections": true,
+            "Unity.Burst": true
+          },
+          "source_files": [
+            "Assets/Latios2022Tests/EditorTools/LabEnvironment.cs",
+            "Assets/Latios2022Tests/EditorTools/LabPlayerBuild.cs"
+          ],
+          "latios_generators": [
+            "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/variant-packages/com.latios.latiosframework/Core/SourceGenerators/LatiosFramework.SourceGen.dll"
+          ]
+        },
+        {
+          "assembly": "Latios2022Lab.Editor",
+          "sha256": "ce3eab71e45d9d57352bddb157c445d5b9a0fe51420e522677e64bd687c246ee",
+          "critical_defines_verified": [
+            "UNITY_EDITOR",
+            "ENABLE_UNITY_COLLECTIONS_CHECKS",
+            "ENTITY_STORE_V1",
+            "UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS"
+          ],
+          "direct_references_verified": {
+            "Unity.Entities": true,
+            "Unity.Collections": true,
+            "Unity.Burst": true
+          },
+          "source_files": [
+            "Assets/Latios2022Tests/Editor/CoreTests.cs",
+            "Assets/Latios2022Tests/Editor/PsyshockTests.cs"
+          ],
+          "latios_generators": [
+            "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/variant-packages/com.latios.latiosframework/Core/SourceGenerators/LatiosFramework.SourceGen.dll"
+          ]
+        },
+        {
+          "assembly": "Latios2022Lab.PlayMode",
+          "sha256": "9b707fff588cbefdf3e2166ee83b98b7b32b4fd2817755149420fff86e9a23f8",
+          "critical_defines_verified": [
+            "UNITY_EDITOR",
+            "ENABLE_UNITY_COLLECTIONS_CHECKS",
+            "ENTITY_STORE_V1",
+            "UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS"
+          ],
+          "direct_references_verified": {
+            "Unity.Entities": true,
+            "Unity.Collections": true,
+            "Unity.Burst": true
+          },
+          "source_files": [
+            "Assets/Latios2022Tests/PlayMode/PlayModeTests.cs"
+          ],
+          "latios_generators": [
+            "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/variant-packages/com.latios.latiosframework/Core/SourceGenerators/LatiosFramework.SourceGen.dll"
+          ]
+        }
+      ],
+      "issues": []
+    },
+    {
+      "snapshot": "04-playmode-off",
+      "index_sha256": "4079c3320d94eb1a44f470af6b92ed4a5a415edf2d6f66546bb2f1e6cd6d0e58",
+      "files_verified": 12,
+      "bytes_verified": 138660,
+      "generated_sources": {
+        "Latios2022Lab.Editor": 0,
+        "Latios2022Lab.EditorTools": 0,
+        "Latios2022Lab.PlayMode": 0,
+        "Latios2022Lab.Runtime": 0
+      },
+      "responses": [
+        {
+          "assembly": "Latios2022Lab.Runtime",
+          "sha256": "a3c500bf4c699702a81b5e140740ad310ee28fa78e48afc381d113bcd3afcec7",
+          "critical_defines_verified": [
+            "UNITY_EDITOR",
+            "ENABLE_UNITY_COLLECTIONS_CHECKS",
+            "ENTITY_STORE_V1",
+            "UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS"
+          ],
+          "direct_references_verified": {
+            "Unity.Entities": true,
+            "Unity.Collections": true,
+            "Unity.Burst": true
+          },
+          "source_files": [
+            "Assets/Latios2022Tests/Runtime/CollectionProbe.cs",
+            "Assets/Latios2022Tests/Runtime/LabCollection.cs",
+            "Assets/Latios2022Tests/Runtime/LabPlayerSmoke.cs",
+            "Assets/Latios2022Tests/Runtime/LabRunPolicy.cs",
+            "Assets/Latios2022Tests/Runtime/LabWorld.cs",
+            "Assets/Latios2022Tests/Runtime/PsyshockProbe.cs"
+          ],
+          "latios_generators": [
+            "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/variant-packages/com.latios.latiosframework/Core/SourceGenerators/LatiosFramework.SourceGen.dll"
+          ]
+        },
+        {
+          "assembly": "Latios2022Lab.EditorTools",
+          "sha256": "d22fbb85bf264172e2fd44847e9af5b58c0342529dae0329f41cd9c0c713abc1",
+          "critical_defines_verified": [
+            "UNITY_EDITOR",
+            "ENABLE_UNITY_COLLECTIONS_CHECKS",
+            "ENTITY_STORE_V1",
+            "UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS"
+          ],
+          "direct_references_verified": {
+            "Unity.Entities": true,
+            "Unity.Collections": true,
+            "Unity.Burst": true
+          },
+          "source_files": [
+            "Assets/Latios2022Tests/EditorTools/LabEnvironment.cs",
+            "Assets/Latios2022Tests/EditorTools/LabPlayerBuild.cs"
+          ],
+          "latios_generators": [
+            "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/variant-packages/com.latios.latiosframework/Core/SourceGenerators/LatiosFramework.SourceGen.dll"
+          ]
+        },
+        {
+          "assembly": "Latios2022Lab.Editor",
+          "sha256": "ce3eab71e45d9d57352bddb157c445d5b9a0fe51420e522677e64bd687c246ee",
+          "critical_defines_verified": [
+            "UNITY_EDITOR",
+            "ENABLE_UNITY_COLLECTIONS_CHECKS",
+            "ENTITY_STORE_V1",
+            "UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS"
+          ],
+          "direct_references_verified": {
+            "Unity.Entities": true,
+            "Unity.Collections": true,
+            "Unity.Burst": true
+          },
+          "source_files": [
+            "Assets/Latios2022Tests/Editor/CoreTests.cs",
+            "Assets/Latios2022Tests/Editor/PsyshockTests.cs"
+          ],
+          "latios_generators": [
+            "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/variant-packages/com.latios.latiosframework/Core/SourceGenerators/LatiosFramework.SourceGen.dll"
+          ]
+        },
+        {
+          "assembly": "Latios2022Lab.PlayMode",
+          "sha256": "9b707fff588cbefdf3e2166ee83b98b7b32b4fd2817755149420fff86e9a23f8",
+          "critical_defines_verified": [
+            "UNITY_EDITOR",
+            "ENABLE_UNITY_COLLECTIONS_CHECKS",
+            "ENTITY_STORE_V1",
+            "UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS"
+          ],
+          "direct_references_verified": {
+            "Unity.Entities": true,
+            "Unity.Collections": true,
+            "Unity.Burst": true
+          },
+          "source_files": [
+            "Assets/Latios2022Tests/PlayMode/PlayModeTests.cs"
+          ],
+          "latios_generators": [
+            "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp/latios-s1a-37813671446-1/variant-packages/com.latios.latiosframework/Core/SourceGenerators/LatiosFramework.SourceGen.dll"
+          ]
+        }
+      ],
+      "issues": []
+    }
+  ],
+  "log_findings": [
+    {
+      "path": "native/20261008T170708Z-import-on-2878423a/unity.log",
+      "sha256": "15cd4f5f43753af258d4a0180a3e95287853e0a96a741737412dfe8561daec47",
+      "selected_events": [],
+      "retained_owner_failure_present": false,
+      "bootstrap_assertion_present": false,
+      "interpretation": "Expected scheduled exception is deliberately asserted in EditMode. Weakptr shutdown lines are not comprehensive native/managed leak measurements. Xcode Info.plist warnings are retained and do not establish player toolchain readiness."
+    },
+    {
+      "path": "native/20261008T171146Z-editmode-on-0c3f40cf/unity.log",
+      "sha256": "2004b40032fc6af1668e4e57f2198df90663658746d78591df540f22181516d4",
+      "selected_events": [
+        {
+          "line": 446,
+          "text": "InvalidOperationException: Lab scheduled failure"
+        },
+        {
+          "line": 1035,
+          "text": "[Performance] Application.EnterPlayMode                                                                                                            :        2 samples, Peak.  1.18 s (1.0x), Avg.  1.18 s, Total. 2.361 s (16.6%)"
+        },
+        {
+          "line": 1041,
+          "text": "[Performance] Application.ExitPlayMode                                                                                                             :        2 samples, Peak.   102 ms (1.0x), Avg.   101 ms, Total. 201.8 ms (1.4%)"
+        },
+        {
+          "line": 1087,
+          "text": "Found no leaked weakptrs."
+        }
+      ],
+      "retained_owner_failure_present": false,
+      "bootstrap_assertion_present": false,
+      "interpretation": "Expected scheduled exception is deliberately asserted in EditMode. Weakptr shutdown lines are not comprehensive native/managed leak measurements. Xcode Info.plist warnings are retained and do not establish player toolchain readiness."
+    },
+    {
+      "path": "native/20261008T171210Z-editmode-off-a8d0b71e/unity.log",
+      "sha256": "599dcfb3bfd207c0847f32147e3c3bd937ee22a89a6b642b8d36bc17bb674aa0",
+      "selected_events": [
+        {
+          "line": 285,
+          "text": "[com.unity.burst] Burst is disabled entirely from the command line or environment variable"
+        },
+        {
+          "line": 459,
+          "text": "InvalidOperationException: Lab scheduled failure"
+        },
+        {
+          "line": 530,
+          "text": "[com.unity.burst] Burst is disabled entirely from the command line or environment variable"
+        },
+        {
+          "line": 642,
+          "text": "[com.unity.burst] Burst is disabled entirely from the command line or environment variable"
+        },
+        {
+          "line": 1068,
+          "text": "[Performance] Application.EnterPlayMode                                                                                                            :        2 samples, Peak.   999 ms (1.0x), Avg.   992 ms, Total. 1.984 s (21.1%)"
+        },
+        {
+          "line": 1074,
+          "text": "[Performance] Application.ExitPlayMode                                                                                                             :        2 samples, Peak.  20.9 ms (1.0x), Avg.  20.7 ms, Total. 41.42 ms (0.4%)"
+        },
+        {
+          "line": 1119,
+          "text": "Found no leaked weakptrs."
+        }
+      ],
+      "retained_owner_failure_present": false,
+      "bootstrap_assertion_present": false,
+      "interpretation": "Expected scheduled exception is deliberately asserted in EditMode. Weakptr shutdown lines are not comprehensive native/managed leak measurements. Xcode Info.plist warnings are retained and do not establish player toolchain readiness."
+    },
+    {
+      "path": "native/20261008T171228Z-playmode-on-fe4ec0be/unity.log",
+      "sha256": "5a95a014944f7bc52d453e4365072b5864df47980fdc9c6dbe3c7a4116f490f4",
+      "selected_events": [
+        {
+          "line": 923,
+          "text": "[Performance] Application.EnterPlayMode                                                                                                                                                                                                                                                                                                                            :        1 samples, Peak.  1.24 s (1.0x), Avg.  1.24 s, Total. 1.241 s (11.1%)"
+        },
+        {
+          "line": 928,
+          "text": "[Performance] Application.ExitPlayMode                                                                                                                                                                                                                                                                                                                             :        1 samples, Peak.   108 ms (1.0x), Avg.   108 ms, Total. 108.3 ms (1.0%)"
+        },
+        {
+          "line": 975,
+          "text": "Found no leaked weakptrs."
+        }
+      ],
+      "retained_owner_failure_present": false,
+      "bootstrap_assertion_present": false,
+      "interpretation": "Expected scheduled exception is deliberately asserted in EditMode. Weakptr shutdown lines are not comprehensive native/managed leak measurements. Xcode Info.plist warnings are retained and do not establish player toolchain readiness."
+    },
+    {
+      "path": "native/20261008T171248Z-playmode-off-75e38205/unity.log",
+      "sha256": "acecd5f6c1b8d9b4986f160f8497caf267176d9a203017d5f8cb8f537062dee6",
+      "selected_events": [
+        {
+          "line": 285,
+          "text": "[com.unity.burst] Burst is disabled entirely from the command line or environment variable"
+        },
+        {
+          "line": 475,
+          "text": "[com.unity.burst] Burst is disabled entirely from the command line or environment variable"
+        },
+        {
+          "line": 944,
+          "text": "[Performance] Application.EnterPlayMode                                                                                                                                                                                                                                                                                                                            :        1 samples, Peak.  1.02 s (1.0x), Avg.  1.02 s, Total. 1.023 s (14.3%)"
+        },
+        {
+          "line": 949,
+          "text": "[Performance] Application.ExitPlayMode                                                                                                                                                                                                                                                                                                                             :        1 samples, Peak.  21.1 ms (1.0x), Avg.  21.1 ms, Total. 21.06 ms (0.3%)"
+        },
+        {
+          "line": 995,
+          "text": "Found no leaked weakptrs."
+        }
+      ],
+      "retained_owner_failure_present": false,
+      "bootstrap_assertion_present": false,
+      "interpretation": "Expected scheduled exception is deliberately asserted in EditMode. Weakptr shutdown lines are not comprehensive native/managed leak measurements. Xcode Info.plist warnings are retained and do not establish player toolchain readiness."
+    }
+  ],
+  "environment": {
+    "editor": "2022.3.62f2",
+    "cpu": "Apple M5 Pro",
+    "os": "Mac OS X 26.4.0",
+    "buildTarget": "StandaloneOSX",
+    "api": "NET_Standard_2_0",
+    "defines": "ENTITY_STORE_V1;UNITY_BURST_EXPERIMENTAL_ATOMIC_INTRINSICS",
+    "executedScope": "Owned Core world with initialization ECB and empty scene ordering group; empty QVVS update. Psyshock is tested separately via arrays. No scene streaming or optional renderer/audio installer.",
+    "experimentId": "latios-0.11.5-cleanup-query-v1",
+    "experimentArm": "patched-local-variant",
+    "experimentRecordSha256": "256220075cf1e24d95794f5ad1f0fd57e6cc0626dc9628a7b7f1fe38c9c54861",
+    "burstEnabled": true,
+    "burstSafety": true,
+    "compiledAssemblies": [
+      "ACL_Unity",
+      "Latios.Calligraphics",
+      "Latios.Calligraphics.Editor",
+      "Latios.Core",
+      "Latios.Core.Editor",
+      "Latios.Kinemation",
+      "Latios.Kinemation.Editor",
+      "Latios.LifeFX",
+      "Latios.MachAxle",
+      "Latios.Mimic",
+      "Latios.Myri",
+      "Latios.Psyshock",
+      "Latios.Transforms",
+      "Latios.Transforms.Editor",
+      "Latios2022Lab.Editor",
+      "Latios2022Lab.EditorTools",
+      "Latios2022Lab.PlayMode",
+      "Latios2022Lab.Runtime",
+      "PPv2URPConverters",
+      "Unity.Audio.DSPGraph",
+      "Unity.Burst",
+      "Unity.Burst.CodeGen",
+      "Unity.Burst.Editor",
+      "Unity.Collections",
+      "Unity.Collections.CodeGen",
+      "Unity.Collections.Editor",
+      "Unity.Core.Editor",
+      "Unity.Deformations",
+      "Unity.Entities",
+      "Unity.Entities.Build",
+      "Unity.Entities.CodeGen",
+      "Unity.Entities.Editor",
+      "Unity.Entities.Editor.Properties",
+      "Unity.Entities.Graphics",
+      "Unity.Entities.Graphics.Editor",
+      "Unity.Entities.Hybrid",
+      "Unity.Entities.Hybrid.HybridComponents",
+      "Unity.Entities.UI",
+      "Unity.Entities.UI.Editor",
+      "Unity.InternalAPIEditorBridge.002",
+      "Unity.InternalAPIEngineBridge.002",
+      "Unity.Mathematics",
+      "Unity.Mathematics.Editor",
+      "Unity.Mathematics.Extensions",
+      "Unity.Mathematics.Extensions.Hybrid",
+      "Unity.Media.Utilities",
+      "Unity.PerformanceTesting",
+      "Unity.PerformanceTesting.Editor",
+      "Unity.Profiling.Core",
+      "Unity.RenderPipeline.Universal.ShaderLibrary",
+      "Unity.RenderPipelines.Core.Editor",
+      "Unity.RenderPipelines.Core.Runtime",
+      "Unity.RenderPipelines.Core.ShaderLibrary",
+      "Unity.RenderPipelines.ShaderGraph.ShaderGraphLibrary",
+      "Unity.RenderPipelines.Universal.2D.Internal",
+      "Unity.RenderPipelines.Universal.Config.Runtime",
+      "Unity.RenderPipelines.Universal.Editor",
+      "Unity.RenderPipelines.Universal.Runtime",
+      "Unity.RenderPipelines.Universal.Shaders",
+      "Unity.Scenes",
+      "Unity.Scenes.Editor",
+      "Unity.ScriptableBuildPipeline",
+      "Unity.ScriptableBuildPipeline.Editor",
+      "Unity.Searcher.Editor",
+      "Unity.Serialization",
+      "Unity.Serialization.Editor",
+      "Unity.ShaderGraph.Editor",
+      "Unity.ShaderGraph.Utilities",
+      "Unity.Sysroot.Linux_x86_64",
+      "Unity.SysrootPackage.Editor",
+      "Unity.Toolchain.Macos-arm64-Linux-x86_64",
+      "Unity.Transforms",
+      "Unity.Transforms.Hybrid",
+      "UnityEditor.TestRunner",
+      "UnityEditor.UI",
+      "UnityEngine.TestRunner",
+      "UnityEngine.UI"
+    ],
+    "installedManagedSystems": [
+      "Latios.Systems.LatiosWorldSyncGroup",
+      "Latios.Systems.MergeBlackboardsSystem",
+      "Latios.Systems.PreSyncPointGroup",
+      "Latios.Systems.SyncPointPlaybackSystemDispatch",
+      "Latios.Transforms.Systems.GameObjectEntityBindingSystem",
+      "Latios.Transforms.Systems.HybridTransformsSyncPointSuperSystem",
+      "Latios.Transforms.Systems.PostTransformSuperSystem",
+      "Latios.Transforms.Systems.PreTransformSuperSystem",
+      "Latios.Transforms.Systems.TransformSuperSystem",
+      "Unity.Entities.BeginInitializationEntityCommandBufferSystem",
+      "Unity.Entities.InitializationSystemGroup",
+      "Unity.Entities.PresentationSystemGroup",
+      "Unity.Entities.SimulationSystemGroup",
+      "Unity.Scenes.SceneSystemGroup"
+    ]
+  },
+  "environment_sha256": "f1b0931367c64feea030596b745ffd9ee32c9b6e6e55ee22ab61ff3315d3901d",
+  "import_compilation_events": {
+    "path": "native/20261008T170708Z-import-on-2878423a/unity.log",
+    "sha256": "15cd4f5f43753af258d4a0180a3e95287853e0a96a741737412dfe8561daec47",
+    "assemblies": {
+      "Latios.Calligraphics": {
+        "Csc": [
+          {
+            "line": 2851,
+            "text": "[782/839    0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Calligraphics.dll (+2 others)"
+          },
+          {
+            "line": 2866,
+            "text": "[           0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Calligraphics.dll (+2 others) [CacheWrite 00000000000000000000000000000003]"
+          }
+        ],
+        "ILPostProcess": [
+          {
+            "line": 2947,
+            "text": "[828/839    0s] ILPostProcess Library/Bee/artifacts/200b0aEDbg.dag/post-processed/Latios.Calligraphics.dll (+pdb)"
+          }
+        ],
+        "CopyFiles": [
+          {
+            "line": 2954,
+            "text": "[830/839    0s] CopyFiles Library/ScriptAssemblies/Latios.Calligraphics.dll"
+          }
+        ]
+      },
+      "Latios.Calligraphics.Editor": {
+        "Csc": [
+          {
+            "line": 2902,
+            "text": "[805/839    0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Calligraphics.Editor.dll (+2 others)"
+          },
+          {
+            "line": 2910,
+            "text": "[           0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Calligraphics.Editor.dll (+2 others) [CacheWrite 00000000000000000000000000000003]"
+          }
+        ],
+        "ILPostProcess": [
+          {
+            "line": 2931,
+            "text": "[822/839    0s] ILPostProcess Library/Bee/artifacts/200b0aEDbg.dag/post-processed/Latios.Calligraphics.Editor.dll (+pdb)"
+          }
+        ],
+        "CopyFiles": [
+          {
+            "line": 2937,
+            "text": "[823/839    0s] CopyFiles Library/ScriptAssemblies/Latios.Calligraphics.Editor.dll"
+          }
+        ]
+      },
+      "Latios.Core": {
+        "Csc": [
+          {
+            "line": 2389,
+            "text": "[601/839    0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Core.dll (+2 others)"
+          },
+          {
+            "line": 2392,
+            "text": "[           0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Core.dll (+2 others) [CacheWrite 00000000000000000000000000000003]"
+          }
+        ],
+        "ILPostProcess": [
+          {
+            "line": 2731,
+            "text": "[677/839    1s] ILPostProcess Library/Bee/artifacts/200b0aEDbg.dag/post-processed/Latios.Core.dll (+pdb)"
+          }
+        ],
+        "CopyFiles": [
+          {
+            "line": 2749,
+            "text": "[680/839    0s] CopyFiles Library/ScriptAssemblies/Latios.Core.dll"
+          }
+        ]
+      },
+      "Latios.Core.Editor": {
+        "Csc": [
+          {
+            "line": 2432,
+            "text": "[612/839    0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Core.Editor.dll (+2 others)"
+          },
+          {
+            "line": 2435,
+            "text": "[           0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Core.Editor.dll (+2 others) [CacheWrite 00000000000000000000000000000003]"
+          }
+        ],
+        "ILPostProcess": [
+          {
+            "line": 2616,
+            "text": "[655/839    0s] ILPostProcess Library/Bee/artifacts/200b0aEDbg.dag/post-processed/Latios.Core.Editor.dll (+pdb)"
+          }
+        ],
+        "CopyFiles": [
+          {
+            "line": 2816,
+            "text": "[747/839    0s] CopyFiles Library/ScriptAssemblies/Latios.Core.Editor.dll"
+          }
+        ]
+      },
+      "Latios.Kinemation": {
+        "Csc": [
+          {
+            "line": 2666,
+            "text": "[665/839    0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Kinemation.dll (+2 others)"
+          },
+          {
+            "line": 2668,
+            "text": "[           0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Kinemation.dll (+2 others) [CacheWrite 00000000000000000000000000000003]"
+          }
+        ],
+        "ILPostProcess": [
+          {
+            "line": 2977,
+            "text": "[838/839    0s] ILPostProcess Library/Bee/artifacts/200b0aEDbg.dag/post-processed/Latios.Kinemation.dll (+pdb)"
+          }
+        ],
+        "CopyFiles": [
+          {
+            "line": 2986,
+            "text": "[842/839    0s] CopyFiles Library/ScriptAssemblies/Latios.Kinemation.dll"
+          }
+        ]
+      },
+      "Latios.Kinemation.Editor": {
+        "Csc": [
+          {
+            "line": 2867,
+            "text": "[797/839    0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Kinemation.Editor.dll (+2 others)"
+          },
+          {
+            "line": 2868,
+            "text": "[           0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Kinemation.Editor.dll (+2 others) [CacheWrite 00000000000000000000000000000003]"
+          }
+        ],
+        "ILPostProcess": [
+          {
+            "line": 2915,
+            "text": "[811/839    0s] ILPostProcess Library/Bee/artifacts/200b0aEDbg.dag/post-processed/Latios.Kinemation.Editor.dll (+pdb)"
+          }
+        ],
+        "CopyFiles": [
+          {
+            "line": 2929,
+            "text": "[820/839    0s] CopyFiles Library/ScriptAssemblies/Latios.Kinemation.Editor.dll"
+          }
+        ]
+      },
+      "Latios.LifeFX": {
+        "Csc": [
+          {
+            "line": 2723,
+            "text": "[675/839    0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.LifeFX.dll (+2 others)"
+          },
+          {
+            "line": 2724,
+            "text": "[           0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.LifeFX.dll (+2 others) [CacheWrite 00000000000000000000000000000003]"
+          }
+        ],
+        "ILPostProcess": [
+          {
+            "line": 2904,
+            "text": "[806/839    0s] ILPostProcess Library/Bee/artifacts/200b0aEDbg.dag/post-processed/Latios.LifeFX.dll (+pdb)"
+          }
+        ],
+        "CopyFiles": [
+          {
+            "line": 2928,
+            "text": "[819/839    0s] CopyFiles Library/ScriptAssemblies/Latios.LifeFX.dll"
+          }
+        ]
+      },
+      "Latios.MachAxle": {
+        "Csc": [
+          {
+            "line": 2901,
+            "text": "[804/839    0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.MachAxle.dll (+2 others)"
+          },
+          {
+            "line": 2903,
+            "text": "[           0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.MachAxle.dll (+2 others) [CacheWrite 00000000000000000000000000000003]"
+          }
+        ],
+        "ILPostProcess": [
+          {
+            "line": 2939,
+            "text": "[825/839    0s] ILPostProcess Library/Bee/artifacts/200b0aEDbg.dag/post-processed/Latios.MachAxle.dll (+pdb)"
+          }
+        ],
+        "CopyFiles": [
+          {
+            "line": 2946,
+            "text": "[827/839    0s] CopyFiles Library/ScriptAssemblies/Latios.MachAxle.dll"
+          }
+        ]
+      },
+      "Latios.Mimic": {
+        "Csc": [
+          {
+            "line": 2869,
+            "text": "[798/839    0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Mimic.dll (+2 others)"
+          },
+          {
+            "line": 2882,
+            "text": "[           0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Mimic.dll (+2 others) [CacheWrite 00000000000000000000000000000003]"
+          }
+        ],
+        "ILPostProcess": [
+          {
+            "line": 2955,
+            "text": "[831/839    0s] ILPostProcess Library/Bee/artifacts/200b0aEDbg.dag/post-processed/Latios.Mimic.dll (+pdb)"
+          }
+        ],
+        "CopyFiles": [
+          {
+            "line": 2962,
+            "text": "[833/839    0s] CopyFiles Library/ScriptAssemblies/Latios.Mimic.dll"
+          }
+        ]
+      },
+      "Latios.Myri": {
+        "Csc": [
+          {
+            "line": 2558,
+            "text": "[642/839    0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Myri.dll (+2 others)"
+          },
+          {
+            "line": 2561,
+            "text": "[           0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Myri.dll (+2 others) [CacheWrite 00000000000000000000000000000003]"
+          }
+        ],
+        "ILPostProcess": [
+          {
+            "line": 2641,
+            "text": "[660/839    0s] ILPostProcess Library/Bee/artifacts/200b0aEDbg.dag/post-processed/Latios.Myri.dll (+pdb)"
+          }
+        ],
+        "CopyFiles": [
+          {
+            "line": 2779,
+            "text": "[710/839    0s] CopyFiles Library/ScriptAssemblies/Latios.Myri.dll"
+          }
+        ]
+      },
+      "Latios.Psyshock": {
+        "Csc": [
+          {
+            "line": 2574,
+            "text": "[645/839    0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Psyshock.dll (+2 others)"
+          },
+          {
+            "line": 2575,
+            "text": "[           0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Psyshock.dll (+2 others) [CacheWrite 00000000000000000000000000000003]"
+          }
+        ],
+        "ILPostProcess": [
+          {
+            "line": 2743,
+            "text": "[679/839    1s] ILPostProcess Library/Bee/artifacts/200b0aEDbg.dag/post-processed/Latios.Psyshock.dll (+pdb)"
+          }
+        ],
+        "CopyFiles": [
+          {
+            "line": 2785,
+            "text": "[716/839    0s] CopyFiles Library/ScriptAssemblies/Latios.Psyshock.dll"
+          }
+        ]
+      },
+      "Latios.Transforms": {
+        "Csc": [
+          {
+            "line": 2433,
+            "text": "[613/839    0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Transforms.dll (+2 others)"
+          },
+          {
+            "line": 2436,
+            "text": "[           0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Transforms.dll (+2 others) [CacheWrite 00000000000000000000000000000003]"
+          }
+        ],
+        "ILPostProcess": [
+          {
+            "line": 2532,
+            "text": "[637/839    0s] ILPostProcess Library/Bee/artifacts/200b0aEDbg.dag/post-processed/Latios.Transforms.dll (+pdb)"
+          }
+        ],
+        "CopyFiles": [
+          {
+            "line": 2784,
+            "text": "[715/839    0s] CopyFiles Library/ScriptAssemblies/Latios.Transforms.dll"
+          }
+        ]
+      },
+      "Latios.Transforms.Editor": {
+        "Csc": [
+          {
+            "line": 2594,
+            "text": "[649/839    0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Transforms.Editor.dll (+2 others)"
+          },
+          {
+            "line": 2595,
+            "text": "[           0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios.Transforms.Editor.dll (+2 others) [CacheWrite 00000000000000000000000000000003]"
+          }
+        ],
+        "ILPostProcess": [
+          {
+            "line": 2629,
+            "text": "[658/839    0s] ILPostProcess Library/Bee/artifacts/200b0aEDbg.dag/post-processed/Latios.Transforms.Editor.dll (+pdb)"
+          }
+        ],
+        "CopyFiles": [
+          {
+            "line": 2813,
+            "text": "[744/839    0s] CopyFiles Library/ScriptAssemblies/Latios.Transforms.Editor.dll"
+          }
+        ]
+      },
+      "Latios2022Lab.Editor": {
+        "Csc": [
+          {
+            "line": 2647,
+            "text": "[661/839    0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios2022Lab.Editor.dll (+2 others)"
+          }
+        ],
+        "ILPostProcess": [
+          {
+            "line": 2705,
+            "text": "[672/839    0s] ILPostProcess Library/Bee/artifacts/200b0aEDbg.dag/post-processed/Latios2022Lab.Editor.dll (+pdb)"
+          }
+        ],
+        "CopyFiles": [
+          {
+            "line": 2794,
+            "text": "[725/839    0s] CopyFiles Library/ScriptAssemblies/Latios2022Lab.Editor.dll"
+          }
+        ]
+      },
+      "Latios2022Lab.EditorTools": {
+        "Csc": [
+          {
+            "line": 2597,
+            "text": "[651/839    0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios2022Lab.EditorTools.dll (+2 others)"
+          }
+        ],
+        "ILPostProcess": [
+          {
+            "line": 2669,
+            "text": "[666/839    0s] ILPostProcess Library/Bee/artifacts/200b0aEDbg.dag/post-processed/Latios2022Lab.EditorTools.dll (+pdb)"
+          }
+        ],
+        "CopyFiles": [
+          {
+            "line": 2804,
+            "text": "[735/839    0s] CopyFiles Library/ScriptAssemblies/Latios2022Lab.EditorTools.dll"
+          }
+        ]
+      },
+      "Latios2022Lab.PlayMode": {
+        "Csc": [
+          {
+            "line": 2622,
+            "text": "[656/839    0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios2022Lab.PlayMode.dll (+2 others)"
+          }
+        ],
+        "ILPostProcess": [
+          {
+            "line": 2681,
+            "text": "[668/839    0s] ILPostProcess Library/Bee/artifacts/200b0aEDbg.dag/post-processed/Latios2022Lab.PlayMode.dll (+pdb)"
+          }
+        ],
+        "CopyFiles": [
+          {
+            "line": 2767,
+            "text": "[698/839    0s] CopyFiles Library/ScriptAssemblies/Latios2022Lab.PlayMode.dll"
+          }
+        ]
+      },
+      "Latios2022Lab.Runtime": {
+        "Csc": [
+          {
+            "line": 2596,
+            "text": "[650/839    0s] Csc Library/Bee/artifacts/200b0aEDbg.dag/Latios2022Lab.Runtime.dll (+2 others)"
+          }
+        ],
+        "ILPostProcess": [
+          {
+            "line": 2725,
+            "text": "[676/839    0s] ILPostProcess Library/Bee/artifacts/200b0aEDbg.dag/post-processed/Latios2022Lab.Runtime.dll (+pdb)"
+          }
+        ],
+        "CopyFiles": [
+          {
+            "line": 2754,
+            "text": "[685/839    0s] CopyFiles Library/ScriptAssemblies/Latios2022Lab.Runtime.dll"
+          }
+        ]
+      }
+    },
+    "meaning": "All 13 Latios and four owned assemblies have Csc/ILPostProcess/CopyFiles events; this is compilation evidence, not proof their optional runtime algorithms executed."
+  },
+  "patch_semantics": {
+    "upstream_commit": "381a77dbf774ff603014d5695ef6c06abaa25d96",
+    "target": "Core/Internal/CollectionComponentOperations.cs",
+    "after_sha256": "087ddf701e638d56fb01b80ef4becc27ae7e0516c504fc3e4bdc09d2dc99ab6d",
+    "line": 175,
+    "statement": "context->latiosWorld.m_impl->m_worldUnmanaged.EntityManager.RemoveComponent(context->removeQuery, t);",
+    "query_definitions": "addQuery selects exist without cleanup (line 123); removeQuery selects cleanup without exist (line 125).",
+    "removal_sequence": "Iterate removeQuery, remove storage and schedule disposal, CompleteAll handles at line 168, remove cleanup type at line 175. Original line incorrectly targets addQuery.",
+    "control_interpretation": "The four baseline failures occur at owner Exists after successful expected-sum/disposal-witness checks. The test did not dump the exact retained component inventory."
+  },
+  "coverage_semantics": [
+    {
+      "scope": "Core tracked jobs",
+      "source": "Runtime/CollectionProbe.cs:17,30,44; Runtime/LabCollection.cs:15",
+      "observed": "Both Editor modes pass 3 batch sizes x 3 exit types. Writer fills 257 integers index+17; reader expects 37265. Disposal job increments borrowed witness and reads Values[0] before Values.Dispose(witness). No explicit pre-removal fixture Complete masks the chain.",
+      "limit": "Small fixed ownership/dependency fixtures; no broad allocation, stress, ordering, or leak survey."
+    },
+    {
+      "scope": "Reactive DestroyEntity",
+      "source": "Runtime/CollectionProbe.cs:70",
+      "observed": "Both Editor modes pass first-update sum 37265/witness [1,17], owner absent before World teardown, second-update witness count stays one, and final post-disposal witness.",
+      "limit": "Witness numbers are proven by unchanged conditional checks and Passed results; raw values are not separately logged. Entity component inventory is not dumped."
+    },
+    {
+      "scope": "Explicit Remove and exceptional path",
+      "source": "Runtime/CollectionProbe.cs:63; Editor/CoreTests.cs:36",
+      "observed": "Ordinary Remove checks removal success/absence before final world disposal. Expected writer exception test removes then checks witness [1,17] before using-scope disposal.",
+      "limit": "Ordinary Remove final sum/witness check is after World disposal; exceptional path independently checks disposal dependency immediately after removal."
+    },
+    {
+      "scope": "Reentry and PlayMode",
+      "source": "Editor/CoreTests.cs:53; PlayMode/PlayModeTests.cs:9",
+      "observed": "Each EditMode control enters/exits PlayMode twice with domain reload, probing DisposeWorld then DestroyEntity. Standalone PlayMode loops three DisposeWorld + fixture2 parallel/subdivision2 pairs + sphere query probes, yielding a frame each time and ending with NoUnexpectedReceived.",
+      "limit": "Standalone PlayMode never calls DestroyEntity or explicit Remove. Test name LeaveNoCollectionState is not a complete world/entity census. Default empty World ownership is source-backed, with no bootstrap assertions observed; no comprehensive leak freedom is established."
+    },
+    {
+      "scope": "Burst witness",
+      "source": "Runtime/PsyshockProbe.cs:113,153,155; Runtime/LabRunPolicy.cs:22",
+      "observed": "QueryJob starts marker at1; BurstDiscard sets0 only in managed execution. Passing QueryJob guards require1 for on and0 for off in both Editor suites. Off commands/logs confirm disable flag; on import records Burst enabled and safety enabled; all compiler response sets retain safety defines.",
+      "limit": "The marker specifically proves QueryJob backend. Attributes/IL postprocessing and successful other jobs do not by themselves prove every upstream/collection/pair job executed under Burst. No player AOT proof."
+    },
+    {
+      "scope": "Psyshock array algorithms",
+      "source": "Runtime/PsyshockProbe.cs:18,37; Editor/PsyshockTests.cs:7",
+      "observed": "36 cases per Editor mode:4 finite sphere fixtures x immediate/single/parallel x subdivisions1/2/4. Pair results normalized by source index, reject duplicates and compare exact set against independent inclusive AABB oracle. Real distinct ECS entities preserve alias checks. Known scheduled sphere ray hit/miss, outside/inside signed distance, threshold rejection pass.",
+      "limit": "Pair set equality does not establish iteration order, narrowphase/solver behavior, performance, arbitrary shapes/meshes/compound/baking, non-finite or negative-radius handling."
+    },
+    {
+      "scope": "Modules and QVVS",
+      "source": "Runtime/LabWorld.cs:25; Editor/CoreTests.cs:25; EditorTools/LabEnvironment.cs:51",
+      "observed": "Two owned worlds install QVVS, have distinct sequence numbers, update and dispose; inventory world also performs empty QVVS update. Compilation includes all package modules.",
+      "limit": "Empty installer/update is not populated transform hierarchy correctness. No optional Kinemation/Myri/Calligraphics/Mimic installer, scene-streaming pipeline, renderer/audio, solver, gameplay or SPF bridge acceptance. installedManagedSystems is not an unmanaged execution trace."
+    }
+  ],
+  "remaining_gates": [
+    "Repeat clean import plus Editor on/off/reentry in a new dedicated project and caches",
+    "Desktop IL2CPP build",
+    "Actual desktop player execution and output witness",
+    "Physical Android/iOS targets and devices",
+    "Product integration/full gameplay acceptance and S2 bridge",
+    "Optional module runtime acceptance and comprehensive leak/performance claims"
+  ],
+  "repository_changes": "NONE",
+  "native_launches_by_auditor": 0
+}

@@ -1,6 +1,6 @@
 # Frozen Local cleanup experiment
 
-Status: **local tool preparation only; neither arm has run in Unity**. This implements the approved one-page design. The independent bootstrap correction remains commit `642e508b3ca53ba80b179ca4831c07bc3d85d50b`; the experiment tools are a separate child commit. The original [bda5bc7 attempt-2 control](BootstrapContractCorrection-20261008.md) remains a recorded 45/49 EditMode/on failure, not an original S1a pass. No product/S2 change is included.
+Status, 2026-10-08: **matched unpatched Local control reproduced 45/49; patched Local Editor completed all five phases**. [The exact b6ef271 milestone](PatchedLocalEditorMilestone-20261008.md) retains archive/report hashes and the complete verification boundaries. The independent bootstrap correction and all frozen fixture bytes are common to the Local/Local comparison. The original [bda5bc7 attempt-2 control](BootstrapContractCorrection-20261008.md) remains failed. Repeat/player/mobile gates are pending; no product/S2 change is included.
 
 ## One experiment, two separately released arms
 
@@ -31,7 +31,7 @@ Local locks must show the exact canonical file path, local source, original pack
 
 PackageInfo records actual `source`, `packageId`, `resolvedPath`, version and experiment identity. The registered Latios package must be **Local** at the verified physical path; the original 0.11.5 package.json remains unchanged. The environment record identifies the sealed experiment-record SHA, whose contents bind upstream and patch/inventory identity. Every fixture's existing Verify entry additionally checks that Unity loaded the gated physical Local package. [source](https://docs.unity3d.com/2022.3/Documentation/ScriptReference/PackageManager.PackageInfo-source.html) and [resolvedPath](https://docs.unity3d.com/2022.3/Documentation/ScriptReference/PackageManager.PackageInfo-resolvedPath.html) describe the actual loader source, not the semantic release version. Logical compiler paths may still begin `Packages/com.latios.latiosframework`; those paths alone are not source provenance.
 
-The exact observed Local lock/packageId formatting remains a native unknown in this Editor. The validators fail closed if it differs; they will not relabel arbitrary bytes as the approved package. The Git-control path, when no experiment is selected, still requires the original Git pin and now also verifies registered Latios provenance.
+The milestone verifies actual Local lock/packageId formatting in this exact Editor/source run. Future runs still fail closed if it differs; the validator never relabels arbitrary bytes as the approved package. The Git-control path, when no experiment is selected, still requires the original Git pin and verifies registered Latios provenance.
 
 ## Gate and launch contract
 

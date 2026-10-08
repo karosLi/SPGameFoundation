@@ -1,5 +1,7 @@
 # S1a isolated lab preparation
 
+Current milestone, 2026-10-08: [exact b6ef271 patched Local Editor controls passed and their full evidence is verified](../Latios2022Lab/Docs/PatchedLocalEditorMilestone-20261008.md). Original Git/Local failures are preserved. Conditional repeat-import/player tooling is locally prepared without changing frozen C#, native source or the published Editor gate; those new native stages remain NOT_RUN. The paragraphs below preserve the earlier preparation chronology.
+
 2026-10-07. Implementation staging of [the Unity 2022 blueprint](LatiosUnity2022IntegrationBlueprint.md); this record supersedes the blueprint's "nothing implemented" description only for this bounded preparation, not its native acceptance gates.
 
 The new [Latios2022Lab](../Latios2022Lab/README.md) is a separate Unity project inside the repository, outside the product `Assets`, with its own Packages, ProjectSettings, Library/cache and gated launcher. It pins Unity 2022.3.62f2 and original Latios 0.11.5 commit `381a77dbf774ff603014d5695ef6c06abaa25d96`. It adds no root package, runtime backend, S1b patch, CI job or default gameplay change.

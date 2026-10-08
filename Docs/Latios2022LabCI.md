@@ -1,6 +1,6 @@
 # Deliberately released S1a Editor CI
 
-Status, 2026-10-08: [original control imports and reaches the strict cleanup oracle](../Latios2022Lab/Docs/BootstrapContractCorrection-20261008.md). Run 37761086135 attempt 2 compiled all four assemblies and passed import; EditMode/on has 45 passed and 4 cleanup failures out of 49, with two independent owned bootstrap assertions. The complete 65-file archive and both 12-file compiler snapshots are verified. Later test phases remain NOT_RUN. The pending bootstrap correction has static checks only and does not repair the pristine upstream cleanup path. The [lab protocol](../Latios2022Lab/README.md) and [blueprint](LatiosUnity2022IntegrationBlueprint.md) remain the acceptance authority.
+Status, 2026-10-08: [the exact b6ef271 patched Local Editor experiment](../Latios2022Lab/Docs/PatchedLocalEditorMilestone-20261008.md) passed import, 49/49 EditMode on/off and 1/1 PlayMode on/off in run 37813671446 attempt 1. All 327 archive members, 24 package tars and 12 genuine locks are verified. Original Git and unpatched Local controls remain four-failure results; repeat/player/mobile gates remain NOT_RUN and S1a incomplete. The [lab protocol](../Latios2022Lab/README.md) and [blueprint](LatiosUnity2022IntegrationBlueprint.md) remain the acceptance authority.
 
 Preparation correction (2026-10-08): the owned `LabPlayerBuild` Editor helper now
 fully qualifies `UnityEditor.Build.Il2CppCodeGeneration.OptimizeSize`. The exact
@@ -95,3 +95,26 @@ The [frozen two-arm protocol](../Latios2022Lab/Docs/CleanupVariantProtocol-20261
 The runtime gate binds the full experiment-record bytes, paths, upstream inventory, arm and patch identity. Source/oracle and whole external-package integrity are checked before/after every phase; no real Local lock is supplied until Unity creates it. A failed control stays FAILED. A control EditMode/on exit 0 is recorded as UNEXPECTED_PASS and stops the wrapper for review, without altering the native XML or launching the other arm. Only the patched arm can complete this experiment's five-phase Editor acceptance; original S1a/player/mobile status is separate.
 
 Current artifact names include `latios-s1a-<run>-<attempt>-<git-control-or-arm>-early-review` / `-partNN`. Full evidence includes immutable package tar snapshots and hash inventories; early review includes bounded complete metadata, never the tar payload. The 16 MiB early and existing full archive limits are unchanged. Historical artifacts retain their original names and identities.
+
+## Conditional repeat and player preparation
+
+`Latios2022Lab/Tools/followup.py` is a separate, default-closed local runner. It does not change this workflow, issue a CI request, reserve a runner, edit frozen C# or promote the old control. [The milestone](../Latios2022Lab/Docs/PatchedLocalEditorMilestone-20261008.md) records precise native scope and all retained evidence hashes.
+
+No arguments print a plan only. `--check --gate /absolute/released.json` verifies local prerequisites without remote calls or native launch. `--execute --gate /absolute/released.json --workspace /new/absolute/workspace --editor /absolute/installed/Unity` also verifies live P0/Editor workflow state and both native queues before each phase. Only the execution lead may use it after reserving the existing Mac. No valid release example is committed.
+
+The external JSON gate contains:
+
+- `schema`: `latios-followup-v1`; `stage`: `repeat-clean-import` or `mac-il2cpp-smoke`
+- `allowed_phases`: exactly `["import"]` or `["import", "player-build", "player-run"]`, respectively
+- `tool_commit`: exact clean checkout SHA of this preparation tool; `source_commit` and `source_tree`: exact historical native source verified by Editor and reused without source edits for repeat and player
+- `target`: `StandaloneOSX`; `burst`: `on`; `architecture`: explicitly selected `arm64` or `x86_64`. The tool checks/launches this slice; it does not retarget the build or silently use Rosetta/an alternate slice
+- `repository`, `p0_commit`, `p0_native_status`, `p0_native_evidence_reviewed`, `p0_evidence_url`, `runner_reserved`, `coordinator`, `expires_utc`: same truthful P0/review/short-lived reservation facts as above
+- `experiment`: the exact existing patched Local profile, including official commit/tree and approved patch/inventory hashes
+- `editor_evidence`: `{root, manifest_sha256, reviewed, run_url}`. `root` is the canonical directory containing restored `ci-summary.json` and `evidence-sha256.json`; the digest binds the latter, not the ZIP's separate part manifest. `reviewed` means original package/native/source evidence was inspected, not just a green badge. `run_url` identifies the exact completed run and attempt
+- For player only, `repeat_evidence`: the same four-field evidence binding for the separately completed `repeat-clean-import` receipt. Its original source, Editor prerequisite and physically separate project/cache must match; its `run_url` is the coordinator's evidence location, not an automatically fabricated Actions run
+
+Each stage creates its own new detached worktree, source-preserving package arm, Library/cache, real lock and immutable snapshots. The external tool's new revision is never relabelled as the older native source. The original source remains selectable specifically so a Python-only preparation change does not force changes to its compiled fixtures or rewrite old evidence. `lab.py` and its existing schema remain untouched; this wrapper owns only the additional conditional sequence and uses the frozen source's existing command/environment helpers.
+
+Player preparation changes only run-unique company/product names in disposable normalized settings; the existing build helper selects IL2CPP/OptimizeSize/Development. Before/configured/after-build settings and explicit deltas/hashes are retained. A fresh application-data directory, exact build report, actual IL2CPP setting, selected executable architecture, bounded execution, new result, matching log JSON and unchanged app inventory are all required. The original frozen result has no nonce, so `player-launch.json` binds its hash to the source/tree, sealed package record, run UUID, unique application identity, actual executable/app hash, command, exit and original log. A stale result, missing JSON, timeout or nonzero exit cannot pass.
+
+Original errors and partial evidence are retained on failure. Each Unity phase retains its 30-minute limit; player execution has 180 seconds, with TERM/KILL confined to that newly created process group. Missing IL2CPP/module/SDK or a build lacking the chosen architecture blocks that attempt; installation, preference/security changes and alternate backends are outside this runner. The bounded result is DisposeWorld/pair/query AOT smoke, not full lifecycle or mobile coverage. Both stage summaries leave `s1a: INCOMPLETE`, original controls failed, mobile and S2 pending for separate review.

@@ -1,0 +1,39 @@
+{
+  "verified_at": "2026-10-08T18:44:46.302687+00:00",
+  "scope": "Conditional preparation only; no native process, queue allocation, release gate or publication",
+  "native_source_commit": "b6ef271fc8eded93c6e79c0dfcf90917b72b7945",
+  "native_source_tree": "dbda0866da350caa91029ce2d1cae855c61ce06b",
+  "available_local_precursor": "33a92bc3c8cc3d23bbf99c34190491d9e2722184",
+  "preflight": "STATIC_PREFLIGHT_ONLY",
+  "checks": {
+    "lab_python_tests": 79,
+    "ci_python_tests": 33,
+    "new_followup_tests": 16,
+    "frozen_oracle_hashes": 26,
+    "archived_original_file_hashes": 326,
+    "archived_phase_source_command_and_records_checked": 5,
+    "independent_review_findings": "Both findings fixed and independently rechecked",
+    "csharp_asmdef_fixture_workflow_and_original_launchers_diff": "NONE"
+  },
+  "tests_are": "Synthetic parser/process fixtures only; original 623181044-byte evidence inventory was separately reread without native execution",
+  "hashes": {
+    "Latios2022Lab/Tools/followup.py": "2bb44078fe6a7dd2b4ff1a7e3d8269c40a140a7afa638997ddc2a1fae344a44e",
+    "Latios2022Lab/Tools/test_followup.py": "e6546fc744ca8e1aa8192acf31f8efd418b81d971b2015e007a615e18fbd41cf"
+  },
+  "native": {
+    "repeat_clean_import": "NOT_RUN",
+    "player_build": "NOT_RUN",
+    "player_execution": "NOT_RUN",
+    "mobile": "NOT_RUN",
+    "s1a": "INCOMPLETE",
+    "s2": "NOT_RUN"
+  },
+  "commands": [
+    "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s Latios2022Lab/Tools -p 'test_*.py' -q",
+    "PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s Tools/ci -p test_latios_lab_ci.py -q"
+  ],
+  "log_hashes": {
+    "local-lab-tests.log": "7527650e930e0e84d9525c6d26a7cd74d23133e71e927f2f028d43b0a27915da",
+    "local-ci-tests.log": "9da75eaa237855f0bb723d50b471bd8c2f86fbe714647babae48a531367b616a"
+  }
+}

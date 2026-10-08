@@ -1,0 +1,107 @@
+POST-RUN INTEGRITY: {"experiment_evidence": "synthetic post-run write failure"}
+POST-RUN INTEGRITY: {"experiment_evidence": "synthetic post-run write failure"}
+POST-RUN INTEGRITY: {"integrity_evidence": "synthetic post-run write failure"}
+POST-RUN INTEGRITY: {"integrity_evidence": "synthetic post-run write failure"}
+POST-RUN INTEGRITY: {"product_inputs": "synthetic product read failure"}
+POST-RUN INTEGRITY: {"product_inputs": "synthetic product read failure"}
+----------------------------------------------------------------------
+Ran 79 tests in 2.281s
+
+OK
+{
+  "status": "PLAN_ONLY",
+  "native": "NOT_RUN",
+  "stages": {
+    "repeat-clean-import": [
+      "import"
+    ],
+    "mac-il2cpp-smoke": [
+      "import",
+      "player-build",
+      "player-run"
+    ]
+  },
+  "prerequisites": "Reviewed same-source patched Editor evidence; separate fresh repeat proof before player; released queue."
+}
+{
+  "status": "STATIC_PREFLIGHT_ONLY",
+  "editor": "2022.3.62f2",
+  "latios_commit": "381a77dbf774ff603014d5695ef6c06abaa25d96",
+  "project": "/workspace/scratch/dc59b980bb73/SPGameFoundation-latios-conditional-player-smoke/Latios2022Lab",
+  "editor_revision": null,
+  "resolved_lock": "NOT_RESOLVED",
+  "editor_manifest_additions": {},
+  "native": "NOT_RUN",
+  "assemblies": [
+    "Latios2022Lab.Editor",
+    "Latios2022Lab.EditorTools",
+    "Latios2022Lab.PlayMode",
+    "Latios2022Lab.Runtime"
+  ],
+  "experiment": null
+}
+PLAN ONLY: /not-installed/Unity -batchmode -projectPath /workspace/scratch/dc59b980bb73/SPGameFoundation-latios-conditional-player-smoke/Latios2022Lab -buildTarget StandaloneOSX -logFile /workspace/scratch/dc59b980bb73/SPGameFoundation-latios-conditional-player-smoke/Latios2022Lab/Artifacts/20261008T184538Z-editmode-on-e2bd613e/unity.log --burst-force-sync-compilation -runTests -testPlatform EditMode -assemblyNames Latios2022Lab.Editor -testResults /workspace/scratch/dc59b980bb73/SPGameFoundation-latios-conditional-player-smoke/Latios2022Lab/Artifacts/20261008T184538Z-editmode-on-e2bd613e/tests.xml
+{
+  "status": "STATIC_PREFLIGHT_ONLY",
+  "editor": "2022.3.62f2",
+  "latios_commit": "381a77dbf774ff603014d5695ef6c06abaa25d96",
+  "project": "/workspace/scratch/dc59b980bb73/SPGameFoundation-latios-conditional-player-smoke/Latios2022Lab",
+  "editor_revision": null,
+  "resolved_lock": "NOT_RESOLVED",
+  "editor_manifest_additions": {},
+  "native": "NOT_RUN",
+  "assemblies": [
+    "Latios2022Lab.Editor",
+    "Latios2022Lab.EditorTools",
+    "Latios2022Lab.PlayMode",
+    "Latios2022Lab.Runtime"
+  ],
+  "experiment": null
+}
+PLAN ONLY: /not-installed/Unity -batchmode -projectPath /workspace/scratch/dc59b980bb73/SPGameFoundation-latios-conditional-player-smoke/Latios2022Lab -buildTarget StandaloneOSX -logFile /workspace/scratch/dc59b980bb73/SPGameFoundation-latios-conditional-player-smoke/Latios2022Lab/Artifacts/20261008T184538Z-import-on-5ab08dfe/unity.log --burst-force-sync-compilation -quit -executeMethod Latios2022Lab.LabEnvironment.CaptureEnvironment
+{}
+PLAN ONLY: /bin/true -batchmode -projectPath /tmp/tmp8f_410h0/Latios2022Lab -buildTarget StandaloneOSX -logFile /tmp/tmp8f_410h0/Latios2022Lab/Artifacts/20261008T184538Z-import-on-4134da69/unity.log --burst-force-sync-compilation -quit -executeMethod Latios2022Lab.LabEnvironment.CaptureEnvironment
+{}
+PLAN ONLY: /bin/true -batchmode -projectPath /tmp/tmpu3ol3yas/Latios2022Lab -buildTarget StandaloneOSX -logFile /tmp/tmpu3ol3yas/Latios2022Lab/Artifacts/20261008T184538Z-import-on-a0594537/unity.log --burst-force-sync-compilation -quit -executeMethod Latios2022Lab.LabEnvironment.CaptureEnvironment
+{}
+PLAN ONLY: /bin/true -batchmode -projectPath /tmp/tmp8krcuplo/Latios2022Lab -buildTarget StandaloneOSX -logFile /tmp/tmp8krcuplo/Latios2022Lab/Artifacts/20261008T184538Z-import-on-ab7c3224/unity.log --burst-force-sync-compilation -quit -executeMethod Latios2022Lab.LabEnvironment.CaptureEnvironment
+{}
+PLAN ONLY: /bin/true -batchmode -projectPath /tmp/tmpuno1ujnd/Latios2022Lab -buildTarget StandaloneOSX -logFile /tmp/tmpuno1ujnd/Latios2022Lab/Artifacts/20261008T184538Z-import-on-ed159faa/unity.log --burst-force-sync-compilation -quit -executeMethod Latios2022Lab.LabEnvironment.CaptureEnvironment
+{}
+PLAN ONLY: /bin/true -batchmode -projectPath /tmp/tmp5ikpi_od/Latios2022Lab -buildTarget StandaloneOSX -logFile /tmp/tmp5ikpi_od/Latios2022Lab/Artifacts/20261008T184538Z-import-on-3c4fc22c/unity.log --burst-force-sync-compilation -quit -executeMethod Latios2022Lab.LabEnvironment.CaptureEnvironment
+{}
+PLAN ONLY: /bin/true -batchmode -projectPath /tmp/tmpu29nstvf/Latios2022Lab -buildTarget StandaloneOSX -logFile /tmp/tmpu29nstvf/Latios2022Lab/Artifacts/20261008T184538Z-import-on-2c8d8bf7/unity.log --burst-force-sync-compilation -quit -executeMethod Latios2022Lab.LabEnvironment.CaptureEnvironment
+{
+  "status": "STATIC_PREFLIGHT_ONLY",
+  "editor": "2022.3.62f2",
+  "latios_commit": "381a77dbf774ff603014d5695ef6c06abaa25d96",
+  "project": "/workspace/scratch/dc59b980bb73/SPGameFoundation-latios-conditional-player-smoke/Latios2022Lab",
+  "editor_revision": null,
+  "resolved_lock": "NOT_RESOLVED",
+  "editor_manifest_additions": {},
+  "native": "NOT_RUN",
+  "assemblies": [
+    "Latios2022Lab.Editor",
+    "Latios2022Lab.EditorTools",
+    "Latios2022Lab.PlayMode",
+    "Latios2022Lab.Runtime"
+  ],
+  "experiment": null
+}
+{
+  "status": "STATIC_PREFLIGHT_ONLY",
+  "editor": "2022.3.62f2",
+  "latios_commit": "381a77dbf774ff603014d5695ef6c06abaa25d96",
+  "project": "/workspace/scratch/dc59b980bb73/SPGameFoundation-latios-conditional-player-smoke/Latios2022Lab",
+  "editor_revision": null,
+  "resolved_lock": "NOT_RESOLVED",
+  "editor_manifest_additions": {},
+  "native": "NOT_RUN",
+  "assemblies": [
+    "Latios2022Lab.Editor",
+    "Latios2022Lab.EditorTools",
+    "Latios2022Lab.PlayMode",
+    "Latios2022Lab.Runtime"
+  ],
+  "experiment": null
+}

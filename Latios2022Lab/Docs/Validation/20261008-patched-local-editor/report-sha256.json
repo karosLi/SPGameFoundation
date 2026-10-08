@@ -1,0 +1,19 @@
+{
+  "verification-summary.json": "a7fdcdd6518254e9034559f543aae9963024cc6961774e2fc572b4b5cee0ea43",
+  "official-upstream-commit.json": "cf02c22b31d9b61628de127fbe80296c84299151d4adca79bea515e1523e81d7",
+  "evidence-manifest.json": "057131583ed2d701e0c5910af6df6b065d16a8ce4e661ef7b84ba70e5e23710b",
+  "verify_supplemental_evidence.py": "93845b46b6320bcbe1c4aaf6796ff7ea0d4487125c2b8774ad7c64723ae4dd8a",
+  "source-semantics-audit.json": "3875c6a44a3f7165386d3943962b9c4b036e720ebc55f6f437675d4f7eb88b8c",
+  "terminal-run.json": "b4f3fb3ab9f744d4be7782f38385d73f9cc16ef5e98046ac169205bb597a1c5c",
+  "editor-control-job.log": "9a564bc2c30f0bf361b965974efbf42925402e6b1ae05c043b05feea6b7f5bac",
+  "verify_patched_snapshots.py": "2ee3b65fb30c3d0bd5ad469adcda5b089e3465800f9721cf985c065b396037ac",
+  "matched-release-comparison.json": "88ec1528abe510b7144010bd601a4070b6922792c7fc0de9fb8fa27b3079b69e",
+  "terminal-jobs.json": "1afbe5aa22a8b449d1a5d46d65ba1d0b874050d3c4358129a50d8b95986ce602",
+  "source-semantics-audit.md": "6e387b7037a3cb8802a599830da744342efcb570128ceab4daedb43b29982dc3",
+  "artifact-integrity-verification.json": "1f4a870804303a8b37a4806846f7f93af9cae038d3329084c93f0d8bd99cae52",
+  "official-artifacts.json": "6a0eb9a3ea42a7c8ce0cc6feb047e277fd8281d503087cd4c94eeb3b537cc0d1",
+  "verify_restore_artifacts.py": "7e6cfbaf839ca06ad69ac4f5c907cbb676eb07b04a16d0dd927237d66490ab84",
+  "independent-snapshot-verification.json": "b4b4603a1abd263f1014612423c9f7e324fd713e3ee6cca08c0bc4f72d496a6d",
+  "supplemental-verification.json": "7e9baeca6a791567d7316ba54da4c0e45be901410a237bbe504a137d670b3d26",
+  "verification-report.md": "fde933fb9b75445015fe0e676df8235fb8a81446beb300425d7ba0b38f441b85"
+}

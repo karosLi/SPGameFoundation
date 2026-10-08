@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "reviewed_source_commit": null,
-  "review_scope": "All 11 owned C# files and four asmdefs; original native baseline plus the listed pending corrections. Exact current identity is source/asmdef SHA256 below, not a claimed native pass.",
+  "review_scope": "All 11 owned C# files and four asmdefs; native baseline bda5bc7 attempt 2 compiled all four and reached strict cleanup failure. Current hashes include only the pending owned bootstrap correction; its native validation is not inherited.",
   "pins": {
     "Unity": "2022.3.62f2",
     "Latios": "381a77dbf774ff603014d5695ef6c06abaa25d96",
@@ -22,7 +22,7 @@
     "Assets/Latios2022Tests/Runtime/LabCollection.cs": "a667221f9032cd13870d842ca6af42384398c1af4140b355c5a5348501eca069",
     "Assets/Latios2022Tests/Runtime/LabPlayerSmoke.cs": "a0f110ce8ee87bb8530500658a106a1a8cc34c2133449b932e2c49a992e5cb03",
     "Assets/Latios2022Tests/Runtime/LabRunPolicy.cs": "2173e39e37e073b49623bb976abc0aae6eeedfc3460b7c1e4c49c669e041967d",
-    "Assets/Latios2022Tests/Runtime/LabWorld.cs": "023eb6d9da90649fef004a520ad0ac0a0e0d3fc992743a194592fb4ff97bf08c",
+    "Assets/Latios2022Tests/Runtime/LabWorld.cs": "f627b34ed475dc9dadd60f9378e809b6f1a2c4e4f31046a494681f8713910370",
     "Assets/Latios2022Tests/Runtime/PsyshockProbe.cs": "55aa253aa446743da4db0f76054ea537ebf3d77b44fc70bbb69598c9f5b93ae1"
   },
   "assemblies": {
@@ -88,10 +88,8 @@
       ]
     }
   },
-  "reviewed_base_commit": "8bca004c57ba1fe89cc7858372e233c3738982e6",
+  "reviewed_base_commit": "bda5bc72bf03d99d0b2ff96f6af1388130b165e3",
   "reviewed_changes": [
-    "LabEnvironment: use real NoAllocReadOnlyCollection Count/indexer; preserve sorted string inventory.",
-    "LabWorld: insert real BeginInitializationEntityCommandBufferSystem and empty SceneSystemGroup before sorting.",
-    "Runtime asmdef: add direct Unity.Scenes reference."
+    "LabWorld.cs: fulfill ICustomBootstrap true contract with an empty standard default World; lifecycle belongs to pinned DefaultWorldInitialization shutdown. Not yet compiled or exercised in Unity."
   ]
 }

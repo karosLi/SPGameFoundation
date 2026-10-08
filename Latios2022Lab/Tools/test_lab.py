@@ -255,6 +255,16 @@ class LauncherTests(unittest.TestCase):
         playmode = (root / 'PlayMode/PlayModeTests.cs').read_text()
         self.assertIn('LogAssert.NoUnexpectedReceived();', playmode)
 
+    def test_bootstrap_assigns_an_empty_default_world_before_claiming_success(self):
+        source = (lab.PROJECT / 'Assets/Latios2022Tests/Runtime/LabWorld.cs').read_text()
+        bootstrap = source.split('public sealed class LabBootstrap : ICustomBootstrap', 1)[1].split('public static class LabWorld', 1)[0]
+        assignment = 'World.DefaultGameObjectInjectionWorld = new World(defaultWorldName, WorldFlags.Game);'
+        self.assertIn(assignment, bootstrap)
+        self.assertLess(bootstrap.index(assignment), bootstrap.index('return true;'))
+        for forbidden in ('return false', 'new LatiosWorld', 'GetOrCreateSystem', 'AddSystemsToRootLevelSystemGroups',
+                          'GetAllSystem', 'AppendWorldToCurrentPlayerLoop', 'Dispose(', 'Initialize(string defaultWorldName) => true'):
+            self.assertNotIn(forbidden, bootstrap)
+
     def test_product_manifest_remains_without_latios(self):
         data = json.loads((lab.PROJECT.parent / 'Packages/manifest.json').read_text())
         self.assertNotIn('com.latios.latiosframework', data['dependencies'])

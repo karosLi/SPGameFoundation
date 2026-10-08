@@ -1,6 +1,6 @@
 # S1a owned compilation domain review
 
-2026-10-08. The original review below was frozen against **11 C# files and four asmdefs at `34376351165a7e44e63305c6c47c520f7ddd21bf`**. It found no further compile blocker, and the [fourth run](WorldInventoryCorrection-20261008.md) subsequently compiled all four. That run then exposed inventory enumeration and world-ordering issues. The live [source/assembly hashes](Validation/20261008-compilation-domain/source-review.json) now explicitly identify those pending corrections against native baseline `8bca004`, with no exact tested-commit claim for modified inputs. Historical log evidence below remains tied to its original source, not silently inherited by the pending correction.
+2026-10-08. The original review below was frozen against **11 C# files and four asmdefs at `34376351165a7e44e63305c6c47c520f7ddd21bf`**. Later [attempt 2 of bda5bc7](BootstrapContractCorrection-20261008.md) compiled all four, passed import and reached the original strict cleanup failure. The live [source/assembly hashes](Validation/20261008-compilation-domain/source-review.json) now use that native baseline and identify only the pending owned bootstrap correction; changed-source native validation is not inherited. The historical log evidence below remains tied to its original source.
 
 ## Four assemblies: actual evidence and direct closure
 

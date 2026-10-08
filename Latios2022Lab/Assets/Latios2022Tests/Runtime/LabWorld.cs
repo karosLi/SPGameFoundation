@@ -5,13 +5,19 @@ using UnityEngine.Scripting;
 
 namespace Latios2022Lab
 {
-    // Suppress default game-world injection. Every fixture owns and disposes its world.
+    // Keep the engine's required default World empty. Fixtures own their separate worlds.
     // No broad Unity injection or optional Myri/Kinemation/Calligraphics/Mimic installer.
-    // The owned world explicitly supplies its two standard initialization ordering targets.
+    // Fixture-owned Latios worlds supply their two initialization ordering targets.
     [Preserve]
     public sealed class LabBootstrap : ICustomBootstrap
     {
-        public bool Initialize(string defaultWorldName) => true;
+        public bool Initialize(string defaultWorldName)
+        {
+            // DefaultWorldInitialization registers shutdown before calling this bootstrap.
+            // Its World.DisposeAllWorlds path owns this empty world's exit/reload lifetime.
+            World.DefaultGameObjectInjectionWorld = new World(defaultWorldName, WorldFlags.Game);
+            return true;
+        }
     }
 
     public static class LabWorld

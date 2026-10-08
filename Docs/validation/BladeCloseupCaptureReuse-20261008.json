@@ -1,0 +1,42 @@
+{
+  "baselineRemote": "dc30b164f8f58b0f1b8ddd237229ef179d4b118c",
+  "baselineLocal": "9c04a59d7fa9de5de321fe4e26732f3867dd237a",
+  "baselineTree": "65ff570a7927a38f500d1aac9289b809a2dafc81",
+  "testFixLocal": "4e63d7e8256b3fee5fe8ddd60f636120fda47b84",
+  "testFixTree": "673af3aba89b8f782c0920e7c9bca722adc525b9",
+  "changedPaths": [
+    "Assets/BrawlerFoundation/Tests/PlayMode/BwBladeGripCloseupCaptureDriver.cs",
+    "Assets/BrawlerFoundation/Tests/PlayMode/BwBladeGripCloseupCaptureDriver.cs.meta",
+    "Assets/BrawlerFoundation/Tests/PlayMode/BwBladeGripCloseupCaptureTests.cs",
+    "Docs/BladeGripCloseupDiagnostic.md"
+  ],
+  "identicalProductionPaths": 567,
+  "comparison": "Every path/mode/type/blob outside Docs and Tests is identical; all existing test files except this named fixture are also identical. New driver/meta are test-only.",
+  "canonicalProductionSha256": "658e473e2b6d515f819bd04e46aa2246535170ef9b168e68634ab23e09b8ba67",
+  "nativeBaseline": {
+    "run": 37769061922,
+    "attempt": 1,
+    "EditMode": {
+      "passed": 1710,
+      "failed": 0,
+      "skipped": 5
+    },
+    "PlayMode": {
+      "passed": 173,
+      "failed": 2,
+      "skipped": 1
+    },
+    "failures": "Only both new close-up cases exceeded unchanged30second acquisition deadline; no isolated outputs written. Original failure retained."
+  },
+  "archive": {
+    "parts": 32,
+    "members": 3017,
+    "bytes": 536737932,
+    "sha256": "a5e58657d7901e5768062d9a11aa016e54333c0dc527fe057331e86b46301926",
+    "verification": "All wrappers, parts, whole archive and members size/SHA/CRC verified."
+  },
+  "recordingReuse": "The12 successful optional large normal weapon/grounded/movement sequences are reused from exact production dc30. New close-up cases are required graphics tests, independent of SPF_WEAPON_GAMEPLAY_SEQUENCE. Full ordinary native assertions still run. Two optional BwMovement recording cases remain explicitly skipped on this branch and are not represented as freshly executed.",
+  "conditionalCompile": "Exact integrated fixture/driver hashes equal worker e2df12d; officialUnityNUnit3.5+UTF1.1.33 C#9 native-domain compile0errors, known MSB3277; actualUnitypending. No duplicatefullaggregate for pure excluded-native source.",
+  "newNative": "PENDING",
+  "mobile": "PhysicalAndroid/iOS and usernaturalnessacceptance pending."
+}

@@ -25,7 +25,7 @@ jobs:
       UNITY_EDITOR_PATH: ${{ vars.UNITY_EDITOR_PATH }}
       # This review branch records bounded raw frames after its normal gameplay assertions.
       # Encoding occurs after acquisition; timestamps retain the actual Editor capture cadence.
-      SPF_WEAPON_GAMEPLAY_SEQUENCE: ${{ (github.ref == 'refs/heads/dot/weapon-motion-stage5' || github.ref == 'refs/heads/dot/humanoid-action-cadence') && '1' || '0' }}
+      SPF_WEAPON_GAMEPLAY_SEQUENCE: ${{ (github.ref == 'refs/heads/dot/weapon-motion-stage5' || github.ref == 'refs/heads/dot/humanoid-action-cadence' || github.ref == 'refs/heads/dot/blade-sword-choreography') && '1' || '0' }}
       # Stage E's four short opt-in sequences retain acquisition timestamps and encode afterwards.
       SPF_ABILITY_GAMEPLAY_SEQUENCE: '1'
       # Diagnostic profiling changes allocation/timing. Ordinary CI must remain uninstrumented.

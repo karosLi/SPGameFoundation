@@ -4,6 +4,7 @@ using System.Collections;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Text;
 using BrawlerFoundation.Game;
 using NUnit.Framework;
@@ -111,7 +112,7 @@ namespace BrawlerFoundation.Tests.PlayMode
                 observer.Stop();
                 game.Session.ManualClock = true;
                 game.InputRouter.Scripted.Frame = default;
-                if (observer.Error != null) throw observer.Error;
+                if (observer.Error != null) ExceptionDispatchInfo.Capture(observer.Error).Throw();
                 Assert.AreEqual(FrameBudget, observer.Count);
                 Assert.AreEqual(4, phase, "actual equipment cancellation must return to blade attacks");
                 string directory = observer.Write();
@@ -258,10 +259,14 @@ namespace BrawlerFoundation.Tests.PlayMode
 
             void CapturePrepared()
             {
-                // Test-owned LateUpdate(32000) runs after production BwRenderer.LateUpdate(500).
+                // Test-owned LateUpdate(1000) is after BwRenderer(500), before the
+                // SessionTickLauncher(32000). Completing a new tick here would compare
+                // a future equipment ID with the already prepared actor stream.
                 // No GameView/camera callback is needed. The diagnostic layer is temporarily
                 // excluded from the normal camera, which prevents a second actor draw there.
-                m_Game.Session.Sync();
+                Assert.IsFalse(m_Game.Session.Pipeline.HasPendingTick,
+                    "capture must stay inside the completed-tick presentation window; never Sync a future tick");
+                uint sourceTick = m_Game.Session.Clock.NextTickIndex;
                 var world = m_Game.Session.World;
                 var weapons = world.Resource(BwWeapons.Key);
                 var presenter = m_Game.Renderer.Characters;
@@ -329,6 +334,8 @@ namespace BrawlerFoundation.Tests.PlayMode
                 }
                 finally { RenderTexture.active = previous; }
                 CollectionAssert.AreEqual(sourceSnapshot, m_Game.Session.CaptureSnapshot(), "isolated draw/readback must not mutate simulation");
+                Assert.AreEqual(sourceTick, m_Game.Session.Clock.NextTickIndex, "capture must not advance the source tick");
+                Assert.IsFalse(m_Game.Session.Pipeline.HasPendingTick, "capture must not schedule a new tick");
                 for (int i = 0; i < ActorParts; i++)
                 {
                     var source = presenter.ReadPart(offset + i);

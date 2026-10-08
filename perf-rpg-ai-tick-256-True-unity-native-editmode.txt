@@ -1,0 +1,6 @@
+runtime=unity-native-editmode
+RPG complete tick ABBA; A=frozen 1c9731a AI executor; B=bounded tree; both use corrected canonical queues. monsters=256; clustered=True; warmup=90; each window=120 ticks at 30Hz, restored same evolved snapshot.
+Legacy: mean=0.13927 p50=0.13800 p95=0.17730 worst=0.19710 ms
+Tree: mean=0.13830 p50=0.13620 p95=0.16800 worst=0.23230 ms
+Exact complete snapshots all four windows=PASS.
+Includes original perception/line-of-sight, both NPC/player actions, navigation, collisions, damage, lifecycle, scheduler and completed jobs; feedback drained identically. All decision rates identical. No render/GPU/device evidence. Stub timings do not prove Burst; timing is report-only and tree reuse is not a speed claim.

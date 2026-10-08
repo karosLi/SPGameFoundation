@@ -44,8 +44,8 @@ namespace SPF.Tests.EditMode
                 : phase < input.Weapon.ActiveEndPhase ? WeaponStage.Active : WeaponStage.Recovery;
         }
 
-        [TestCase(1001, .40f)] [TestCase(1002, .25f)] [TestCase(1003, .35f)] [TestCase(1004, .22f)]
-        public void AnticipationLiftsRenderedHandAfterFinalIk(int weapon, float minimumLift)
+        [TestCase(1003, .35f)] [TestCase(1004, .22f)]
+        public void CastAndBowAnticipationLiftRenderedHandAfterFinalIk(int weapon, float minimumLift)
         {
             using (var rig = NaturalCharacterRig.Create())
             using (var local = new NativeArray<BoneLocal>(NaturalCharacterRig.Bones, Allocator.Temp))
@@ -69,8 +69,9 @@ namespace SPF.Tests.EditMode
                     float2 hand = world[NaturalCharacterRig.Hand].Position;
                     float2 shoulder = world[NaturalCharacterRig.NearArm].Position;
                     string context = "weapon=" + weapon + " role=" + role + " face=" + face;
-                    // Baseline hand lifts were .28/.07/.02/-.02 model units. Check the rendered
-                    // result after weapon IK, so an earlier overwritten arm layer cannot satisfy this.
+                    // Casting and bow-raising require elevation. Blade and sword have separate
+                    // trajectory/extension/clearance controls; a universal lift criterion rewarded
+                    // the rejected sword pump. Always inspect the final result after weapon IK.
                     Assert.Greater((hand.y - idleHand.y) / input.Scale, minimumLift, context);
                     Assert.Greater((hand.y - shoulder.y) / input.Scale, -.015f, "readable shoulder-height anticipation " + context);
                     Assert.Greater((world[NaturalCharacterRig.NearForearm].Position.y - idleElbow.y) / input.Scale,

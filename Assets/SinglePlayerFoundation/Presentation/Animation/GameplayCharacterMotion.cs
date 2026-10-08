@@ -379,7 +379,11 @@ namespace SPF.Presentation.Animation
             // A near-vertical held aim passes close to the chest in this projected rig. A small
             // backward chest shift leaves shoulder/elbow room at rest as well as during the lift.
             if(input.Weapon.Equipped)torso.Position.x-=.14f*(1-math.saturate(math.abs(motion.WeaponAim.x)));
-            torso.Rotation=-.035f-lean-depth-profile.BodySway*motion.Gait-pelvis.Rotation*.65f+weapon.Body+skill.Body*skillBodyWeight-.12f*motion.Attack+motion.Hit*.24f*profile.HitRecoil;
+            // Melee weapon body keys already own loading/contact/recovery. Adding the generic
+            // punch lean makes the shoulder chase the hand and erases the sword's elbow extension.
+            bool meleeWeapon=WeaponMotion.Acting(input.Weapon)&&(input.Weapon.Family==WeaponActionFamily.Slash||input.Weapon.Family==WeaponActionFamily.Thrust);
+            float punchLean=meleeWeapon?0:motion.Attack;
+            torso.Rotation=-.035f-lean-depth-profile.BodySway*motion.Gait-pelvis.Rotation*.65f+weapon.Body+skill.Body*skillBodyWeight-.12f*punchLean+motion.Hit*.24f*profile.HitRecoil;
             torso.Rotation+=.065f*(motion.Turn*motion.Facing-1)+.08f*anticipation+.12f*collapse;
             torso.Rotation-=math.clamp(motion.Acceleration*motion.Facing*.004f,-.045f,.045f);
             local[at+NaturalCharacterRig.Torso]=torso;

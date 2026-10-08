@@ -1,5 +1,7 @@
 # Humanoid arm motion and walking cadence
 
+Historical checkpoint: the later delivered `e0233871` blade/sword footage was rejected as unnatural. The universal high-hand melee criterion below is superseded by [family-specific choreography and final-FK red controls](BladeSwordChoreographyValidation.md). Earlier numerical/native successes do not grant visual acceptance.
+
 This isolated presentation change starts from local `c0c2cc6e3ec7f41595ba390c98e753552e389d14` (the frozen integration source). It responds to the 2026-10-08 report that attacking arms do not lift and walking looks too slow. Native evidence for the new source is **pending**; numerical results do not approve naturalness.
 
 ## Confirmed cause and scope

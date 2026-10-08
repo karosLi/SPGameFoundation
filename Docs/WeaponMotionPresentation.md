@@ -1,5 +1,7 @@
 # Continuous gameplay motion and held weapons
 
+The [blade/sword choreography correction](BladeSwordChoreographyValidation.md) records why delivered `e0233871` motion was rejected, the unchanged-source red controls, and the bounded replacement. Numerical checks do not establish naturalness; new native 1× acceptance remains pending.
+
 The 2026-10-08 [humanoid arm and walking-cadence correction](HumanoidActionCadenceValidation.md) records the final-IK diagnosis, phase-authored lift and recovery, fixed-speed cadence measurements and new regressions. Its exact-source native video review remains pending; earlier checkpoints below do not validate that change.
 
 The actual shared `GameplayCharacterPresenter` now consumes the authoritative `SPF.Contracts.Weapons.WeaponViewState` supplied by Brawler and Survivor. The four original outlined silhouettes are saber/刀 (slash, free supporting arm), sword/剑 (two-hand thrust), staff/法杖 (two grips and a cast socket), and bow/弓箭 (bow hand, string hand, live string and arrow release). These are presentation of the shared equipment/action runtime, not an independent decorative inventory or damage system.

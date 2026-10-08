@@ -1,0 +1,253 @@
+{
+  "baseline": {
+    "published_commit": "e0233871a47ef5dc0ef505fe911acc5da2d4cc7d",
+    "local_equivalent": "b2013a8",
+    "tree": "dd6c05eff7b633bc82410a0ff168bb9c23ba9a56",
+    "new_controls_passed": 0,
+    "new_controls_failed": 9,
+    "visual_acceptance": "rejected by user"
+  },
+  "source_sha256": {
+    "Assets/SinglePlayerFoundation/Presentation/Animation/GameplayCharacterMotion.cs": "5ee728257f8a15c280787c4be953fe22af307a69a69223811af12931550d59ff",
+    "Assets/SinglePlayerFoundation/Presentation/Animation/WeaponMotion.cs": "3bc819ddfa4621d2edf98daec41b115090b4c55ba0b39822a4fd964aacb35d98",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/BladeSwordChoreographyTests.cs": "055836ad1c6587182059fdab7b20a751192cb36eec9dde981af80e1a2a9b6b29",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/HumanoidActionMotionTests.cs": "c3a205834743689506c44514357f49e4d895c330f1b9a4ea296dd189cf8378c4",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/WeaponMotionTests.cs": "1b6850a1609c7a483952a7517aaed72ada252317226c17dd36b048eb4e9c3cbd"
+  },
+  "toolchain": {
+    "dotnet_sdk": "8.0.425",
+    "unity_mathematics": "f110c8c230d253654afed153569030a587cc7557",
+    "nuget_vulnerability_audit": false
+  },
+  "focused": {
+    "passed": 104,
+    "failed": 0,
+    "skipped": 0
+  },
+  "aggregate": {
+    "runs_after_freeze": 1,
+    "projects_built": 78,
+    "build_warnings": 0,
+    "build_errors": 0,
+    "aggregate_file_count": 27,
+    "outcomes": {
+      "Passed": 1625,
+      "NotExecuted": 6
+    },
+    "assemblies": [
+      {
+        "assembly": "BrawlerFoundation.Tests.EditMode",
+        "counts": {
+          "Passed": 192
+        },
+        "sha256": "d1ea820d3022ce05787b667e51c9d600087ed0790deb6c00487f5a00a7d0c69b"
+      },
+      {
+        "assembly": "BrawlerFoundation.Tests.PlayMode",
+        "counts": {},
+        "sha256": "475549851be4370d850e643155d6ad7102cdcd1febf13fe672bc6996961e142d"
+      },
+      {
+        "assembly": "DefenseFoundation.Tests.EditMode",
+        "counts": {
+          "Passed": 8
+        },
+        "sha256": "526383f8f32a1c9fd195c72f88a3d8236348dfb6c4f24ad132eb299abdb2f113"
+      },
+      {
+        "assembly": "DefenseFoundation.Tests.PlayMode",
+        "counts": {},
+        "sha256": "05cc7de8c2512b161ee9da6ccb3a602152d2e17ecb5e6556600a736f8b498d0e"
+      },
+      {
+        "assembly": "FoundationAcceptance.Tests.EditMode",
+        "counts": {
+          "Passed": 9
+        },
+        "sha256": "6c4b53d434ba2b8ecaf5d789df797adc2464e335f77581543750ff81190dedd7"
+      },
+      {
+        "assembly": "PlatformerFoundation.Tests.EditMode",
+        "counts": {
+          "Passed": 18
+        },
+        "sha256": "661186337265da958c62761ba6ea21cb980018c69547411709ef2ad294bfa560"
+      },
+      {
+        "assembly": "PlatformerFoundation.Tests.PlayMode",
+        "counts": {},
+        "sha256": "6ba157a374d797685c1735448be9ef72455dc9ff5237b7f5874c7a451ac3082f"
+      },
+      {
+        "assembly": "PuzzleFoundation.Tests.EditMode",
+        "counts": {
+          "Passed": 7
+        },
+        "sha256": "a9501b16bfe73149cf2f39da64d52c6bafae461cf5f04b06b5fd584167406244"
+      },
+      {
+        "assembly": "PuzzleFoundation.Tests.PlayMode",
+        "counts": {},
+        "sha256": "17c1dbce4302286830cdd2ea4f3473f6882034deb1d8998b67111f59e0be5e4e"
+      },
+      {
+        "assembly": "RpgFoundation.Tests.EditMode",
+        "counts": {
+          "Passed": 88,
+          "NotExecuted": 2
+        },
+        "sha256": "b100b26209a6c48a5ac108cf7452a533db7464c17a4b36d30524b7e01a16a374"
+      },
+      {
+        "assembly": "RpgFoundation.Tests.PlayMode",
+        "counts": {},
+        "sha256": "f0ae8b79427f0c5513d6a731d1b0ba9befe0518813834e972e0002aeb8be14fb"
+      },
+      {
+        "assembly": "SPF.Audio.Tests.PlayMode",
+        "counts": {},
+        "sha256": "ab96e32aaf474ab7d730a2c311584725bb74e60e2ab3841ad6e304f742607a62"
+      },
+      {
+        "assembly": "SPF.Characters.Tests.PlayMode",
+        "counts": {},
+        "sha256": "77fcc6cdf8c8a009135584643323463ea776802dbf7e3c4c59f5d27363b327b6"
+      },
+      {
+        "assembly": "SPF.Motion.Tests.PlayMode",
+        "counts": {},
+        "sha256": "abad7f3f3e34e1fd86e17b6b7448dc16e70a82dabecb367cf59f03a382f7484c"
+      },
+      {
+        "assembly": "SPF.Particles.Tests.PlayMode",
+        "counts": {},
+        "sha256": "b7e2bdeeb9ac9185f666ed2078c7e39e075f7a5c8977bd1eaca9b2d80421fcc8"
+      },
+      {
+        "assembly": "SPF.Tests.EditMode",
+        "counts": {
+          "Passed": 1046
+        },
+        "sha256": "525d0a59d4c412d4912ef805923691bd20d7dede0f84803ed2a7d64ac31c507f"
+      },
+      {
+        "assembly": "SPF.Tests.PlayMode",
+        "counts": {},
+        "sha256": "bf0346622f7704fd2f39ac82c62afa243516b2fe203f92acb913011539642b77"
+      },
+      {
+        "assembly": "ShooterFoundation.Tests.EditMode",
+        "counts": {
+          "Passed": 24
+        },
+        "sha256": "4038bd02971b6617fbe0ff1b213c756b2abc63b2328378fa166596a80bf20b09"
+      },
+      {
+        "assembly": "ShooterFoundation.Tests.PlayMode",
+        "counts": {},
+        "sha256": "5178d1c5b51cc22bc174cc8cdea89848aa47deaf7bbb792a77667dc76cf832ab"
+      },
+      {
+        "assembly": "SlingFoundation.Tests.EditMode",
+        "counts": {
+          "Passed": 4,
+          "NotExecuted": 1
+        },
+        "sha256": "b65661e2665a92e7a787ce636ea9a94b4b3794bf6066fb0529eed902d32498af"
+      },
+      {
+        "assembly": "SlingFoundation.Tests.PlayMode",
+        "counts": {},
+        "sha256": "5b24b73145f970a9cdaf1f883e2d886992fd291b0631e776c1a4644aa4d9e83e"
+      },
+      {
+        "assembly": "SnakeFoundation.Tests.EditMode",
+        "counts": {
+          "Passed": 62,
+          "NotExecuted": 3
+        },
+        "sha256": "470d1c292e23caf921f7ec800c4fc810ec996ab27a9a54f3a79e62421cfbbce6"
+      },
+      {
+        "assembly": "SnakeFoundation.Tests.PlayMode",
+        "counts": {},
+        "sha256": "4ae64e7476bf7d32b62ca36e17ba1e8488e2596e018e9b29a8749e2d9bfc95dc"
+      },
+      {
+        "assembly": "StoryFoundation.Tests.EditMode",
+        "counts": {
+          "Passed": 5
+        },
+        "sha256": "e0af70f495cf262a39b95c0f76c40c25feea1c204fb99a14f29180c8a16b5450"
+      },
+      {
+        "assembly": "StoryFoundation.Tests.PlayMode",
+        "counts": {},
+        "sha256": "a161cca78babd0e084cec27c4812883369ee1e8fab24a97c903cbafe7229f7a4"
+      },
+      {
+        "assembly": "SurvivorFoundation.Tests.EditMode",
+        "counts": {
+          "Passed": 162
+        },
+        "sha256": "03de15acc3033da2f35ce3c682d177f5250e74afafa5c9630d30739d9b8bcba9"
+      },
+      {
+        "assembly": "SurvivorFoundation.Tests.PlayMode",
+        "counts": {},
+        "sha256": "0a4d25619de4665cd1de34dc15152a8d1b50ce587f7326953b45a2ee7672a055"
+      }
+    ],
+    "not_passed": [
+      {
+        "assembly": "RpgFoundation.Tests.EditMode",
+        "test": "RecordConfigColdAllocationAndRetainedPayload",
+        "outcome": "NotExecuted"
+      },
+      {
+        "assembly": "RpgFoundation.Tests.EditMode",
+        "test": "RecordDefaultRawSnapshotDigest",
+        "outcome": "NotExecuted"
+      },
+      {
+        "assembly": "SlingFoundation.Tests.EditMode",
+        "test": "SearchShots",
+        "outcome": "NotExecuted"
+      },
+      {
+        "assembly": "SnakeFoundation.Tests.EditMode",
+        "test": "RecordDefaultRawSnapshotDigest",
+        "outcome": "NotExecuted"
+      },
+      {
+        "assembly": "SnakeFoundation.Tests.EditMode",
+        "test": "ExportFrames",
+        "outcome": "NotExecuted"
+      },
+      {
+        "assembly": "SnakeFoundation.Tests.EditMode",
+        "test": "RecordConfigColdAllocationAndRetainedPayload",
+        "outcome": "NotExecuted"
+      }
+    ]
+  },
+  "boundary_probe": {
+    "samples": 18,
+    "restored_generic_punch_lean": 0,
+    "cancel_or_idle_torso_delta": 0,
+    "weapon_body_delta": 0
+  },
+  "acceptance": {
+    "unity_native": "pending exact candidate run",
+    "normal_speed_visual": "unaccepted; requires same-camera real 1x review and user judgment",
+    "android_ios_devices": "pending"
+  },
+  "preserved_authority": [
+    "weapon profiles and fingerprints",
+    "contact and release geometry",
+    "action duration and cooldown",
+    "damage",
+    "SmoothAttackV1 movement",
+    "all raw save domains"
+  ]
+}

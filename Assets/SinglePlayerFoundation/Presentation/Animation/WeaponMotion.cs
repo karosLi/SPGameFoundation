@@ -74,15 +74,19 @@ namespace SPF.Presentation.Animation
             switch(w.Family)
             {
                 case WeaponActionFamily.Slash:
-                    // The hand leads the cut, not only the blade angle. Lift the elbow through a
-                    // reachable high outside guard, cut across the body, then recover the guard.
-                    offset=new float2(Curve(phase,contact,end,-.23f,-.02f,0,-.16f,.5f),Curve(phase,contact,end,.16f,.58f,0,-.24f,.5f));
-                    rotation=Curve(phase,contact,end,.70f,1.65f,0,-1.25f,.5f);body=Curve(phase,contact,end,0,.17f,-.17f,-.22f,.5f);break;
+                    // Load the chest before the elbow/hand, cut through the canonical contact,
+                    // then finish outward on a shallow diagonal. Grip height and blade angle are
+                    // authored together: the full 1.07-unit blade must clear the floor, not just the hand.
+                    offset=new float2(Curve(phase,contact,end,-.23f,-.13f,0,.04f,.5f),Curve(phase,contact,end,.16f,.40f,0,-.06f,.5f));
+                    rotation=Curve(phase,contact,end,.70f,1.30f,0,-.58f,.5f);
+                    body=Curve(phase,contact,end,0,.12f,-.10f,-.09f,.35f);break;
                 case WeaponActionFamily.Thrust:
-                    // A compact shoulder-height chamber and forward extension distinguish a thrust
-                    // from the blade's high cross-body cut. The contact socket remains unchanged.
-                    offset=new float2(Curve(phase,contact,end,-.22f,-.10f,0,-.04f),Curve(phase,contact,end,.16f,.62f,0,-.08f));
-                    rotation=Curve(phase,contact,end,.26f,.32f,0,-.09f);body=Curve(phase,contact,end,0,.13f,-.15f,-.1f);break;
+                    // A rearward chamber stays near the thrust line. The shoulder loads first;
+                    // the elbow then opens into contact, followed by a small settle and retraction.
+                    // Raising this hand to shoulder height creates a vertical pump instead of a thrust.
+                    offset=new float2(Curve(phase,contact,end,-.22f,-.44f,0,.025f),Curve(phase,contact,end,.08f,.05f,0,-.02f));
+                    rotation=Curve(phase,contact,end,.16f,.05f,0,-.025f);
+                    body=Curve(phase,contact,end,0,.07f,-.045f,-.035f,.35f);break;
                 case WeaponActionFamily.Cast:
                     // Gather the staff with both arms, lift, and direct the cast from the chest.
                     offset=new float2(Curve(phase,contact,end,-.12f,-.22f,0,-.08f),Curve(phase,contact,end,-.02f,.58f,0,.10f));
@@ -140,6 +144,13 @@ namespace SPF.Presentation.Animation
                 float handDraw=acting&&phase>=release?1-NaturalMotion.Ease((phase-release)/(1-release)):draw;
                 support=grip+math.lerp(-aim*.10f*input.Scale,WorldOffset(input,aim,w.SecondaryGripOffset)-canonical,handDraw);
                 stringWeight=handDraw>MarkerEpsilon?math.saturate(draw/handDraw):0;
+            }
+            else if(WeaponArt.Resolve(w.VisualId,w.Family)==1002)
+            {
+                // Sword art has its primary palm at (46,48), rear palm at (24,48), and
+                // grip-to-tip length 198 pixels. The generic simulation secondary socket lies
+                // outside this drawn handle. Correct only its visual hand anchor, never content/ABI.
+                support=grip+Rotate(new float2(-22f*length/198f*input.Scale,0),angle);
             }
             else
                 support=grip+Rotate(WorldOffset(input,aim,w.SecondaryGripOffset)-canonical,angle-canonicalAngle);

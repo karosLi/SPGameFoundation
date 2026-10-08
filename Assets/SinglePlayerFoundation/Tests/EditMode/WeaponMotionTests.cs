@@ -249,13 +249,14 @@ namespace SPF.Tests.EditMode
                 }
             }
         }
-        [Test] public void WarmedWeaponPoseAndFkAllocateZeroWithCalibratedProbe()
+        [TestCase(1001)] [TestCase(1002)] [TestCase(1003)] [TestCase(1004)]
+        public void WarmedWeaponPoseAndFkAllocateZeroWithCalibratedProbe(int weapon)
         {
             using(var rig=NaturalCharacterRig.Create())
             using(var local=new NativeArray<BoneLocal>(NaturalCharacterRig.Bones,Allocator.Temp))
             using(var world=new NativeArray<BoneWorld>(NaturalCharacterRig.Bones,Allocator.Temp))
             {
-                var input=Input(1004);var motion=default(GameplayCharacterMotion);
+                var input=Input(weapon);var motion=default(GameplayCharacterMotion);
                 Action work=()=>{for(int i=0;i<120;i++){input.Weapon.Stage=WeaponStage.Windup;input.Weapon.Phase=i/120f;motion.Step(input,1f/120);GameplayCharacterMotion.Pose(rig.View,local,world,input,motion,0);WeaponMotion.Attach(input,motion,world,0);}};
                 work();using(var probe=new ManagedAllocationProbe()){probe.Calibrate();var result=probe.Measure(work);probe.Calibrate();Assert.AreEqual(0,result.Value);}
             }

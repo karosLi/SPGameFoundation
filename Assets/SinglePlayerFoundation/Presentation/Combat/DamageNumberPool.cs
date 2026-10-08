@@ -19,7 +19,7 @@ namespace SPF.Presentation.Combat
             public float2 Anchor;
             public double Amount;
             public float Age;
-            public float PresentationLift; // Retained upward clearance, never an authoritative anchor change.
+            public float PresentationLift; // Retained admitted actor + label clearance, never an authoritative anchor change.
             public bool Critical;
             public int Lane;
             public ulong Sequence;
@@ -168,8 +168,8 @@ namespace SPF.Presentation.Combat
                 float punch = 1f + punchAmplitude * settle * settle;
                 float baseHeight = viewHeight * (e.Critical ? .028f : .025f);
                 float height = baseHeight * punch;
-                // Layout reserves the fixed peak size, not the shrinking glyph size. A stable lane
-                // or fallback attempt must keep rising throughout the pop's settling phase.
+                // Lane and fallback spacing use the fixed peak size, not the shrinking glyph size.
+                // Retained admitted clearance also prevents collision release from lowering a label.
                 float layoutHeight = baseHeight * (1f + punchAmplitude);
                 float glyphWidth = height * (3f * font.Scale + 2f) / (5f * font.Scale + 2f);
                 float width = glyphWidth * (1f + .8f * (glyphs - 1));
@@ -179,34 +179,40 @@ namespace SPF.Presentation.Combat
                 float side = (e.Target.Index & 1) == 0 ? -1f : 1f;
                 float2 center = e.Anchor + new float2(side * e.Age * .12f,
                     viewHeight * .025f + layoutHeight * e.Lane * 1.25f + e.Age * (e.Critical ? 2.2f - .85f * e.Age : 1.1f));
-                float candidateLift = e.PresentationLift;
+                float candidateLift = e.PresentationLift, maxLift = viewHeight * MaxClearanceFraction;
+                if (candidateLift > maxLift) { Stats.ReservedDrops++; continue; }
+                float2 peakHalfSize = new float2(width * layoutHeight / height, layoutHeight) * .55f;
                 if (layout != null)
                 {
                     // Measure against peak glyph bounds, not the shrinking pop. Retaining the lift
-                    // prevents disappearing/moving bars from pulling a live label back downward.
-                    float peakWidth = width * layoutHeight / height;
-                    float maxLift = viewHeight * MaxClearanceFraction; bool blocked = candidateLift > maxLift;
+                    // prevents disappearing/moving bars or labels from pulling a live label downward.
+                    bool blocked = false;
                     for (int sweep = 0; sweep < 3 && !blocked; sweep++)
                     {
                         float2 at = center + new float2(0, candidateLift);
-                        float lift = layout.ActorLift(new float4(at - new float2(peakWidth, layoutHeight) * .55f, at + new float2(peakWidth, layoutHeight) * .55f));
+                        float lift = layout.ActorLift(new float4(at - peakHalfSize, at + peakHalfSize));
                         if (lift <= 0) break;
                         float nextLift = candidateLift + lift + viewHeight * .006f;
                         if (nextLift > maxLift) { blocked = true; break; }
                         candidateLift = nextLift;
                     }
                     float2 finalCenter = center + new float2(0, candidateLift);
-                    if (blocked || layout.ActorLift(new float4(finalCenter - new float2(peakWidth, layoutHeight) * .55f, finalCenter + new float2(peakWidth, layoutHeight) * .55f)) > 0)
+                    if (blocked || layout.ActorLift(new float4(finalCenter - peakHalfSize, finalCenter + peakHalfSize)) > 0)
                     { Stats.ReservedDrops++; continue; }
-                    center.y += candidateLift;
                 }
+                center.y += candidateLift;
                 if (center.x + width * .5f < view.x || center.x - width * .5f > view.z || center.y + height * .5f < view.y || center.y - height * .5f > view.w) { if (layout != null) Stats.ReservedDrops++; continue; }
                 bool placed = false, reserved = false; float4 rectangle = default;
                 for (int attempt = 0; attempt < 3 && !placed; attempt++)
                 {
-                    float2 adjusted = center + new float2(0, layoutHeight * 1.15f * attempt);
+                    float collisionLift = layoutHeight * 1.15f * attempt;
+                    float totalLift = candidateLift + collisionLift;
+                    if (totalLift > maxLift) { reserved = true; break; }
+                    float2 adjusted = center + new float2(0, collisionLift);
                     rectangle = new float4(adjusted - new float2(width, height) * .55f, adjusted + new float2(width, height) * .55f);
-                    if (layout != null && (!layout.Allows(rectangle) || layout.ActorLift(rectangle) > 0)) { reserved = true; continue; }
+                    // A retained fallback must also clear peak actor bounds; otherwise the next
+                    // Draw(0) could discover extra actor lift from this same admitted placement.
+                    if (layout != null && (!layout.Allows(rectangle) || layout.ActorLift(new float4(adjusted - peakHalfSize, adjusted + peakHalfSize)) > 0)) { reserved = true; continue; }
                     if (rectangle.x < view.x || rectangle.z > view.z || rectangle.y < view.y || rectangle.w > view.w) continue;
                     bool overlaps = false;
                     for (int j = 0; j < Stats.Visible; j++)
@@ -214,7 +220,7 @@ namespace SPF.Presentation.Combat
                         var r = m_Placed[j];
                         if (rectangle.x < r.z && rectangle.z > r.x && rectangle.y < r.w && rectangle.w > r.y) { overlaps = true; break; }
                     }
-                    if (!overlaps) { center = adjusted; placed = true; }
+                    if (!overlaps) { center = adjusted; candidateLift = totalLift; placed = true; }
                 }
                 if (!placed) { if (reserved) Stats.ReservedDrops++; else Stats.OverlapDrops++; continue; }
                 e.PresentationLift = candidateLift; // Commit only a fully admitted placement; failed Draw(0) cannot ratchet.

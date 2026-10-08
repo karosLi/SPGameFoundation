@@ -14,6 +14,159 @@ namespace SPF.Tests.EditMode
         static readonly float4 View = new float4(-8, -5, 8, 5);
         [TestCase(RenderTier.GpuDriven, false)] [TestCase(RenderTier.DataTexture, false)]
         [TestCase(RenderTier.GpuDriven, true)] [TestCase(RenderTier.DataTexture, true)]
+        public void SettlingCriticalNeighborCannotLowerTheSameAdmittedNormalLabel(RenderTier tier, bool reserveActor)
+        {
+            var atlas = new SpriteAtlasBuilder(); var font = SpriteFont.CreateSmooth(atlas); using var sheet = atlas.Build(128);
+            using var batch = new SpriteBatch(tier, sheet.Texture, BlendKind.Translucent, 192);
+            var pool = new DamageNumberPool(); var layout = reserveActor ? new DamageNumberLayout() : null;
+            if (layout != null) { layout.Begin(View); layout.ReserveActor(new float4(-.8f, -.5f, .85f, .4f)); }
+            var normal = new EntityHandle(4, 7); var anchor = new float2(.55f, 0);
+            pool.Emit(new EntityHandle(2, 1), float2.zero, 36, true, 1, 86);
+            pool.Emit(normal, anchor, 18, false, 2, 86);
+            pool.Draw(batch, sheet, font, View, layout: layout);
+            Assert.AreEqual(5, batch.Count); Assert.AreEqual(2, pool.Stats.Visible);
+            float previousY = batch.Instances[3].Center.y, criticalHeight = batch.Instances[0].Size.y;
+            // Peak critical width forces the normal onto the second fallback. Its smaller bounds
+            // later release that collision without a new hit, merge, expiry, or target change.
+            Assert.Greater(previousY, .9f);
+            pool.BeginFrame(.09f, 0); batch.Clear(); pool.Draw(batch, sheet, font, View, layout: layout);
+            Assert.AreEqual(5, batch.Count); Assert.AreEqual(2, pool.Active); Assert.AreEqual(2, pool.Stats.Accepted);
+            Assert.Zero(pool.Stats.Merged); Assert.Zero(pool.Stats.Expired); Assert.AreEqual(54, pool.Stats.AcceptedAmount);
+            Assert.Less(batch.Instances[0].Size.y, criticalHeight);
+            Assert.That(batch.Instances[3].Center.y, Is.EqualTo(previousY + .09f * 1.1f).Within(1e-5f),
+                "a released collision retains its admitted offset and only adds the normal's age-based rise");
+            var label = pool.Read(1);
+            Assert.AreEqual(normal, label.Target); Assert.AreEqual(anchor, label.Anchor); Assert.AreEqual(18, label.Amount);
+            Assert.AreEqual(2ul, label.Sequence); Assert.AreEqual(86, label.Tick); Assert.IsFalse(label.Critical);
+            previousY = batch.Instances[3].Center.y;
+            for (int i = 0; i < 8; i++)
+            {
+                pool.BeginFrame(0, 0); batch.Clear(); pool.Draw(batch, sheet, font, View, layout: layout);
+                Assert.AreEqual(5, batch.Count); Assert.AreEqual(previousY, batch.Instances[3].Center.y);
+                Assert.AreEqual(label.PresentationLift, pool.Read(1).PresentationLift, "admitted Draw(0) cannot ratchet");
+            }
+        }
+
+        [TestCase(RenderTier.GpuDriven)] [TestCase(RenderTier.DataTexture)]
+        public void ArrivingCriticalMayRaiseNormalButItsExpiryCannotReleaseThatPlacement(RenderTier tier)
+        {
+            var atlas = new SpriteAtlasBuilder(); var font = SpriteFont.CreateSmooth(atlas); using var sheet = atlas.Build(128);
+            using var batch = new SpriteBatch(tier, sheet.Texture, BlendKind.Translucent, 192);
+            var pool = new DamageNumberPool();
+            pool.Emit(new EntityHandle(4, 7), new float2(.55f, 0), 18, false, 1);
+            pool.Draw(batch, sheet, font, View); float firstY = batch.Instances[0].Center.y;
+            pool.BeginFrame(.04f, 0); pool.Emit(new EntityHandle(2, 1), float2.zero, 36, true, 2);
+            batch.Clear(); pool.Draw(batch, sheet, font, View);
+            Assert.AreEqual(5, batch.Count); Assert.Greater(batch.Instances[3].Center.y, firstY + .04f * 1.1f);
+            float retained = pool.Read(0).PresentationLift, raisedY = batch.Instances[3].Center.y;
+            Assert.Greater(retained, 0); Assert.LessOrEqual(retained, 10 * DamageNumberPool.MaxClearanceFraction);
+            for (int i = 0; i < 8; i++)
+            {
+                batch.Clear(); pool.Draw(batch, sheet, font, View);
+                Assert.AreEqual(5, batch.Count); Assert.AreEqual(raisedY, batch.Instances[3].Center.y);
+                Assert.AreEqual(retained, pool.Read(0).PresentationLift);
+            }
+            pool.BeginFrame(.64f, 0); batch.Clear(); pool.Draw(batch, sheet, font, View);
+            Assert.AreEqual(5, batch.Count); float beforeExpiryY = batch.Instances[3].Center.y;
+            pool.BeginFrame(.02f, 0); batch.Clear(); pool.Draw(batch, sheet, font, View);
+            Assert.AreEqual(2, batch.Count); Assert.AreEqual(1, pool.Active); Assert.AreEqual(1, pool.Stats.Expired);
+            Assert.AreEqual(retained, pool.Read(0).PresentationLift);
+            Assert.That(batch.Instances[0].Center.y, Is.EqualTo(beforeExpiryY + .02f * 1.1f).Within(1e-5f));
+        }
+
+        [Test]
+        public void CombinedActorAndCollisionClearanceRefusesOverCapWithoutCommittingFailedLift()
+        {
+            var atlas = new SpriteAtlasBuilder(); var font = SpriteFont.CreateSmooth(atlas); using var sheet = atlas.Build(128);
+            using var batch = new SpriteBatch(RenderTier.DataTexture, sheet.Texture, BlendKind.Translucent, 192);
+            var pool = new DamageNumberPool(); var layout = new DamageNumberLayout(); layout.Begin(View);
+            layout.ReserveActor(new float4(-.8f, -.5f, .85f, 2.3f));
+            pool.Emit(new EntityHandle(2, 1), float2.zero, 36, true, 1);
+            pool.Emit(new EntityHandle(4, 7), new float2(.55f, 0), 18, false, 2);
+            for (int i = 0; i < 8; i++)
+            {
+                pool.BeginFrame(0, 0); batch.Clear(); pool.Draw(batch, sheet, font, View, layout: layout);
+                Assert.AreEqual(3, batch.Count, "the normal's actor lift fits, but its required collision lift exceeds the total cap");
+                Assert.AreEqual(1, pool.Stats.Visible); Assert.AreEqual(1, pool.Stats.ReservedDrops);
+                Assert.LessOrEqual(pool.Read(0).PresentationLift, 10 * DamageNumberPool.MaxClearanceFraction);
+                Assert.Zero(pool.Read(1).PresentationLift, "a failed total placement must not commit its otherwise valid actor lift");
+            }
+            layout.Begin(View); batch.Clear(); pool.Draw(batch, sheet, font, View, layout: layout);
+            Assert.AreEqual(5, batch.Count); Assert.AreEqual(.25f, batch.Instances[3].Center.y);
+            Assert.Zero(pool.Read(1).PresentationLift, "after obstruction removal the never-admitted normal still starts at its anchor");
+        }
+
+        [Test]
+        public void HudRefusalAfterActorClearanceCannotCommitOrRatchetPlacement()
+        {
+            var atlas = new SpriteAtlasBuilder(); var font = SpriteFont.CreateSmooth(atlas); using var sheet = atlas.Build(128);
+            using var batch = new SpriteBatch(RenderTier.DataTexture, sheet.Texture, BlendKind.Translucent, 192);
+            var pool = new DamageNumberPool(); var layout = new DamageNumberLayout { HeaderViewport = new float4(0, .55f, 1, 1) };
+            layout.Begin(View); layout.ReserveActor(new float4(-.8f, -.5f, .85f, .4f));
+            pool.Emit(new EntityHandle(2, 1), float2.zero, 36, true, 1);
+            for (int i = 0; i < 8; i++)
+            {
+                pool.BeginFrame(0, 0); batch.Clear(); pool.Draw(batch, sheet, font, View, layout: layout);
+                Assert.Zero(batch.Count); Assert.AreEqual(1, pool.Stats.ReservedDrops); Assert.Zero(pool.Read(0).PresentationLift);
+            }
+            layout.HeaderViewport = default; layout.Begin(View); batch.Clear(); pool.Draw(batch, sheet, font, View, layout: layout);
+            Assert.AreEqual(3, batch.Count); Assert.AreEqual(.25f, batch.Instances[0].Center.y); Assert.Zero(pool.Read(0).PresentationLift);
+        }
+
+        [Test]
+        public void FallbackPlacementChecksPeakActorBoundsBeforeRetainingOffset()
+        {
+            var atlas = new SpriteAtlasBuilder(); var font = SpriteFont.CreateSmooth(atlas); using var sheet = atlas.Build(128);
+            using var batch = new SpriteBatch(RenderTier.DataTexture, sheet.Texture, BlendKind.Translucent, 192);
+            var pool = new DamageNumberPool(); var layout = new DamageNumberLayout(); layout.Begin(View);
+            layout.ReserveActor(new float4(-.5f, .94f, .5f, .95f));
+            pool.Emit(new EntityHandle(2, 1), float2.zero, 18, false, 1);
+            pool.Emit(new EntityHandle(4, 1), float2.zero, 18, false, 2); pool.BeginFrame(.18f, 0);
+            float previousY = 0, retained = 0;
+            for (int i = 0; i < 8; i++)
+            {
+                batch.Clear(); pool.Draw(batch, sheet, font, View, layout: layout); Assert.AreEqual(4, batch.Count);
+                float y = batch.Instances[2].Center.y;
+                Assert.That(y, Is.EqualTo(.25f + .18f * 1.1f + 2 * .295f * 1.15f).Within(1e-5f),
+                    "first fallback clears the current small glyph but intersects its peak actor bounds; only the second is stable");
+                if (i > 0) { Assert.AreEqual(previousY, y); Assert.AreEqual(retained, pool.Read(1).PresentationLift); }
+                previousY = y; retained = pool.Read(1).PresentationLift;
+            }
+        }
+
+        [Test]
+        public void NewActorReservationsCanRaiseWithinCapThenSuppressWithoutChangingRetainedPlacement()
+        {
+            var atlas = new SpriteAtlasBuilder(); var font = SpriteFont.CreateSmooth(atlas); using var sheet = atlas.Build(128);
+            using var batch = new SpriteBatch(RenderTier.DataTexture, sheet.Texture, BlendKind.Translucent, 192);
+            var pool = new DamageNumberPool(); var layout = new DamageNumberLayout();
+            pool.Emit(new EntityHandle(2, 1), float2.zero, 36, true, 1); float retained = 0, previousY = 0;
+            for (int obstruction = 0; obstruction < 5; obstruction++)
+            {
+                layout.Begin(View); layout.ReserveActor(new float4(-.8f, .1f + obstruction * .6f, .85f, .4f + obstruction * .6f));
+                for (int repeat = 0; repeat < 4; repeat++)
+                {
+                    pool.BeginFrame(0, 0); batch.Clear(); pool.Draw(batch, sheet, font, View, layout: layout);
+                    Assert.LessOrEqual(pool.Read(0).PresentationLift, 10 * DamageNumberPool.MaxClearanceFraction);
+                    if (obstruction == 4) { Assert.Zero(batch.Count); Assert.AreEqual(1, pool.Stats.ReservedDrops); }
+                    else
+                    {
+                        Assert.AreEqual(3, batch.Count);
+                        if (repeat == 0) Assert.Greater(batch.Instances[0].Center.y, previousY);
+                        else Assert.AreEqual(previousY, batch.Instances[0].Center.y);
+                        previousY = batch.Instances[0].Center.y;
+                    }
+                    if (repeat > 0 || obstruction == 4) Assert.AreEqual(retained, pool.Read(0).PresentationLift);
+                    retained = pool.Read(0).PresentationLift;
+                }
+            }
+            layout.Begin(View); batch.Clear(); pool.Draw(batch, sheet, font, View, layout: layout);
+            Assert.AreEqual(3, batch.Count); Assert.AreEqual(previousY, batch.Instances[0].Center.y);
+            Assert.AreEqual(retained, pool.Read(0).PresentationLift, "removing the obstruction does not release committed clearance");
+        }
+
+        [TestCase(RenderTier.GpuDriven, false)] [TestCase(RenderTier.DataTexture, false)]
+        [TestCase(RenderTier.GpuDriven, true)] [TestCase(RenderTier.DataTexture, true)]
         public void ContactLabelsClearDenseHeadBarsAndRetainPopHeightWhileRising(RenderTier tier, bool critical)
         {
             var atlas = new SpriteAtlasBuilder(); var font = SpriteFont.CreateSmooth(atlas); using var sheet = atlas.Build(128);

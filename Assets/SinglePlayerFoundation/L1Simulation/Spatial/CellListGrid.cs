@@ -49,12 +49,15 @@ namespace SPF.L1.Spatial
             m_CellHead = new NativeArray<int>(cells, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             m_CellTail = new NativeArray<int>(cells, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
             m_CellCount = new NativeArray<int>(cells, Allocator.Persistent);
-            m_Slots = new NativeArray<GridEntry>(blocks * BlockSize, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            m_SlotKey = new NativeArray<int>(blocks * BlockSize, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            m_BlockNext = new NativeArray<int>(blocks, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            m_BlockPrev = new NativeArray<int>(blocks, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            // The legacy snapshot writes these complete buffers, including unused tails. Initialize
+            // them once so fresh worlds never persist allocator contents. Clear() stays proportional
+            // to cells + keys; the snapshot layout and preservation of restored bytes are unchanged.
+            m_Slots = new NativeArray<GridEntry>(blocks * BlockSize, Allocator.Persistent);
+            m_SlotKey = new NativeArray<int>(blocks * BlockSize, Allocator.Persistent);
+            m_BlockNext = new NativeArray<int>(blocks, Allocator.Persistent);
+            m_BlockPrev = new NativeArray<int>(blocks, Allocator.Persistent);
             m_KeySlot = new NativeArray<int>(keyCapacity, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-            m_FreeBlocks = new NativeArray<int>(blocks, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+            m_FreeBlocks = new NativeArray<int>(blocks, Allocator.Persistent);
             m_Stats = new NativeArray<int>(StatSlots, Allocator.Persistent);
             AsWriter().Clear();
         }

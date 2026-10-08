@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using NUnit.Framework;
 using SPF.L1.Spatial;
 using Unity.Mathematics;
@@ -119,6 +120,71 @@ namespace SPF.Tests.EditMode
             }
             writer.Clear();
             Assert.AreEqual(0, grid.Count);
+        }
+
+        [TestCase(false)]
+        [TestCase(true)]
+        public void IndependentCellListGridsHaveIdenticalCompleteSnapshots(bool edit)
+        {
+            using var first = new CellListGrid(new int2(4), 2f, 64, 64);
+            using var second = new CellListGrid(new int2(4), 2f, 64, 64);
+            if (edit) { EditCellList(first); EditCellList(second); }
+            CollectionAssert.AreEqual(Capture(first), Capture(second));
+
+            // The snapshot still includes unused storage; equality must not hide or normalize it.
+            var slots = second.AsWriter().SlotKey;
+            slots[slots.Length - 1] = 0x13579bdf;
+            CollectionAssert.AreNotEqual(Capture(first), Capture(second));
+        }
+
+        [Test]
+        public void CellListLegacyUnusedBytesRoundTripAndContinueUnchanged()
+        {
+            using var legacy = new CellListGrid(new int2(4), 2f, 64, 64);
+            EditCellList(legacy);
+            var storage = legacy.AsWriter();
+            // Legacy snapshots include allocator bytes outside the allocated block prefix.
+            // A new constructor may initialize them, but reading/writing must preserve old data.
+            int slot = storage.Slots.Length - 1;
+            int block = storage.BlockNext.Length - 1;
+            Assert.Less(storage.Stats[CellListGrid.StatBlockTop], block);
+            storage.Slots[slot] = new GridEntry { Position = new float2(17, 19), Radius = 23, Owner = 29 };
+            storage.SlotKey[slot] = 0x13579bdf;
+            storage.BlockNext[block] = 31;
+            storage.BlockPrev[block] = 37;
+            storage.FreeBlocks[block] = 41;
+            byte[] snapshot = Capture(legacy);
+            using var restored = new CellListGrid(new int2(4), 2f, 64, 64);
+            using (var stream = new MemoryStream(snapshot))
+            using (var reader = new BinaryReader(stream)) restored.ReadSnapshot(reader);
+            CollectionAssert.AreEqual(snapshot, Capture(restored));
+
+            EditCellList(legacy); EditCellList(restored);
+            var first = new Collect { Hits = new List<int>() };
+            var second = new Collect { Hits = new List<int>() };
+            legacy.AsReader().Query(new float2(4), 10, ref first);
+            restored.AsReader().Query(new float2(4), 10, ref second);
+            Assert.Greater(first.Hits.Count, 0);
+            CollectionAssert.AreEqual(first.Hits, second.Hits);
+            CollectionAssert.AreEqual(Capture(legacy), Capture(restored));
+        }
+
+        static void EditCellList(CellListGrid grid)
+        {
+            var writer = grid.AsWriter();
+            for (int i = 0; i < 17; i++)
+                Assert.IsTrue(writer.Set(i, new GridEntry { Position = new float2(1 + i % 3 * 2, 1), Radius = .25f, Owner = i }));
+            // Empty a multi-block cell, recycle those blocks, and retain unused capacity.
+            for (int i = 0; i < 17; i += 3) writer.Remove(i);
+            Assert.IsTrue(writer.Set(21, new GridEntry { Position = new float2(1, 5), Radius = .5f, Owner = 21 }));
+            grid.MarkBuilt();
+        }
+
+        static byte[] Capture(CellListGrid grid)
+        {
+            using var stream = new MemoryStream();
+            using (var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, true)) grid.WriteSnapshot(writer);
+            return stream.ToArray();
         }
 
         [Test]

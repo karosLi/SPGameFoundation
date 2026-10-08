@@ -1,0 +1,6 @@
+=== GPU benchmark (DataTexture, Metal, Apple M5 Pro) ===
+device: Mac17,9, 640x480, frame timing enabled: True
+2 interleaved rounds x 2.0 s per variant; visible snakes 7
+all optimisations on         GPU 0.000 ms   (79 samples)  CPU 0.100 ms  frames 242
+page prefix submeshes off    GPU 0.000 ms   (80 samples)  CPU 0.101 ms  frames 240
+8-segment discs              GPU 0.000 ms   (101 samples)  CPU 0.100 ms  frames 240

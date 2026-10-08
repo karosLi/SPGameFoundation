@@ -1,0 +1,33 @@
+=== Survivor bullet-heaven benchmark ===
+bytes uploaded per bullet sprite: 32 (packed)
+--- enemy table Morton sort every 30 ticks ---
+enemies 3000  bullets 29634 (peak 26273)  gems 0  kills 0
+pipelined tick ms  mean 0.460  p50 0.396  p95 0.798  max 1.324
+main-thread schedule ms 0.150  sync wait ms 0.307
+per-system ms (serial profiling):
+  FlowSystem                0.000
+  RewardSystem              0.013
+  SpawnSystem               0.105
+  HeroSystem                0.001
+  EnemySystem               0.198
+  BulletSystem              0.047
+  EnemyGridSystem           0.041
+  CollideSystem             0.066
+  AnnularSkillSystem        0.000
+  ResolveSystem             0.012
+--- enemy table Morton sort every never ---
+enemies 3000  bullets 27632 (peak 28333)  gems 0  kills 0
+pipelined tick ms  mean 0.461  p50 0.410  p95 0.747  max 1.038
+main-thread schedule ms 0.134  sync wait ms 0.323
+per-system ms (serial profiling):
+  FlowSystem                0.000
+  RewardSystem              0.007
+  SpawnSystem               0.079
+  HeroSystem                0.001
+  EnemySystem               0.212
+  BulletSystem              0.046
+  EnemyGridSystem           0.039
+  CollideSystem             0.068
+  AnnularSkillSystem        0.000
+  ResolveSystem             0.013
+Morton sort speed-up: 1.00x

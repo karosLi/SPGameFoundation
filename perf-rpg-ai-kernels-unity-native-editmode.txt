@@ -1,0 +1,6 @@
+runtime=unity-native-editmode
+Scheduled completed kernel; 4096 agents x 16 evaluations/sample; 12 samples, all 32 fact patterns balanced and varied each repeat; digest retains every result; identical decision work/cached facts for selectors.
+Legacy branches: mean=0.16392 p50=0.12600 p95=0.40120 worst=0.40120 ms
+Tree selection: mean=0.57443 p50=0.52190 p95=0.82160 worst=0.82160 ms
+Separate 32x32 tile LOS/distance/perception: mean=1.61057 p50=1.47730 p95=2.51430 worst=2.51430 ms
+Selection outputs exact=PASS. Perception is measured separately, not subtracted from tick timing. Includes schedule/Complete overhead; no gameplay cadence reduction. Stub scheduling is synchronous and is not native Burst evidence.

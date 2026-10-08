@@ -1,5 +1,23 @@
 # Blade controlled recovery and closed grip
 
+## Cached-grip angle oracle correction (2026-10-08)
+
+The exact native `3c45520db5d6e0474ab0f56aef7d1225d2312a56` run (tree `f161150278fe631f44b4c36b5e195adc8250cf63`, also used by local `1f46b24`) retained one EditMode failure: `BladePresenterKeepsCurrentGripOnCachedFramesThroughTurnEquipAndCancel(30)`, face 1, role 0, standing, time 2.266666. The managed direct-pose versus presenter angle difference was `1.1920929E-06` rad against the original strict `< 9.99999997E-07` gate. The original XML is retained with SHA-256 `275cb29622f4f2fc8d06379b7cf9c592f6b838ad64ed8b36ff1387b05c103de5`; it is not relabelled as passing.
+
+This case has `Kind == 0`: both quality settings refresh the 60 Hz base pose on every 30 Hz frame. It therefore cannot diagnose a stale cached frame. Its comparison crossed a direct managed `Pose`/`Attach` call and the presenter's `[BurstCompile]` job. [Unity's Burst precision contract](https://docs.unity3d.com/Packages/com.unity.burst@1.8/manual/compilation-burstcompile.html#floatprecision) specifies default `Standard`/`Medium` transcendental accuracy of 3.5 ULP, rather than exact agreement with managed `System.Math`. The source and failure location identify an invalid cross-compiler exact-angle oracle; the local harness cannot reproduce or independently execute the Mac Burst rounding path.
+
+The bounded correction changes only this test and documentation. The angle gate now compares the actual high- and low-quality presenters, retaining the original strict `1e-6` threshold. It logs the managed/presenter angle gap separately. To keep direct correction semantics independently tested, another managed chain reuses the preceding frame's local pose continuously and must match a fresh managed pose, for every bone's position and rotation, at `1e-6`. The existing managed grip/contact checks, high/low tip and bone-position gates, final pivot, wrist, packed-fist and contact-height checks remain intact. Each of the 48 schedule/facing/role/movement traces must also reject a real previous-frame angle and an injected `1e-5` rad drift through the same angle assertion.
+
+Local evidence is retained under `integration-validation/resume-20261008/blade-cached-grip-precision/`:
+
+- Original .NET oracle: 4/4 schedule cases pass; this does not erase the native failure.
+- Revised oracle: 4/4 pass, including all 48 lag/drift controls and managed fresh/cached chains.
+- A temporary omission of `CorrectContacts` from the presenter's cached branch fails all four schedules. The 30/60 Hz cases detect `8.01086426E-05` bone-position drift; 120 Hz and irregular schedules detect `0.00959334057` and `0.0278852507` grip lag. The runtime source was restored byte-for-byte before final validation.
+- Restored final source: 105 focused weapon, blade/sword choreography, humanoid, recovery, grip-art and turn tests pass with no failures or skips. The complete 1,681-test aggregate was not repeated for this bounded slice.
+- Unity conditional-domain compilation against the official Unity NUnit assembly passes with zero errors and the existing single NUnit-version warning. Engine APIs still use stubs; this is not native execution.
+
+Production motion, presenter, accepted sword and art assets have no diff from the base. Fresh exact native validation remains pending and is coordinated with the next integrated candidate; no separate Mac run or new visual acceptance is claimed here.
+
 ## Stable contact policy supersedes the lower finish (2026-10-08)
 
 The user's latest instruction, “挥刀的时候，手和刀的位置，刀不要抖，不要下坠”, supersedes the earlier artistic requirement for another 10–20° of downward sweep after contact. This continuation starts from `d241971d09ddfc96465d186bef9b530d517f3054` (pure-test oracle correction included). The earlier results below remain historical evidence, not approval of the lower finish.

@@ -233,6 +233,10 @@ namespace SPF.Tests.EditMode
             if(schedule>0)return 1f/schedule;
             switch(frame%5){case 0:return 1f/120;case 1:return 1f/30;case 2:return 1f/90;case 3:return 1f/60;default:return 1f/48;}
         }
+        static void AssertCurrentBladeAngle(WeaponAttachmentSample current,WeaponAttachmentSample cached,string context)
+        {
+            Assert.Less(math.abs(WeaponMotion.AngleDelta(current.Rotation,cached.Rotation)),.000001f,"cached angle uses current phase "+context);
+        }
         [TestCase(30)] [TestCase(60)] [TestCase(120)] [TestCase(0)]
         public void BladePresenterKeepsCurrentGripOnCachedFramesThroughTurnEquipAndCancel(int schedule)
         {
@@ -241,9 +245,12 @@ namespace SPF.Tests.EditMode
             using(var rig=NaturalCharacterRig.Create())
             using(var local=new NativeArray<BoneLocal>(NaturalCharacterRig.Bones,Allocator.Temp))
             using(var world=new NativeArray<BoneWorld>(NaturalCharacterRig.Bones,Allocator.Temp))
+            using(var cachedLocal=new NativeArray<BoneLocal>(NaturalCharacterRig.Bones,Allocator.Temp))
+            using(var cachedWorld=new NativeArray<BoneWorld>(NaturalCharacterRig.Bones,Allocator.Temp))
             for(int face=-1;face<=1;face+=2)for(int role=0;role<3;role++)for(int move=0;move<2;move++) {
                 high.Clear();low.Clear();var input=Input(face,role,move!=0);input.Tint=new float4(1);
-                var motion=default(GameplayCharacterMotion);float time=0,maxPalmError=0;int frame=0,cached=0;
+                var motion=default(GameplayCharacterMotion);float time=0,maxPalmError=0,maxManagedAngleGap=0;int frame=0,cached=0;
+                var previous=default(WeaponAttachmentSample);bool rejectedLag=false,rejectedDrift=false;
                 while(time<4) {
                     float dt=FrameStep(schedule,frame++);time+=dt;
                     int direction=time<1.9f?face:-face;input.Facing=direction;
@@ -256,18 +263,38 @@ namespace SPF.Tests.EditMode
                         input.Weapon.Stage=phase<input.Weapon.ContactPhase?WeaponStage.Windup:phase<input.Weapon.ActiveEndPhase?WeaponStage.Active:WeaponStage.Recovery;}
                     if(time>=2.05f&&time<2.27f){input.Weapon.Stage=WeaponStage.Equipping;input.Weapon.StagePhase=(time-2.05f)/.22f;}
                     motion.Step(input,dt);GameplayCharacterMotion.Pose(rig.View,local,world,input,motion,0);
+                    if(frame==1)GameplayCharacterMotion.Pose(rig.View,cachedLocal,cachedWorld,input,motion,0);
+                    else {
+                        GameplayCharacterMotion.CorrectContacts(rig.View,cachedLocal,input,motion,0);
+                        Skeletal.ToWorld(rig.View,cachedLocal,input.Root,motion.Facing,motion.Scale,cachedWorld,0,0);
+                    }
                     high.Begin(dt,0);low.Begin(dt,3);Assert.IsTrue(high.Submit(input));Assert.IsTrue(low.Submit(input));high.Evaluate();low.Evaluate();
                     if(low.BasePoseRefreshes==0)cached++;
                     Assert.IsTrue(high.TryReadWeapon(input.Handle,out var a));Assert.IsTrue(low.TryReadWeapon(input.Handle,out var b));
                     var fresh=WeaponMotion.Attach(input,motion,world,0);var hand=low.ReadBone(input.Handle,NaturalCharacterRig.Hand);
                     string context="schedule="+schedule+" face="+face+" role="+role+" move="+move+" time="+time;
                     Assert.Less(math.distance(fresh.PrimaryGrip,b.PrimaryGrip),.000001f,"cached hand has no phase lag "+context);
-                    Assert.Less(math.abs(WeaponMotion.AngleDelta(fresh.Rotation,b.Rotation)),.000001f,"cached angle uses current phase "+context);
+                    // Both presenters execute the same job. A direct managed Pose is not an
+                    // exact-angle oracle for Burst's transcendental math; keep that gap visible.
+                    AssertCurrentBladeAngle(a,b,context);
+                    maxManagedAngleGap=math.max(maxManagedAngleGap,math.abs(WeaponMotion.AngleDelta(fresh.Rotation,b.Rotation)));
+                    AssertCurrentBladeAngle(fresh,WeaponMotion.Attach(input,motion,cachedWorld,0),"managed correction "+context);
+                    if(frame>1&&!rejectedLag&&math.abs(WeaponMotion.AngleDelta(a.Rotation,previous.Rotation))>.00001f) {
+                        var stale=b;stale.Rotation=previous.Rotation;
+                        Assert.Throws<AssertionException>(()=>AssertCurrentBladeAngle(a,stale,"one-frame lag control "+context));rejectedLag=true;
+                    }
+                    if(!rejectedDrift) {
+                        var drift=b;drift.Rotation+=.00001f;
+                        Assert.Throws<AssertionException>(()=>AssertCurrentBladeAngle(a,drift,"angular drift control "+context));rejectedDrift=true;
+                    }
+                    previous=a;
                     Assert.Less(math.distance(hand.Position,b.PrimaryGrip),.000001f,"final hand is the weapon pivot "+context);
                     Assert.Less(math.distance(a.Tip,b.Tip),.000001f,"quality does not change blade pose "+context);
                     for(int bone=0;bone<NaturalCharacterRig.Bones;bone++) {
                         Assert.Less(math.distance(high.ReadBone(input.Handle,bone).Position,low.ReadBone(input.Handle,bone).Position),.000001f,context);
                         Assert.IsTrue(math.all(math.isfinite(low.ReadBone(input.Handle,bone).Position)),context);
+                        Assert.Less(math.distance(world[bone].Position,cachedWorld[bone].Position),.000001f,"managed current/cached position "+context);
+                        Assert.Less(math.abs(WeaponMotion.AngleDelta(world[bone].Rotation,cachedWorld[bone].Rotation)),.000001f,"managed current/cached angle "+context);
                     }
                     float palmError=math.abs(WeaponMotion.AngleDelta(hand.Rotation,b.Rotation));maxPalmError=math.max(maxPalmError,palmError);
                     Assert.Less(palmError,.01f,"palm direction remains rigid at supported transitions "+context);
@@ -280,7 +307,8 @@ namespace SPF.Tests.EditMode
                 }
                 if(role%2==1||schedule==0||schedule>60)
                     Assert.Greater(cached,0,"exercise the actual cached-pose correction path");
-                TestContext.WriteLine("schedule="+schedule+" face="+face+" role="+role+" move="+move+" cached="+cached+" maxPalmError="+maxPalmError);
+                Assert.IsTrue(rejectedLag,"oracle must reject a previous-frame angle");Assert.IsTrue(rejectedDrift,"oracle must reject a 1e-5 rad drift");
+                TestContext.WriteLine("schedule="+schedule+" face="+face+" role="+role+" move="+move+" cached="+cached+" maxPalmError="+maxPalmError+" maxManagedAngleGap="+maxManagedAngleGap+" lag/drift controls rejected");
             }
         }
         [TestCase(30)] [TestCase(60)] [TestCase(120)] [TestCase(0)]

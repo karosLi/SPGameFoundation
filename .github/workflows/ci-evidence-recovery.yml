@@ -90,57 +90,12 @@ jobs:
           require(combined_size == 539665186 and combined.hexdigest() == ARCHIVE_SHA, "Combined bytes differ from original archive")
           with open(os.environ["GITHUB_OUTPUT"], "a") as output:
               output.write("directory=" + str(out) + "\n")
-          print("RECOVERY_VERIFIED original_run=37788743514 attempt=1 source=" + SOURCE + " archive=" + ARCHIVE_SHA + " upload_only=part22..part32")
+          print("RECOVERY_VERIFIED original_run=37788743514 attempt=1 source=" + SOURCE + " archive=" + ARCHIVE_SHA + " upload_only=part27,part28,part29")
           signal.alarm(0)
           PY
-      - name: Recover original part22
-        uses: actions/upload-artifact@v4
-        timeout-minutes: 2
-        if: always() && steps.recover.outcome == 'success'
-        with:
-          name: recovered-37788743514-a1-${{ github.run_id }}-part22
-          path: ${{ steps.recover.outputs.directory }}/part22/
-          compression-level: 0
-          if-no-files-found: error
-      - name: Recover original part23
-        uses: actions/upload-artifact@v4
-        timeout-minutes: 2
-        if: always() && steps.recover.outcome == 'success'
-        with:
-          name: recovered-37788743514-a1-${{ github.run_id }}-part23
-          path: ${{ steps.recover.outputs.directory }}/part23/
-          compression-level: 0
-          if-no-files-found: error
-      - name: Recover original part24
-        uses: actions/upload-artifact@v4
-        timeout-minutes: 2
-        if: always() && steps.recover.outcome == 'success'
-        with:
-          name: recovered-37788743514-a1-${{ github.run_id }}-part24
-          path: ${{ steps.recover.outputs.directory }}/part24/
-          compression-level: 0
-          if-no-files-found: error
-      - name: Recover original part25
-        uses: actions/upload-artifact@v4
-        timeout-minutes: 2
-        if: always() && steps.recover.outcome == 'success'
-        with:
-          name: recovered-37788743514-a1-${{ github.run_id }}-part25
-          path: ${{ steps.recover.outputs.directory }}/part25/
-          compression-level: 0
-          if-no-files-found: error
-      - name: Recover original part26
-        uses: actions/upload-artifact@v4
-        timeout-minutes: 2
-        if: always() && steps.recover.outcome == 'success'
-        with:
-          name: recovered-37788743514-a1-${{ github.run_id }}-part26
-          path: ${{ steps.recover.outputs.directory }}/part26/
-          compression-level: 0
-          if-no-files-found: error
       - name: Recover original part27
         uses: actions/upload-artifact@v4
-        timeout-minutes: 2
+        timeout-minutes: 5
         if: always() && steps.recover.outcome == 'success'
         with:
           name: recovered-37788743514-a1-${{ github.run_id }}-part27
@@ -149,7 +104,7 @@ jobs:
           if-no-files-found: error
       - name: Recover original part28
         uses: actions/upload-artifact@v4
-        timeout-minutes: 2
+        timeout-minutes: 5
         if: always() && steps.recover.outcome == 'success'
         with:
           name: recovered-37788743514-a1-${{ github.run_id }}-part28
@@ -158,37 +113,10 @@ jobs:
           if-no-files-found: error
       - name: Recover original part29
         uses: actions/upload-artifact@v4
-        timeout-minutes: 2
+        timeout-minutes: 5
         if: always() && steps.recover.outcome == 'success'
         with:
           name: recovered-37788743514-a1-${{ github.run_id }}-part29
           path: ${{ steps.recover.outputs.directory }}/part29/
-          compression-level: 0
-          if-no-files-found: error
-      - name: Recover original part30
-        uses: actions/upload-artifact@v4
-        timeout-minutes: 2
-        if: always() && steps.recover.outcome == 'success'
-        with:
-          name: recovered-37788743514-a1-${{ github.run_id }}-part30
-          path: ${{ steps.recover.outputs.directory }}/part30/
-          compression-level: 0
-          if-no-files-found: error
-      - name: Recover original part31
-        uses: actions/upload-artifact@v4
-        timeout-minutes: 2
-        if: always() && steps.recover.outcome == 'success'
-        with:
-          name: recovered-37788743514-a1-${{ github.run_id }}-part31
-          path: ${{ steps.recover.outputs.directory }}/part31/
-          compression-level: 0
-          if-no-files-found: error
-      - name: Recover original part32
-        uses: actions/upload-artifact@v4
-        timeout-minutes: 2
-        if: always() && steps.recover.outcome == 'success'
-        with:
-          name: recovered-37788743514-a1-${{ github.run_id }}-part32
-          path: ${{ steps.recover.outputs.directory }}/part32/
           compression-level: 0
           if-no-files-found: error

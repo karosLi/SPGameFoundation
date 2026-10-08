@@ -37,7 +37,7 @@ namespace SPF.Presentation.Animation
         public FootPlantState FarFoot, NearFoot;
         public SmoothedAimState Aim;
         public float2 PreviousRoot, PreviousVelocity, BodyVelocity, WeaponAim;
-        public float Gait, Support, Breath, AimWeight, WeaponWeight, Turn, Acceleration, Move, Walk, SwingHeight;
+        public float Gait, Support, Breath, AimWeight, WeaponWeight, Turn, WeaponTurn, Acceleration, Move, Walk, SwingHeight;
         public GameplayLocomotionState Locomotion;
         public GameplayLocomotionClassifier LocomotionClassifier;
         public GameplaySkillMotion Skill;
@@ -67,7 +67,7 @@ namespace SPF.Presentation.Animation
             {
                 this = default; Initialized = true; Facing = facing; Scale = scale;SupportCeiling=1.15f;
                 Phase = ((uint)input.Handle.Index * 37u % 97) / 97f;
-                Breath=Phase;Turn=facing;WeaponAim=input.Weapon.Equipped?input.Weapon.AimDirection:new float2(facing,0);
+                Breath=Phase;Turn=facing;WeaponTurn=WeaponMotion.AimFacing(input.Weapon,facing);WeaponAim=input.Weapon.Equipped?input.Weapon.AimDirection:new float2(facing,0);
                 WeaponWeight=input.Weapon.Equipped?1:0;WeaponVisualId=input.Weapon.VisualId;EquipAge=1;
                 WeaponAimDrop=input.Weapon.Equipped?.16f*math.saturate(-input.Weapon.AimDirection.y):0;
                 NaturalMotion.InitializeFoot(ref FarFoot, ground, ground + new float2(-width, .075f), 0);
@@ -156,7 +156,11 @@ namespace SPF.Presentation.Animation
             Breath=math.frac(Breath+dt*.29f);
             AimWeight=math.lerp(AimWeight,input.Aim&&!input.Weapon.Equipped?1:0,1-math.exp(-14f*dt));
             WeaponWeight=math.lerp(WeaponWeight,input.Weapon.Equipped?1:0,1-math.exp(-18f*dt));
-            Turn=math.lerp(Turn,facing,1-math.exp(-15f*dt));
+            float turnResponse=1-math.exp(-15f*dt);
+            Turn=math.lerp(Turn,facing,turnResponse);
+            // A hit can turn the body without admitting a new weapon aim. The blade's
+            // guard retains that aim's ownership, with the existing turn response.
+            WeaponTurn=math.lerp(WeaponTurn,WeaponMotion.AimFacing(input.Weapon,facing),turnResponse);
             float ceiling=1.15f,supportX=Support*Turn*Facing;
             if(!Airborne)
             {
@@ -392,7 +396,13 @@ namespace SPF.Presentation.Animation
             torso.Position.x=-motion.Support*.38f;torso.Position.y+=depth*.18f;
             // A near-vertical held aim passes close to the chest in this projected rig. A small
             // backward chest shift leaves shoulder/elbow room at rest as well as during the lift.
-            if(input.Weapon.Equipped)torso.Position.x-=.14f*(1-math.saturate(math.abs(motion.WeaponAim.x)));
+            // For the blade this is aim-space clearance: a Hit-only body reversal must
+            // not mirror that offset underneath the unchanged turning hand.
+            if(input.Weapon.Equipped)
+            {
+                float aimMirror=WeaponMotion.Blade(input.Weapon)?WeaponMotion.AimFacing(input.Weapon,motion.Facing)*motion.Facing:1;
+                torso.Position.x-=.14f*(1-math.saturate(math.abs(motion.WeaponAim.x)))*aimMirror;
+            }
             // Melee weapon body keys already own loading/contact/recovery. Adding the generic
             // punch lean makes the shoulder chase the hand and erases the sword's elbow extension.
             bool meleeWeapon=WeaponMotion.Acting(input.Weapon)&&(input.Weapon.Family==WeaponActionFamily.Slash||input.Weapon.Family==WeaponActionFamily.Thrust);

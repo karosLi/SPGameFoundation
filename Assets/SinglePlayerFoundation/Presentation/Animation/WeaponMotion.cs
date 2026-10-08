@@ -18,8 +18,8 @@ namespace SPF.Presentation.Animation
     public struct WeaponPose
     {
         public float2 Grip, Support;
-        // ArmBend is the continuous outgoing (-1) to incoming (+1) mirror ownership.
-        // Zero crosses the body's centre in a folded guard, using the existing Turn clock.
+        // ArmBend is continuous weapon-side ownership in the current body's model frame.
+        // Zero crosses the centre in a folded guard; -1 retains the opposite-side grip.
         public float Angle, Length, Draw, Weight, Visibility, Body, StringWeight, ArmBend;
     }
 
@@ -29,6 +29,8 @@ namespace SPF.Presentation.Animation
     {
         const float MarkerEpsilon=.00001f;
         public static bool Blade(in WeaponViewState w)=>w.Equipped&&w.Family==WeaponActionFamily.Slash&&WeaponArt.Resolve(w.VisualId,w.Family)==1001;
+        internal static float AimFacing(in WeaponViewState w,float facing)=>
+            w.Equipped&&math.abs(w.AimDirection.x)>.00001f?(w.AimDirection.x<0?-1:1):facing;
         public static bool Acting(in WeaponViewState w)=>w.Stage==WeaponStage.Windup||w.Stage==WeaponStage.Active||w.Stage==WeaponStage.Recovery;
         public static float ActionWeight(in WeaponViewState w)
         {
@@ -100,6 +102,10 @@ namespace SPF.Presentation.Animation
             float reachWeight=acting?NaturalMotion.Ease(phase/contact)*(1-NaturalMotion.Ease((phase-end)/math.max(MarkerEpsilon,1-end))):0;
             float aimWeight=acting?NaturalMotion.Ease(phase/contact):0;
             float2 aim=armReference?w.AimDirection:math.lerp(motion.WeaponAim,w.AimDirection,aimWeight);
+            // The fold reference is expressed on the body's incoming model side.
+            // During Hit its facing can oppose the still-locked weapon aim; reflecting
+            // the reference here keeps arm ownership from mirroring the target twice.
+            if(armReference&&Blade(w))aim.x*=AimFacing(w,motion.Facing)*motion.Facing;
             if(!armReference&&w.Family==WeaponActionFamily.Slash&&WeaponArt.Resolve(w.VisualId,w.Family)==1001&&aimWeight>0&&aimWeight<1)
             {
                 // Blend the turning blade's heading and projected length separately. A
@@ -164,10 +170,9 @@ namespace SPF.Presentation.Animation
             float sideArc=verticalAim*(.48f*chamber+(w.Family==WeaponActionFamily.Slash?.42f:.30f)*followArc);
             offset.y*=1-.30f*verticalAim;
             float2 grip=canonical+(aim*offset.x+new float2(facing*sideArc,offset.y))*input.Scale;
-            // During a blade turn the lifted guard belongs to the continuous body turn.
-            // Mirroring it with the newly admitted action's facing would point
-            // the still-outgoing guard down before the aim has turned across the body.
-            float guardFacing=Blade(w)?math.lerp(motion.Turn,facing,aimWeight):facing;
+            // The lifted blade guard belongs to the weapon's continuous turn, including
+            // when a hit turns only the body. Contact still owns its exact admitted aim.
+            float guardFacing=Blade(w)?math.lerp(motion.WeaponTurn,AimFacing(w,facing),aimWeight):facing;
             angle+=rotation*guardFacing;
             float armBend=guardFacing*facing;
             var skill=motion.Skill.Pose;
@@ -222,7 +227,8 @@ namespace SPF.Presentation.Animation
             // Final IK consumes the phase-authored hand trajectory. It must never replace
             // that trajectory with an idle socket, which would erase anticipation/arm lift.
             float2 primaryShoulder=NaturalMotion.BonePoint(rig,local,NaturalCharacterRig.NearArm,0,at);
-            float primaryDistance=math.distance(NaturalMotion.ModelPoint(armTarget.Grip,input.Root,motion.Facing,motion.Scale),primaryShoulder);
+            float referenceMirror=Blade(input.Weapon)?AimFacing(input.Weapon,motion.Facing)*motion.Facing:1;
+            float primaryDistance=math.distance(NaturalMotion.ModelPoint(armTarget.Grip,input.Root,motion.Facing,motion.Scale),new float2(primaryShoulder.x*referenceMirror,primaryShoulder.y));
             float primaryFold=1-NaturalMotion.Ease((primaryDistance-.12f)/.22f);
             float bladeSlide=0;
             if(input.Weapon.Family==WeaponActionFamily.Slash&&WeaponArt.Resolve(input.Weapon.VisualId,input.Weapon.Family)==1001)
@@ -237,7 +243,9 @@ namespace SPF.Presentation.Animation
             if(primaryFold>.001f||bladeSlide>0)
             {
                 var primaryArm=local[at+NaturalCharacterRig.NearArm];
-                primaryArm.Position+=Rotate(new float2(-.10f*primaryFold-bladeSlide,0),-local[at+NaturalCharacterRig.Pelvis].Rotation-local[at+NaturalCharacterRig.Torso].Rotation);
+                // Fold clearance is measured in the same incoming-aim reference as the
+                // hand. A body-only facing edge must not flip this shoulder glide in world space.
+                primaryArm.Position+=Rotate(new float2((-.10f*primaryFold-bladeSlide)*referenceMirror,0),-local[at+NaturalCharacterRig.Pelvis].Rotation-local[at+NaturalCharacterRig.Torso].Rotation);
                 local[at+NaturalCharacterRig.NearArm]=primaryArm;
             }
             if(armBend<.999999f)

@@ -1,0 +1,379 @@
+{
+  "source": {
+    "commit": "23d509f728ee21b6239d96575e5c14adf9b18b05",
+    "tree": "ad7cdb4fbd2f6223c5a52c56554d259f67986386",
+    "branch": "dot/mobile-feedback-legibility"
+  },
+  "nativeRun": {
+    "run_id": 37712952704,
+    "run_attempt": 1,
+    "status": "completed",
+    "conclusion": "success",
+    "head_sha": "23d509f728ee21b6239d96575e5c14adf9b18b05",
+    "tree": "ad7cdb4fbd2f6223c5a52c56554d259f67986386",
+    "branch": "dot/mobile-feedback-legibility",
+    "url": "https://github.com/karosLi/SPGameFoundation/actions/runs/37712952704",
+    "created_at": "2026-10-08T01:26:37Z",
+    "updated_at": "2026-10-08T01:47:58Z",
+    "verified_artifact_parts": 22,
+    "verified_files": 1559,
+    "archive_size": 359418148,
+    "archive_sha256": "069cd551e0e19c2b168cba1f919f10facf9daa6b8faec0edd68529feaa904be1"
+  },
+  "harness": {
+    "run_id": 37712952736,
+    "job_id": 113102839646,
+    "status": "completed",
+    "conclusion": "success",
+    "passed": 1567,
+    "failed": 0,
+    "build_warnings": 0,
+    "build_errors": 0,
+    "log": "harness-job-113102839646.log"
+  },
+  "native": {
+    "editmode": {
+      "total": 1611,
+      "passed": 1606,
+      "failed": 0,
+      "skipped": 5,
+      "added_vs_35af": 13,
+      "removed_vs_35af": 0
+    },
+    "playmode": {
+      "total": 170,
+      "passed": 169,
+      "failed": 0,
+      "skipped": 1,
+      "added_vs_35af": 0,
+      "removed_vs_35af": 0
+    },
+    "repaired_failure": "SnakeFoundation.Tests.SnakeConfigIsolationTests.SourceEditsAfterSessionCreationDoNotChangeRuntimeOrReplay is now Passed; the original test remains in the case inventory.",
+    "editor_exits": [
+      0,
+      0
+    ],
+    "crash_retry_seen": false,
+    "burst_disabled_fallback_seen": false,
+    "burst_controls": {
+      "direct_managed": 0,
+      "Run": 1,
+      "Schedule": 1
+    },
+    "physics": {
+      "warmup_native_steps": "60/60",
+      "measured_native_steps": "300/300",
+      "mean_ms": 0.418,
+      "worst_ms": 0.594,
+      "platform": "Unity 2022.3.62f2 on Apple M5 Pro; desktop Editor only"
+    },
+    "test_report": "native-test-verification.json",
+    "log": "native-job-113102839444.log"
+  },
+  "audio": {
+    "completed": true,
+    "observations": 27,
+    "retained_each_phase": 8,
+    "positive_before_energy_range": [
+      0.23889398574829102,
+      0.25634005665779114
+    ],
+    "silent_energy_range": [
+      0.0,
+      0.0
+    ],
+    "positive_after_energy_range": [
+      0.23829659819602966,
+      0.2563404142856598
+    ],
+    "output_hz": 48000,
+    "dsp_buffer": "1024x4",
+    "listening_claimed": false
+  },
+  "caseChanges": {
+    "editmode": {
+      "removed": [],
+      "added": [
+        {
+          "name": "SPF.Tests.EditMode.DamageNumberLegibilityTests.ArrivingCriticalMayRaiseNormalButItsExpiryCannotReleaseThatPlacement(DataTexture)",
+          "result": "Passed",
+          "label": null,
+          "runstate": "Runnable",
+          "message": null,
+          "stack": null,
+          "output": null
+        },
+        {
+          "name": "SPF.Tests.EditMode.DamageNumberLegibilityTests.ArrivingCriticalMayRaiseNormalButItsExpiryCannotReleaseThatPlacement(GpuDriven)",
+          "result": "Passed",
+          "label": null,
+          "runstate": "Runnable",
+          "message": null,
+          "stack": null,
+          "output": null
+        },
+        {
+          "name": "SPF.Tests.EditMode.DamageNumberLegibilityTests.CombinedActorAndCollisionClearanceRefusesOverCapWithoutCommittingFailedLift",
+          "result": "Passed",
+          "label": null,
+          "runstate": "Runnable",
+          "message": null,
+          "stack": null,
+          "output": null
+        },
+        {
+          "name": "SPF.Tests.EditMode.DamageNumberLegibilityTests.FallbackPlacementChecksPeakActorBoundsBeforeRetainingOffset",
+          "result": "Passed",
+          "label": null,
+          "runstate": "Runnable",
+          "message": null,
+          "stack": null,
+          "output": null
+        },
+        {
+          "name": "SPF.Tests.EditMode.DamageNumberLegibilityTests.HudRefusalAfterActorClearanceCannotCommitOrRatchetPlacement",
+          "result": "Passed",
+          "label": null,
+          "runstate": "Runnable",
+          "message": null,
+          "stack": null,
+          "output": null
+        },
+        {
+          "name": "SPF.Tests.EditMode.DamageNumberLegibilityTests.NewActorReservationsCanRaiseWithinCapThenSuppressWithoutChangingRetainedPlacement",
+          "result": "Passed",
+          "label": null,
+          "runstate": "Runnable",
+          "message": null,
+          "stack": null,
+          "output": null
+        },
+        {
+          "name": "SPF.Tests.EditMode.DamageNumberLegibilityTests.SettlingCriticalNeighborCannotLowerTheSameAdmittedNormalLabel(DataTexture,False)",
+          "result": "Passed",
+          "label": null,
+          "runstate": "Runnable",
+          "message": null,
+          "stack": null,
+          "output": null
+        },
+        {
+          "name": "SPF.Tests.EditMode.DamageNumberLegibilityTests.SettlingCriticalNeighborCannotLowerTheSameAdmittedNormalLabel(DataTexture,True)",
+          "result": "Passed",
+          "label": null,
+          "runstate": "Runnable",
+          "message": null,
+          "stack": null,
+          "output": null
+        },
+        {
+          "name": "SPF.Tests.EditMode.DamageNumberLegibilityTests.SettlingCriticalNeighborCannotLowerTheSameAdmittedNormalLabel(GpuDriven,False)",
+          "result": "Passed",
+          "label": null,
+          "runstate": "Runnable",
+          "message": null,
+          "stack": null,
+          "output": null
+        },
+        {
+          "name": "SPF.Tests.EditMode.DamageNumberLegibilityTests.SettlingCriticalNeighborCannotLowerTheSameAdmittedNormalLabel(GpuDriven,True)",
+          "result": "Passed",
+          "label": null,
+          "runstate": "Runnable",
+          "message": null,
+          "stack": null,
+          "output": null
+        },
+        {
+          "name": "SPF.Tests.EditMode.L1GridTests.CellListLegacyUnusedBytesRoundTripAndContinueUnchanged",
+          "result": "Passed",
+          "label": null,
+          "runstate": "Runnable",
+          "message": null,
+          "stack": null,
+          "output": null
+        },
+        {
+          "name": "SPF.Tests.EditMode.L1GridTests.IndependentCellListGridsHaveIdenticalCompleteSnapshots(False)",
+          "result": "Passed",
+          "label": null,
+          "runstate": "Runnable",
+          "message": null,
+          "stack": null,
+          "output": null
+        },
+        {
+          "name": "SPF.Tests.EditMode.L1GridTests.IndependentCellListGridsHaveIdenticalCompleteSnapshots(True)",
+          "result": "Passed",
+          "label": null,
+          "runstate": "Runnable",
+          "message": null,
+          "stack": null,
+          "output": null
+        }
+      ],
+      "result_changes": [
+        {
+          "name": "SnakeFoundation.Tests.SnakeConfigIsolationTests.SourceEditsAfterSessionCreationDoNotChangeRuntimeOrReplay",
+          "old": "Failed",
+          "current": "Passed"
+        }
+      ],
+      "failures": [],
+      "skips": [
+        {
+          "name": "SlingFoundation.Tests.SlTests.SearchShots",
+          "result": "Skipped",
+          "label": "Explicit",
+          "runstate": "Explicit",
+          "message": "tuning aid",
+          "stack": null,
+          "output": null
+        },
+        {
+          "name": "SnakeFoundation.Tests.SnakePreviewExport.ExportFrames",
+          "result": "Skipped",
+          "label": "Explicit",
+          "runstate": "Explicit",
+          "message": "Writes preview files; run on demand",
+          "stack": null,
+          "output": null
+        },
+        {
+          "name": "SPF.Tests.EditMode.BufferTextAllocationProbeTests.WarmSinglelineAndMultilineMeshes_ReportAllocations",
+          "result": "Skipped",
+          "label": "Explicit",
+          "runstate": "Explicit",
+          "message": "Allocation diagnostic: run this exact test in real Unity; leaves production behavior and GC budgets unchanged.",
+          "stack": null,
+          "output": null
+        },
+        {
+          "name": "SPF.Tests.EditMode.GameplayCharacterStreamTests.DataTexturePaddingDoesNotMasqueradeAsPackedPayloadSavings",
+          "result": "Skipped",
+          "label": "Ignored",
+          "runstate": "Runnable",
+          "message": "Actual shader resources/upload accounting needs a graphics device.",
+          "stack": null,
+          "output": null
+        },
+        {
+          "name": "SPF.Tests.EditMode.SpriteTests.GpuSpriteUploadAccountingIncludesArgumentsAndResetsOnReuse",
+          "result": "Skipped",
+          "label": "Ignored",
+          "runstate": "Runnable",
+          "message": "GPU-driven rendering is not supported on this test device.",
+          "stack": null,
+          "output": null
+        }
+      ]
+    },
+    "playmode": {
+      "removed": [],
+      "added": [],
+      "result_changes": [],
+      "failures": [],
+      "skips": [
+        {
+          "name": "SurvivorFoundation.Tests.PlayMode.SvAllocationCaptureTests.NormalGameplayAllocationCallstacks",
+          "result": "Skipped",
+          "label": "Explicit",
+          "runstate": "Explicit",
+          "message": "Allocation callstack investigation: six fresh normal-gameplay windows; writes local Artifacts/GC captures.",
+          "stack": null,
+          "output": null
+        }
+      ]
+    }
+  },
+  "cold19Sha256": "a42c9f27d2bb8d277303eef24e5b4cdbd58f0035d8bca89c7e08089348dd5f30",
+  "cold19TwoProcessesEqual": true,
+  "nativeOriginalSnakeAssertionRetained": true,
+  "visualReview": {
+    "gameplay_point_pngs": 20,
+    "isolated_glyph_pngs": 4,
+    "damage_sequences": 4,
+    "source_frames": 360,
+    "all_reviewed_frame_pixels": true,
+    "subjective_realtime_viewing_claimed": false,
+    "reports": [
+      "review/static-pixel-review.json",
+      "review/belt-review.json",
+      "review/horde-review.json"
+    ],
+    "observed_clearance": "All recorded visible damage glyphs reviewed clear of actual head/healthbar/HUD pixels; complete normal/critical distinction remains readable.",
+    "repaired_trajectory": "Both Belt backends retain the matched first 18 above/right of shrinking !36; the old approximately 25px downward slot release is absent in this matched captured lifetime.",
+    "remaining_visual_limits": [
+      "Belt first-cluster whole-normal-label suppression for one captured approximately 50ms frame: GPU 011, DataTexture 012; reserved_drops 1/2/1 and glyphs 5/3/5 at unchanged N2/C1/A3; no camera displacement in checked static background region.",
+      "Belt later whole-label suppression, capped displacement and small settled glyphs at 640x360 remain.",
+      "Horde approximately 64px upward reflow under new obstacles and whole-label suppression remain; matched first-burst state has 28 versus prior 30 glyphs, at identical 18 normal / 6 critical facts, 24 active, tick 22.",
+      "No universal smoothness, uninterrupted label visibility, identical cross-run pixel timing, or physical-device acceptance is claimed."
+    ],
+    "preview_manifest": "review/preview-manifest.json",
+    "counter_summary": "damage-counter-summary.json"
+  },
+  "previewEncoding": {
+    "native_commit": "23d509f728ee21b6239d96575e5c14adf9b18b05",
+    "native_tree": "ad7cdb4fbd2f6223c5a52c56554d259f67986386",
+    "native_run": 37712952704,
+    "playback": "1x measured acquisition PTS, no interpolation or frame resampling; one repeated final image is the documented final hold.",
+    "source_format": "Unity JPEG95 review frames; lossy RGB. MP4 encoding is also lossy. Original verified captures remain preserved.",
+    "review_method": "All 360 actual source frames reviewed sequentially; subjective real-time viewing not claimed.",
+    "videos": [
+      {
+        "filename": "belt-datatex-measured-1x.mp4",
+        "path": "review/belt-datatex-measured-1x.mp4",
+        "report": "review/belt-datatex-measured-1x.json",
+        "bytes": 663162,
+        "video_sha256": "0f52df7e884cf2040acf1401f72428ac5457417731d80cf60c5dc33c044a1db5",
+        "source_frames": 90,
+        "encoded_frames": 91,
+        "measured_acquisition_seconds": 4.308299292,
+        "mean_acquisition_hz": 20.657803455127276,
+        "max_encoded_timestamp_error_ms": 0.0005,
+        "final_hold_seconds": 0.04998775
+      },
+      {
+        "filename": "belt-gpu-measured-1x.mp4",
+        "path": "review/belt-gpu-measured-1x.mp4",
+        "report": "review/belt-gpu-measured-1x.json",
+        "bytes": 685987,
+        "video_sha256": "f9e675d2451730947656e36d5ce48b8300311ff7243f0d639b02e67f7a6edd11",
+        "source_frames": 90,
+        "encoded_frames": 91,
+        "measured_acquisition_seconds": 4.385834375,
+        "mean_acquisition_hz": 20.292603958625318,
+        "max_encoded_timestamp_error_ms": 0.0005,
+        "final_hold_seconds": 0.050000042
+      },
+      {
+        "filename": "horde-datatex-measured-1x.mp4",
+        "path": "review/horde-datatex-measured-1x.mp4",
+        "report": "review/horde-datatex-measured-1x.json",
+        "bytes": 1577759,
+        "video_sha256": "75d481083ad38e26913b755670a689c2ed8688bbf53e7be6c73f193637287af5",
+        "source_frames": 90,
+        "encoded_frames": 91,
+        "measured_acquisition_seconds": 3.87423175,
+        "mean_acquisition_hz": 22.972296378501365,
+        "max_encoded_timestamp_error_ms": 0.0005,
+        "final_hold_seconds": 0.049986916
+      },
+      {
+        "filename": "horde-gpu-measured-1x.mp4",
+        "path": "review/horde-gpu-measured-1x.mp4",
+        "report": "review/horde-gpu-measured-1x.json",
+        "bytes": 1646588,
+        "video_sha256": "b6c8ac7324ceb99ba3adb9bd940c49de6dae5d74bee9366b6ded3238aa4e76e5",
+        "source_frames": 90,
+        "encoded_frames": 91,
+        "measured_acquisition_seconds": 4.041614166,
+        "mean_acquisition_hz": 22.02090460507358,
+        "max_encoded_timestamp_error_ms": 0.0005,
+        "final_hold_seconds": 0.033367166
+      }
+    ]
+  },
+  "physicalAndroidIosValidated": false,
+  "scopeNote": "This record does not include the later requested humanoid arm/cadence changes or isolated Latios S1a."
+}

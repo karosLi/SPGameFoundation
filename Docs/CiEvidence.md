@@ -1,5 +1,9 @@
 # Unity CI evidence parts
 
+The separate [Shooter native allocation diagnostic](ShooterAllocationDiagnostic.md)
+uses the same format with artifact prefix `shooter-native-allocation-diagnostic-part`.
+It is an intrusive, two-tier diagnostic on one exact branch, not the full native gate.
+
 The self-hosted Unity job uploads `unity-test-results-self-hosted-part00` through
 `part39`, creating only the parts that are needed. Each artifact contains one binary
 part of at most 16 MiB and an identical `evidence-manifest.json` of at most 1 MiB.

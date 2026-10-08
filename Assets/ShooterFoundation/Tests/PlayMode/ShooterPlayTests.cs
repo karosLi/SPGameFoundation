@@ -103,6 +103,9 @@ namespace ShooterFoundation.Tests.PlayMode
             CheckGraphics(tier);var config=ShooterConfig.CreateDefault();config.Settings.SpawnWaves=false;config.Settings.HeroHp=100000;config.Settings.EnemyFireInterval=100000;
             var game=ShooterGameBootstrap.Create(tier,config);
             var samples = new SteadyFrameSample[180]; // Before warmup; no allocation in the measured loop.
+#if UNITY_EDITOR && !SPF_DOTNET_HARNESS
+            ShooterAllocationCapture capture = null;
+#endif
             try
             {
                 yield return null;game.StartRun();yield return UIDriver.WaitUntil(()=>game.State.Run.Flow==ShooterFlow.Upgrade,5f);game.Choose(0);
@@ -110,10 +113,17 @@ namespace ShooterFoundation.Tests.PlayMode
                 game.Session.Sync();
                 for(int i=0;i<80;i++)ShooterSpawner.Enemy(game.Session.World,new float2((i%10)*0.8f-3.6f,1+(i/10)*0.8f),hp:100000,speed:0);
                 byte[] before=game.Session.CaptureSnapshot();game.Renderer.SetQuality(3);byte[] after=game.Session.CaptureSnapshot();CollectionAssert.AreEqual(before,after,"quality is presentation only");Assert.AreEqual(0,game.Renderer.ShadowBudget);game.Renderer.SetQuality(0);
+#if UNITY_EDITOR && !SPF_DOTNET_HARNESS
+                capture = ShooterAllocationCapture.CreateIfRequested(game, tier);
+                capture?.Warm();
+#endif
                 for(int i=0;i<150;i++)yield return null;
                 game.Governor.ResetGcStats();
                 for(int i=0;i<180;i++)
                 {
+#if UNITY_EDITOR && !SPF_DOTNET_HARNESS
+                    capture?.Frame();
+#endif
                     yield return null;
                     // LastValue describes the governor's previous-frame sample. Current Tick/flow
                     // provide observation context, not allocation callstack attribution.
@@ -125,16 +135,60 @@ namespace ShooterFoundation.Tests.PlayMode
                         Flow = (int)game.State.Run.Flow, Version = game.State.Run.Version,
                         Kills = game.State.Run.Kills, Wave = game.State.Run.Wave
                     };
+#if UNITY_EDITOR && !SPF_DOTNET_HARNESS
+                    capture?.Observe();
+#endif
                 }
-                WriteSteadySamples(tier, samples); // All formatting/IO occurs after the unchanged window.
-                if(game.Governor.GcCounterValid)
+                // Freeze the unchanged gate endpoint before diagnostics can advance the governor.
+                bool gcCounterValid = game.Governor.GcCounterValid;
+                int measuredFrames = game.Governor.FramesSinceReset;
+                int allocatingFrames = game.Governor.GcFramesSinceReset;
+                long allocatedBytes = game.Governor.GcBytesSinceReset;
+                int collections = game.Governor.GcCollectionsSinceReset;
+#if UNITY_EDITOR && !SPF_DOTNET_HARNESS
+                capture?.End(gcCounterValid, measuredFrames, allocatingFrames, allocatedBytes, collections);
+#endif
+                WriteSteadySamples(tier, samples); // Preserve the gate evidence even if diagnostic export fails.
+                if (gcCounterValid)
+                    GcReport.Write($"shooter steady ({tier})",measuredFrames,allocatingFrames,allocatedBytes,collections);
+#if UNITY_EDITOR && !SPF_DOTNET_HARNESS
+                bool diagnosticValid = true;
+                if (capture != null)
                 {
-                    GcReport.Write($"shooter steady ({tier})",game.Governor.FramesSinceReset,game.Governor.GcFramesSinceReset,game.Governor.GcBytesSinceReset);
-                    Assert.LessOrEqual(game.Governor.GcFramesSinceReset,2,"same strict steady-frame budget as existing play validation");
+                    // Six named empty/retained controls, four frames each, strictly after the gate.
+                    for (int control = 0; control < 6; control++)
+                    {
+                        capture.ArmControl(control);
+                        for (int f = 0; f < 4; f++)
+                        {
+                            capture.Frame();
+                            yield return null;
+                            capture.Observe();
+                        }
+                    }
+                    for (int f = 0; f < 3; f++) yield return null;
+                    diagnosticValid = capture.Export();
+                }
+#endif
+                if(gcCounterValid)
+                {
+                    Assert.LessOrEqual(allocatingFrames,2,"same strict steady-frame budget as existing play validation");
                 }
                 else TestContext.WriteLine("GC profiler counter unavailable: no engine-frame allocation claim.");
+#if UNITY_EDITOR && !SPF_DOTNET_HARNESS
+                Assert.IsTrue(diagnosticValid, "Shooter diagnostic mapping/calibration is incomplete; retain raw/CSV evidence, never infer zero or an engine source.");
+#endif
             }
-            finally { if(Camera.main!=null)Object.Destroy(Camera.main.gameObject);Object.Destroy(game.gameObject);Object.Destroy(config); }
+            finally
+            {
+#if UNITY_EDITOR && !SPF_DOTNET_HARNESS
+                try { capture?.Dispose(); }
+                finally
+#endif
+                {
+                    if(Camera.main!=null)Object.Destroy(Camera.main.gameObject);Object.Destroy(game.gameObject);Object.Destroy(config);
+                }
+            }
         }
         static void CheckGraphics(RenderTier tier)
         {

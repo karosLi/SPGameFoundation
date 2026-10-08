@@ -4,6 +4,31 @@
 # Editor path: $UNITY_EDITOR_PATH, else the default Unity Hub install location for ProjectVersion.txt.
 set -uo pipefail
 cd "$(dirname "$0")/../.."
+# Keep intrusive capture out of the full gate, even if the runner inherited this variable.
+# This is an exact, closed mode rather than a general-purpose test-filter override.
+MODE=full
+if [ "$#" -gt 1 ]; then
+  echo "::error::Usage: $0 [--shooter-gc-diagnostic]"; exit 2
+fi
+case "$#:${1:-}" in
+  0:) export SPF_SHOOTER_GC_CAPTURE=0 ;;
+  1:--shooter-gc-diagnostic)
+    MODE=shooter-gc-diagnostic
+    export SPF_SHOOTER_GC_CAPTURE=1
+    export SPF_STORY_GC_CAPTURE=0
+    export SPF_WEAPON_GAMEPLAY_SEQUENCE=0 SPF_ABILITY_GAMEPLAY_SEQUENCE=0
+    ;;
+  *) echo "::error::Usage: $0 [--shooter-gc-diagnostic]"; exit 2 ;;
+esac
+A=Artifacts; rm -rf "$A"; mkdir -p "$A"
+if [ "$MODE" = shooter-gc-diagnostic ]; then
+  {
+    printf 'purpose=intrusive allocation attribution; NOT full native gate\n'
+    printf 'head=%s\n' "$(git rev-parse HEAD 2>/dev/null || printf unknown)"
+    printf 'github_sha=%s\nref=%s\nrun_id=%s\nrun_attempt=%s\n' "${GITHUB_SHA:-local}" "${GITHUB_REF:-local}" "${GITHUB_RUN_ID:-local}" "${GITHUB_RUN_ATTEMPT:-local}"
+    printf 'started_utc=%s\n' "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+  } > "$A/shooter-diagnostic-run.txt"
+fi
 VERSION=$(sed -n 's/^m_EditorVersion: *//p' ProjectSettings/ProjectVersion.txt | tr -d '\r')
 EDITOR="${UNITY_EDITOR_PATH:-}"
 if [ -z "$EDITOR" ]; then
@@ -29,10 +54,12 @@ if [ "$(uname)" = Darwin ] && [ "$(sysctl -n hw.optional.arm64 2>/dev/null)" = 1
   if lipo -archs "$EDITOR" 2>/dev/null | grep -qw arm64; then
     LAUNCH=(arch -arm64)
   else
+    if [ "$MODE" = shooter-gc-diagnostic ]; then
+      echo "::error::Shooter diagnostic requires the arm64 Unity editor on Apple Silicon for native Burst execution"; exit 1
+    fi
     echo "::warning::Unity at $EDITOR has no arm64 slice; install the Apple Silicon editor for Burst to work"
   fi
 fi
-A=Artifacts; rm -rf "$A"; mkdir -p "$A"
 PROJECT="$(pwd)"
 
 # Prints why the OS killed the editor (memory pressure, code signing, ...) on macOS.
@@ -169,6 +196,47 @@ run_platform() {
   fi
   return $code
 }
+
+if [ "$MODE" = shooter-gc-diagnostic ]; then
+  FILTER=ShooterFoundation.Tests.PlayMode.ShooterPlayTests.WarmSteadyFrameAndPresentationOnlyQuality
+  echo "::notice::INTRUSIVE SHOOTER DIAGNOSTIC ONLY; NOT THE FULL NATIVE GATE"
+  {
+    printf 'unity_version=%s\neditor=%s\nhost=%s\n' "$VERSION" "$EDITOR" "$(uname -sm)"
+    printf 'test_filter=%s\ntiers=GpuDriven,DataTexture\n' "$FILTER"
+    printf 'SPF_SHOOTER_GC_CAPTURE=1\nmeasured_frames=180\nmax_allocating_frames=2\n'
+    printf 'editor_invocations=1\nburst_disabled_fallback=false\nretry=false\n'
+    printf 'burst_actual_state=see per-tier capture settings and precondition\n'
+  } >> "$A/shooter-diagnostic-run.txt"
+  kill_leftover_editors
+  clear_burst_cache
+  # Deliberately bypass run_platform: no retry and no Burst-disabled fallback.
+  # The two parameterized tiers retain the unchanged window and append marker controls.
+  run playmode shooter-gc-diagnostic -testFilter "$FILTER"; DIAGNOSTIC=$?
+  printf 'editor_exit_code=%s\n' "$DIAGNOSTIC" >> "$A/shooter-diagnostic-run.txt"
+  # A successful editor exit without both requested, executed cases is incomplete evidence.
+  python3 - "$A/playmode-shooter-gc-diagnostic-results.xml" "$FILTER" <<'PY'
+import sys
+import xml.etree.ElementTree as ET
+
+try:
+    cases = ET.parse(sys.argv[1]).getroot().findall(".//test-case")
+    expected = {sys.argv[2] + "(" + tier + ")" for tier in ("GpuDriven", "DataTexture")}
+    if len(cases) != 2 or {case.get("fullname") for case in cases} != expected:
+        raise ValueError("expected exactly the GpuDriven and DataTexture steady-window cases")
+    if any(case.get("result") not in ("Passed", "Failed") for case in cases):
+        raise ValueError("both diagnostic tiers must execute; skipped/inconclusive cases are incomplete")
+    print("Both requested Shooter diagnostic tiers executed; this is not the full native gate.")
+    if any(case.get("result") == "Failed" for case in cases):
+        sys.exit(2)
+except (OSError, ValueError, ET.ParseError) as error:
+    print("::error::Incomplete Shooter diagnostic results: " + str(error))
+    sys.exit(1)
+PY
+  RESULTS=$?
+  printf 'result_scope_validation_exit_code=%s\n' "$RESULTS" >> "$A/shooter-diagnostic-run.txt"
+  [ "$DIAGNOSTIC" -ne 0 ] || DIAGNOSTIC=$RESULTS
+  exit "$DIAGNOSTIC"
+fi
 
 run_platform editmode -nographics; EDIT=$?
 for f in "$A"/perf-*.txt; do [ -f "$f" ] && { echo "::group::performance report $(basename "$f")"; cat "$f"; echo "::endgroup::"; }; done

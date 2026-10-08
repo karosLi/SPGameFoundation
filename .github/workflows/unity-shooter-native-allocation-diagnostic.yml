@@ -1,348 +1,338 @@
-name: Unity tests (self-hosted runner)
+name: Shooter native allocation diagnostic (NOT full gate)
 
-# Runs the Unity suites on your own machine registered as a GitHub self-hosted runner with the label
-# "unity" (its Unity Hub sign-in provides the licence, so a free Personal licence works).
-# Enable by creating the repository variable UNITY_SELF_HOSTED = true (Settings → Secrets and variables
-# → Actions → Variables). Optional variable UNITY_EDITOR_PATH if Unity is not in the default Hub location.
+# Intrusive attribution only. Push this exact branch to run once on the existing
+# licensed native runner. Ordinary native workflows explicitly exclude this branch.
 on:
   push:
-    branches-ignore:
+    branches:
       - diagnostic/shooter-native-allocation-20261008
-  pull_request:
-  workflow_dispatch:
-    inputs:
-      story_gc_capture:
-        description: Capture intrusive allocation stacks for the original Story test window
-        type: boolean
-        default: false
 
 jobs:
-  unity-tests:
-    if: vars.UNITY_SELF_HOSTED == 'true' && github.ref != 'refs/heads/diagnostic/shooter-native-allocation-20261008' && github.head_ref != 'diagnostic/shooter-native-allocation-20261008'
+  shooter-allocation-diagnostic:
+    if: vars.UNITY_SELF_HOSTED == 'true' && github.ref == 'refs/heads/diagnostic/shooter-native-allocation-20261008'
     runs-on: [self-hosted, unity]
     permissions:
-      contents: write   # publish-screenshots.sh pushes to the ci-screenshots/<branch> branch only
-    timeout-minutes: 240
+      contents: read
+    timeout-minutes: 60
     env:
       UNITY_EDITOR_PATH: ${{ vars.UNITY_EDITOR_PATH }}
-      SPF_SHOOTER_GC_CAPTURE: '0'
-      # This review branch records bounded raw frames after its normal gameplay assertions.
-      # Encoding occurs after acquisition; timestamps retain the actual Editor capture cadence.
-      SPF_WEAPON_GAMEPLAY_SEQUENCE: ${{ (github.ref == 'refs/heads/dot/weapon-motion-stage5' || github.ref == 'refs/heads/dot/humanoid-action-cadence' || github.ref == 'refs/heads/dot/blade-sword-choreography') && '1' || '0' }}
-      # Stage E's four short opt-in sequences retain acquisition timestamps and encode afterwards.
-      SPF_ABILITY_GAMEPLAY_SEQUENCE: '1'
-      # Diagnostic profiling changes allocation/timing. Ordinary CI must remain uninstrumented.
-      # Manually enable only to attribute the original window; the normal budget stays unchanged.
-      SPF_STORY_GC_CAPTURE: ${{ github.event_name == 'workflow_dispatch' && inputs.story_gc_capture && '1' || '0' }}
+      SPF_SHOOTER_GC_CAPTURE: '1'
+      SPF_STORY_GC_CAPTURE: '0'
+      SPF_WEAPON_GAMEPLAY_SEQUENCE: '0'
+      SPF_ABILITY_GAMEPLAY_SEQUENCE: '0'
     steps:
       - uses: actions/checkout@v4
         with:
-          clean: false   # keep Library/ between runs: much faster imports
-      - name: Run EditMode and PlayMode tests
+          clean: false
+      - name: Capture both Shooter tiers once with Burst
         shell: bash
-        run: Tools/ci/local-unity-tests.sh
-      - name: Summary
+        run: Tools/ci/local-unity-tests.sh --shooter-gc-diagnostic
+      - name: Diagnostic summary (NOT full native gate)
         if: always()
         shell: bash
         run: |
-          for f in Artifacts/*-results.xml; do
-            [ -f "$f" ] || continue
-            line=$(grep -m1 -o '<test-run[^>]*>' "$f" | grep -o 'result="[^"]*"\|total="[^"]*"\|passed="[^"]*"\|failed="[^"]*"\|skipped="[^"]*"' | tr '\n' ' ')
-            echo "$(basename "$f"): $line" | tee -a "$GITHUB_STEP_SUMMARY"
-            grep -o '<test-case [^>]*result="Failed"[^>]*>' "$f" | grep -o 'fullname="[^"]*"' | tee -a "$GITHUB_STEP_SUMMARY" || true
-          done
-      - name: Publish screenshots
-        if: always() && github.event_name != 'pull_request'
-        shell: bash
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: Tools/ci/publish-screenshots.sh || echo "::warning::screenshot publish failed"
-      - name: Package bounded evidence parts
-        # Restore all downloaded parts with Tools/ci/evidence_parts.py; see Docs/CiEvidence.md.
+          {
+            echo "Intrusive Shooter allocation diagnostic only; NOT full native gate."
+            echo "Head: $GITHUB_SHA; run: $GITHUB_RUN_ID; attempt: $GITHUB_RUN_ATTEMPT"
+            echo "Both tiers; original 180-frame window and maximum 2 allocating frames unchanged."
+            echo "Policy: one editor invocation requiring Burst, no retry or Burst-disabled fallback."
+            for f in Artifacts/shooter-diagnostic-run.txt Artifacts/GC/shooter-*/steady-window-summary.txt; do
+              [ -f "$f" ] || continue
+              echo "$(basename "$f") (first 80 lines):"
+              head -n 80 "$f"
+            done
+            for f in Artifacts/playmode-shooter-gc-diagnostic-results.xml; do
+              [ -f "$f" ] || continue
+              grep -m1 -o '<test-run[^>]*>' "$f" | cut -c1-2000 || true
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Package bounded diagnostic evidence
+        # Includes GC raw/settings/CSV, ordinary samples, run metadata, XML and log.
+        # All files are retained; the existing 40 x 16 MiB cap fails on overflow.
         id: evidence
         if: always()
         shell: bash
         run: |
-          parts="$RUNNER_TEMP/spf-unity-evidence-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          parts="$RUNNER_TEMP/spf-shooter-diagnostic-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
           python3 Tools/ci/evidence_parts.py package --source Artifacts --output "$parts"
           echo "directory=$parts" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part00
+          name: shooter-native-allocation-diagnostic-part00
           path: ${{ steps.evidence.outputs.directory }}/part00/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part01
+          name: shooter-native-allocation-diagnostic-part01
           path: ${{ steps.evidence.outputs.directory }}/part01/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part02
+          name: shooter-native-allocation-diagnostic-part02
           path: ${{ steps.evidence.outputs.directory }}/part02/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part03
+          name: shooter-native-allocation-diagnostic-part03
           path: ${{ steps.evidence.outputs.directory }}/part03/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part04
+          name: shooter-native-allocation-diagnostic-part04
           path: ${{ steps.evidence.outputs.directory }}/part04/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part05
+          name: shooter-native-allocation-diagnostic-part05
           path: ${{ steps.evidence.outputs.directory }}/part05/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part06
+          name: shooter-native-allocation-diagnostic-part06
           path: ${{ steps.evidence.outputs.directory }}/part06/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part07
+          name: shooter-native-allocation-diagnostic-part07
           path: ${{ steps.evidence.outputs.directory }}/part07/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part08
+          name: shooter-native-allocation-diagnostic-part08
           path: ${{ steps.evidence.outputs.directory }}/part08/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part09
+          name: shooter-native-allocation-diagnostic-part09
           path: ${{ steps.evidence.outputs.directory }}/part09/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part10
+          name: shooter-native-allocation-diagnostic-part10
           path: ${{ steps.evidence.outputs.directory }}/part10/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part11
+          name: shooter-native-allocation-diagnostic-part11
           path: ${{ steps.evidence.outputs.directory }}/part11/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part12
+          name: shooter-native-allocation-diagnostic-part12
           path: ${{ steps.evidence.outputs.directory }}/part12/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part13
+          name: shooter-native-allocation-diagnostic-part13
           path: ${{ steps.evidence.outputs.directory }}/part13/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part14
+          name: shooter-native-allocation-diagnostic-part14
           path: ${{ steps.evidence.outputs.directory }}/part14/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part15
+          name: shooter-native-allocation-diagnostic-part15
           path: ${{ steps.evidence.outputs.directory }}/part15/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part16
+          name: shooter-native-allocation-diagnostic-part16
           path: ${{ steps.evidence.outputs.directory }}/part16/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part17
+          name: shooter-native-allocation-diagnostic-part17
           path: ${{ steps.evidence.outputs.directory }}/part17/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part18
+          name: shooter-native-allocation-diagnostic-part18
           path: ${{ steps.evidence.outputs.directory }}/part18/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part19
+          name: shooter-native-allocation-diagnostic-part19
           path: ${{ steps.evidence.outputs.directory }}/part19/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part20
+          name: shooter-native-allocation-diagnostic-part20
           path: ${{ steps.evidence.outputs.directory }}/part20/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part21
+          name: shooter-native-allocation-diagnostic-part21
           path: ${{ steps.evidence.outputs.directory }}/part21/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part22
+          name: shooter-native-allocation-diagnostic-part22
           path: ${{ steps.evidence.outputs.directory }}/part22/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part23
+          name: shooter-native-allocation-diagnostic-part23
           path: ${{ steps.evidence.outputs.directory }}/part23/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part24
+          name: shooter-native-allocation-diagnostic-part24
           path: ${{ steps.evidence.outputs.directory }}/part24/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part25
+          name: shooter-native-allocation-diagnostic-part25
           path: ${{ steps.evidence.outputs.directory }}/part25/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part26
+          name: shooter-native-allocation-diagnostic-part26
           path: ${{ steps.evidence.outputs.directory }}/part26/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part27
+          name: shooter-native-allocation-diagnostic-part27
           path: ${{ steps.evidence.outputs.directory }}/part27/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part28
+          name: shooter-native-allocation-diagnostic-part28
           path: ${{ steps.evidence.outputs.directory }}/part28/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part29
+          name: shooter-native-allocation-diagnostic-part29
           path: ${{ steps.evidence.outputs.directory }}/part29/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part30
+          name: shooter-native-allocation-diagnostic-part30
           path: ${{ steps.evidence.outputs.directory }}/part30/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part31
+          name: shooter-native-allocation-diagnostic-part31
           path: ${{ steps.evidence.outputs.directory }}/part31/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part32
+          name: shooter-native-allocation-diagnostic-part32
           path: ${{ steps.evidence.outputs.directory }}/part32/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part33
+          name: shooter-native-allocation-diagnostic-part33
           path: ${{ steps.evidence.outputs.directory }}/part33/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part34
+          name: shooter-native-allocation-diagnostic-part34
           path: ${{ steps.evidence.outputs.directory }}/part34/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part35
+          name: shooter-native-allocation-diagnostic-part35
           path: ${{ steps.evidence.outputs.directory }}/part35/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part36
+          name: shooter-native-allocation-diagnostic-part36
           path: ${{ steps.evidence.outputs.directory }}/part36/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part37
+          name: shooter-native-allocation-diagnostic-part37
           path: ${{ steps.evidence.outputs.directory }}/part37/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part38
+          name: shooter-native-allocation-diagnostic-part38
           path: ${{ steps.evidence.outputs.directory }}/part38/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always() && steps.evidence.outcome == 'success'
         with:
-          name: unity-test-results-self-hosted-part39
+          name: shooter-native-allocation-diagnostic-part39
           path: ${{ steps.evidence.outputs.directory }}/part39/
           compression-level: 0
           if-no-files-found: ignore

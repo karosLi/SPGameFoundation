@@ -12,6 +12,7 @@ on:
 
 jobs:
   unity-tests:
+    if: github.ref != 'refs/heads/diagnostic/shooter-native-allocation-20261008' && github.head_ref != 'diagnostic/shooter-native-allocation-20261008'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:
@@ -20,6 +21,7 @@ jobs:
       UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
       UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
       SPF_ABILITY_GAMEPLAY_SEQUENCE: '1'
+      SPF_SHOOTER_GC_CAPTURE: '0'
     steps:
       - name: Check licence secrets
         id: licence

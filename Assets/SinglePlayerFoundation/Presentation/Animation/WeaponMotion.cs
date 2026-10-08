@@ -18,7 +18,9 @@ namespace SPF.Presentation.Animation
     public struct WeaponPose
     {
         public float2 Grip, Support;
-        public float Angle, Length, Draw, Weight, Visibility, Body, StringWeight;
+        // ArmBend is the continuous outgoing (-1) to incoming (+1) mirror ownership.
+        // Zero crosses the body's centre in a folded guard, using the existing Turn clock.
+        public float Angle, Length, Draw, Weight, Visibility, Body, StringWeight, ArmBend;
     }
 
     /// <summary>Small authored pose library. Family-specific Hermite tangents connect preparation,
@@ -26,6 +28,7 @@ namespace SPF.Presentation.Animation
     public static class WeaponMotion
     {
         const float MarkerEpsilon=.00001f;
+        public static bool Blade(in WeaponViewState w)=>w.Equipped&&w.Family==WeaponActionFamily.Slash&&WeaponArt.Resolve(w.VisualId,w.Family)==1001;
         public static bool Acting(in WeaponViewState w)=>w.Stage==WeaponStage.Windup||w.Stage==WeaponStage.Active||w.Stage==WeaponStage.Recovery;
         public static float ActionWeight(in WeaponViewState w)
         {
@@ -74,8 +77,21 @@ namespace SPF.Presentation.Animation
         public static float2 Rotate(float2 p,float angle)
         {float c=math.cos(angle),s=math.sin(angle);return new float2(c*p.x-s*p.y,s*p.x+c*p.y);}
         public static float AngleDelta(float from,float to)=>math.atan2(math.sin(to-from),math.cos(to-from));
+        public static float AimAngleDelta(float from,float to,in WeaponViewState weapon)
+        {
+            float delta=AngleDelta(from,to);
+            // A horizontal blade reversal has two equally short arcs. Float sin(pi)
+            // must not choose a downward half-circle for the guarded hand and blade.
+            if(Blade(weapon)
+                &&math.abs(weapon.AimDirection.y)<.00001f&&math.abs(delta)>math.PI-.00001f)
+                delta=math.cos(from)>=0?math.PI:-math.PI;
+            return delta;
+        }
         public static float2 WorldOffset(in GameplayCharacterInput input,float2 aim,float2 offset)=>input.Root+(aim*offset.x+new float2(0,offset.y))*input.Scale;
-        public static WeaponPose Sample(in GameplayCharacterInput input,in GameplayCharacterMotion motion)
+        public static WeaponPose Sample(in GameplayCharacterInput input,in GameplayCharacterMotion motion)=>Sample(input,motion,false);
+        // The turn's arm reference keeps the SAME authored action phase on the admitted
+        // side. It is not an idle override; contact and cancellation own this reference too.
+        internal static WeaponPose Sample(in GameplayCharacterInput input,in GameplayCharacterMotion motion,bool armReference)
         {
             var w=input.Weapon;if(!w.Equipped)return default;
             bool acting=Acting(w);float phase=acting?math.saturate(w.Phase):0;
@@ -83,15 +99,15 @@ namespace SPF.Presentation.Animation
             float contact=math.clamp(impactMarker,MarkerEpsilon,1-2*MarkerEpsilon),end=math.clamp(w.ActiveEndPhase,contact+MarkerEpsilon,1-MarkerEpsilon);
             float reachWeight=acting?NaturalMotion.Ease(phase/contact)*(1-NaturalMotion.Ease((phase-end)/math.max(MarkerEpsilon,1-end))):0;
             float aimWeight=acting?NaturalMotion.Ease(phase/contact):0;
-            float2 aim=math.lerp(motion.WeaponAim,w.AimDirection,aimWeight);
-            if(w.Family==WeaponActionFamily.Slash&&WeaponArt.Resolve(w.VisualId,w.Family)==1001&&aimWeight>0&&aimWeight<1)
+            float2 aim=armReference?w.AimDirection:math.lerp(motion.WeaponAim,w.AimDirection,aimWeight);
+            if(!armReference&&w.Family==WeaponActionFamily.Slash&&WeaponArt.Resolve(w.VisualId,w.Family)==1001&&aimWeight>0&&aimWeight<1)
             {
                 // Blend the turning blade's heading and projected length separately. A
                 // chord between opposed directions shrinks its rigid length, then pops
                 // back on cancellation. Keep depth foreshortening and exact endpoints.
                 float from=math.atan2(motion.WeaponAim.y,motion.WeaponAim.x);
                 float to=math.atan2(w.AimDirection.y,w.AimDirection.x);
-                float heading=from+AngleDelta(from,to)*aimWeight;
+                float heading=from+AimAngleDelta(from,to,w)*aimWeight;
                 float projectedLength=math.lerp(math.length(motion.WeaponAim),math.length(w.AimDirection),aimWeight);
                 aim=new float2(math.cos(heading),math.sin(heading))*projectedLength;
             }
@@ -148,7 +164,12 @@ namespace SPF.Presentation.Animation
             float sideArc=verticalAim*(.48f*chamber+(w.Family==WeaponActionFamily.Slash?.42f:.30f)*followArc);
             offset.y*=1-.30f*verticalAim;
             float2 grip=canonical+(aim*offset.x+new float2(facing*sideArc,offset.y))*input.Scale;
-            angle+=rotation*facing;
+            // During a blade turn the lifted guard belongs to the continuous body turn.
+            // Mirroring it with the newly admitted action's facing would point
+            // the still-outgoing guard down before the aim has turned across the body.
+            float guardFacing=Blade(w)?math.lerp(motion.Turn,facing,aimWeight):facing;
+            angle+=rotation*guardFacing;
+            float armBend=guardFacing*facing;
             var skill=motion.Skill.Pose;
             float2 skillGrip=input.Root+new float2(skill.NearHand.x*facing,skill.NearHand.y)*input.Scale;
             grip=math.lerp(grip,skillGrip,skill.NearWeight*relaxed);
@@ -159,10 +180,13 @@ namespace SPF.Presentation.Animation
                 // Preserve outgoing hand/angular velocity. This is a bounded hand-space inertial
                 // transition, not independently damped IK joints or a claim of full-body inertialization.
                 float blendTime=acting?math.max(motion.EquipAge,phase/contact):motion.EquipAge;
-                grip=new float2(Hermite(motion.ChangeGrip.x,grip.x,motion.ChangeGripVelocity.x,0,blendTime,.2f),
-                    Hermite(motion.ChangeGrip.y,grip.y,motion.ChangeGripVelocity.y,0,blendTime,.2f));
+                float2 changeGrip=armReference?motion.ChangeArmGrip:motion.ChangeGrip;
+                float2 changeVelocity=armReference?motion.ChangeArmGripVelocity:motion.ChangeGripVelocity;
+                grip=new float2(Hermite(changeGrip.x,grip.x,changeVelocity.x,0,blendTime,.2f),
+                    Hermite(changeGrip.y,grip.y,changeVelocity.y,0,blendTime,.2f));
                 angle=Hermite(motion.ChangeAngle,motion.ChangeAngle+AngleDelta(motion.ChangeAngle,angle),motion.ChangeAngleVelocity,0,blendTime,.2f);
                 body=Hermite(motion.ChangeWeaponBody,body,motion.ChangeWeaponBodyVelocity,0,blendTime,.2f);
+                if(Blade(w))armBend=Hermite(motion.ChangeArmBend,armBend,motion.ChangeArmBendVelocity,0,blendTime,.2f);
             }
             float length=math.distance(canonical,muzzle)/math.max(.001f,input.Scale);
             float2 support;float stringWeight=1;
@@ -185,17 +209,20 @@ namespace SPF.Presentation.Animation
             else
                 support=grip+Rotate(WorldOffset(input,aim,w.SecondaryGripOffset)-canonical,angle-canonicalAngle);
             return new WeaponPose {Grip=grip,Support=support,Angle=angle,Length=length,Draw=draw,
-                StringWeight=stringWeight,Weight=motion.WeaponWeight,Visibility=math.max(.04f,(1-equip)*(motion.ChangingWeapon?transition:1)),Body=body};
+                StringWeight=stringWeight,Weight=motion.WeaponWeight,Visibility=math.max(.04f,(1-equip)*(motion.ChangingWeapon?transition:1)),Body=body,ArmBend=armBend};
         }
 
         public static void ApplyArms(in SkeletonView rig,NativeArray<BoneLocal> local,in GameplayCharacterInput input,
             in GameplayCharacterMotion motion,int at)
         {
             var pose=Sample(input,motion);if(!input.Weapon.Equipped)return;
+            float armBend=math.lerp(1,pose.ArmBend,math.saturate(pose.Weight));
+            var armTarget=pose;
+            if(armBend<.999999f)armTarget=Sample(input,motion,true);
             // Final IK consumes the phase-authored hand trajectory. It must never replace
             // that trajectory with an idle socket, which would erase anticipation/arm lift.
             float2 primaryShoulder=NaturalMotion.BonePoint(rig,local,NaturalCharacterRig.NearArm,0,at);
-            float primaryDistance=math.distance(NaturalMotion.ModelPoint(pose.Grip,input.Root,motion.Facing,motion.Scale),primaryShoulder);
+            float primaryDistance=math.distance(NaturalMotion.ModelPoint(armTarget.Grip,input.Root,motion.Facing,motion.Scale),primaryShoulder);
             float primaryFold=1-NaturalMotion.Ease((primaryDistance-.12f)/.22f);
             float bladeSlide=0;
             if(input.Weapon.Family==WeaponActionFamily.Slash&&WeaponArt.Resolve(input.Weapon.VisualId,input.Weapon.Family)==1001)
@@ -204,7 +231,7 @@ namespace SPF.Presentation.Animation
                 // existing wrist limit. Derive room from the continuous target, not the
                 // action stage, so cancellation/equip keeps it while that hand is high.
                 // The hand path remains unchanged; reuse the same single arm solve.
-                float elevation=(pose.Grip.y-input.Root.y)/motion.Scale;
+                float elevation=(armTarget.Grip.y-input.Root.y)/motion.Scale;
                 bladeSlide=.22f*NaturalMotion.Ease((elevation-1.60f)/.23f);
             }
             if(primaryFold>.001f||bladeSlide>0)
@@ -213,7 +240,29 @@ namespace SPF.Presentation.Animation
                 primaryArm.Position+=Rotate(new float2(-.10f*primaryFold-bladeSlide,0),-local[at+NaturalCharacterRig.Pelvis].Rotation-local[at+NaturalCharacterRig.Torso].Rotation);
                 local[at+NaturalCharacterRig.NearArm]=primaryArm;
             }
-            NaturalMotion.BlendAim(rig,local,NaturalCharacterRig.NearArm,NaturalCharacterRig.NearForearm,pose.Grip,input.Root,motion.Facing,motion.Scale,-1,pose.Weight,at);
+            if(armBend<.999999f)
+            {
+                // Mirroring the usual fixed IK bend at the facing edge flips the elbow.
+                // Carry the same phase-authored guard through a compact fold instead:
+                // upper arm crosses the downward centre and forearm crosses pi together.
+                // Both physical segment lengths stay fixed; the final palm remains the
+                // blade authority. At incoming ownership +1 this is the original IK.
+                float parent=local[at+NaturalCharacterRig.Pelvis].Rotation+local[at+NaturalCharacterRig.Torso].Rotation;
+                float2 shoulder=NaturalMotion.BonePoint(rig,local,NaturalCharacterRig.NearArm,0,at);
+                float2 current=NaturalMotion.BonePoint(rig,local,NaturalCharacterRig.NearForearm,rig.Bones[NaturalCharacterRig.NearForearm].Length,at);
+                float2 hand=math.lerp(current,NaturalMotion.ModelPoint(armTarget.Grip,input.Root,motion.Facing,motion.Scale),math.saturate(pose.Weight));
+                float2 delta=hand-new float2(shoulder.x*armBend,shoulder.y);
+                float l1=rig.Bones[NaturalCharacterRig.NearArm].Length,l2=rig.Bones[NaturalCharacterRig.NearForearm].Length;
+                float distance=math.clamp(math.length(delta),math.abs(l1-l2)+.0001f,l1+l2-.014f);
+                float cosA=math.clamp((l1*l1+distance*distance-l2*l2)/(2*l1*distance),-1,1);
+                float cosInner=math.clamp((l1*l1+l2*l2-distance*distance)/(2*l1*l2),-1,1);
+                var upper=local[at+NaturalCharacterRig.NearArm];var lower=local[at+NaturalCharacterRig.NearForearm];
+                float targetUpper=math.atan2(delta.y,delta.x)-math.acos(cosA);
+                upper.Rotation=-math.PI*.5f+armBend*AngleDelta(-math.PI*.5f,targetUpper)-parent;
+                lower.Rotation=math.PI-math.acos(cosInner)*armBend;
+                local[at+NaturalCharacterRig.NearArm]=upper;local[at+NaturalCharacterRig.NearForearm]=lower;
+            }
+            else NaturalMotion.BlendAim(rig,local,NaturalCharacterRig.NearArm,NaturalCharacterRig.NearForearm,pose.Grip,input.Root,motion.Facing,motion.Scale,-1,pose.Weight,at);
             // The wrist is a separate degree of freedom from hand position. Keep a bounded
             // grip angle instead of inheriting the forearm rotation at every attack phase.
             float forearm=local[at+NaturalCharacterRig.Pelvis].Rotation+local[at+NaturalCharacterRig.Torso].Rotation+

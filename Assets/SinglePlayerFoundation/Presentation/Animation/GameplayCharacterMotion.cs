@@ -44,6 +44,8 @@ namespace SPF.Presentation.Animation
         public int WeaponVisualId;
         public float2 HeldGrip, ChangeGrip, HeldGripVelocity, ChangeGripVelocity;
         public float HeldAngle, ChangeAngle, HeldAngleVelocity, ChangeAngleVelocity, EquipAge;
+        public float2 HeldArmGrip, ChangeArmGrip, HeldArmGripVelocity, ChangeArmGripVelocity;
+        public float HeldArmBend, ChangeArmBend, HeldArmBendVelocity, ChangeArmBendVelocity;
         public float HeldWeaponBody, ChangeWeaponBody, HeldWeaponBodyVelocity, ChangeWeaponBodyVelocity;
         public float Phase, Run, Attack, Hit, Death, Facing, Scale, FarSwingSeconds, NearSwingSeconds, FreeGuard;
         public bool Initialized, Airborne, Moving, WeaponWasActing, ChangingWeapon;
@@ -56,6 +58,7 @@ namespace SPF.Presentation.Animation
             float scale = math.clamp(input.Scale, .1f, 4f);
             var profile=GameplayMotionProfiles.Resolve(input);float width=math.clamp(profile.FootWidth,.08f,.2f);
             float facing = input.Facing < 0 ? -1f : 1f;
+            float armMirror=Initialized?Facing*facing:1;
             width*=facing;
             float2 ground = input.Ground / scale;
             bool discontinuity = Initialized && (input.Teleported || math.distancesq(input.Root, PreviousRoot) > scale * scale * 2.25f || math.abs(Scale-scale) > .001f);
@@ -167,7 +170,7 @@ namespace SPF.Presentation.Animation
             if(math.lengthsq(desiredAim)>.0001f)
             {
                 float angle=math.atan2(WeaponAim.y,WeaponAim.x),targetAngle=math.atan2(desiredAim.y,desiredAim.x);
-                angle+=WeaponMotion.AngleDelta(angle,targetAngle)*(1-math.exp(-18f*dt));
+                angle+=WeaponMotion.AimAngleDelta(angle,targetAngle,input.Weapon)*(1-math.exp(-18f*dt));
                 float length=math.lerp(math.length(WeaponAim),math.length(desiredAim),1-math.exp(-18f*dt));
                 WeaponAim=new float2(math.cos(angle),math.sin(angle))*length;
             }
@@ -176,13 +179,24 @@ namespace SPF.Presentation.Animation
             float aimDrop=input.Weapon.Equipped?.16f*math.saturate(-input.Weapon.AimDirection.y):0;
             WeaponAimDrop=math.lerp(WeaponAimDrop,aimDrop,1-math.exp(-18f*dt));
             bool changed=input.Weapon.VisualId!=WeaponVisualId;
+            // The arm reference is the admitted side's guard, whereas HeldGrip is a
+            // world-space displayed path. Convert that reference if a fixed-tick turn
+            // and interruption both happen between two presentation frames.
+            float2 previousArmGrip=HeldArmGrip,previousArmVelocity=HeldArmGripVelocity;
+            if(armMirror<0){previousArmGrip.x=2*input.Root.x-previousArmGrip.x;previousArmVelocity.x=-previousArmVelocity.x;}
             if(changed||WeaponWasActing&&!WeaponMotion.Acting(input.Weapon))
-            {ChangeGrip=HeldGrip;ChangeAngle=HeldAngle;ChangeGripVelocity=HeldGripVelocity;ChangeAngleVelocity=HeldAngleVelocity;ChangeWeaponBody=HeldWeaponBody;ChangeWeaponBodyVelocity=HeldWeaponBodyVelocity;EquipAge=0;ChangingWeapon=changed;}
+            {ChangeGrip=HeldGrip;ChangeAngle=HeldAngle;ChangeGripVelocity=HeldGripVelocity;ChangeAngleVelocity=HeldAngleVelocity;ChangeWeaponBody=HeldWeaponBody;ChangeWeaponBodyVelocity=HeldWeaponBodyVelocity;
+                ChangeArmGrip=previousArmGrip;ChangeArmGripVelocity=previousArmVelocity;ChangeArmBend=HeldArmBend*armMirror;ChangeArmBendVelocity=HeldArmBendVelocity*armMirror;EquipAge=0;ChangingWeapon=changed;}
             else EquipAge=math.min(1,EquipAge+dt/.2f);
             WeaponWasActing=WeaponMotion.Acting(input.Weapon);WeaponVisualId=input.Weapon.VisualId;PreviousVelocity=velocity;
             var held=WeaponMotion.Sample(input,this);
+            var arm=WeaponMotion.Blade(input.Weapon)?WeaponMotion.Sample(input,this,true):held;
             if(!reset&&dt>0)
-            {HeldGripVelocity=math.clamp((held.Grip-HeldGrip)/dt,new float2(-8),new float2(8));HeldAngleVelocity=math.clamp(WeaponMotion.AngleDelta(HeldAngle,held.Angle)/dt,-15,15);HeldWeaponBodyVelocity=math.clamp((held.Body-HeldWeaponBody)/dt,-3,3);}
+            {HeldGripVelocity=math.clamp((held.Grip-HeldGrip)/dt,new float2(-8),new float2(8));HeldAngleVelocity=math.clamp(WeaponMotion.AngleDelta(HeldAngle,held.Angle)/dt,-15,15);HeldWeaponBodyVelocity=math.clamp((held.Body-HeldWeaponBody)/dt,-3,3);
+                HeldArmGripVelocity=math.clamp((arm.Grip-previousArmGrip)/dt,new float2(-8),new float2(8));
+                HeldArmBendVelocity=input.Weapon.Equipped?math.clamp((held.ArmBend-HeldArmBend*armMirror)/dt,-15,15):0;}
+            HeldArmGrip=arm.Grip;HeldArmBend=input.Weapon.Equipped?held.ArmBend:1;
+            if(!input.Weapon.Equipped)HeldArmBendVelocity=0;
             HeldGrip=held.Grip;HeldAngle=held.Angle;HeldWeaponBody=held.Body;
             float2 target = input.Aim && input.Action!=GameplayCharacterAction.Kick ? input.AimTarget : input.Root + new float2(facing * math.lerp(.34f,.83f,math.max(0,Attack)), math.lerp(1.5f,1.65f,math.max(0,Attack))) * scale;
             NaturalMotion.SmoothAim(ref Aim,target,dt,24);
@@ -383,6 +397,10 @@ namespace SPF.Presentation.Animation
             // punch lean makes the shoulder chase the hand and erases the sword's elbow extension.
             bool meleeWeapon=WeaponMotion.Acting(input.Weapon)&&(input.Weapon.Family==WeaponActionFamily.Slash||input.Weapon.Family==WeaponActionFamily.Thrust);
             float punchLean=meleeWeapon?0:motion.Attack;
+            // Cancelling the blade must not instantly restore the residual generic punch
+            // lean underneath its inertial arm. Other actions (including a kick) retain it.
+            if(WeaponMotion.Blade(input.Weapon)&&input.Action==GameplayCharacterAction.Punch)
+                punchLean*=NaturalMotion.Ease(motion.EquipAge);
             torso.Rotation=-.035f-lean-depth-profile.BodySway*motion.Gait-pelvis.Rotation*.65f+weapon.Body+skill.Body*skillBodyWeight-.12f*punchLean+motion.Hit*.24f*profile.HitRecoil;
             torso.Rotation+=.065f*(motion.Turn*motion.Facing-1)+.08f*anticipation+.12f*collapse;
             torso.Rotation-=math.clamp(motion.Acceleration*motion.Facing*.004f,-.045f,.045f);

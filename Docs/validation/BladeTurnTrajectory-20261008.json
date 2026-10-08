@@ -1,0 +1,64 @@
+{
+  "baseline_commit": "278989217313a1565ecf0b4fb625e49008c8b58b",
+  "baseline_tree": "b2d5e2fc751baede4496c0a722db2685f4ed7bb9",
+  "scope": "Blade-only presentation turn trajectory; native visual acceptance pending",
+  "source_sha256": {
+    "Assets/SinglePlayerFoundation/Presentation/Animation/WeaponMotion.cs": "1585ec12320be9287b938632b2b024ea1d0a09044095f5bc786d15dd3646d480",
+    "Assets/SinglePlayerFoundation/Presentation/Animation/GameplayCharacterMotion.cs": "4d7aaa360bb5504c0b0f25658d7c01d53cb561320bd0fbadbbdfdfb521d50b71",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/BladeTurnTrajectoryTests.cs": "40a1c25d5a716eff87ad75457973d8060522739d1ac13e0bb6a200765332bc81"
+  },
+  "other_weapons": [
+    {
+      "weapon": 1002,
+      "samples": 10080,
+      "bytes": 8547840,
+      "sha256": "ba316ab85ea5e333311a9e16684b7bfbaafd62a09971700cf6737d5b7e4e3457",
+      "equal": true
+    },
+    {
+      "weapon": 1003,
+      "samples": 10080,
+      "bytes": 8547840,
+      "sha256": "3669570357e2a9f7944acfb560d81c35996faeb7613505228df5e856509f8d09",
+      "equal": true
+    },
+    {
+      "weapon": 1004,
+      "samples": 10080,
+      "bytes": 8547840,
+      "sha256": "46c41152f743008e2cc852eca55e344cbda72c933c8916db59473cf733cfd4be",
+      "equal": true
+    }
+  ],
+  "evidence_root": "integration-validation/resume-20261008/blade-turn-trajectory",
+  "native_domain": {
+    "result": "compile passed",
+    "errors": 0,
+    "warnings": 1,
+    "warning": "MSB3277 official Unity NUnit and harness NUnit reference versions; not native execution"
+  },
+  "native_visual": "not run in this branch; lead owns fresh two-tier 1x review",
+  "prior_capture_caveat": "5d1db3e observer CSV may lead prepared pixels by one Tick; pixel rejection stands; public runtime regression does not use that observer",
+  "focused": {
+    "passed": 168,
+    "failed": 0,
+    "log": "frozen-focused.log",
+    "trx": "frozen-focused.trx",
+    "tier_cache": "three roles incl Kind=1 low-quality 15 Hz cache",
+    "new_held_reversal_metrics": {
+      "minTip": 1.2499996,
+      "minHand": 1.2499998,
+      "wristSpeed": 14.822344,
+      "elbowSpeed": 6.5241127,
+      "angularSpeed": 33.5937
+    }
+  },
+  "evidence_sha256": {
+    "red.log": "d798f0ffeac2cd29ad7ae8d1555f6d542199963bd49b910a6917321596ce2dfa",
+    "red.trx": "30d3838f3ef54bda83cb3f8246e30de1df78d35f29a4141c0992326723d759dc",
+    "frozen-focused.log": "dab98c103c96829c95ebf182ea41422ae7aa5913d054cde8715a399d1dd2b274",
+    "frozen-focused.trx": "bdb5b1e89be16c8bc97638f5e5d7954c2764ef1a4801d2fb9f9389f8bbb310c0",
+    "other-weapons-equality.json": "b19b6238868099dd9919652eb80ded020757bfcc4419fd914dc08c35f34d5989",
+    "native-domain/compile-frozen.log": "41793c6acaab389c7825314571e5bea51e5460b7140ef09651dc654bdbc6a3bf"
+  }
+}

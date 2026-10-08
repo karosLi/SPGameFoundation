@@ -23,7 +23,7 @@ Unarmed action anticipation raises the working hand with a continuous action env
 
 ## Walking speed audit
 
-Authoritative speeds are unchanged: Belt player speed is 3.2 world units/second and the base Horde hero speed is 5. Belt and Horde adapters read actual final displacement; the change is in visual stride and cycle period only. The existing Belt `FighterState.Attack` movement multiplier of 0.22 also remains: committed-action travel, full-stick travel, and low-input capture walking are separate measurements. Run thresholds, run strides/periods, attack durations, windows, cooldowns, damage, projectile motion, input and save/replay data are unchanged.
+The isolated animation commit leaves authoritative speeds unchanged: Belt player speed is 3.2 world units/second and the base Horde hero speed is 5. Belt and Horde adapters read actual final displacement; that commit changes visual stride and cycle period only. A subsequent runtime audit found that the old Belt Attack path generally read no stick input and therefore multiplied zero by 0.22; that constant was not a measured continuous attack speed. The separately authorized [SmoothAttackV1 gameplay change](BeltAttackMobility.md) fixes that lock and deliberately changes committed player travel and the replay content domain. Run thresholds, run strides/periods, attack durations, hit windows, cooldowns, damage, projectile rules and raw saved field layout remain unchanged.
 
 | Role | Old walk stride / maximum period | New walk stride / maximum period |
 |---|---:|---:|
@@ -37,7 +37,7 @@ World-space plants, alternating support, walk double support, lift envelope, mov
 
 ## Evidence and review gates
 
-The native `weapon-belt-live-*` and `weapon-horde-live-*` sequences keep their original input schedules, cameras, dimensions and target 30 Hz acquisition cadence. A bounded, preallocated readback annotation now records final working shoulder/elbow/hand, joint angles and weapon phase in `gait.csv`. Encoding still happens after capture, and `acquisition.csv`/`acquisition.ffconcat` preserve measured timing. The existing `grounded-*-live-*` footage likewise retains its schedule. No frames are generated or interpolated.
+The native `weapon-belt-live-*` and `weapon-horde-live-*` sequences keep their original input schedules, cameras, dimensions and target 30 Hz acquisition cadence. The Belt fixture now explicitly selects Legacy mobility to preserve its historical root-speed control; the user-facing bootstrap selects SmoothAttackV1 and its actual movement is separately captured by [the full-input movement fixture](BeltMovementSpeedCapture.md). A bounded, preallocated readback annotation now records final working shoulder/elbow/hand, joint angles and weapon phase in `gait.csv`. Encoding still happens after capture, and `acquisition.csv`/`acquisition.ffconcat` preserve measured timing. The existing `grounded-*-live-*` footage likewise retains its schedule. No frames are generated or interpolated.
 
 Before/after comparison must identify both source commits and confirm unchanged capture/movement source. Play each at normal 1× using measured acquisition intervals, with the same camera and root speed. Historical baseline video is acceptable only for those unchanged inputs/capture paths; a historical green result is not a new-source native pass.
 
@@ -49,7 +49,7 @@ Before/after comparison must identify both source commits and confirm unchanged 
 | Hit/death/recovery | No rigid arms during recoil/fall, no weapon/skill ownership regression | Shared change; actual gameplay review pending |
 | Equip/cancel/interrupt, moving attack, skill overlap | No pop, detached support grip, stale action or foot sliding | Existing regressions retained; native candidate review pending |
 
-Focused numerical verification passed 92 cases: 23 new regressions, 66 existing motion/gait/profile cases, and three external diagnostic audits. The normal full harness excludes those three audits. Final horizontal anticipation FK hand/elbow heights (model units) are blade 1.83039/1.46365, sword 1.87027/1.46436, staff 1.87997/1.49091 and bow 1.73432/1.36354. Unlike the old low hand curves, all four include measurable upper-arm elevation; blade/sword/staff elbows rise over 0.20 model units and bow over 0.10.
+Focused numerical verification passed 92 cases: 23 new regressions, 66 existing motion/gait/profile cases, and three external diagnostic audits. The normal full harness excludes those three audits. Final horizontal anticipation FK hand/elbow heights (model units) are blade 1.83039/1.46365, sword 1.87027/1.46436, staff 1.87997/1.49091 and bow 1.73432/1.36354. Unlike the old low hand curves, all four include measurable upper-arm elevation; within the new action, blade/sword/staff elbows rise over 0.20 model units and bow over 0.10 from their corresponding idle pose. These are within-action rises, not increments over each old peak.
 
 Across real default action durations, both facings, and horizontal/±45°/±90° aim, maximum per-render joint displacement at 30/60/120 Hz was 0.361795/0.182973/0.096724 model units; maximum angular change was 0.812704/0.422140/0.219424 radians. No continuity threshold was relaxed. These are numerical bounds, not a human assessment of the footage.
 

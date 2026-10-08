@@ -28,7 +28,9 @@ namespace BrawlerFoundation.Tests.PlayMode
         {
             if(SystemInfo.graphicsDeviceType==GraphicsDeviceType.Null)Assert.Ignore("Actual graphics required.");
             if(tier==RenderTier.GpuDriven&&!SystemInfo.supportsComputeShaders)Assert.Ignore("Compute tier unsupported.");
-            RenderCapabilities.Override=tier;var game=BwGameBootstrap.CreateWeaponBelt();CanvasCapture capture=null;string suffix=tier==RenderTier.GpuDriven?"gpu":"fallback";
+            // Preserve the historical mobility rule for the speed-matched motion comparison.
+            // The separate BwMovementSpeedCaptureTests exercises the new playable SmoothAttackV1 policy.
+            RenderCapabilities.Override=tier;var game=BwGameBootstrap.CreateWeaponBelt(playerMobility:BwBeltPlayerMobility.Legacy);CanvasCapture capture=null;string suffix=tier==RenderTier.GpuDriven?"gpu":"fallback";
             try
             {
                 yield return null;UIDriver.Click(game.StartButton.gameObject);yield return UIDriver.WaitUntil(()=>game.State.Flow==BwFlow.Fighting,5);
@@ -160,7 +162,7 @@ namespace BrawlerFoundation.Tests.PlayMode
                             trace.Capture(i,0,acquiredAt,game.Renderer.Characters,weapons.Owner,action:action);
                             next=acquiredAt+1d/30;
                         }
-                        game.Session.ManualClock=true;string actionDirectory=frames.Write("weapon-belt-live-"+suffix,"Actual automatic-clock belt gameplay: run, walk, idle, blade slash and switch into sword thrust. Kick/jump/heal have separate contact captures. Target30Hz, measured acquisition timestamps retained.",BufferedFrameFormat.Jpeg95Review);trace.Write(actionDirectory);
+                        game.Session.ManualClock=true;string actionDirectory=frames.Write("weapon-belt-live-"+suffix,"Actual automatic-clock belt gameplay using explicit Legacy mobility for the speed-matched animation comparison: run, walk, idle, blade slash and switch into sword thrust. Kick/jump/heal have separate contact captures. Target30Hz, measured acquisition timestamps retained.",BufferedFrameFormat.Jpeg95Review);trace.Write(actionDirectory);
                         uint required=(1u<<(int)GameplayLocomotionState.Idle)|(1u<<(int)GameplayLocomotionState.Walk)|(1u<<(int)GameplayLocomotionState.Run);
                         Assert.AreEqual(required,locomotionStates&required,"the live hero recording must actually include idle, walk and run");
                         Assert.AreEqual(WeaponProfiles.Sword,weapons.Equipment.EquippedId);
@@ -183,7 +185,7 @@ namespace BrawlerFoundation.Tests.PlayMode
                             var handles=world.Table(BwKeys.Fighter).Handles;for(int row=0;row<math.min(3,world.Table(BwKeys.Fighter).Count);row++){var actor=world.Column(BwKeys.Info)[row];trace.Capture(i,row,acquiredAt,game.Renderer.Characters,handles[row],(int)actor.State,(int)actor.Attack,actor.StateTime,actor.Hp);}
                             next=acquiredAt+1d/30;
                         }
-                        game.Session.ManualClock=true;string directory=frames.Write("grounded-belt-live-"+suffix,"Actual automatic-clock hero, agile and heavy enemy movement: walk, run, stop, reverse and depth walk. Same camera and input schedule for before/after. Per-actor gait.csv is a readback annotation, not a manufactured render clock.",BufferedFrameFormat.Jpeg95Review);trace.Write(directory);
+                        game.Session.ManualClock=true;string directory=frames.Write("grounded-belt-live-"+suffix,"Actual automatic-clock hero, agile and heavy enemy movement using explicit Legacy mobility: walk, run, stop, reverse and depth walk. Same camera and input schedule for before/after. Per-actor gait.csv is a readback annotation, not a manufactured render clock.",BufferedFrameFormat.Jpeg95Review);trace.Write(directory);
                     }
                 }
                 LogAssert.NoUnexpectedReceived();

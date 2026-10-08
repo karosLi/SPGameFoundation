@@ -165,6 +165,100 @@ class GitIsolationTests(unittest.TestCase):
 
 
 class ExecutionTests(unittest.TestCase):
+    def test_compiler_text_capture_is_owned_complete_and_immutable_per_phase(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp) / 'Latios2022Lab'; output = Path(tmp) / 'captured'
+            bee = project / 'Library/Bee/artifacts/control.dag'; bee.mkdir(parents=True)
+            expected = {}
+            for suffix in ('.rsp', '.rsp2', '.UnityAdditionalFile.txt'):
+                path = bee / ('Latios2022Lab.Editor' + suffix)
+                path.write_bytes(('exact compiler input ' + suffix + '\n').encode())
+                expected[path.relative_to(project).as_posix()] = path.read_bytes()
+            generated = project / 'Temp/GeneratedCode/Latios2022Lab.Runtime/Collection.g.cs'
+            generated.parent.mkdir(parents=True); generated.write_bytes(b'// already emitted source\n')
+            expected[generated.relative_to(project).as_posix()] = generated.read_bytes()
+            (bee / 'Other.Assembly.rsp').write_text('not owned')
+            (bee / 'Latios2022Lab.Editor.dll').write_bytes(b'binary not collected')
+            foreign = project / 'Temp/GeneratedCode/Other.Assembly/Foreign.g.cs'
+            foreign.parent.mkdir(parents=True); foreign.write_text('not owned')
+            report = ci.collect_compiler_text(project, output)
+            self.assertEqual('COLLECTED', report['status'])
+            self.assertEqual(set(expected), {r['path'] for r in report['files']})
+            for name, data in expected.items():
+                self.assertEqual(data, (output / name).read_bytes())
+            self.assertEqual(1, report['generated_sources']['Latios2022Lab.Runtime'])
+            self.assertEqual(0, report['generated_sources']['Latios2022Lab.Editor'])
+            self.assertEqual(9, len(report['missing_response_patterns']))
+            generated.write_text('later content must not replace the original phase')
+            self.assertEqual(report, ci.collect_compiler_text(project, output))
+            self.assertEqual(expected[generated.relative_to(project).as_posix()],
+                             (output / generated.relative_to(project)).read_bytes())
+
+    def test_compiler_text_capture_reports_caps_missing_files_and_refuses_symlinks(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp) / 'Latios2022Lab'
+            bee = project / 'Library/Bee/artifacts/control.dag'; bee.mkdir(parents=True)
+            outside = Path(tmp) / 'outside.txt'; outside.write_text('must not be copied')
+            (bee / 'Latios2022Lab.Editor.rsp').symlink_to(outside)
+            (bee / 'Latios2022Lab.Runtime.rsp').write_text('over the cap')
+            with patch.object(ci, 'COMPILER_FILE_BYTES', 4):
+                report = ci.collect_compiler_text(project, Path(tmp) / 'captured')
+            self.assertEqual('INCOMPLETE', report['status'])
+            self.assertFalse(report['files'])
+            self.assertEqual({'symlink refused', 'text capture limit exceeded'},
+                             {entry['reason'] for entry in report['issues']})
+            empty = ci.collect_compiler_text(Path(tmp) / 'empty-project', Path(tmp) / 'empty-output')
+            self.assertEqual(12, len(empty['missing_response_patterns']))
+            self.assertFalse(empty['files'])
+            self.assertTrue(all(count == 0 for count in empty['generated_sources'].values()))
+
+    def test_compiler_collection_failure_preserves_native_logs_and_hash_manifest(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp) / 'Latios2022Lab'; artifacts = Path(tmp) / 'Artifacts'; artifacts.mkdir()
+            native = project / 'Artifacts/failed-import'; native.mkdir(parents=True)
+            (native / 'unity.log').write_text('original compiler error')
+            bee = project / 'Library/Bee/artifacts/control.dag'; bee.mkdir(parents=True)
+            (bee / 'Latios2022Lab.Editor.rsp').write_text('compiler response')
+            with patch.object(ci, 'COMPILER_TOTAL_BYTES', 1), self.assertRaisesRegex(ValueError, 'capture incomplete'):
+                ci.collect(project, artifacts, '00-import-on')
+            self.assertEqual('original compiler error', (artifacts / 'native/failed-import/unity.log').read_text())
+            manifest = json.loads((artifacts / 'evidence-sha256.json').read_text())
+            self.assertIn('native/failed-import/unity.log', manifest)
+            self.assertIn('compiler-text/00-import-on/index.json', manifest)
+
+    def test_native_failure_remains_primary_when_compiler_capture_also_fails(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp) / 'checkout'; repo.mkdir()
+            workspace = Path(tmp) / 'isolated'
+            editor = Path(tmp) / 'Unity'; editor.write_text('NONEXECUTED FIXTURE'); editor.chmod(0o700)
+            def fake_worktree(command, **kwargs):
+                project = workspace / 'source/Latios2022Lab'
+                (project / 'Packages').mkdir(parents=True)
+                (project / 'ProjectSettings').mkdir()
+            def fake_phase(command, cwd, log):
+                native = cwd / 'Artifacts/failed-import'; native.mkdir(parents=True)
+                (native / 'unity.log').write_text('original Unity error DC0061 fixture')
+                bee = cwd / 'Library/Bee/artifacts/control.dag'; bee.mkdir(parents=True)
+                (bee / 'Latios2022Lab.EditorTools.rsp').write_text('exceeds synthetic capture cap')
+                log.write_text('original launcher failure')
+                return 7
+            with patch.object(ci.sys, 'platform', 'darwin'), patch.object(ci, 'validate', return_value=(request_fixture(), {})), \
+                    patch.object(ci, 'check_p0', return_value={}), patch.object(ci, 'check_queue'), \
+                    patch.object(ci.subprocess, 'run', side_effect=fake_worktree), \
+                    patch.object(ci, 'run_owned_process', side_effect=fake_phase), patch.object(ci, 'COMPILER_TOTAL_BYTES', 1):
+                with self.assertRaisesRegex(ValueError, 'First control-group failure: import Burst on'):
+                    ci.execute(repo, workspace, 'fixture/only', ci.BRANCH, 'b' * 40, editor)
+            artifacts = workspace / 'Artifacts'
+            summary = json.loads((artifacts / 'ci-summary.json').read_text())
+            self.assertIn('First control-group failure', summary['error'])
+            self.assertEqual(7, summary['phases'][0]['exit_code'])
+            self.assertEqual('FAILED', summary['phases'][0]['status'])
+            self.assertIn('capture incomplete', summary['phases'][0]['evidence_collection_error'])
+            self.assertIn('capture incomplete', summary['evidence_collection_error'])
+            self.assertEqual('original Unity error DC0061 fixture', (artifacts / 'native/failed-import/unity.log').read_text())
+            hashes = json.loads((artifacts / 'evidence-sha256.json').read_text())
+            self.assertEqual(ci.digest(artifacts / 'ci-summary.json'), hashes['ci-summary.json'])
+
     def test_workspace_canonicalization_blocks_nested_and_symlink_ancestry(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp).resolve()
@@ -210,11 +304,17 @@ class ExecutionTests(unittest.TestCase):
             settings.parent.mkdir(parents=True)
             original = b'%YAML 1.1\nPlayerSettings:\n  scriptingDefineSymbols:\n    Standalone: ENTITY_STORE_V1\n'
             settings.write_bytes(original)
+            compiler = artifacts / 'compiler-text/00-import-on/Library/Bee/artifacts/control.dag/Latios2022Lab.Editor.rsp'
+            compiler.parent.mkdir(parents=True); compiler.write_bytes(b'-langversion:9.0\n')
+            generated = artifacts / 'compiler-text/00-import-on/Temp/GeneratedCode/Latios2022Lab.Runtime/Collection.g.cs'
+            generated.parent.mkdir(parents=True); generated.write_bytes(b'// emitted text\n')
             (artifacts / 'unrelated.asset').write_bytes(b'not a lab setting')
             output = Path(tmp) / 'output'; output.mkdir()
             ci.package(workspace, output)
             with zipfile.ZipFile(output / 'early/early.zip') as archive:
                 self.assertEqual(original, archive.read('lab-inputs/ProjectSettings/ProjectSettings.asset'))
+                self.assertEqual(compiler.read_bytes(), archive.read(compiler.relative_to(artifacts).as_posix()))
+                self.assertEqual(generated.read_bytes(), archive.read(generated.relative_to(artifacts).as_posix()))
                 self.assertNotIn('unrelated.asset', archive.namelist())
             manifest = json.loads((output / 'parts/part00/evidence-manifest.json').read_text())
             self.assertTrue(manifest['parts'])

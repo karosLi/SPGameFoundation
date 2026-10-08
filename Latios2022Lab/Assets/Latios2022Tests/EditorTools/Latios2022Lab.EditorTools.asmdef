@@ -4,7 +4,8 @@
     "Latios2022Lab.Runtime",
     "Latios.Core",
     "Unity.Burst",
-    "Unity.Entities"
+    "Unity.Entities",
+    "Unity.Collections"
   ],
   "includePlatforms": [
     "Editor"

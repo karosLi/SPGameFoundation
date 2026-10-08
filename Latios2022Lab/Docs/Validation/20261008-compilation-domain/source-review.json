@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "reviewed_source_commit": "34376351165a7e44e63305c6c47c520f7ddd21bf",
+  "review_scope": "All 11 owned C# files and four asmdefs; exact pinned public API and native log review. Not a full native compile.",
+  "pins": {
+    "Unity": "2022.3.62f2",
+    "Latios": "381a77dbf774ff603014d5695ef6c06abaa25d96",
+    "Entities": "1.3.5",
+    "Collections": "2.5.1",
+    "Mathematics": "1.3.2",
+    "Burst": "1.8.18",
+    "TestFramework": "1.4.5",
+    "UnityCustomNUnit": "2.0.3"
+  },
+  "source_sha256": {
+    "Assets/Latios2022Tests/Editor/CoreTests.cs": "fa100d3d5b764f3d243f3f259f40b16988713db1d9497e808e35bd413def5bf4",
+    "Assets/Latios2022Tests/Editor/PsyshockTests.cs": "b50626c09002353027e085c3bb16f9adaae354ac745f6097b6fc1dae6d70e74c",
+    "Assets/Latios2022Tests/EditorTools/LabEnvironment.cs": "05587430dada7b7dd99016b2601ac88e6004ad4424318b928a87b00d6a7f5e39",
+    "Assets/Latios2022Tests/EditorTools/LabPlayerBuild.cs": "b03662dc92b6a922efafb240993b2b0934f4e25044bcf50541dd5a1126205f3a",
+    "Assets/Latios2022Tests/PlayMode/PlayModeTests.cs": "f3b97a1be7a6e917a4f1305e32d644555978ce97e54df70ad1aa69063d86786c",
+    "Assets/Latios2022Tests/Runtime/CollectionProbe.cs": "c438517d078bb123381c67ba508e65a8b18430b94255ac7d8534ce4f5057ee9b",
+    "Assets/Latios2022Tests/Runtime/LabCollection.cs": "a667221f9032cd13870d842ca6af42384398c1af4140b355c5a5348501eca069",
+    "Assets/Latios2022Tests/Runtime/LabPlayerSmoke.cs": "a0f110ce8ee87bb8530500658a106a1a8cc34c2133449b932e2c49a992e5cb03",
+    "Assets/Latios2022Tests/Runtime/LabRunPolicy.cs": "2173e39e37e073b49623bb976abc0aae6eeedfc3460b7c1e4c49c669e041967d",
+    "Assets/Latios2022Tests/Runtime/LabWorld.cs": "d7c72cc05984d953f8a190dc374d9316315a1d5dd6b75d5b50acf3a396b3c5ff",
+    "Assets/Latios2022Tests/Runtime/PsyshockProbe.cs": "55aa253aa446743da4db0f76054ea537ebf3d77b44fc70bbb69598c9f5b93ae1"
+  },
+  "assemblies": {
+    "Latios2022Lab.Editor": {
+      "path": "Assets/Latios2022Tests/Editor/Latios2022Lab.Editor.asmdef",
+      "sha256": "fd8cd8b50d0979908f82bda87cfca7604956d6c7182293e90bb557ff9d1c7dcb",
+      "references": [
+        "Latios.Core",
+        "Latios.Transforms",
+        "Latios.Psyshock",
+        "Unity.Entities",
+        "Unity.Collections",
+        "Unity.Mathematics",
+        "Unity.Jobs",
+        "Unity.Burst",
+        "Latios2022Lab.Runtime",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner",
+        "Latios2022Lab.EditorTools"
+      ]
+    },
+    "Latios2022Lab.EditorTools": {
+      "path": "Assets/Latios2022Tests/EditorTools/Latios2022Lab.EditorTools.asmdef",
+      "sha256": "0d9294444253e6b4d408a6ca8d2d0c5f876ef807c3bf849c15bfeea4c584a678",
+      "references": [
+        "Latios2022Lab.Runtime",
+        "Latios.Core",
+        "Unity.Burst",
+        "Unity.Entities",
+        "Unity.Collections"
+      ]
+    },
+    "Latios2022Lab.PlayMode": {
+      "path": "Assets/Latios2022Tests/PlayMode/Latios2022Lab.PlayMode.asmdef",
+      "sha256": "dea470f2d225ec4c8b7a5618bb6c610fa9bbed33f43eb12cfbcce35b0888e823",
+      "references": [
+        "Latios.Core",
+        "Latios.Transforms",
+        "Latios.Psyshock",
+        "Unity.Entities",
+        "Unity.Collections",
+        "Unity.Mathematics",
+        "Unity.Jobs",
+        "Unity.Burst",
+        "Latios2022Lab.Runtime",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
+      ]
+    },
+    "Latios2022Lab.Runtime": {
+      "path": "Assets/Latios2022Tests/Runtime/Latios2022Lab.Runtime.asmdef",
+      "sha256": "a070f3380440e7d6ba79bc40d954bd901f49986edd44668bc8c62e9bddaaa7dc",
+      "references": [
+        "Latios.Core",
+        "Latios.Transforms",
+        "Latios.Psyshock",
+        "Unity.Entities",
+        "Unity.Collections",
+        "Unity.Mathematics",
+        "Unity.Jobs",
+        "Unity.Burst"
+      ]
+    }
+  }
+}

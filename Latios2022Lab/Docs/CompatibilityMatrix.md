@@ -1,11 +1,11 @@
 # S1a compatibility and evidence matrix
 
-Updated 2026-10-08. The second native import **FAILED** at owned CS1654 after the assembly-reference correction; its full evidence and genuine lock are preserved in the [ownership correction record](NativeArrayOwnershipCorrection-20261008.md). The new try/finally candidate has static checks only. The first failed record remains preserved. All test/player cells remain **NOT RUN**. The original product's P0/CI results are separate and cannot be inherited by this project.
+Updated 2026-10-08. The third native import **FAILED** in EditorTools at DC0061/CS0104, after Runtime/PlayMode compilation completed. The [third-run record](EditorToolsImportCorrection-20261008.md) retains complete original evidence and the two local corrections. All test/player cells remain **NOT RUN**. Prior failures are preserved. The original product's P0/CI results are separate and cannot be inherited by this project.
 
 | Scope | Prepared test/entry | Current evidence | Passing would mean |
 | --- | --- | --- | --- |
-| Isolated launcher and pin validation | `Tools/lab.py`, `Tools/test_lab.py` | Static preflight + 25 Lab and 19 CI Python tests passed | Launcher/parser behavior only; not Unity compilation |
-| Full pinned package + dependency compilation | `import` and genuine lock/inventory | First source FAILED on duplicate runners; second source FAILED on owned NativeArray CS1654; current correction NOT RUN | Exact Editor/host/package graph imports; not every module's runtime behavior |
+| Isolated launcher and pin validation | `Tools/lab.py`, `Tools/test_lab.py`, `Tools/audit_domain.py` | Static preflight + 29 Lab and 23 CI Python tests passed; [four-assembly review](CompilationDomainReview-20261008.md) frozen | Launcher/parser/source-review behavior only; not complete Unity compilation |
+| Full pinned package + dependency compilation | `import` and genuine lock/inventory | Three preserved import failures; third reached Runtime/PlayMode compilation but EditorTools failed; current correction NOT RUN | Exact Editor/host/package graph imports; not every module's runtime behavior |
 | Core collections/source generation | `TrackedWriterReaderAndDisposal`, exception case | NOT RUN | Generated pseudo-component and tracked jobs dispose correctly in tested paths |
 | Core lifecycle | two owned worlds; two domain-reloaded play entries; PlayMode repeat | NOT RUN | Tested create/update/destroy/reentry cycles; not arbitrary disabled-domain-reload settings |
 | QVVS | two explicitly installed empty-world updates | NOT RUN | Basic installer/update path; not transform hierarchy/content/animation acceptance |

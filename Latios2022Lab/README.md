@@ -1,6 +1,8 @@
 # Latios 2022 S1a laboratory
 
-Status: **second native import failed at owned CS1654; bounded ownership correction awaits native execution**. [Run 37723875083](https://github.com/karosLi/SPGameFoundation/actions/runs/37723875083/attempts/1) passed assembly-reference setup, then rejected an indexed write to the using-declared `bodies` NativeArray. [Diagnosis, complete evidence and try/finally correction](Docs/NativeArrayOwnershipCorrection-20261008.md). All native tests remain NOT_RUN. The [first failed control](Docs/ImportCorrection-20261008.md) is preserved. This is the isolated historical control group from [the integration blueprint](../Docs/LatiosUnity2022IntegrationBlueprint.md#7-轨道二-建立真实的-latios-2022-兼容线), not an SPF backend or S1a completion.
+Status: **third import failed at owned EditorTools DC0061/CS0104; narrow corrections await native execution**. [Run 37744846280](https://github.com/karosLi/SPGameFoundation/actions/runs/37744846280/attempts/1) compiled Runtime and PlayMode, then found a missing direct Collections reference and an ambiguous PackageInfo name in EditorTools. [Complete evidence and corrections](Docs/EditorToolsImportCorrection-20261008.md). All native tests remain NOT_RUN. The first two failed controls remain preserved. This is the isolated historical control group from [the integration blueprint](../Docs/LatiosUnity2022IntegrationBlueprint.md#7-轨道二-建立真实的-latios-2022-兼容线), not an SPF backend or S1a completion.
+
+[The complete owned-domain review](Docs/CompilationDomainReview-20261008.md) now covers all 11 C# files, four asmdefs, the actual expanded EditorTools response text and the uncompiled Editor-test APIs. Its reproducible static audit does not substitute for the next genuine four-assembly import. Future evidence retains only bounded owned compiler text, with missing/unemitted files explicitly reported.
 
 - Unity: exactly **2022.3.62f2**
 - Latios: **0.11.5**, commit `381a77dbf774ff603014d5695ef6c06abaa25d96`

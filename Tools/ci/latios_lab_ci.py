@@ -4,6 +4,7 @@ import argparse
 from datetime import datetime, timezone
 import hashlib
 import importlib.util
+from itertools import islice
 import json
 import os
 from pathlib import Path
@@ -29,6 +30,11 @@ ALLOWED_FILES = {WORKFLOW, ROOT_WORKFLOW, 'Tools/ci/latios_lab_ci.py',
                  'Docs/Latios2022LabCI.md'}
 MAX_SECONDS = 1800
 EARLY_BYTES = 16 * 1024 * 1024
+LAB_ASSEMBLIES = ('Latios2022Lab.Runtime', 'Latios2022Lab.EditorTools',
+                  'Latios2022Lab.Editor', 'Latios2022Lab.PlayMode')
+COMPILER_FILE_BYTES = 2 * 1024 * 1024
+COMPILER_TOTAL_BYTES = 8 * 1024 * 1024
+COMPILER_MAX_FILES = 128
 
 
 def require(value, message):
@@ -205,7 +211,88 @@ def run_owned_process(command, cwd, log, seconds=MAX_SECONDS):
             return 124
 
 
-def collect(project, artifacts):
+def collect_compiler_text(project, output):
+    """Retain only owned compiler inputs/emitted source, never referenced DLLs or arbitrary paths."""
+    index = output / 'index.json'
+    if index.exists():
+        return json.loads(index.read_text())  # A phase snapshot is immutable after its first collection.
+    output.mkdir(parents=True, exist_ok=True)
+    report = {'scope': 'Owned Lab compiler text only; absence is not compilation success.',
+              'files': [], 'missing_response_patterns': [], 'generated_sources': {}, 'issues': [],
+              'limits': {'files': COMPILER_MAX_FILES, 'file_bytes': COMPILER_FILE_BYTES,
+                         'total_bytes': COMPILER_TOTAL_BYTES}}
+    total = 0
+
+    def safe(path):
+        relative = path.relative_to(project)
+        current = project
+        for component in relative.parts:
+            current = current / component
+            if current.is_symlink():
+                report['issues'].append({'path': relative.as_posix(), 'reason': 'symlink refused'})
+                return False
+        return True
+
+    def copy_text(path, assembly, kind):
+        nonlocal total
+        relative = path.relative_to(project)
+        if not safe(path) or not path.is_file():
+            return
+        size = path.stat().st_size
+        if size > COMPILER_FILE_BYTES or total + size > COMPILER_TOTAL_BYTES or len(report['files']) >= COMPILER_MAX_FILES:
+            report['issues'].append({'path': relative.as_posix(), 'reason': 'text capture limit exceeded', 'bytes': size})
+            return
+        with path.open('rb') as stream:
+            data = stream.read(COMPILER_FILE_BYTES + 1)
+        if len(data) > COMPILER_FILE_BYTES or total + len(data) > COMPILER_TOTAL_BYTES:
+            report['issues'].append({'path': relative.as_posix(), 'reason': 'text grew beyond capture limit'})
+            return
+        try:
+            data.decode('utf-8-sig')
+        except UnicodeDecodeError:
+            report['issues'].append({'path': relative.as_posix(), 'reason': 'non-UTF8 text refused'})
+            return
+        target = output / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(data)
+        total += len(data)
+        report['files'].append({'path': relative.as_posix(), 'assembly': assembly, 'kind': kind,
+                                'bytes': len(data), 'sha256': hashlib.sha256(data).hexdigest()})
+
+    def bounded_matches(paths, label):
+        matches = list(islice(paths, COMPILER_MAX_FILES + 1))
+        if len(matches) > COMPILER_MAX_FILES:
+            report['issues'].append({'path': label, 'reason': 'text discovery limit exceeded; remaining paths not enumerated'})
+        return sorted(matches[:COMPILER_MAX_FILES])
+
+    bee = project / 'Library/Bee/artifacts'
+    for assembly in LAB_ASSEMBLIES:
+        for suffix in ('.rsp', '.rsp2', '.UnityAdditionalFile.txt'):
+            pattern = '*/' + assembly + suffix
+            matches = bounded_matches(bee.glob(pattern), pattern) if safe(bee) else []
+            if not matches:
+                report['missing_response_patterns'].append('Library/Bee/artifacts/' + pattern)
+            for path in matches:
+                copy_text(path, assembly, 'compiler-input')
+        generated = project / 'Temp/GeneratedCode' / assembly
+        before = len(report['files'])
+        if safe(generated) and generated.is_dir():
+            for path in bounded_matches(generated.rglob('*.cs'), generated.relative_to(project).as_posix()):
+                copy_text(path, assembly, 'emitted-source')
+        report['generated_sources'][assembly] = len(report['files']) - before
+    report.update(bytes=total, status='INCOMPLETE' if report['issues'] else 'COLLECTED',
+                  generated_source_note='Only already emitted cs files are copied. No generator define is enabled; zero means unavailable, not no generated code.')
+    write_json(index, report)
+    return report
+
+
+def write_evidence_hashes(artifacts):
+    write_json(artifacts / 'evidence-sha256.json', {
+        str(path.relative_to(artifacts)): digest(path) for path in artifacts.rglob('*')
+        if path.is_file() and path.name != 'evidence-sha256.json'})
+
+
+def collect(project, artifacts, snapshot='latest'):
     native = project / 'Artifacts'
     if native.exists():
         shutil.copytree(native, artifacts / 'native', dirs_exist_ok=True)
@@ -214,6 +301,7 @@ def collect(project, artifacts):
         source = project / folder
         if source.exists():
             shutil.copytree(source, inputs / folder, dirs_exist_ok=True)
+    compiler = collect_compiler_text(project, artifacts / 'compiler-text' / snapshot)
     xml = []
     for path in sorted(artifacts.rglob('*.xml')):
         record = {'path': path.relative_to(artifacts).as_posix(), 'sha256': digest(path)}
@@ -229,9 +317,8 @@ def collect(project, artifacts):
             record['parse_error'] = str(error)
         xml.append(record)
     write_json(artifacts / 'xml-summary.json', xml)
-    write_json(artifacts / 'evidence-sha256.json', {
-        str(path.relative_to(artifacts)): digest(path) for path in artifacts.rglob('*')
-        if path.is_file() and path.name != 'evidence-sha256.json'})
+    write_evidence_hashes(artifacts)
+    require(compiler['status'] == 'COLLECTED', 'Compiler text capture incomplete; inspect its index and preserve original phase evidence.')
 
 
 def validate_workspace(repo, workspace):
@@ -262,6 +349,7 @@ def execute(repo, workspace, repository, ref, sha, editor):
     working = workspace / 'source'
     project = working / 'Latios2022Lab'
     baseline = product_fingerprint(repo)
+    snapshot = 'before-native'
     try:
         subprocess.run(['git', 'worktree', 'add', '--detach', str(working), sha], cwd=repo, check=True)
         require(product_fingerprint(working) == baseline, 'Isolated product inputs differ from source.')
@@ -274,6 +362,7 @@ def execute(repo, workspace, repository, ref, sha, editor):
         gate_path = workspace / 'runtime-gate.json'
         write_json(gate_path, gate)
         for index, (phase, burst) in enumerate(PHASES):
+            snapshot = '%02d-%s-%s' % (index, phase, burst)
             record = source['phases'][index]
             source['p0_verified'] = check_p0(request, repository, ref)
             check_queue(repository)
@@ -286,7 +375,13 @@ def execute(repo, workspace, repository, ref, sha, editor):
             record.update(exit_code=code, status='PASSED' if code == 0 else 'FAILED')
             require(product_fingerprint(repo) == baseline and product_fingerprint(working) == baseline,
                     'Root Packages/ProjectSettings changed; no later phase may start.')
-            collect(project, artifacts)
+            try:
+                collect(project, artifacts, snapshot)
+            except Exception as evidence_error:
+                record['evidence_collection_error'] = str(evidence_error)
+                # Keep the original native failure primary; separately retain collection trouble.
+                if code == 0:
+                    raise
             write_json(artifacts / 'ci-summary.json', source)
             require(code == 0, 'First control-group failure: {} Burst {}; remaining phases NOT_RUN.'.format(phase, burst))
         source['editor_control'] = 'PASSED'
@@ -298,7 +393,14 @@ def execute(repo, workspace, repository, ref, sha, editor):
         # Preserve failing output, even if the original launcher raised before its success manifest.
         write_json(artifacts / 'ci-summary.json', source)
         if project.exists():
-            collect(project, artifacts)
+            try:
+                collect(project, artifacts, snapshot)
+            except Exception as evidence_error:
+                source['evidence_collection_error'] = str(evidence_error)
+                write_json(artifacts / 'ci-summary.json', source)
+                write_evidence_hashes(artifacts)
+                if 'error' not in source:
+                    raise
         # Keep this run-specific project/worktree for diagnosis. Never clean the SPF workspace/cache.
 
 
@@ -319,7 +421,7 @@ def package(workspace, output):
             if not path.is_file():
                 continue
             relative = path.relative_to(source).as_posix()
-            if path.suffix in ('.xml', '.json', '.txt') or relative.startswith('lab-inputs/ProjectSettings/'):
+            if path.suffix in ('.xml', '.json', '.txt') or relative.startswith(('lab-inputs/ProjectSettings/', 'compiler-text/')):
                 archive.write(path, relative)
             elif path.suffix == '.log':
                 with path.open('rb') as stream:

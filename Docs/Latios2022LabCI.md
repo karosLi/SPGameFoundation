@@ -1,6 +1,6 @@
 # Deliberately released S1a Editor CI
 
-Status, 2026-10-08: [second native import failed at owned CS1654](../Latios2022Lab/Docs/NativeArrayOwnershipCorrection-20261008.md); its complete 29-file archive is restored and verified, including normalized settings. All test phases remain NOT_RUN. The bounded try/finally correction has static checks only and no S1a completion claim. The existing [lab protocol](../Latios2022Lab/README.md) and [blueprint](LatiosUnity2022IntegrationBlueprint.md) remain the acceptance authority.
+Status, 2026-10-08: [third native import failed in owned EditorTools](../Latios2022Lab/Docs/EditorToolsImportCorrection-20261008.md); its complete 29-file archive is restored and verified. Runtime/PlayMode compilation completed but all test phases remain NOT_RUN. The two EditorTools corrections have static checks only and no S1a completion claim. The existing [lab protocol](../Latios2022Lab/README.md) and [blueprint](LatiosUnity2022IntegrationBlueprint.md) remain the acceptance authority.
 
 Preparation correction (2026-10-08): the owned `LabPlayerBuild` Editor helper now
 fully qualifies `UnityEditor.Build.Il2CppCodeGeneration.OptimizeSize`. The exact
@@ -59,9 +59,11 @@ Each phase has a 30-minute wall-clock limit. A timeout sends TERM, then KILL aft
 
 ## Evidence and restoration
 
-The lab's own `Artifacts` evidence set preserves original phase directories, full Unity/launcher logs, XML, environment inventory, actual package lock and normalized lab settings, gate and source pins. Collection runs even after a failing launcher exits before its success hash file. `evidence-sha256.json` inventories all retained evidence. No Library/cache or environment/credential dump is uploaded.
+The lab's own `Artifacts` evidence set preserves original phase directories, full Unity/launcher logs, XML, environment inventory, actual package lock and normalized lab settings, gate and source pins. Collection runs even after a failing launcher exits before its success hash file. `evidence-sha256.json` inventories all retained evidence. No bulk Library/cache, DLL or environment/credential dump is uploaded.
 
-- `latios-s1a-early-review` includes a ZIP capped at 16 MiB. **Complete XML, JSON, text metadata and every retained file under `lab-inputs/ProjectSettings/` are included**, including normalized `.asset` settings. Original log files are represented here by explicitly labelled 64 KiB head/tail excerpts linked to the complete originals by SHA-256; excerpts never replace originals.
+The [owned-domain review](../Latios2022Lab/Docs/CompilationDomainReview-20261008.md) adds per-phase compiler-text snapshots: only four exact Lab assemblies' `.rsp`, `.rsp2` and `.UnityAdditionalFile.txt` files under Bee artifact directories, plus already emitted `.cs` under their exact `Temp/GeneratedCode/<assembly>` directories. Limits are 128 files, 2 MiB/file and 8 MiB/snapshot; symlinks and non-UTF8 content are refused. Paths inside response files are not followed. Missing response files and unavailable emitted source are explicitly indexed. No generator-output define is enabled. Snapshots are immutable; collection trouble is recorded separately without replacing a native failure, and final summary hashes are refreshed.
+
+- `latios-s1a-early-review` includes a ZIP capped at 16 MiB. **Complete XML, JSON, text metadata and every retained file under `lab-inputs/ProjectSettings/` and `compiler-text/` are included**, including normalized `.asset` settings and owned response/source text. Original log files are represented here by explicitly labelled 64 KiB head/tail excerpts linked to the complete originals by SHA-256; excerpts never replace originals.
 - `latios-s1a-part00` through `part31` use the existing [bounded evidence format](CiEvidence.md): at most 32 binary payloads of at most 16 MiB, plus their repeated manifests. Full logs and original XML/settings/locks remain there. The root packager is unchanged.
 - Exceeding either bound is a reported failure, never silent dropping. If early ZIP exceeds its cap, the full parts are already packaged and remain independently uploadable; the oversized early ZIP is not published. Packaging/upload steps run after native failure. A gate failure before workspace creation may have only the Actions diagnostic log and cannot be reported as native execution.
 

@@ -95,6 +95,12 @@ def check_test_assembly(data):
             'Test assembly inclusion must remain explicit.')
 
 
+def check_entities_dependencies(data):
+    references = data.get('references', [])
+    require('Unity.Entities' not in references or 'Unity.Collections' in references,
+            'Entities generator requires a direct Unity.Collections reference: ' + data['name'])
+
+
 def check_registered_packages(path, lock):
     records = json.loads(path.read_text())['packages']
     registered = {record['name']: record['version'] for record in records}
@@ -137,6 +143,7 @@ def preflight(project=PROJECT):
     for path in (project / 'Assets').rglob('*.asmdef'):
         data = json.loads(path.read_text())
         require(not any(name.startswith('SPF.') for name in data.get('references', [])), 'Lab cannot depend on SPF assemblies.')
+        check_entities_dependencies(data)
         if data['name'] in ('Latios2022Lab.Editor', 'Latios2022Lab.PlayMode'):
             check_test_assembly(data)
         assemblies.append(data['name'])

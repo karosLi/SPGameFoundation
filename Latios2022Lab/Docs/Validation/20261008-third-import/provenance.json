@@ -1,0 +1,74 @@
+{
+  "schema": 1,
+  "scope": "Failed third import evidence. Existing second-import snapshots are reused only after exact byte comparison with this run. Not active Packages inputs.",
+  "run_url": "https://github.com/karosLi/SPGameFoundation/actions/runs/37744846280/attempts/1",
+  "run_id": 37744846280,
+  "attempt": 1,
+  "native_job_id": 113203846666,
+  "native_job_terminal": "failure",
+  "source_commit": "2edacdbe1315a6da682be39c1fa2cebae2e14bda",
+  "source_tree": "5972a414a4d3d4f2ef2e9fd54f3442ac8fb67a10",
+  "local_equivalent": "881d7322928abb8a6eadc9a602f372b8486b3304",
+  "launch_source_clean": true,
+  "launch_inputs_match_source": 40,
+  "first_failed_phase": "import Burst on",
+  "test_phases": "all four NOT_RUN",
+  "files": {
+    "manifest.json": {
+      "artifact_member": "lab-inputs/Packages/manifest.json",
+      "sha256": "23d86f1a2a637a6d3c943974b807b7b87cec6481ad8d9fd04086c0a9487cccce",
+      "bytes": 1044,
+      "identical_verbatim_snapshot": "../20261008-second-import/manifest.json"
+    },
+    "packages-lock.json": {
+      "artifact_member": "lab-inputs/Packages/packages-lock.json",
+      "sha256": "0226f8bb362698bb4dfab670ca76a49f260b08d248721bfe086c34ba9a0365e7",
+      "bytes": 9648,
+      "identical_verbatim_snapshot": "../20261008-second-import/packages-lock.json"
+    }
+  },
+  "unity_log": {
+    "sha256": "edb24ceea2c749e0181680631d911c175995a524fffa11f5b225b77e7078c2a6",
+    "bytes": 316962
+  },
+  "restoration": {
+    "parts": 1,
+    "files": 29,
+    "original_files_hash_verified": 28,
+    "archive_bytes": 53264,
+    "archive_sha256": "fd15277c3a63190f3835f03d53b2b9d1397384ccff10b95d68ca4dcda20b4f3f"
+  },
+  "artifact_wrappers": [
+    {
+      "id": 11535945487,
+      "name": "latios-s1a-early-review",
+      "size_in_bytes": 38796,
+      "digest": "sha256:1ccbe2a6b0c84057f22f8064186797f2e16aa4a8deab4544ae4f7c5e95798499"
+    },
+    {
+      "id": 11535716201,
+      "name": "latios-s1a-part00",
+      "size_in_bytes": 59357,
+      "digest": "sha256:e7423d2ff765396ca390418e1adaff6e7fe55991c0c3c2c9e2b467ab07bcd171"
+    }
+  ],
+  "limitations": [
+    "No test XML or environment.json was produced.",
+    "No native safety/Burst execution or cleanup/query assertion was reached.",
+    "The proposed PackageManager qualification has no native execution evidence."
+  ],
+  "unique_coded_errors": [
+    "Assets/Latios2022Tests/EditorTools/LabEnvironment.cs(1,1): error DC0061: Assembly Latios2022Lab.EditorTools relies on Unity.Entities which uses the Unity.Collections AllocatorHandle type but does not have a reference to Unity.Collections.  Please add an assembly reference to `Unity.Collections` in the asmdef for Latios2022Lab.EditorTools.",
+    "Assets/Latios2022Tests/EditorTools/LabEnvironment.cs(38,28): error CS0104: 'PackageInfo' is an ambiguous reference between 'UnityEditor.PackageManager.PackageInfo' and 'UnityEditor.PackageInfo'"
+  ],
+  "paired_product_harness": {
+    "run_id": 37744846276,
+    "job_id": 113203781638,
+    "terminal_conclusion": "success",
+    "scope": "Official job API only; does not compile or test the isolated Lab."
+  },
+  "partial_compile_evidence": [
+    "Runtime Csc/ILPostProcess/CopyFiles completed",
+    "PlayMode Csc/ILPostProcess/CopyFiles completed"
+  ]
+}

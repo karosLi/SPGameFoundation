@@ -4,7 +4,6 @@ using System.Linq;
 using Unity.Burst;
 using UnityEditor;
 using UnityEditor.Compilation;
-using UnityEditor.PackageManager;
 using UnityEngine;
 
 namespace Latios2022Lab
@@ -35,7 +34,7 @@ namespace Latios2022Lab
             var root = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
             var lockPath = Path.Combine(root, "Packages/packages-lock.json");
             if (!File.Exists(lockPath)) throw new InvalidOperationException("Unity has not produced an actual package lock.");
-            var packages = PackageInfo.GetAllRegisteredPackages().Select(p => new PackageRecord {
+            var packages = UnityEditor.PackageManager.PackageInfo.GetAllRegisteredPackages().Select(p => new PackageRecord {
                 name = p.name, version = p.version, source = p.source.ToString(), packageId = p.packageId
             }).OrderBy(p => p.name).ToArray();
             using var world = LabWorld.Create("S1a environment inventory", true);

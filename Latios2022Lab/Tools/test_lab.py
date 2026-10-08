@@ -154,6 +154,15 @@ class LauncherTests(unittest.TestCase):
             p.write_text(json.dumps({'packages': records + [records[0]]}))
             with self.assertRaisesRegex(ValueError, 'Duplicate'): lab.check_registered_packages(p, lock)
 
+    def test_entities_dependency_check_rejects_the_failed_editor_tools_shape(self):
+        path = lab.PROJECT / 'Assets/Latios2022Tests/EditorTools/Latios2022Lab.EditorTools.asmdef'
+        data = json.loads(path.read_text()); lab.check_entities_dependencies(data)
+        data['references'].remove('Unity.Collections')
+        with self.assertRaisesRegex(ValueError, 'direct Unity.Collections'):
+            lab.check_entities_dependencies(data)
+        data['references'].remove('Unity.Entities')
+        lab.check_entities_dependencies(data)
+
     def test_test_results_reject_skips_and_wrong_discovery_count(self):
         with tempfile.TemporaryDirectory() as tmp:
             p = Path(tmp) / 'tests.xml'
@@ -213,7 +222,7 @@ class LauncherTests(unittest.TestCase):
     def test_each_assembly_declares_its_direct_api_dependencies(self):
         required = {
             'Latios2022Lab.Runtime': {'Latios.Core', 'Latios.Transforms', 'Latios.Psyshock', 'Unity.Entities', 'Unity.Collections', 'Unity.Jobs', 'Unity.Mathematics', 'Unity.Burst'},
-            'Latios2022Lab.EditorTools': {'Latios2022Lab.Runtime', 'Latios.Core', 'Unity.Entities', 'Unity.Burst'},
+            'Latios2022Lab.EditorTools': {'Latios2022Lab.Runtime', 'Latios.Core', 'Unity.Entities', 'Unity.Collections', 'Unity.Burst'},
             'Latios2022Lab.Editor': {'Latios2022Lab.Runtime', 'Latios2022Lab.EditorTools', 'Latios.Core', 'Unity.Entities', 'Unity.Collections', 'UnityEngine.TestRunner', 'UnityEditor.TestRunner'},
             'Latios2022Lab.PlayMode': {'Latios2022Lab.Runtime', 'Unity.Burst', 'UnityEngine.TestRunner'},
         }

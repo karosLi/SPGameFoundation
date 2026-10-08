@@ -1,0 +1,12 @@
+Quadtree sensitivity; runtime=unity-native-editmode; distribution=dense; seed=1234; entries=512; queries=512; warmup=4; samples=16
+Same arrays; rotated configuration order; full scheduled build+query+completion; instrumentation separate. Compare configurations only within this fixture, not against the different-size primary grid matrix.
+bucket=8; maxDepth=8; total_ms=p50=0.3439;p95=0.3888;worst=0.3888; nodes=9; depth=8; saturated=1; raw_entries=132608; visits=132608; hits=132608; bytes=34876; queryBurst=1; buildBurst=1
+bucket=8; maxDepth=12; total_ms=p50=0.3504;p95=0.4101;worst=0.4101; nodes=14; depth=12; saturated=2; raw_entries=132608; visits=132608; hits=132608; bytes=34876; queryBurst=1; buildBurst=1
+bucket=8; maxDepth=16; total_ms=p50=0.3723;p95=0.4001;worst=0.4001; nodes=61; depth=16; saturated=1; raw_entries=132608; visits=132608; hits=132608; bytes=34876; queryBurst=1; buildBurst=1
+bucket=16; maxDepth=8; total_ms=p50=0.3328;p95=0.3725;worst=0.3725; nodes=9; depth=8; saturated=1; raw_entries=132608; visits=132608; hits=132608; bytes=29756; queryBurst=1; buildBurst=1
+bucket=16; maxDepth=12; total_ms=p50=0.3520;p95=0.4333;worst=0.4333; nodes=14; depth=12; saturated=2; raw_entries=132608; visits=132608; hits=132608; bytes=29756; queryBurst=1; buildBurst=1
+bucket=16; maxDepth=16; total_ms=p50=0.3692;p95=0.4136;worst=0.4136; nodes=61; depth=16; saturated=1; raw_entries=132608; visits=132608; hits=132608; bytes=29756; queryBurst=1; buildBurst=1
+bucket=32; maxDepth=8; total_ms=p50=0.3343;p95=0.3494;worst=0.3494; nodes=9; depth=8; saturated=1; raw_entries=132608; visits=132608; hits=132608; bytes=27196; queryBurst=1; buildBurst=1
+bucket=32; maxDepth=12; total_ms=p50=0.3465;p95=0.4099;worst=0.4099; nodes=14; depth=12; saturated=2; raw_entries=132608; visits=132608; hits=132608; bytes=27196; queryBurst=1; buildBurst=1
+bucket=32; maxDepth=16; total_ms=p50=0.3605;p95=0.4034;worst=0.4034; nodes=33; depth=16; saturated=1; raw_entries=132608; visits=132608; hits=132608; bytes=27196; queryBurst=1; buildBurst=1
+Report-only; no runtime tree adoption and no native/mobile claim from stubs. Primary matrix parameters were fixed in advance, not selected from this tuning pass.

@@ -1,0 +1,4 @@
+=== renderer CPU (DataTexture), production population ===
+reuse off: 0.261 ms/frame over 241 frames (rebuilds 241, reuses 0), visible snakes 2
+reuse on : 0.269 ms/frame over 241 frames (rebuilds 121, reuses 120), visible snakes 2
+saving: -2.9%

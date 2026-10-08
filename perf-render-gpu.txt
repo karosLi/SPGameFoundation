@@ -1,0 +1,4 @@
+=== renderer CPU (GpuDriven), production population ===
+reuse off: 0.132 ms/frame over 241 frames (rebuilds 241, reuses 0), visible snakes 2
+reuse on : 0.126 ms/frame over 241 frames (rebuilds 120, reuses 121), visible snakes 2
+saving: 4.5%

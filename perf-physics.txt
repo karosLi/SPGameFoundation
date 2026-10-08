@@ -1,0 +1,4 @@
+=== Physics2D: 600 bodies poured into a box ===
+step ms mean 0.409  worst 0.631
+bodies 603  awake 598  pairs 1414  manifolds 1141 (peak 1142)  islands 3
+actual Burst execution: warmup 60/60 steps; measured 300/300 steps

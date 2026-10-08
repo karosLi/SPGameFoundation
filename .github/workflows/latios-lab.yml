@@ -23,18 +23,21 @@ jobs:
   release-gate:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      evidence-label: ${{ steps.release.outputs.evidence_label }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
           persist-credentials: false
       - name: Verify exact P0 evidence and lab-only source
+        id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           UNITY_SELF_HOSTED: ${{ vars.UNITY_SELF_HOSTED }}
         run: |
           test "$UNITY_SELF_HOSTED" = true || { echo "Approved native runner is disabled; lab remains NOT_RUN"; exit 1; }
-          python3 Tools/ci/latios_lab_ci.py validate
+          python3 Tools/ci/latios_lab_ci.py validate --github-output "$GITHUB_OUTPUT"
       - name: Run static launcher tests without Unity
         run: |
           python3 -m unittest discover -s Tools/ci -p test_latios_lab_ci.py -v
@@ -78,231 +81,231 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-early-review
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-early-review
           path: ${{ env.LAB_EVIDENCE }}/early/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part00
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part00
           path: ${{ env.LAB_EVIDENCE }}/parts/part00/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part01
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part01
           path: ${{ env.LAB_EVIDENCE }}/parts/part01/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part02
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part02
           path: ${{ env.LAB_EVIDENCE }}/parts/part02/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part03
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part03
           path: ${{ env.LAB_EVIDENCE }}/parts/part03/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part04
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part04
           path: ${{ env.LAB_EVIDENCE }}/parts/part04/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part05
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part05
           path: ${{ env.LAB_EVIDENCE }}/parts/part05/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part06
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part06
           path: ${{ env.LAB_EVIDENCE }}/parts/part06/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part07
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part07
           path: ${{ env.LAB_EVIDENCE }}/parts/part07/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part08
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part08
           path: ${{ env.LAB_EVIDENCE }}/parts/part08/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part09
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part09
           path: ${{ env.LAB_EVIDENCE }}/parts/part09/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part10
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part10
           path: ${{ env.LAB_EVIDENCE }}/parts/part10/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part11
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part11
           path: ${{ env.LAB_EVIDENCE }}/parts/part11/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part12
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part12
           path: ${{ env.LAB_EVIDENCE }}/parts/part12/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part13
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part13
           path: ${{ env.LAB_EVIDENCE }}/parts/part13/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part14
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part14
           path: ${{ env.LAB_EVIDENCE }}/parts/part14/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part15
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part15
           path: ${{ env.LAB_EVIDENCE }}/parts/part15/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part16
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part16
           path: ${{ env.LAB_EVIDENCE }}/parts/part16/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part17
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part17
           path: ${{ env.LAB_EVIDENCE }}/parts/part17/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part18
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part18
           path: ${{ env.LAB_EVIDENCE }}/parts/part18/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part19
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part19
           path: ${{ env.LAB_EVIDENCE }}/parts/part19/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part20
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part20
           path: ${{ env.LAB_EVIDENCE }}/parts/part20/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part21
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part21
           path: ${{ env.LAB_EVIDENCE }}/parts/part21/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part22
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part22
           path: ${{ env.LAB_EVIDENCE }}/parts/part22/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part23
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part23
           path: ${{ env.LAB_EVIDENCE }}/parts/part23/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part24
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part24
           path: ${{ env.LAB_EVIDENCE }}/parts/part24/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part25
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part25
           path: ${{ env.LAB_EVIDENCE }}/parts/part25/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part26
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part26
           path: ${{ env.LAB_EVIDENCE }}/parts/part26/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part27
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part27
           path: ${{ env.LAB_EVIDENCE }}/parts/part27/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part28
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part28
           path: ${{ env.LAB_EVIDENCE }}/parts/part28/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part29
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part29
           path: ${{ env.LAB_EVIDENCE }}/parts/part29/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part30
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part30
           path: ${{ env.LAB_EVIDENCE }}/parts/part30/
           compression-level: 0
           if-no-files-found: ignore
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: latios-s1a-part31
+          name: latios-s1a-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.release-gate.outputs.evidence-label }}-part31
           path: ${{ env.LAB_EVIDENCE }}/parts/part31/
           compression-level: 0
           if-no-files-found: ignore

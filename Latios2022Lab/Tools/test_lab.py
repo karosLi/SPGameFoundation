@@ -144,6 +144,8 @@ class LauncherTests(unittest.TestCase):
 
     def test_registered_package_inventory_cannot_hide_urp_lock_mismatch(self):
         records = [{'name': name, 'version': version} for name, version in lab.RESOLVED_PINS.items()]
+        records.append(dict(name='com.latios.latiosframework', version='0.11.5', source='Git',
+                            packageId='com.latios.latiosframework@' + lab.LATIOS_URL))
         lock = {r['name']: {'version': r['version']} for r in records}
         with tempfile.TemporaryDirectory() as tmp:
             p = Path(tmp) / 'synthetic-environment.json'
@@ -169,8 +171,96 @@ class LauncherTests(unittest.TestCase):
             for text in ('<test-run result="Passed"/>', '<test-run result="Passed"><test-case result="Skipped"/></test-run>'):
                 p.write_text(text)
                 with self.assertRaises(ValueError): lab.check_results(p, 'playmode')
-            p.write_text('<test-run result="Passed"><test-case result="Passed"/></test-run>')
+            p.write_text('<test-run result="Passed"><test-case result="Passed" fullname="Latios2022Lab.PlayModeTests.RepeatedOwnedWorldsLeaveNoCollectionState"/></test-run>')
             self.assertEqual(1, lab.check_results(p, 'playmode'))
+
+    def test_same_count_wrong_or_duplicate_test_identities_are_rejected(self):
+        import xml.etree.ElementTree as ET
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'results.xml'
+            names = sorted(lab.expected_test_identities('editmode'))
+            self.assertEqual(49, len(names))
+            root = ET.Element('test-run', result='Passed')
+            for name in names:
+                ET.SubElement(root, 'test-case', result='Passed', fullname=name)
+            ET.ElementTree(root).write(path)
+            self.assertEqual(49, lab.check_results(path, 'editmode'))
+            for replacement in ('Unreviewed.Test', names[1]):
+                root[0].set('fullname', replacement)
+                ET.ElementTree(root).write(path)
+                with self.assertRaisesRegex(ValueError, 'identities'):
+                    lab.check_results(path, 'editmode')
+
+    def test_local_package_manifest_and_gate_cannot_enter_original_control(self):
+        manifest = json.loads((lab.PROJECT / 'Packages/manifest.json').read_text())
+        manifest['dependencies']['com.latios.latiosframework'] = 'file:/tmp/unreviewed-package'
+        with self.assertRaisesRegex(ValueError, 'pins drifted'):
+            lab.check_manifest(manifest)
+        with self.assertRaisesRegex(ValueError, 'explicit sealed'):
+            lab.load_experiment_record(None, dict(experiment={'arm': 'unreviewed'}))
+        with patch.object(lab.subprocess, 'run', side_effect=AssertionError('Native launch forbidden')):
+            with self.assertRaisesRegex(ValueError, 'gated Editor execution'):
+                lab.main(['import', '--editor', '/not-installed/Unity', '--experiment-record', '/tmp/unknown.json'])
+
+    def test_experiment_record_hash_and_arm_are_bound_before_package_access(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / 'record.json'
+            path.write_text(json.dumps({'experiment': {'id': 'example', 'arm': 'control'}, 'source_commit': 'a' * 40}))
+            gate = dict(experiment={'id': 'example', 'arm': 'control'}, source_commit='a' * 40,
+                        experiment_record=dict(path=str(path), sha256='0' * 64))
+            with patch.object(lab, 'variant_tools', side_effect=AssertionError('Package access before record authentication')):
+                with self.assertRaisesRegex(ValueError, 'path/hash'):
+                    lab.load_experiment_record(path, gate)
+            gate['experiment_record']['sha256'] = lab.sha(path)
+            with patch.object(lab, 'variant_tools') as module:
+                module.return_value.check_experiment.return_value = {'id': 'example', 'arm': 'patched'}
+                with self.assertRaisesRegex(ValueError, 'approved arm'):
+                    lab.load_experiment_record(path, gate)
+                module.return_value.verify.assert_not_called()
+
+    def test_changed_runtime_binding_files_fail_even_after_native_work(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            record = Path(tmp) / 'record.json'; record.write_text('{}')
+            path = Path(tmp) / 'gate.json'; path.write_text('{}')
+            gate = {'experiment_record': {'sha256': lab.sha(record)}}
+            gate_sha = lab.sha(path)
+            lab.check_experiment_file_bindings(record, path, gate, gate_sha)
+            record.write_text('{} ')
+            with self.assertRaisesRegex(ValueError, 'record changed'):
+                lab.check_experiment_file_bindings(record, path, gate, gate_sha)
+            record.write_text('{}'); path.write_text('{} ')
+            with self.assertRaisesRegex(ValueError, 'gate changed'):
+                lab.check_experiment_file_bindings(record, path, gate, gate_sha)
+
+    def test_native_exit_remains_primary_when_post_run_evidence_or_product_read_fails(self):
+        from types import SimpleNamespace
+        for failure in ('experiment-after.json', 'post-run-integrity.json', 'product-read'):
+            for code in (7, 0):
+                with self.subTest(failure=failure, code=code), tempfile.TemporaryDirectory() as tmp:
+                    project = Path(tmp) / 'Latios2022Lab'; project.mkdir()
+                    record_path = Path(tmp) / 'record.json'; record_path.write_text('{}')
+                    gate_path = Path(tmp) / 'gate.json'; gate_path.write_text('{}')
+                    gate = {'experiment_record': {'sha256': lab.sha(record_path)}}
+                    record = {'experiment': {'id': 'synthetic-test-only', 'arm': 'control'}, 'package_path': str(Path(tmp)/'package')}
+                    original_write = Path.write_text
+                    def write(path, text, *args, **kwargs):
+                        if path.name == failure:
+                            raise OSError('synthetic post-run write failure')
+                        return original_write(path, text, *args, **kwargs)
+                    fingerprints = [{}, OSError('synthetic product read failure')] if failure == 'product-read' else [{}, {}]
+                    with patch.object(lab, 'PROJECT', project), patch.object(lab, 'preflight', return_value={}), \
+                         patch.object(lab, 'read_gate', return_value=gate), patch.object(lab, 'load_experiment_record', return_value=record), \
+                         patch.object(lab, 'check_experiment_file_bindings'), patch.object(lab, 'variant_tools') as module, \
+                         patch.object(lab, 'verify_editor_binary', return_value={'version': lab.EDITOR_VERSION}), \
+                         patch.object(lab, 'product_fingerprint', side_effect=fingerprints), \
+                         patch.object(lab.subprocess, 'check_output', return_value='a' * 40), \
+                         patch.object(lab.subprocess, 'run', return_value=SimpleNamespace(returncode=code)), \
+                         patch.object(Path, 'write_text', write):
+                        module.return_value.verify.return_value = {'valid': True}
+                        message = 'Unity failed with exit code 7' if code else 'Post-run integrity failed'
+                        with self.assertRaisesRegex(ValueError, message):
+                            lab.main(['import', '--editor', '/bin/true', '--execute', '--gate', str(gate_path),
+                                      '--experiment-record', str(record_path)])
 
     def test_project_symlink_rejected(self):
         with tempfile.TemporaryDirectory() as tmp:

@@ -1,0 +1,86 @@
+{
+  "status": "LOCAL_PREPARATION_ONLY",
+  "prepared_parent": "642e508b3ca53ba80b179ca4831c07bc3d85d50b",
+  "published_parent_equivalent": "4dd57014a7e16de084f82d9f81fface51c4db54a",
+  "published_parent_tree": "6e724090d12ba350da75fe46822d11150bf90ea8",
+  "native": "NOT_RUN",
+  "real_local_lock": "NOT_CREATED",
+  "unity_local_package_info_format": "NOT_OBSERVED; strict native check still required",
+  "new_editor_instrumentation_compilation": "NOT_RUN",
+  "test_results": {
+    "lab_python": {
+      "passed": 63,
+      "log_sha256": "4ccb09cb2e2fd83f6a5e9eda191ffa8e873af608a7e174e3c8638961c9233f8a"
+    },
+    "ci_python": {
+      "passed": 33,
+      "log_sha256": "ccbb0a0cd414d7906aaeefc27aa6a2919ab734e21e7380f50a212dd07b322626"
+    },
+    "preflight": "PASS_STATIC_ONLY",
+    "frozen_source_review": "PASS",
+    "whitespace": "PASS for implementation/docs; exact approved unified patch has one syntax-required blank context line (leading space), checked separately by frozen SHA256 and git apply --check.",
+    "exact_patch_syntax": "git apply --check passed against unpatched official source; no source file modified"
+  },
+  "source_materialization_scope": "Full official package prepare/verify/capture from raw Git objects in independent scratch arms; working-candidate only, no Unity/gate/generated lock. Materialization module/spec/patch/inventory bytes match final candidate.",
+  "materialization_code_sha256": {
+    "Latios2022Lab/Tools/cleanup_variant.py": "71460fe15f0b6e5ad73ada267766fc863562bee1c68113b9eccbff5686ef5bae",
+    "Latios2022Lab/Variants/cleanup-query-v1.json": "12906ed151cc9f021e3a849d128b062d64b6749715d7ca1c30e524d5aabb3357",
+    "Latios2022Lab/Variants/cleanup-query-v1.patch": "6736b6b8f1c0ca32151a44163afc9a75fcf133a70dbe15b4175a8d8f3ab994a0",
+    "Latios2022Lab/Variants/cleanup-query-v1.source-inventory.json": "da4d10946620e4b6d23cf5214c802d90ebdb1c7f5e77a7e923e442b1ac5a0106"
+  },
+  "materialization_results": {
+    "patched-local-variant": {
+      "changed_paths": [
+        "Core/Internal/CollectionComponentOperations.cs"
+      ],
+      "file_count": 1235,
+      "native": "NOT_RUN",
+      "package_inventory_sha256": "8287ab136e4ddecc0ae4eb2848600b237550a6a17cf70a13a91dbe23be89bf8d",
+      "real_local_lock": "NOT_CREATED",
+      "record_sha256": "36286e5699e6493e534527eac185ae601b729ffd6d8d750115e83a40f75d18ea",
+      "total_bytes": 23986610,
+      "valid": true
+    },
+    "unpatched-local-control": {
+      "changed_paths": [],
+      "file_count": 1235,
+      "native": "NOT_RUN",
+      "package_inventory_sha256": "f7d2ba7f70e40c8a29ca0fa5d7a17705b746ed1d04b56a22455eb9be796b6cc6",
+      "real_local_lock": "NOT_CREATED",
+      "record_sha256": "db0a77a40224e7ad8b78c11ad2930bb510ae74216b1ae3aa353ec50a6c73f378",
+      "total_bytes": 23986607,
+      "valid": true
+    }
+  },
+  "materialization_report_sha256": "f6e9f9d97995b190e52cb598df3c285f606117c27bbd6684caf3b995de9cf3d3",
+  "official_source": {
+    "commit": "381a77dbf774ff603014d5695ef6c06abaa25d96",
+    "tree": "4790057a1964150f2ca815f89cc85498bc1cb43e",
+    "files": 1235,
+    "bytes": 23986607
+  },
+  "frozen_owned_oracle_files": 26,
+  "original_git_artifact_recheck": "Preserved bda5bc7 attempt2 real Git lock/manifest/registered packages still accepted by current original validator",
+  "negative_controls": [
+    "wrong pin/tree/spec/patch/preimage/postimage",
+    "second modification, missing/extra file or wrong modes",
+    "symlink/submodule/hardlink/path traversal/case/Unicode collision",
+    "package and capture byte/count bounds plus capture-time races",
+    "changed original/runtime manifest, non-Latios lock graph and spoofed Local provenance",
+    "frozen oracle mutation",
+    "record/gate hash or source/arm mismatch, including final-phase mutation",
+    "wrong or duplicate test identity despite correct count",
+    "unpatched control unexpected pass remains wrapper failure",
+    "native failure/exception remains primary over secondary verification/capture/write/product-read errors"
+  ],
+  "independent_review": {
+    "status": "CLOSED_NO_BLOCKING_FINDINGS",
+    "fixed_findings": [
+      "Post-native/final runtime gate and record drift is checked.",
+      "Launcher post-run evidence/write/product-read failures cannot hide nonzero Unity exit."
+    ],
+    "scope": "Read-only review plus focused synthetic regressions; no Unity."
+  },
+  "root_product_or_fixture_or_asmdef_or_define_changes": false,
+  "gate_or_remote_publication_by_worker": false
+}

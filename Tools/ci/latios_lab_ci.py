@@ -35,6 +35,8 @@ LAB_ASSEMBLIES = ('Latios2022Lab.Runtime', 'Latios2022Lab.EditorTools',
 COMPILER_FILE_BYTES = 2 * 1024 * 1024
 COMPILER_TOTAL_BYTES = 8 * 1024 * 1024
 COMPILER_MAX_FILES = 128
+EXPERIMENT_METADATA_BYTES = 1024 * 1024
+EVIDENCE_LABELS = ('git-control', 'unpatched-local-control', 'patched-local-variant')
 
 
 def require(value, message):
@@ -58,6 +60,32 @@ def git(repo, *arguments):
     return subprocess.check_output(['git', *arguments], cwd=repo, text=True).strip()
 
 
+def load_cleanup_variant(repo=None):
+    # Resolve beside this checkout, including detached runtime worktrees and hosted gates.
+    repo = repo or Path(__file__).resolve().parents[2]
+    path = repo / 'Latios2022Lab/Tools/cleanup_variant.py'
+    require(path.is_file() and not path.is_symlink(), 'Reviewed cleanup experiment module is unavailable.')
+    spec = importlib.util.spec_from_file_location('latios_cleanup_variant', path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def request_experiment(request, repo=None):
+    if 'experiment' not in request:
+        return None
+    experiment = load_cleanup_variant(repo).check_experiment(request['experiment'])
+    require(experiment is not None, 'An explicit experiment must name an approved arm.')
+    return experiment
+
+
+def evidence_label(request):
+    experiment = request_experiment(request)
+    label = experiment['arm'] if experiment else 'git-control'
+    require(label in EVIDENCE_LABELS, 'Unknown evidence profile.')
+    return label
+
+
 def check_request(request, repository, ref, now=None):
     require(ref == BRANCH, 'Only the deliberate dot/latios-lab-validate branch may run.')
     require(re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repository), 'Invalid repository.')
@@ -78,6 +106,7 @@ def check_request(request, repository, ref, now=None):
                          r'/actions/runs/([1-9][0-9]*)/attempts/([1-9][0-9]*)',
                          request.get('p0_evidence_url', ''))
     require(match, 'Evidence must identify the exact GitHub P0 run and attempt in this repository.')
+    request_experiment(request)
     return int(match[1]), int(match[2])
 
 
@@ -164,6 +193,10 @@ def validate(repo, repository, ref, sha):
     request = load_request(repo)
     check_request(request, repository, ref)
     source = check_source(repo, request, sha)
+    experiment = request_experiment(request, repo)
+    if experiment:
+        source['experiment'] = experiment
+    source['evidence_label'] = evidence_label(request)
     source['p0_verified'] = check_p0(request, repository, ref)
     return request, source
 
@@ -172,6 +205,39 @@ def product_fingerprint(repo):
     return {str(path.relative_to(repo)): digest(path)
             for directory in ('Packages', 'ProjectSettings')
             for path in (repo / directory).rglob('*') if path.is_file()}
+
+
+def lab_source_fingerprint(project):
+    result = {}
+    for folder in ('Assets', 'Tools', 'Variants'):
+        root = project / folder
+        require(not root.is_symlink(), 'Experiment source folder is a symlink.')
+        for path in sorted(root.rglob('*')):
+            require(not path.is_symlink(), 'Experiment source contains a symlink: ' + str(path))
+            if path.is_file() and '__pycache__' not in path.parts:
+                name = path.relative_to(project).as_posix()
+                # The Editor legitimately generates this URP asset at first import.
+                # Owned test/probe sources and every asmdef/meta remain frozen.
+                if name not in ('Assets/UniversalRenderPipelineGlobalSettings.asset',
+                                'Assets/UniversalRenderPipelineGlobalSettings.asset.meta'):
+                    result[name] = digest(path)
+    return result
+
+
+def experiment_snapshot(module, workspace, project, artifacts, snapshot, record):
+    """Capture even invalid packages; do not let a capture error hide a native failure."""
+    errors = {}
+    try:
+        module.verify(project, record)
+    except Exception as error:
+        errors['verification'] = str(error)
+    try:
+        captured = module.capture(workspace, artifacts, snapshot, record)
+        if not captured.get('valid'):
+            errors['capture_integrity'] = captured.get('errors', 'Invalid package snapshot.')
+    except Exception as error:
+        errors['capture'] = str(error)
+    return errors
 
 
 def terminate_owned_group(process, grace_seconds=20):
@@ -302,6 +368,19 @@ def collect(project, artifacts, snapshot='latest'):
         if source.exists():
             shutil.copytree(source, inputs / folder, dirs_exist_ok=True)
     compiler = collect_compiler_text(project, artifacts / 'compiler-text' / snapshot)
+    generated = {}
+    for name in ('Assets/UniversalRenderPipelineGlobalSettings.asset',
+                 'Assets/UniversalRenderPipelineGlobalSettings.asset.meta'):
+        path = project / name
+        if path.exists():
+            require(not path.is_symlink() and path.is_file(), 'Generated URP evidence is not a regular file.')
+            target = artifacts / 'editor-generated-assets' / snapshot / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if not target.exists():
+                shutil.copyfile(path, target)
+            generated[name] = {'sha256': digest(target), 'bytes': target.stat().st_size}
+    write_json(artifacts / ('editor-generated-assets-' + snapshot + '.json'),
+               {'scope': 'Observed Editor-generated URP assets; not modified test/probe source.', 'files': generated})
     xml = []
     for path in sorted(artifacts.rglob('*.xml')):
         record = {'path': path.relative_to(artifacts).as_posix(), 'sha256': digest(path)}
@@ -336,6 +415,8 @@ def validate_workspace(repo, workspace):
 def execute(repo, workspace, repository, ref, sha, editor):
     require(sys.platform == 'darwin', 'This release targets only the approved existing Mac runner.')
     request, source = validate(repo, repository, ref, sha)
+    experiment = request_experiment(request, repo)
+    variant = load_cleanup_variant(repo) if experiment else None
     check_queue(repository)
     workspace = validate_workspace(repo, workspace)
     workspace.mkdir()
@@ -343,13 +424,18 @@ def execute(repo, workspace, repository, ref, sha, editor):
     artifacts.mkdir()
     source['phases'] = [{'phase': phase, 'burst': burst, 'status': 'NOT_RUN'} for phase, burst in PHASES]
     source.update(player_build='NOT_RUN', player_execution='NOT_RUN', repeat_clean_import='NOT_RUN',
-                  mobile='NOT_RUN', s1a='INCOMPLETE')
+                  mobile='NOT_RUN', s1a='INCOMPLETE', editor_control='NOT_RUN',
+                  evidence_label=evidence_label(request))
+    if experiment:
+        source.update(experiment=experiment, editor_control_scope='Local cleanup experiment arm only; original Git control unchanged.')
     write_json(artifacts / 'ci-summary.json', source)
     write_json(artifacts / 'release-request.json', request)
     working = workspace / 'source'
     project = working / 'Latios2022Lab'
     baseline = product_fingerprint(repo)
     snapshot = 'before-native'
+    experiment_record = None
+    frozen_source = None
     try:
         subprocess.run(['git', 'worktree', 'add', '--detach', str(working), sha], cwd=repo, check=True)
         require(product_fingerprint(working) == baseline, 'Isolated product inputs differ from source.')
@@ -358,41 +444,117 @@ def execute(repo, workspace, repository, ref, sha, editor):
         selected = editor or Path('/Applications/Unity/Hub/Editor/2022.3.62f2/Unity.app/Contents/MacOS/Unity')
         require(selected.is_absolute() and selected.is_file() and os.access(selected, os.X_OK),
                 'Installed Unity 2022.3.62f2 executable is unavailable; no installation attempted.')
-        gate = dict(request, project_path=str(project))
+        gate = dict(request, project_path=str(project), source_commit=sha)
         gate_path = workspace / 'runtime-gate.json'
+        if variant:
+            frozen_source = lab_source_fingerprint(project)
+            write_json(artifacts / 'frozen-lab-source-sha256.json', frozen_source)
+            experiment_record = variant.prepare(workspace, project, experiment, sha)
+            record_path = workspace / 'experiment-record.json'
+            require(not record_path.is_symlink() and json.loads(record_path.read_text()) == experiment_record,
+                    'Prepared experiment record differs from its persisted bytes.')
+            require(experiment_record['experiment'] == experiment and experiment_record['source_commit'] == sha,
+                    'Prepared experiment record differs from the approved source or arm.')
+            require(experiment_record['workspace'] == str(workspace) and experiment_record['project_path'] == str(project)
+                    and experiment_record['package_path'] == str(workspace / 'variant-packages/com.latios.latiosframework'),
+                    'Prepared experiment record targets another workspace, project, or package.')
+            gate['experiment_record'] = {'path': str(record_path), 'sha256': digest(record_path)}
+            source['experiment_record'] = gate['experiment_record']
+            shutil.copyfile(record_path, artifacts / 'experiment-record.json')
+            errors = experiment_snapshot(variant, workspace, project, artifacts, snapshot, experiment_record)
+            require(not errors, 'Prepared experiment integrity failed: ' + json.dumps(errors, sort_keys=True))
         write_json(gate_path, gate)
+        write_json(artifacts / 'runtime-gate.json', gate)
+        gate_hash = digest(gate_path)
         for index, (phase, burst) in enumerate(PHASES):
             snapshot = '%02d-%s-%s' % (index, phase, burst)
             record = source['phases'][index]
-            source['p0_verified'] = check_p0(request, repository, ref)
+            current_request, verified_source = validate(repo, repository, ref, sha)
+            require(current_request == request, 'Coordinator release changed during this run.')
+            source['p0_verified'] = verified_source.get('p0_verified', {})
             check_queue(repository)
+            require(not gate_path.is_symlink() and digest(gate_path) == gate_hash,
+                    'Runtime gate changed; no later phase may start.')
+            if variant:
+                binding = gate['experiment_record']
+                require(not record_path.is_symlink() and digest(record_path) == binding['sha256'],
+                        'Experiment record changed; no later phase may start.')
+                require(lab_source_fingerprint(project) == frozen_source,
+                        'Frozen Lab source changed; no later phase may start.')
+                errors = experiment_snapshot(variant, workspace, project, artifacts, snapshot + '-before', experiment_record)
+                record['experiment_before_errors'] = errors
+                require(not errors, 'Experiment integrity failed before phase: ' + json.dumps(errors, sort_keys=True))
             record['status'] = 'RUNNING'
+            source['editor_control'] = 'RUNNING'
             write_json(artifacts / 'ci-summary.json', source)
             command = [sys.executable, str(project / 'Tools/lab.py'), phase, '--burst', burst,
                        '--editor', str(selected), '--target', 'StandaloneOSX', '--gate', str(gate_path), '--execute']
+            if variant:
+                command += ['--experiment-record', str(record_path)]
             record['command'] = command
-            code = run_owned_process(command, project, artifacts / ('%02d-%s-%s-console.log' % (index, phase, burst)))
+            native_error = None
+            try:
+                code = run_owned_process(command, project, artifacts / ('%02d-%s-%s-console.log' % (index, phase, burst)))
+            except Exception as error:
+                native_error = error
+                code = None
+                record['native_error'] = str(error)
             record.update(exit_code=code, status='PASSED' if code == 0 else 'FAILED')
-            require(product_fingerprint(repo) == baseline and product_fingerprint(working) == baseline,
-                    'Root Packages/ProjectSettings changed; no later phase may start.')
+            post_errors = {}
+            if variant:
+                post_errors = experiment_snapshot(variant, workspace, project, artifacts, snapshot + '-after', experiment_record)
+                try:
+                    require(lab_source_fingerprint(project) == frozen_source, 'Frozen Lab source changed.')
+                except Exception as error:
+                    post_errors['frozen_source'] = str(error)
+                record['experiment_after_errors'] = post_errors
+            bindings = {'runtime_gate': (gate_path, gate_hash)}
+            if variant:
+                bindings['experiment_record'] = (record_path, gate['experiment_record']['sha256'])
+            for name, (path, expected_hash) in bindings.items():
+                try:
+                    require(not path.is_symlink() and digest(path) == expected_hash,
+                            name.replace('_', ' ').capitalize() + ' changed during the native phase.')
+                except Exception as error:
+                    post_errors[name] = str(error)
+            try:
+                require(product_fingerprint(repo) == baseline and product_fingerprint(working) == baseline,
+                        'Root Packages/ProjectSettings changed; no later phase may start.')
+            except Exception as error:
+                post_errors['product_inputs'] = str(error)
             try:
                 collect(project, artifacts, snapshot)
             except Exception as evidence_error:
                 record['evidence_collection_error'] = str(evidence_error)
-                # Keep the original native failure primary; separately retain collection trouble.
-                if code == 0:
-                    raise
+                post_errors['evidence_collection'] = str(evidence_error)
+            if post_errors:
+                record['status'] = 'FAILED'
+                record['post_phase_errors'] = post_errors
             write_json(artifacts / 'ci-summary.json', source)
+            if native_error is not None:
+                raise native_error
             require(code == 0, 'First control-group failure: {} Burst {}; remaining phases NOT_RUN.'.format(phase, burst))
+            require(not post_errors, 'Post-phase verification failed: ' + json.dumps(post_errors, sort_keys=True))
+            if experiment and experiment['arm'] == 'unpatched-local-control' and (phase, burst) == ('editmode', 'on'):
+                # A successful control does not reproduce the historical cleanup failure.
+                # Preserve native exit/XML facts and stop for a human comparison of the evidence.
+                record.update(status='UNEXPECTED_PASS', control_observation='UNEXPECTED_PASS')
+                source['control_observation'] = 'UNEXPECTED_PASS'
+                raise ValueError('Unpatched local control unexpectedly passed EditMode Burst on; inspect non-reproduction before any later phase or patched-arm release.')
         source['editor_control'] = 'PASSED'
         return 0
     except Exception as exc:
         source['error'] = str(exc)
+        source['editor_control'] = 'FAILED'
         raise
     finally:
         # Preserve failing output, even if the original launcher raised before its success manifest.
         write_json(artifacts / 'ci-summary.json', source)
         if project.exists():
+            if experiment_record is not None:
+                errors = experiment_snapshot(variant, workspace, project, artifacts, 'final', experiment_record)
+                if errors:
+                    source['experiment_final_errors'] = errors
             try:
                 collect(project, artifacts, snapshot)
             except Exception as evidence_error:
@@ -400,7 +562,18 @@ def execute(repo, workspace, repository, ref, sha, editor):
                 write_json(artifacts / 'ci-summary.json', source)
                 write_evidence_hashes(artifacts)
                 if 'error' not in source:
+                    source['editor_control'] = 'FAILED'
+                    source['error'] = str(evidence_error)
                     raise
+            finally:
+                write_json(artifacts / 'ci-summary.json', source)
+                write_evidence_hashes(artifacts)
+            if source.get('experiment_final_errors') and 'error' not in source:
+                source['editor_control'] = 'FAILED'
+                source['error'] = 'Final experiment integrity verification failed.'
+                write_json(artifacts / 'ci-summary.json', source)
+                write_evidence_hashes(artifacts)
+                raise ValueError(source['error'])
         # Keep this run-specific project/worktree for diagnosis. Never clean the SPF workspace/cache.
 
 
@@ -421,7 +594,13 @@ def package(workspace, output):
             if not path.is_file():
                 continue
             relative = path.relative_to(source).as_posix()
-            if path.suffix in ('.xml', '.json', '.txt') or relative.startswith(('lab-inputs/ProjectSettings/', 'compiler-text/')):
+            if relative.startswith('cleanup-variant/'):
+                # Complete package snapshots belong only in bounded full parts.
+                if path.suffix in ('.json', '.patch'):
+                    require(path.stat().st_size <= EXPERIMENT_METADATA_BYTES,
+                            'Experiment metadata exceeds its early-review limit; full parts remain available.')
+                    archive.write(path, relative)
+            elif path.suffix in ('.xml', '.json', '.txt') or relative.startswith(('lab-inputs/ProjectSettings/', 'compiler-text/')):
                 archive.write(path, relative)
             elif path.suffix == '.log':
                 with path.open('rb') as stream:
@@ -447,9 +626,13 @@ def main(argv=None):
     parser.add_argument('--workspace', type=Path)
     parser.add_argument('--output', type=Path)
     parser.add_argument('--editor', type=Path)
+    parser.add_argument('--github-output', type=Path)
     args = parser.parse_args(argv)
     if args.command == 'validate':
-        _, source = validate(args.repo.resolve(), args.repository, args.ref, args.sha)
+        request, source = validate(args.repo.resolve(), args.repository, args.ref, args.sha)
+        if args.github_output is not None:
+            with args.github_output.open('a') as output:
+                output.write('evidence_label=' + evidence_label(request) + '\n')
         print(json.dumps(source, indent=2))
     elif args.command == 'execute':
         require(args.workspace is not None, '--workspace is required.')

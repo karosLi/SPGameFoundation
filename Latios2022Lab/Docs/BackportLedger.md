@@ -74,3 +74,7 @@ At pinned [CollectionComponentOperations.cs, SyncQueries](https://github.com/Dre
 The original attempt now fails exactly at `EntityManager.Exists(owner)` after the preceding output=37265 and witness=[1,17] checks passed. This reproduces a retained cleanup entity after disposal, consistent with the source defect. Native artifacts do not contain a per-entity component dump; marker identity is inferred from the pinned code. The second-update and final normal-path assertions were not reached in the failing cases.
 
 The original package and strict 49+1 tests remain unchanged. Do not manually remove the entity in the fixture or weaken the oracle. A separate compatibility candidate may evaluate the one-argument removeQuery correction only with its own provenance/ledger and full regression; no such patch is included here.
+
+## Prepared isolated cleanup-query experiment (not executed)
+
+[CleanupVariantProtocol](CleanupVariantProtocol-20261008.md) permits only the fixed official 381a77d tree and reviewed one-line query diff, as two separately gated Local arms. The original Git source/lock/failure remain immutable; the unpatched Local arm must reproduce the cleanup failure before the lead releases the patched arm. Package snapshots and source/probe hashes are checked per phase, and real registered Local provenance and generated lock must match the frozen contract. No compatibility pass, new package release or product/S2 adoption is claimed from these local tools. The bootstrap remains the independent 642e508 commit.

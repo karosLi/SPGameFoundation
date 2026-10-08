@@ -2,6 +2,7 @@
 """S1a launcher. Default is read-only static preflight; Unity needs an explicit gate."""
 import argparse
 import hashlib
+import importlib.util
 import json
 import os
 from pathlib import Path
@@ -44,6 +45,47 @@ def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+_VARIANT_TOOLS = None
+
+
+def variant_tools():
+    global _VARIANT_TOOLS
+    if _VARIANT_TOOLS is None:
+        spec = importlib.util.spec_from_file_location('latios_cleanup_variant', Path(__file__).with_name('cleanup_variant.py'))
+        _VARIANT_TOOLS = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(_VARIANT_TOOLS)
+    return _VARIANT_TOOLS
+
+
+def load_experiment_record(path, gate):
+    if path is None:
+        require(gate.get('experiment') is None and gate.get('experiment_record') is None,
+                'Experiment gate requires its explicit sealed --experiment-record.')
+        return None
+    require(path.is_absolute() and path.is_file(), 'Experiment record must be an existing absolute file.')
+    require(not any(p.is_symlink() for p in (path, *path.parents)), 'Experiment record path cannot contain symlinks.')
+    binding = gate.get('experiment_record', {})
+    require(set(binding) == {'path', 'sha256'} and binding['path'] == str(path.resolve())
+            and binding['sha256'] == sha(path), 'Experiment record path/hash differs from the runtime gate.')
+    record = json.loads(path.read_text())
+    require(record.get('experiment') == variant_tools().check_experiment(gate.get('experiment'))
+            and record.get('experiment') is not None, 'Experiment record and approved arm disagree.')
+    require(record.get('source_commit') == gate.get('source_commit'), 'Experiment source differs from the release gate.')
+    require(subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=PROJECT, text=True).strip() == record['source_commit'],
+            'Runtime checkout differs from the gated experiment source.')
+    variant_tools().verify(PROJECT, record)
+    return record
+
+
+def check_experiment_file_bindings(record_path, gate_path, gate, gate_sha256):
+    for path in (record_path, gate_path):
+        require(path.is_file() and not any(p.is_symlink() for p in (path, *path.parents)),
+                'Experiment binding file is missing or has symlink ancestry.')
+    require(sha(gate_path) == gate_sha256, 'Runtime experiment gate changed during the phase.')
+    require(sha(record_path) == gate['experiment_record']['sha256'],
+            'Sealed experiment record changed during the phase.')
+
+
 def validate_paths(project):
     require(project.name == "Latios2022Lab", "Only the dedicated Latios2022Lab path is supported.")
     require(not project.is_symlink(), "The lab project cannot be a symlink.")
@@ -54,8 +96,11 @@ def validate_paths(project):
     require(not (project / "Temp/UnityLockfile").exists(), "The lab already has a Unity project lock. Do not kill or reuse another editor.")
 
 
-def check_lock(path):
+def check_lock(path, experiment=None):
     lock = json.loads(path.read_text())['dependencies']
+    if experiment is not None:
+        variant_tools().check_lock(lock, experiment)
+        return lock
     entry = lock['com.latios.latiosframework']
     require(entry.get('source') == 'git', "Latios must resolve as the pinned Git package.")
     require(entry.get('hash') == LATIOS_COMMIT, "Resolved Latios commit differs from the pin.")
@@ -69,9 +114,9 @@ def check_lock(path):
     return lock
 
 
-def check_manifest(manifest, lock=None):
+def check_manifest(manifest, lock=None, experiment=None):
     require(set(manifest) == {'dependencies'}, 'Unexpected manifest configuration.')
-    expected = dict(PINS, **{'com.latios.latiosframework': LATIOS_URL})
+    expected = dict(PINS, **{'com.latios.latiosframework': experiment['manifest_url'] if experiment else LATIOS_URL})
     dependencies = manifest['dependencies']
     require(all(dependencies.get(name) == version for name, version in expected.items()), 'Manifest pins drifted.')
     additions = {name: version for name, version in dependencies.items() if name not in expected}
@@ -101,13 +146,24 @@ def check_entities_dependencies(data):
             'Entities generator requires a direct Unity.Collections reference: ' + data['name'])
 
 
-def check_registered_packages(path, lock):
-    records = json.loads(path.read_text())['packages']
+def check_registered_packages(path, lock, experiment=None):
+    environment = json.loads(path.read_text())
+    records = environment['packages']
     registered = {record['name']: record['version'] for record in records}
     require(len(registered) == len(records), 'Duplicate registered package inventory.')
     for name, version in RESOLVED_PINS.items():
         require(registered.get(name) == version and lock[name]['version'] == version,
                 'Registered package and reviewed pin/lock disagree: ' + name)
+    if experiment is not None:
+        variant_tools().check_registered(records, experiment)
+        require(environment.get('experimentId') == experiment['experiment']['id']
+                and environment.get('experimentArm') == experiment['experiment']['arm'],
+                'Environment experiment/arm differs from the gated package.')
+    else:
+        latios = next((r for r in records if r['name'] == 'com.latios.latiosframework'), {})
+        require(latios.get('source') == 'Git' and latios.get('version') == '0.11.5'
+                and latios.get('packageId') == 'com.latios.latiosframework@' + LATIOS_URL,
+                'Registered Latios is not the original pinned Git package.')
 
 
 def parse_project_version(text):
@@ -130,13 +186,15 @@ def check_defines(settings):
         require(required <= symbols, 'Missing define group: ' + target)
 
 
-def preflight(project=PROJECT):
+def preflight(project=PROJECT, experiment=None):
     validate_paths(project)
+    if experiment is not None:
+        variant_tools().verify(project, experiment)
     revision = parse_project_version((project / 'ProjectSettings/ProjectVersion.txt').read_text())
     lock_path = project / 'Packages/packages-lock.json'
-    lock = check_lock(lock_path) if lock_path.exists() else None
+    lock = check_lock(lock_path, experiment) if lock_path.exists() else None
     manifest = json.loads((project / 'Packages/manifest.json').read_text())
-    additions = check_manifest(manifest, lock)
+    additions = check_manifest(manifest, lock, experiment)
     settings = (project / 'ProjectSettings/ProjectSettings.asset').read_text()
     check_defines(settings)
     assemblies = []
@@ -153,7 +211,8 @@ def preflight(project=PROJECT):
             require(Path(str(path) + '.meta').is_file(), 'Missing Unity metadata: ' + str(path))
     return {'status': 'STATIC_PREFLIGHT_ONLY', 'editor': EDITOR_VERSION, 'latios_commit': LATIOS_COMMIT,
             'project': str(project), 'editor_revision': revision, 'resolved_lock': 'present; pins checked' if lock_path.exists() else 'NOT_RESOLVED',
-            'editor_manifest_additions': additions, 'native': 'NOT_RUN', 'assemblies': sorted(assemblies)}
+            'editor_manifest_additions': additions, 'native': 'NOT_RUN', 'assemblies': sorted(assemblies),
+            'experiment': experiment['experiment'] if experiment else None}
 
 
 def read_gate(path, project, phase):
@@ -209,11 +268,27 @@ def verify_editor_binary(project_command, output):
     return {'command': version_command, 'version': EDITOR_VERSION}
 
 
+def expected_test_identities(phase):
+    if phase == 'playmode':
+        return {'Latios2022Lab.PlayModeTests.RepeatedOwnedWorldsLeaveNoCollectionState'}
+    require(phase == 'editmode', 'No strict test identity set for this phase.')
+    names = {'Latios2022Lab.CoreTests.' + name for name in (
+        'ExceptionAfterSchedulingStillOwnsTheDisposalDependency',
+        'ReenterPlayModeTwiceWithDomainReload', 'TwoOwnedWorldsAndQvvsInstallationCanUpdateAndDispose')}
+    names.update('Latios2022Lab.CoreTests.TrackedWriterReaderAndDisposal({},{})'.format(batch, exit_)
+                 for batch in (1, 8, 64) for exit_ in ('Remove', 'DestroyEntity', 'DisposeWorld'))
+    names.update('Latios2022Lab.PsyshockTests.ArrayLayerCandidatesMatchIndependentAabbOracle({},{},{})'.format(fixture, mode, subdivisions)
+                 for fixture in (0, 1, 2, 3) for mode in ('Immediate', 'Single', 'Parallel') for subdivisions in (1, 2, 4))
+    names.add('Latios2022Lab.PsyshockTests.ScheduledRayAndSignedDistanceMatchKnownGeometryAndBurstMode')
+    return names
+
+
 def check_results(path, phase):
     root = ET.parse(path).getroot()
     cases = list(root.iter('test-case'))
     expected = 49 if phase == 'editmode' else 1
     require(len(cases) == expected, 'Unexpected discovery count: expected ' + str(expected) + ', got ' + str(len(cases)))
+    require({case.get('fullname') for case in cases} == expected_test_identities(phase), 'Unexpected test identities.')
     require(all(case.get('result') == 'Passed' for case in cases), 'Failed, skipped, or inconclusive tests are not a pass.')
     require(root.get('result') == 'Passed', 'The test run did not pass.')
     return len(cases)
@@ -233,8 +308,18 @@ def main(argv=None):
     parser.add_argument('--target', choices=['StandaloneOSX', 'StandaloneLinux64', 'StandaloneWindows64'], default='StandaloneOSX')
     parser.add_argument('--execute', action='store_true')
     parser.add_argument('--gate', type=Path)
+    parser.add_argument('--experiment-record', type=Path)
     args = parser.parse_args(argv)
-    print(json.dumps(preflight(), indent=2))
+    gate = None
+    experiment = None
+    gate_sha256 = None
+    if args.experiment_record is not None:
+        require(args.execute and args.phase in ('import', 'editmode', 'playmode'),
+                'Experiments require an explicit gated Editor execution; no player or implicit preflight.')
+        gate = read_gate(args.gate, PROJECT, args.phase)
+        experiment = load_experiment_record(args.experiment_record, gate)
+        gate_sha256 = sha(args.gate)
+    print(json.dumps(preflight(PROJECT, experiment), indent=2))
     if args.phase == 'preflight':
         require(not args.execute, 'Preflight is read-only. Select an explicit native phase to execute.')
         return 0
@@ -245,7 +330,9 @@ def main(argv=None):
     print('PLAN ONLY: ' + shlex.join(command))
     if not args.execute:
         return 0
-    gate = read_gate(args.gate, PROJECT, args.phase)
+    gate = gate or read_gate(args.gate, PROJECT, args.phase)
+    if experiment is None:
+        load_experiment_record(None, gate)
     require(args.editor.is_file() and os.access(args.editor, os.X_OK), 'Editor executable is missing or not executable.')
     before = product_fingerprint()
     # Directory creation is an exclusive lab launch lock, never a process-killing mechanism.
@@ -257,24 +344,64 @@ def main(argv=None):
         provenance = {'source_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=PROJECT, text=True).strip(),
                       'source_status': subprocess.check_output(['git', 'status', '--porcelain'], cwd=PROJECT, text=True),
                       'inputs_sha256': {str(p.relative_to(PROJECT)): sha(p) for folder in ('Assets', 'Packages', 'ProjectSettings', 'Tools') for p in (PROJECT / folder).rglob('*') if p.is_file() and '__pycache__' not in p.parts},
-                      'command': command, 'installed_editor': installed_editor, 'gate': gate, 'root_product_inputs_before': before}
+                      'command': command, 'installed_editor': installed_editor, 'gate': gate, 'root_product_inputs_before': before,
+                      'experiment': experiment}
         (output / 'launch.json').write_text(json.dumps(provenance, indent=2) + '\n')
         env = os.environ.copy()
         cache = PROJECT / '.upm-cache'
         env.update(LATIOS_LAB_OUTPUT=str(output), LATIOS_LAB_EXPECT_BURST=args.burst,
                    UPM_CACHE_ROOT=str(cache), UPM_NPM_CACHE_PATH=str(cache / 'npm'),
                    UPM_CACHE_PATH=str(cache / 'packages'), UPM_GIT_CACHE_PATH=str(cache / 'git'))
+        # Clear inherited experiment metadata so a Git control cannot be mislabeled.
+        for key in ('LATIOS_LAB_EXPERIMENT_ID', 'LATIOS_LAB_EXPERIMENT_ARM', 'LATIOS_LAB_EXPERIMENT_RECORD_SHA256', 'LATIOS_LAB_PACKAGE_PATH'):
+            env.pop(key, None)
+        if experiment is not None:
+            check_experiment_file_bindings(args.experiment_record, args.gate, gate, gate_sha256)
+            env.update(LATIOS_LAB_EXPERIMENT_ID=experiment['experiment']['id'],
+                       LATIOS_LAB_EXPERIMENT_ARM=experiment['experiment']['arm'],
+                       LATIOS_LAB_EXPERIMENT_RECORD_SHA256=gate['experiment_record']['sha256'],
+                       LATIOS_LAB_PACKAGE_PATH=experiment['package_path'])
+            (output / 'experiment-before.json').write_text(json.dumps(variant_tools().verify(PROJECT, experiment), indent=2) + '\n')
         code = subprocess.run(command, cwd=PROJECT, env=env, check=False).returncode
-        require(product_fingerprint() == before, 'Root product Packages/ProjectSettings changed: stop and investigate.')
+        post_errors = {}
+        if experiment is not None:
+            try:
+                check_experiment_file_bindings(args.experiment_record, args.gate, gate, gate_sha256)
+                after = variant_tools().verify(PROJECT, experiment)
+            except Exception as exc:
+                post_errors['experiment'] = str(exc)
+                after = {'status': 'FAILED', 'error': str(exc)}
+            try:
+                (output / 'experiment-after.json').write_text(json.dumps(after, indent=2) + '\n')
+            except Exception as exc:
+                post_errors['experiment_evidence'] = str(exc)
+        product_unchanged = None
+        try:
+            product_unchanged = product_fingerprint() == before
+            require(product_unchanged, 'Root product Packages/ProjectSettings changed: stop and investigate.')
+        except Exception as exc:
+            post_errors['product_inputs'] = str(exc)
+        try:
+            (output / 'post-run-integrity.json').write_text(json.dumps({
+                'root_product_inputs_unchanged': product_unchanged, 'secondary_errors': post_errors,
+                'unity_exit_code': code}, indent=2) + '\n')
+        except Exception as exc:
+            post_errors['integrity_evidence'] = str(exc)
+        if post_errors:
+            print('POST-RUN INTEGRITY: ' + json.dumps(post_errors, sort_keys=True), file=sys.stderr)
         require(code == 0, 'Unity failed with exit code ' + str(code) + '; preserve ' + str(output))
-        lock = check_lock(PROJECT / 'Packages/packages-lock.json')
-        check_manifest(json.loads((PROJECT / 'Packages/manifest.json').read_text()), lock)
+        require(not post_errors, 'Post-run integrity failed: ' + json.dumps(post_errors, sort_keys=True))
+        lock = check_lock(PROJECT / 'Packages/packages-lock.json', experiment)
+        check_manifest(json.loads((PROJECT / 'Packages/manifest.json').read_text()), lock, experiment)
         (output / 'lab-inputs-after.json').write_text(json.dumps({str(p.relative_to(PROJECT)): sha(p) for directory in ('Packages', 'ProjectSettings') for p in (PROJECT / directory).rglob('*') if p.is_file()}, indent=2) + '\n')
         if args.phase in ('editmode', 'playmode'):
             check_results(output / 'tests.xml', args.phase)
         elif args.phase == 'import':
             require((output / 'environment.json').is_file(), 'Import produced no verified environment inventory.')
-            check_registered_packages(output / 'environment.json', lock)
+            check_registered_packages(output / 'environment.json', lock, experiment)
+            if experiment is not None:
+                require(json.loads((output / 'environment.json').read_text()).get('experimentRecordSha256') == gate['experiment_record']['sha256'],
+                        'Environment does not identify the sealed experiment record.')
         else:
             require('Result=Succeeded' in (output / 'build.txt').read_text(), 'No successful build report. Player execution remains NOT_RUN.')
         evidence = {str(p.relative_to(output)): sha(p) for p in output.rglob('*') if p.is_file()}

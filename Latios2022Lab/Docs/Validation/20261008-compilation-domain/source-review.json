@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "reviewed_source_commit": null,
-  "review_scope": "All 11 owned C# files and four asmdefs; native baseline bda5bc7 attempt 2 compiled all four and reached strict cleanup failure. Current hashes include only the pending owned bootstrap correction; its native validation is not inherited.",
+  "review_scope": "All 11 owned C# files and four asmdefs; original bda5bc7 attempt 2 compiled all four. The bootstrap correction and Local experiment instrumentation below remain uncompiled/unexecuted in Unity; static checks do not inherit the original native pass.",
   "pins": {
     "Unity": "2022.3.62f2",
     "Latios": "381a77dbf774ff603014d5695ef6c06abaa25d96",
@@ -15,7 +15,7 @@
   "source_sha256": {
     "Assets/Latios2022Tests/Editor/CoreTests.cs": "fa100d3d5b764f3d243f3f259f40b16988713db1d9497e808e35bd413def5bf4",
     "Assets/Latios2022Tests/Editor/PsyshockTests.cs": "b50626c09002353027e085c3bb16f9adaae354ac745f6097b6fc1dae6d70e74c",
-    "Assets/Latios2022Tests/EditorTools/LabEnvironment.cs": "b5c8726bb62eb69d62f79e76bf298eedf125109631845147da7d4e7f1206d4d6",
+    "Assets/Latios2022Tests/EditorTools/LabEnvironment.cs": "5038e47213fbd5bfd62bd52416e0c44ef2f687afc7f9ec9143b94d8a2bbe54cf",
     "Assets/Latios2022Tests/EditorTools/LabPlayerBuild.cs": "b03662dc92b6a922efafb240993b2b0934f4e25044bcf50541dd5a1126205f3a",
     "Assets/Latios2022Tests/PlayMode/PlayModeTests.cs": "f3b97a1be7a6e917a4f1305e32d644555978ce97e54df70ad1aa69063d86786c",
     "Assets/Latios2022Tests/Runtime/CollectionProbe.cs": "c438517d078bb123381c67ba508e65a8b18430b94255ac7d8534ce4f5057ee9b",
@@ -90,6 +90,7 @@
   },
   "reviewed_base_commit": "bda5bc72bf03d99d0b2ff96f6af1388130b165e3",
   "reviewed_changes": [
-    "LabWorld.cs: fulfill ICustomBootstrap true contract with an empty standard default World; lifecycle belongs to pinned DefaultWorldInitialization shutdown. Not yet compiled or exercised in Unity."
+    "LabWorld.cs: pending independent 642e508 empty-default-World bootstrap correction.",
+    "LabEnvironment.cs: record actual PackageInfo.resolvedPath and experiment identity; verify gated Local source/path on every test. No fixture or asmdef change."
   ]
 }

@@ -2,6 +2,8 @@
 
 Status: **original control imports; EditMode/Burst-on executes 49 cases, with 45 passing and 4 strict cleanup failures**. [Run 37761086135 attempt 2](https://github.com/karosLi/SPGameFoundation/actions/runs/37761086135/attempts/2) confirms the inventory and initialization-ordering corrections. [Original cleanup evidence and independent owned bootstrap correction](Docs/BootstrapContractCorrection-20261008.md) preserve both the upstream-query finding and two PlayMode-entry bootstrap assertions. The bootstrap correction is statically reviewed but not yet run; all later on/off phases remain NOT_RUN. This is the isolated historical control group from [the integration blueprint](../Docs/LatiosUnity2022IntegrationBlueprint.md#7-轨道二-建立真实的-latios-2022-兼容线), not an SPF backend or S1a completion.
 
+[The approved two-arm cleanup experiment](Docs/CleanupVariantProtocol-20261008.md) now has local preparation/validation tooling. It keeps an unmodified official Local copy beside a one-line patched copy in separate run workspaces; neither arm has native results yet. Original Git manifests, lock provenance and strict fixture bytes remain unchanged.
+
 [The owned-domain review](Docs/CompilationDomainReview-20261008.md) covers all 11 C# files and four asmdefs. The original attempt compiled all four and retains two complete bounded compiler snapshots. Current frozen hashes identify the pending bootstrap change separately from that native evidence.
 
 - Unity: exactly **2022.3.62f2**

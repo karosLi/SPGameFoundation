@@ -24,6 +24,16 @@ namespace Latios2022Lab
             if (EditorSettings.enterPlayModeOptionsEnabled &&
                 (EditorSettings.enterPlayModeOptions & EnterPlayModeOptions.DisableDomainReload) != 0)
                 throw new InvalidOperationException("The lab's reentry gate requires domain reload enabled.");
+            string expectedPackagePath = Environment.GetEnvironmentVariable("LATIOS_LAB_PACKAGE_PATH");
+            if (!string.IsNullOrEmpty(expectedPackagePath))
+            {
+                // The launcher has already bound this physical package to the experiment gate.
+                var latios = UnityEditor.PackageManager.PackageInfo.GetAllRegisteredPackages()
+                    .Single(p => p.name == "com.latios.latiosframework");
+                if (latios.source.ToString() != "Local" ||
+                    !string.Equals(Path.GetFullPath(latios.resolvedPath), expectedPackagePath, StringComparison.Ordinal))
+                    throw new InvalidOperationException("Unity did not load the gated local Latios package.");
+            }
         }
 
         public static void CaptureEnvironment()
@@ -35,7 +45,8 @@ namespace Latios2022Lab
             var lockPath = Path.Combine(root, "Packages/packages-lock.json");
             if (!File.Exists(lockPath)) throw new InvalidOperationException("Unity has not produced an actual package lock.");
             var packages = UnityEditor.PackageManager.PackageInfo.GetAllRegisteredPackages().Select(p => new PackageRecord {
-                name = p.name, version = p.version, source = p.source.ToString(), packageId = p.packageId
+                name = p.name, version = p.version, source = p.source.ToString(), packageId = p.packageId,
+                resolvedPath = p.resolvedPath
             }).OrderBy(p => p.name).ToArray();
             using var world = LabWorld.Create("S1a environment inventory", true);
             world.Update();
@@ -54,6 +65,9 @@ namespace Latios2022Lab
                 defines = PlayerSettings.GetScriptingDefineSymbolsForGroup(BuildPipeline.GetBuildTargetGroup(EditorUserBuildSettings.activeBuildTarget)),
                 burstEnabled = BurstCompiler.IsEnabled,
                 burstSafety = BurstCompiler.Options.EnableBurstSafetyChecks,
+                experimentId = Environment.GetEnvironmentVariable("LATIOS_LAB_EXPERIMENT_ID") ?? "",
+                experimentArm = Environment.GetEnvironmentVariable("LATIOS_LAB_EXPERIMENT_ARM") ?? "",
+                experimentRecordSha256 = Environment.GetEnvironmentVariable("LATIOS_LAB_EXPERIMENT_RECORD_SHA256") ?? "",
                 packages = packages,
                 compiledAssemblies = CompilationPipeline.GetAssemblies().Select(a => a.name).OrderBy(a => a).ToArray(),
                 // Managed systems only. This list is not a complete unmanaged-system execution trace.
@@ -65,10 +79,11 @@ namespace Latios2022Lab
             File.Copy(lockPath, Path.Combine(output, "packages-lock.json"));
         }
 
-        [Serializable] private class PackageRecord { public string name, version, source, packageId; }
+        [Serializable] private class PackageRecord { public string name, version, source, packageId, resolvedPath; }
         [Serializable] private class EnvironmentRecord
         {
             public string editor, cpu, os, buildTarget, api, defines, executedScope;
+            public string experimentId, experimentArm, experimentRecordSha256;
             public bool burstEnabled, burstSafety;
             public PackageRecord[] packages;
             public string[] compiledAssemblies, installedManagedSystems;

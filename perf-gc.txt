@@ -1,0 +1,17 @@
+brawler (GpuDriven): 0 of 120 frames allocated, 0 bytes
+brawler (DataTexture): 0 of 120 frames allocated, 0 bytes
+defense wave (GpuDriven): 0 of 180 frames allocated, 0 bytes, process-wide generation-0 collections=0
+defense wave (DataTexture): 0 of 180 frames allocated, 0 bytes, process-wide generation-0 collections=0
+platformer run (GpuDriven): 0 of 180 frames allocated, 0 bytes
+platformer run (DataTexture): 0 of 180 frames allocated, 0 bytes
+shooter steady (GpuDriven): 3 of 180 frames allocated, 123 bytes
+shooter steady (DataTexture): 0 of 180 frames allocated, 0 bytes
+sling collapse (GpuDriven): 0 of 90 frames allocated, 0 bytes
+sling collapse (DataTexture): 0 of 90 frames allocated, 0 bytes
+story typewriter (second line): 0 of 30 frames allocated, 0 bytes
+survivor sources [everything]: 5 of 300 frames, 736 bytes, 1 level-ups: 5 of 300 frames allocated, 736 bytes, process-wide generation-0 collections=0
+survivor sources [no feedback handlers]: 7 of 300 frames, 1025 bytes, 0 level-ups: 7 of 300 frames allocated, 1025 bytes, process-wide generation-0 collections=0
+survivor sources [no feedback, no HUD]: 1 of 300 frames, 41 bytes, 0 level-ups: 1 of 300 frames allocated, 41 bytes, process-wide generation-0 collections=0
+survivor sources [no feedback, no HUD, no bot]: 2 of 300 frames, 162 bytes, 2 level-ups: 2 of 300 frames allocated, 162 bytes, process-wide generation-0 collections=0
+survivor auto-play (GpuDriven): 11 frames next to level-up / flow screens, 0 steady frames: 11 of 180 frames allocated, 1804 bytes, process-wide generation-0 collections=0
+survivor auto-play (DataTexture): 6 frames next to level-up / flow screens, 0 steady frames: 6 of 180 frames allocated, 984 bytes, process-wide generation-0 collections=0

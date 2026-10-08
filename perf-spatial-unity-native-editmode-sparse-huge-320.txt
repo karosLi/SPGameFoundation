@@ -1,0 +1,19 @@
+Spatial broadphase paired benchmark; runtime=unity-native-editmode; distribution=sparse-huge; seed=721; entries=320; queries=1280
+OS=Unix 25.4.0.0; logical_processors=15; 64bit=True
+Unity=2022.3.62f2; CPU=Apple M5 Pro; BurstEnabled=True
+Identical staged arrays and queries; full rebuild every sample; rotated backend order; warmup=6; samples=24; cell=125; tree bucket=16/depth=12.
+Total includes two scheduled jobs and completion; build/query separately include their own schedule+completion, so their sum is not the pipelined total. Staging data generation excluded equally; tree build includes partition/scratch work. Timing is uninstrumented; counters are a separate pass.
+grid; total_ms=p50=0.0666;p95=0.0952;worst=0.0992; build_ms=p50=0.0114;p95=0.0135;worst=0.0138; query_ms=p50=0.0575;p95=0.0765;worst=0.0819
+  cells_or_nodes=27963; pruned=0; entries_examined=3033; visitor_calls=1852; exact_hits=1852; bytes=24692; queryBurst=1; treeBuildBurst=not-instrumented
+  warmed allocation=0 current-thread AllocationSamples; gen0=0; calibration before=32/0; after=32/0
+grid-pruned-opt-in; total_ms=p50=0.0870;p95=0.1030;worst=0.1103; build_ms=p50=0.0113;p95=0.0138;worst=0.0209; query_ms=p50=0.0769;p95=0.1142;worst=0.1176
+  cells_or_nodes=27963; pruned=348; entries_examined=2672; visitor_calls=1852; exact_hits=1852; bytes=24692; queryBurst=1; treeBuildBurst=not-instrumented
+  warmed allocation=0 current-thread AllocationSamples; gen0=0; calibration before=32/0; after=32/0
+grid-two-layer; total_ms=p50=0.0672;p95=0.0736;worst=0.0961; build_ms=p50=0.0116;p95=0.0136;worst=0.0142; query_ms=p50=0.0568;p95=0.0619;worst=0.0691
+  cells_or_nodes=27963; pruned=0; entries_examined=3033; visitor_calls=1852; exact_hits=1852; bytes=30692; queryBurst=1; treeBuildBurst=not-instrumented
+  warmed allocation=0 current-thread AllocationSamples; gen0=0; calibration before=32/0; after=32/0
+bounded-quadtree; total_ms=p50=0.0662;p95=0.0896;worst=0.1123; build_ms=p50=0.0095;p95=0.0106;worst=0.0116; query_ms=p50=0.0601;p95=0.1261;worst=0.1270
+  cells_or_nodes=17752; pruned=11164; entries_examined=17660; visitor_calls=1852; exact_hits=1852; bytes=18620; queryBurst=1; treeBuildBurst=1
+  tree nodes=69; depth=3; saturated_splits=0
+  warmed allocation=0 current-thread AllocationSamples; gen0=0; calibration before=32/0; after=32/0
+No timing gates. A zero Burst sentinel means managed execution, even in Unity; do not call it native Burst performance. Does not measure gameplay decisions, render/upload, incremental Snake updates, all-thread/native allocations, or Android/iOS thermal/battery behavior. Dense true overlap remains quadratic. The quadtree and pruning are not enabled in existing gameplay.

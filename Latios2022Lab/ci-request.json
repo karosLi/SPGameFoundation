@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "repository": "karosLi/SPGameFoundation",
+  "p0_commit": "d7f357a4043223b08e72b668e98054de49b6d785",
+  "approved_source_commit": "4f3910bb338080390071db493dd63c2cdc920b7c",
+  "p0_native_status": "passed",
+  "p0_native_evidence_reviewed": true,
+  "p0_evidence_url": "https://github.com/karosLi/SPGameFoundation/actions/runs/37635808846/attempts/1",
+  "runner_reserved": true,
+  "coordinator": "SPGameFoundation implementation lead",
+  "expires_utc": "2026-10-08T17:30:00Z",
+  "allowed_phases": [
+    "import",
+    "editmode",
+    "playmode"
+  ],
+  "experiment": {
+    "schema": 1,
+    "id": "latios-0.11.5-cleanup-query-v1",
+    "arm": "unpatched-local-control",
+    "upstream_commit": "381a77dbf774ff603014d5695ef6c06abaa25d96",
+    "upstream_tree": "4790057a1964150f2ca815f89cc85498bc1cb43e",
+    "patch_sha256": "6736b6b8f1c0ca32151a44163afc9a75fcf133a70dbe15b4175a8d8f3ab994a0",
+    "source_inventory_sha256": "da4d10946620e4b6d23cf5214c802d90ebdb1c7f5e77a7e923e442b1ac5a0106"
+  }
+}

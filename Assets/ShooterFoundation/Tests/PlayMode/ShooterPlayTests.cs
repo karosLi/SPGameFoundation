@@ -1,5 +1,6 @@
 using System.Collections;
 using System.IO;
+using System.Text;
 using NUnit.Framework;
 using ShooterFoundation.Game;
 using SPF.Presentation;
@@ -14,6 +15,27 @@ namespace ShooterFoundation.Tests.PlayMode
 {
     public class ShooterPlayTests
     {
+        struct SteadyFrameSample
+        {
+            public int ReadFrame, GovernorFrames, Flow, Version, Kills, Wave;
+            public long Tick, PreviousFrameBytes, CumulativeBytes;
+        }
+
+        static void WriteSteadySamples(RenderTier tier, SteadyFrameSample[] samples)
+        {
+            var output = new StringBuilder("ordinal,readUnityFrame,governorFramesSinceReset,previousFrameBytes,cumulativeBytes,currentTick,currentFlow,currentVersion,currentKills,currentWave\n");
+            for (int i = 0; i < samples.Length; i++)
+            {
+                var sample = samples[i];
+                output.Append(i).Append(',').Append(sample.ReadFrame).Append(',').Append(sample.GovernorFrames)
+                    .Append(',').Append(sample.PreviousFrameBytes).Append(',').Append(sample.CumulativeBytes)
+                    .Append(',').Append(sample.Tick).Append(',').Append(sample.Flow).Append(',').Append(sample.Version)
+                    .Append(',').Append(sample.Kills).Append(',').Append(sample.Wave).Append('\n');
+            }
+            string dir = Path.Combine(Application.dataPath, "..", "Artifacts");
+            Directory.CreateDirectory(dir);
+            File.WriteAllText(Path.Combine(dir, $"shooter-steady-frame-samples-{tier}.csv"), output.ToString());
+        }
         [UnityTest]
         public IEnumerator PortraitFlowAndCancelOnBothTiers([Values(RenderTier.GpuDriven,RenderTier.DataTexture)] RenderTier tier)
         {
@@ -80,6 +102,7 @@ namespace ShooterFoundation.Tests.PlayMode
         {
             CheckGraphics(tier);var config=ShooterConfig.CreateDefault();config.Settings.SpawnWaves=false;config.Settings.HeroHp=100000;config.Settings.EnemyFireInterval=100000;
             var game=ShooterGameBootstrap.Create(tier,config);
+            var samples = new SteadyFrameSample[180]; // Before warmup; no allocation in the measured loop.
             try
             {
                 yield return null;game.StartRun();yield return UIDriver.WaitUntil(()=>game.State.Run.Flow==ShooterFlow.Upgrade,5f);game.Choose(0);
@@ -89,7 +112,21 @@ namespace ShooterFoundation.Tests.PlayMode
                 byte[] before=game.Session.CaptureSnapshot();game.Renderer.SetQuality(3);byte[] after=game.Session.CaptureSnapshot();CollectionAssert.AreEqual(before,after,"quality is presentation only");Assert.AreEqual(0,game.Renderer.ShadowBudget);game.Renderer.SetQuality(0);
                 for(int i=0;i<150;i++)yield return null;
                 game.Governor.ResetGcStats();
-                for(int i=0;i<180;i++)yield return null;
+                for(int i=0;i<180;i++)
+                {
+                    yield return null;
+                    // LastValue describes the governor's previous-frame sample. Current Tick/flow
+                    // provide observation context, not allocation callstack attribution.
+                    samples[i] = new SteadyFrameSample {
+                        ReadFrame = Time.frameCount, GovernorFrames = game.Governor.FramesSinceReset,
+                        PreviousFrameBytes = game.Governor.GcBytesLastFrame,
+                        CumulativeBytes = game.Governor.GcBytesSinceReset,
+                        Tick = game.Session.Pipeline.Stats.TickCount,
+                        Flow = (int)game.State.Run.Flow, Version = game.State.Run.Version,
+                        Kills = game.State.Run.Kills, Wave = game.State.Run.Wave
+                    };
+                }
+                WriteSteadySamples(tier, samples); // All formatting/IO occurs after the unchanged window.
                 if(game.Governor.GcCounterValid)
                 {
                     GcReport.Write($"shooter steady ({tier})",game.Governor.FramesSinceReset,game.Governor.GcFramesSinceReset,game.Governor.GcBytesSinceReset);

@@ -14,6 +14,8 @@ namespace SPF.Presentation.Animation
         public SpriteSheet Sheet { get; private set; }
         public int White, Disc, Halo, Blob;
         public readonly int[] WeaponFrames=new int[WeaponArt.Count];
+        public readonly int[] BladeGripFrames=new int[2];
+        public static readonly float2 BladeGripSize=new float2(.24f,.192f);
         static readonly Color32 Ink=new Color32(27,43,46,255), Cream=new Color32(250,239,209,255), Gold=new Color32(196,150,78,255);
         public NaturalCharacterArt(bool includeWeapons=false)
         {
@@ -28,7 +30,11 @@ namespace SPF.Presentation.Animation
             var white=new PixelCanvas(4,4);white.Rect(0,0,4,4,new Color32(255,255,255,255));White=builder.Add(white);
             var disc=new PixelCanvas(48,48);disc.Ellipse(24,24,22,22,new Color32(255,255,255,255));Disc=builder.Add(SmoothSpriteArt.Downsample(disc,2));
             Halo=builder.Add(BlobShadow.CreateCanvas(64,64));Blob=builder.Add(BlobShadow.CreateCanvas());
-            Sheet=builder.Build(1024,FilterMode.Bilinear,2,true);
+            // Keep the accepted atlas's sorted prefix fixed, including its small white/disc tiles.
+            // The two grip tiles fit its unused shelf without changing any old UV or texture size.
+            int existing=builder.Count;
+            if(includeWeapons)for(int k=0;k<2;k++)BladeGripFrames[k]=builder.Add(DrawBladeGrip(k));
+            Sheet=builder.Build(1024,FilterMode.Bilinear,2,true,existing);
             for(int k=0;k<2;k++) Attachments[k]=BuildAttachments(frames[k],k);
         }
 
@@ -57,6 +63,33 @@ namespace SPF.Presentation.Animation
         public static int CanvasForAttachment(int attachment)
         { switch(attachment){case 0:case 11:return 3;case 1:case 12:return 4;case 2:case 6:return 5;case 3:case 7:return 6;case 4:case 8:return 7;case 5:case 13:return 0;case 9:return 1;default:return 2;} }
         public void Dispose()=>Sheet?.Dispose();
+
+        /// <summary>Original closed blade fist. The center at (20,16) is the unchanged primary hilt
+        /// pivot; fingers curl below the handle and the thumb crosses above it. Loading-time only.</summary>
+        public static PixelCanvas DrawBladeGrip(int kind)
+        {
+            const int s=3;var c=new PixelCanvas(40*s,32*s);
+            Color32 main=kind==0?new Color32(224,217,190,255):new Color32(190,102,89,255);
+            Color32 light=kind==0?new Color32(253,246,220,255):new Color32(244,166,123,255);
+            Color32 dark=kind==0?new Color32(44,80,83,255):new Color32(91,48,56,255);
+            Color32 accent=kind==0?Gold:new Color32(151,64,65,255);
+            void E(float x,float y,float rx,float ry,Color32 col)=>c.Ellipse(x*s,y*s,rx*s,ry*s,col);
+            void L(float x,float y,float xx,float yy,float w,Color32 col)=>c.Line(new float2(x*s,y*s),new float2(xx*s,yy*s),w*s,col);
+            // Short fitted cuff joins the existing forearm; its outline opens into a broad palm.
+            L(9,16,15,16,13,Ink);L(9,16,15,16,10,dark);L(10,16,10,16,9,accent);
+            E(20,16,11,10,Ink);E(20,16,8.5f,7.5f,main);
+            // Four curled fingers have separate rounded tips and short creases, not a flat mitten.
+            for(int finger=0;finger<4;finger++)
+            {
+                float x=13+finger*4,y=12+finger*.35f;
+                E(x,y,3.1f,5.1f,Ink);E(x,y+.7f,2.1f,3.9f,main);
+                L(x-.6f,y-1,x+.7f,y-1,1,light);
+            }
+            // The thumb overlaps the curled fingers at the hilt, with an explicit diagonal seam.
+            L(15,22,26,18,7,Ink);L(15,22,26,18,4.4f,main);
+            L(15,23,24,20,1.3f,light);L(7,20,10,20,1.5f,light);
+            return SmoothSpriteArt.Downsample(c,s);
+        }
 
         static PixelCanvas Draw(int kind,int part)
         {

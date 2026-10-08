@@ -52,6 +52,20 @@ namespace SPF.Presentation.Animation
             if(phase<t3)return Hermite(impact,follow,v2,v3,(phase-t2)/(t3-t2),t3-t2);
             return Hermite(follow,rest,v3,0,(phase-t3)/(1-t3),1-t3);
         }
+        // Blade-only braking: preserve the incoming curve/contact tangent, then reduce the
+        // whole chain's velocity to zero on one shared clock. The settled key is derived
+        // from that tangent; a bounded vertical carry lets the forearm finish the cut
+        // instead of leaving a nearly level forearm with a long wrist-only flourish.
+        // This uses the same safe trajectory for hit and miss; phase is not a hit fact.
+        static float BladeCurve(float phase,float contact,float activeEnd,float rest,float windup,float impact,float follow,float windupFraction=.5f,float finishScale=1)
+        {
+            if(phase<=contact)return Curve(phase,contact,activeEnd,rest,windup,impact,follow,windupFraction);
+            float duration=(activeEnd-contact)*.45f,settle=contact+duration;
+            float tangent=(follow-windup)/(activeEnd-contact*windupFraction);
+            float finish=impact+tangent*duration*.5f*finishScale;
+            if(phase<settle)return Hermite(impact,finish,tangent,0,(phase-contact)/duration,duration);
+            return Hermite(finish,rest,0,0,(phase-settle)/(1-settle),1-settle);
+        }
         public static float2 Rotate(float2 p,float angle)
         {float c=math.cos(angle),s=math.sin(angle);return new float2(c*p.x-s*p.y,s*p.x+c*p.y);}
         public static float AngleDelta(float from,float to)=>math.atan2(math.sin(to-from),math.cos(to-from));
@@ -74,12 +88,13 @@ namespace SPF.Presentation.Animation
             switch(w.Family)
             {
                 case WeaponActionFamily.Slash:
-                    // Load the chest before the elbow/hand, cut through the canonical contact,
-                    // then finish outward on a shallow diagonal. Grip height and blade angle are
-                    // authored together: the full 1.07-unit blade must clear the floor, not just the hand.
-                    offset=new float2(Curve(phase,contact,end,-.23f,-.13f,0,.04f,.5f),Curve(phase,contact,end,.16f,.40f,0,-.06f,.5f));
-                    rotation=Curve(phase,contact,end,.70f,1.30f,0,-.58f,.5f);
-                    body=Curve(phase,contact,end,0,.12f,-.10f,-.09f,.35f);break;
+                    // Preserve the loaded key and exact canonical contact, then brake grip,
+                    // blade and chest together into a compact low finish before returning to guard.
+                    // Extra vertical carry changes only this terminal key, not the overhead arc;
+                    // the contact position/velocity and the exact shared settling time stay fixed.
+                    offset=new float2(BladeCurve(phase,contact,end,-.23f,-.13f,0,.04f),BladeCurve(phase,contact,end,.16f,.40f,0,-.06f,.5f,2));
+                    rotation=BladeCurve(phase,contact,end,.70f,1.30f,0,-.58f);
+                    body=BladeCurve(phase,contact,end,0,.12f,-.10f,-.09f,.35f);break;
                 case WeaponActionFamily.Thrust:
                     // A rearward chamber stays near the thrust line. The shoulder loads first;
                     // the elbow then opens into contact, followed by a small settle and retraction.

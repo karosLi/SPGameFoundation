@@ -2,6 +2,8 @@
 
 The [blade/sword choreography correction](BladeSwordChoreographyValidation.md) records why delivered `e0233871` motion was rejected, the unchanged-source red controls, and the bounded replacement. Numerical checks do not establish naturalness; new native 1× acceptance remains pending.
 
+The [Horde armed-hero health-bar clearance](HordeWeaponHealthClearance.md) moves only that hero's bar below the feet to clear raised weapons. The retained overlap evidence, focused checks and pending native pixel gate are separate from motion acceptance.
+
 The 2026-10-08 [humanoid arm and walking-cadence correction](HumanoidActionCadenceValidation.md) records the final-IK diagnosis, phase-authored lift and recovery, fixed-speed cadence measurements and new regressions. Its exact-source native video review remains pending; earlier checkpoints below do not validate that change.
 
 The actual shared `GameplayCharacterPresenter` now consumes the authoritative `SPF.Contracts.Weapons.WeaponViewState` supplied by Brawler and Survivor. The four original outlined silhouettes are saber/刀 (slash, free supporting arm), sword/剑 (two-hand thrust), staff/法杖 (two grips and a cast socket), and bow/弓箭 (bow hand, string hand, live string and arrow release). These are presentation of the shared equipment/action runtime, not an independent decorative inventory or damage system.
@@ -81,3 +83,8 @@ For 192 unarmed actors plus one equipped actor:
 - DataTexture still selects the same prewarmed final prefix in this 193-actor example: a 2048 × 15 RGBA8 data texture, **122,880 upload bytes**. Its prefix mesh can still submit the zero-sized tail quads. Compact packing alone therefore does not establish a DataTexture upload or vertex-submission reduction in this case.
 
 Three focused .NET stream tests pass with zero skips: mixed equipped/unarmed actor ordering, weapon removal and recycled-generation socket ownership; the exact 193-actor payload and maximum-capacity transitions with calibrated zero hot-path allocations; and the base-pose counter versus continuously corrected contacts. A separate Unity-only regression checks actual DataTexture upload accounting after the count shrinks; it remains pending the central graphics run. Numerical poses and rendering order were unchanged by this accounting/diagnostic follow-up.
+
+
+## Blade contact-to-recovery follow-up
+
+The user accepted the d2cc1f9 sword thrust but rejected the blade's post-contact loose-grip appearance. [Blade controlled recovery and closed grip](BladeControlledRecovery.md) records the actual forearm/wrist diagnosis, primary-source design references, blade-only correction and software evidence. Sword, staff and bow outputs are preserved byte-for-byte in the sampled matrix; new blade native footage and subjective acceptance remain pending. Existing contact and gameplay timing gates remain unchanged.

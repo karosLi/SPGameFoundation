@@ -70,11 +70,15 @@ namespace SPF.Presentation.Sprites
             return first;
         }
 
-        public SpriteSheet Build(int maxWidth = 1024, FilterMode filterMode = FilterMode.Point, int padding = 1, bool extrudeEdges = false)
+        /// <param name="sortedPrefixCount">Sort only this existing prefix, then pack the remaining frames
+        /// in insertion order. The default sorts every frame. An appended tail can preserve existing
+        /// frame origins; callers must also verify that the resulting texture dimensions stay fixed.</param>
+        public SpriteSheet Build(int maxWidth = 1024, FilterMode filterMode = FilterMode.Point, int padding = 1, bool extrudeEdges = false, int sortedPrefixCount = -1)
         {
             if (maxWidth < 1) throw new ArgumentOutOfRangeException(nameof(maxWidth));
             if (padding < 0 || (long)padding * 2 >= maxWidth) throw new ArgumentOutOfRangeException(nameof(padding));
             if (extrudeEdges && padding == 0) throw new ArgumentException("Edge extrusion needs at least one padding pixel.", nameof(padding));
+            if (sortedPrefixCount < -1 || sortedPrefixCount > m_Frames.Count) throw new ArgumentOutOfRangeException(nameof(sortedPrefixCount));
             int pad = padding;
             // Extrusion needs a private gutter on BOTH sides of every frame. Preserve the legacy
             // one-sided spacing exactly when extrusion is off, including default pixel-art layouts.
@@ -84,7 +88,9 @@ namespace SPF.Presentation.Sprites
                     throw new ArgumentException("A frame and its padding exceed the atlas shelf width.", nameof(maxWidth));
             var order = new int[m_Frames.Count];
             for (int i = 0; i < order.Length; i++) order[i] = i;
-            Array.Sort(order, (a, b) => m_Frames[b].Height != m_Frames[a].Height ? m_Frames[b].Height.CompareTo(m_Frames[a].Height) : a.CompareTo(b));
+            Comparison<int> byHeight = (a, b) => m_Frames[b].Height != m_Frames[a].Height ? m_Frames[b].Height.CompareTo(m_Frames[a].Height) : a.CompareTo(b);
+            if (sortedPrefixCount < 0 || sortedPrefixCount == order.Length) Array.Sort(order, byHeight);
+            else Array.Sort(order, 0, sortedPrefixCount, Comparer<int>.Create(byHeight));
 
             var origins = new int2[m_Frames.Count];
             int x = pad, y = pad, shelf = 0, width = 0;

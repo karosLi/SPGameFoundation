@@ -67,6 +67,132 @@ namespace SurvivorFoundation.Tests
             Assert.Greater(weapons.CueCount, 0);
         }
 
+        [TestCase(false, false)] [TestCase(false, true)] [TestCase(true, false)]
+        public void UnarmedOrNonNaturalHeroKeepsItsExistingBar(bool weapons, bool natural)
+        {
+            using var t = World(weapons); using var view = new View(t, natural);
+            var bars = view.Field<SpriteBatch>("m_Health");
+            Assert.AreEqual(6, bars.Count, "hero and beacon retain their three-sprite bars");
+            Assert.AreEqual(t.Game.Hero + new float2(0, 1.55f), bars.Instances[0].Center);
+            Assert.AreEqual(t.Runtime.Settings.BeaconPosition + new float2(0, 2.8f), bars.Instances[3].Center);
+        }
+
+        [Test]
+        public void ArmedHeroBarStaysBelowRenderedFeetAndReservesDamageSpace()
+        {
+            using var t = World(true); using var view = new View(t);
+            var weapon = t.World.Resource(SvWeapons.Key);
+            float2 anchor = view.Field<SpriteBatch>("m_Health").Instances[0].Center - t.Game.Hero;
+            foreach (int id in new[] { WeaponProfiles.Blade, WeaponProfiles.Sword, WeaponProfiles.Staff, WeaponProfiles.Bow })
+            for (int side = -1; side <= 1; side += 2)
+            {
+                t.Game.Input = new InputFrame { Aim = new float2(side, 0) };
+                for (int i = 0; i < weapon.Current.DurationTicks + 1; i++)
+                { t.Step(); view.Renderer.RenderFrame(1f / 30); AssertHeroClearance(view, $"settle/turn {id}/{side}/{i}"); }
+                Assert.IsTrue(weapon.RequestEquip(id));
+                for (int i = 0; i < weapon.Profile(id).EquipTicks + 1; i++)
+                { t.Step(); view.Renderer.RenderFrame(1f / 30); AssertHeroClearance(view, $"equip {id}/{side}/{i}"); }
+                Assert.AreEqual(id, weapon.Equipment.EquippedId);
+                for (int tick = 0; tick < weapon.Current.DurationTicks + 2; tick++)
+                {
+                    t.Game.Input = new InputFrame { Aim = new float2(side, 0), Held = 1u << SvWeapons.AttackButton,
+                        Move = new float2(side * .2f, .1f) };
+                    t.Step(); view.Renderer.SetQualityLevel(tick % 4); view.Renderer.RenderFrame(1f / 30);
+                    var bars = view.Field<SpriteBatch>("m_Health"); var bar = bars.Instances[0];
+                    Assert.IsTrue(view.Renderer.Characters.TryReadCurrent(new EntityHandle(-1, 1), out var motion));
+                    Assert.Less(math.distance(anchor, bar.Center - motion.PreviousRoot), .00001f,
+                        "equip, phase, facing, movement and quality cannot move the root-relative bar");
+                    AssertHeroClearance(view, $"attack {id}/{side}/{tick}");
+                    for (int foot = 4; foot <= 8; foot += 4)
+                    {
+                        var part = view.Renderer.Characters.ReadPart(foot);
+                        float halfHeight = (math.abs(math.sin(part.Rotation) * part.Size.x) + math.abs(math.cos(part.Rotation) * part.Size.y)) * .5f;
+                        Assert.Less(bar.Center.y + bar.Size.y * .5f, part.Center.y - halfHeight - .05f,
+                            "full packed foot rectangle must remain visible above the bar");
+                    }
+                    Assert.AreEqual(6, bars.Count);
+                    Assert.AreEqual(t.Runtime.Settings.BeaconPosition + new float2(0, 2.8f), bars.Instances[3].Center);
+                }
+            }
+            t.Game.Input = default; t.Session.Pause();
+            foreach (float hp in new[] { t.Game.MaxHp, t.Game.MaxHp * .4f, 0 })
+            {
+                t.Game.Hp = hp;
+                var before = t.Session.CaptureSnapshot(); view.Renderer.RenderFrame(0);
+                var bars = view.Field<SpriteBatch>("m_Health");
+                Assert.AreEqual(6, bars.Count, "empty HP retains its visible frame and track");
+                Assert.AreEqual(hp / t.Game.MaxHp, bars.Instances[2].Size.x / bars.Instances[1].Size.x, .002f);
+                Assert.AreEqual(1f, bars.Instances[0].Color.w);
+                Assert.Less(math.distance(anchor, bars.Instances[0].Center - t.Game.Hero), .00001f);
+                CollectionAssert.AreEqual(before, t.Session.CaptureSnapshot(), "paused HP presentation never writes simulation/save state");
+            }
+            // Exercise the actual reservation method with an active label; this also checks its
+            // early-return condition instead of testing the anchor helper in isolation.
+            var pool = new SPF.Presentation.Combat.DamageNumberPool();
+            pool.Emit(new EntityHandle(1, 1), t.Game.Hero, 10, false, 1, 1, 1d / 30);
+            Assert.AreEqual(1, pool.Active);
+            typeof(SvRenderer).GetField("m_DamageNumbers", Private).SetValue(view.Renderer, pool);
+            typeof(SvRenderer).GetMethod("ReserveDamageLayout", Private).Invoke(view.Renderer,
+                new object[] { t.World, new float4(-50, -50, 50, 50), 1f });
+            var actual = view.Field<SpriteBatch>("m_Health").Instances[0];
+            Assert.Greater(view.Renderer.DamageLayout.ActorLift(new float4(actual.Center - actual.Size * .5f, actual.Center + actual.Size * .5f)), 0,
+                "damage labels must avoid the actual below-feet bar");
+        }
+
+        static void AssertHeroClearance(View view, string phase)
+        {
+            var bar = view.Field<SpriteBatch>("m_Health").Instances[0];
+            var rect = new float4(bar.Center - bar.Size * .5f, bar.Center + bar.Size * .5f);
+            for (int i = 0; i < view.Renderer.Characters.PartsDrawn; i++)
+            {
+                var part = view.Renderer.Characters.ReadPart(i);
+                if (part.Color.w > .01f)
+                    Assert.IsFalse(IntersectsSprite(rect, part), $"packed hero/weapon part {i} must clear HP during {phase}");
+            }
+        }
+
+        [TestCase(false)] [TestCase(true)]
+        public void ArmedHeroHealthClearsFirstVisibleFramesAfterSkippedPresentation(bool disabled)
+        {
+            using var t = World(true); using var view = new View(t);
+            var weapon = t.World.Resource(SvWeapons.Key);
+            foreach (int id in new[] { WeaponProfiles.Blade, WeaponProfiles.Sword, WeaponProfiles.Staff, WeaponProfiles.Bow })
+            for (int side = -1; side <= 1; side += 2)
+            {
+                if (disabled) view.SetEnabled(false);
+                // Deliberately skip all presentation during real simulation settle/equip ticks.
+                t.Game.Input = default; t.Step(weapon.Current.DurationTicks + 1);
+                Assert.IsTrue(weapon.RequestEquip(id)); t.Step(weapon.Profile(id).EquipTicks + 1);
+                if (disabled) view.SetEnabled(true);
+                for (int frame = 0; frame < 12; frame++)
+                {
+                    t.Game.Input = new InputFrame { Aim = new float2(side, 0), Held = 1u << SvWeapons.AttackButton,
+                        Move = new float2(side * .2f, .1f) };
+                    t.Step(); view.Renderer.RenderFrame(frame == 0 && !disabled ? .75f : 1f / 30);
+                    AssertHeroClearance(view, $"{(disabled ? "reenable" : "long frame")} {id}/{side}/{frame}");
+                }
+                t.Session.Pause(); var before = t.Session.CaptureSnapshot();
+                for (int frame = 0; frame < 4; frame++)
+                { view.Renderer.RenderFrame(.75f); AssertHeroClearance(view, $"pause {id}/{side}/{frame}"); }
+                CollectionAssert.AreEqual(before, t.Session.CaptureSnapshot());
+                t.Session.Resume();
+                for (int frame = 0; frame < 12; frame++)
+                { t.Step(); view.Renderer.RenderFrame(1f / 30); AssertHeroClearance(view, $"resume {id}/{side}/{frame}"); }
+            }
+        }
+
+        static bool IntersectsSprite(float4 rect, PackedSprite sprite)
+        {
+            float2 half = (rect.zw - rect.xy) * .5f, extent = math.abs(sprite.Size) * .5f;
+            float2 delta = (rect.xy + rect.zw) * .5f - sprite.Center;
+            float2 right = new float2(math.cos(sprite.Rotation), math.sin(sprite.Rotation));
+            float2 up = new float2(-right.y, right.x);
+            return math.abs(delta.x) < half.x + extent.x * math.abs(right.x) + extent.y * math.abs(up.x) &&
+                math.abs(delta.y) < half.y + extent.x * math.abs(right.y) + extent.y * math.abs(up.y) &&
+                math.abs(math.dot(delta, right)) < extent.x + math.dot(half, math.abs(right)) &&
+                math.abs(math.dot(delta, up)) < extent.y + math.dot(half, math.abs(up));
+        }
+
         [TestCase(false)] [TestCase(true)]
         public void SameTickRestoreClearsOldTransientFeedback(bool natural)
         {

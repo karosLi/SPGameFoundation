@@ -1,0 +1,83 @@
+{
+  "source_head": "8ecb83346ce538f729a008e14e5a16bc93e39f75",
+  "tree": "53a297630f0bfc5c34824e718ec592d3d3fa2bbe",
+  "build_exit": 0,
+  "test_exit": 0,
+  "projects": 78,
+  "warnings": 0,
+  "errors": 0,
+  "trx_files": 27,
+  "empty_playmode_trx": 15,
+  "counts": {
+    "Passed": 1651,
+    "NotExecuted": 6
+  },
+  "failures": [],
+  "explicit_not_executed": [
+    {
+      "assembly": "RpgFoundation.Tests.EditMode",
+      "name": "RecordDefaultRawSnapshotDigest",
+      "outcome": "NotExecuted"
+    },
+    {
+      "assembly": "RpgFoundation.Tests.EditMode",
+      "name": "RecordConfigColdAllocationAndRetainedPayload",
+      "outcome": "NotExecuted"
+    },
+    {
+      "assembly": "SlingFoundation.Tests.EditMode",
+      "name": "SearchShots",
+      "outcome": "NotExecuted"
+    },
+    {
+      "assembly": "SnakeFoundation.Tests.EditMode",
+      "name": "RecordConfigColdAllocationAndRetainedPayload",
+      "outcome": "NotExecuted"
+    },
+    {
+      "assembly": "SnakeFoundation.Tests.EditMode",
+      "name": "RecordDefaultRawSnapshotDigest",
+      "outcome": "NotExecuted"
+    },
+    {
+      "assembly": "SnakeFoundation.Tests.EditMode",
+      "name": "ExportFrames",
+      "outcome": "NotExecuted"
+    }
+  ],
+  "run_count": 1,
+  "limits": "Host harness and engine stubs, not Unity/Burst/graphics. Native pending.",
+  "source_sha256": {
+    "Assets/ShooterFoundation/Tests/PlayMode/ShooterPlayTests.cs": "def8664c906cd4391b81441a664f9efea0e1e4821acf27239ab8183b0074c100",
+    "Assets/SinglePlayerFoundation/Presentation/Animation/GameplayCharacterPresenter.cs": "d0b702c4bea3fae308f1500015ce049722be3997897a801dca4c9ccd0ece9a71",
+    "Assets/SinglePlayerFoundation/Presentation/Animation/NaturalCharacterArt.cs": "b9f3b31cfa1871278a418e3d341a89649617eb87fea6cc7d03ad2fae0ef924b8",
+    "Assets/SinglePlayerFoundation/Presentation/Animation/WeaponMotion.cs": "e94095db5b4a6e3c6710fe6c9d2a066d2fabe641caf990b5a0819785cfa2036d",
+    "Assets/SinglePlayerFoundation/Presentation/Sprites/SpriteAtlas.cs": "e664e03b84f4263b0a3ebacb4b41d3314f54a1c5cff134d08934bc59f5d01888",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/BladeControlledRecoveryTests.cs": "4c3518241b5cfe245ea0668f30d373f3f499593f103dc5bc56452d5614672870",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/BladeControlledRecoveryTests.cs.meta": "1f5436aefadff74287662b0473b1a7306adeee23c45afde33a006d3438395cdd",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/BladeGripArtTests.cs": "31bb95dd9e1f9a92f94459941ef7f0da4fa158cab4fb017d434503236e6b6f28",
+    "Assets/SinglePlayerFoundation/Tests/EditMode/BladeGripArtTests.cs.meta": "391925316246b68783459e18bba78b33f2691ce256f835bbc8bc3c897e0f1728",
+    "Assets/SurvivorFoundation/Presentation/SvRenderer.cs": "0f567bd048b7f7e9c026f56be26207fba39be67d00701520a5dfec85204c3613",
+    "Assets/SurvivorFoundation/Tests/EditMode/SvViewLifecycleTests.cs": "307999699a42a7040bfa65cc9aa23135a7faae18f3b8eb45d37aee45560183c8",
+    "Assets/SurvivorFoundation/Tests/PlayMode/SvHeroHealthClearanceTests.cs": "1e14fd00947e998effbafe265549a65ca4e9e894b5a4365e916348240fb8c449"
+  },
+  "acceptance": {
+    "sword_thrust": "user accepted original d2cc1f9; new non-blade outputs match exact baseline",
+    "blade": "new controlled recovery native footage and user judgment pending",
+    "health": "67a22c1 sampled native pixels passed; integration with new blade pending",
+    "overall_previous_native": "67a22c1 failed Shooter GPU 3 allocating frames/123 bytes versus maximum2; preserved",
+    "mobile_devices": "pending"
+  },
+  "budget_delta": {
+    "atlas_dimensions": [
+      1024,
+      512
+    ],
+    "atlas_rgba_bytes": 2097152,
+    "added_texture_bytes": 0,
+    "added_uv_cache_bytes": 32,
+    "equipped_actor_instances": 19,
+    "equipped_actor_packed_bytes": 608,
+    "cold_path_limit": "32B counts persistent native UV cache only; two frame records, managed frame array and loading/packing allocations are additional and not a measured total."
+  }
+}

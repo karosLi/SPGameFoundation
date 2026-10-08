@@ -65,9 +65,10 @@ namespace SPF.Presentation.Animation
             m_InputSlots=new NativeArray<int>(capacity,Allocator.Persistent);m_PoseTicks=new NativeArray<int>(capacity,Allocator.Persistent);
             m_SpriteOffsets=new NativeArray<int>(capacity,Allocator.Persistent);
             m_WeaponSamples=new NativeArray<WeaponAttachmentSample>(includeWeapons?capacity:0,Allocator.Persistent);
-            m_WeaponUv=new NativeArray<float4>(includeWeapons?WeaponArt.Count+1:0,Allocator.Persistent);
+            m_WeaponUv=new NativeArray<float4>(includeWeapons?WeaponArt.Count+3:0,Allocator.Persistent);
             if(includeWeapons){for(int k=0;k<WeaponArt.Count;k++)m_WeaponUv[k]=m_Art.Sheet[m_Art.WeaponFrames[k]].Uv;
-            m_WeaponUv[WeaponArt.Count]=m_Art.Sheet[m_Art.White].Uv;}
+            m_WeaponUv[WeaponArt.Count]=m_Art.Sheet[m_Art.White].Uv;
+            for(int k=0;k<2;k++)m_WeaponUv[WeaponArt.Count+1+k]=m_Art.Sheet[m_Art.BladeGripFrames[k]].Uv;}
             m_Local=new NativeArray<BoneLocal>(capacity*NaturalCharacterRig.Bones,Allocator.Persistent);
             m_World=new NativeArray<BoneWorld>(capacity*NaturalCharacterRig.Bones,Allocator.Persistent);
             m_Attachments=new NativeArray<BoneAttachment>(2*NaturalCharacterArt.Parts,Allocator.Persistent);
@@ -199,7 +200,15 @@ namespace SPF.Presentation.Animation
                 if(input.Weapon.Equipped)DrawWeapon(SpriteOffsets[i],input,motion,sample,tint,angle);
                 for(int k=0;k<NaturalCharacterArt.Parts;k++)
                 {
-                    var attachment=Attachments[math.clamp(input.Kind,0,1)*NaturalCharacterArt.Parts+k];var bone=World[at+attachment.Bone];
+                    int kind=math.clamp(input.Kind,0,1);
+                    var attachment=Attachments[kind*NaturalCharacterArt.Parts+k];var bone=World[at+attachment.Bone];
+                    if(k==13&&input.Weapon.Equipped&&input.Weapon.Family==SPF.Contracts.Weapons.WeaponActionFamily.Slash&&sample.VisualId==1001)
+                    {
+                        // Replace the existing palm record; the fist closes around Hand/PrimaryGrip.
+                        // Other weapon families and resolved visuals keep their exact accepted art.
+                        attachment.Uv=WeaponUv[WeaponArt.Count+1+kind];attachment.Offset=float2.zero;
+                        attachment.Size=NaturalCharacterArt.BladeGripSize;
+                    }
                     float chestLift=k==9?Local[at+NaturalCharacterRig.Torso].Position.y-Rig.Bones[NaturalCharacterRig.Torso].Position.y:0;
                     float2 partOffset=attachment.Offset;partOffset.y-=chestLift*.35f;
                     float2 center=bone.Transform(partOffset*motion.Scale,motion.Facing);

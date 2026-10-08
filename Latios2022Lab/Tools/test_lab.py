@@ -221,7 +221,7 @@ class LauncherTests(unittest.TestCase):
 
     def test_each_assembly_declares_its_direct_api_dependencies(self):
         required = {
-            'Latios2022Lab.Runtime': {'Latios.Core', 'Latios.Transforms', 'Latios.Psyshock', 'Unity.Entities', 'Unity.Collections', 'Unity.Jobs', 'Unity.Mathematics', 'Unity.Burst'},
+            'Latios2022Lab.Runtime': {'Latios.Core', 'Latios.Transforms', 'Latios.Psyshock', 'Unity.Entities', 'Unity.Scenes', 'Unity.Collections', 'Unity.Jobs', 'Unity.Mathematics', 'Unity.Burst'},
             'Latios2022Lab.EditorTools': {'Latios2022Lab.Runtime', 'Latios.Core', 'Unity.Entities', 'Unity.Collections', 'Unity.Burst'},
             'Latios2022Lab.Editor': {'Latios2022Lab.Runtime', 'Latios2022Lab.EditorTools', 'Latios.Core', 'Unity.Entities', 'Unity.Collections', 'UnityEngine.TestRunner', 'UnityEditor.TestRunner'},
             'Latios2022Lab.PlayMode': {'Latios2022Lab.Runtime', 'Unity.Burst', 'UnityEngine.TestRunner'},
@@ -229,6 +229,31 @@ class LauncherTests(unittest.TestCase):
         for path in (lab.PROJECT / 'Assets').rglob('*.asmdef'):
             data = json.loads(path.read_text())
             self.assertLessEqual(required[data['name']], set(data['references']), str(path))
+
+    def test_world_system_inventory_keeps_concrete_collection_and_sorted_names(self):
+        root = lab.PROJECT / 'Assets/Latios2022Tests'
+        uses = [path for path in root.rglob('*.cs') if '.Systems' in path.read_text()]
+        expected = root / 'EditorTools/LabEnvironment.cs'
+        self.assertEqual([expected], uses)
+        source = expected.read_text()
+        self.assertNotIn('world.Systems.Select', source)
+        self.assertIn('var systems = world.Systems;', source)
+        self.assertIn('new string[systems.Count]', source)
+        self.assertIn('systemNames[i] = systems[i].GetType().FullName;', source)
+        self.assertIn('Array.Sort(systemNames);', source)
+        self.assertIn('installedManagedSystems = systemNames,', source)
+
+    def test_owned_world_supplies_real_initialization_ordering_targets(self):
+        root = lab.PROJECT / 'Assets/Latios2022Tests'
+        source = (root / 'Runtime/LabWorld.cs').read_text()
+        sort = source.index('world.initializationSystemGroup.SortSystems();')
+        for target in ('BeginInitializationEntityCommandBufferSystem', 'Unity.Scenes.SceneSystemGroup'):
+            self.assertLess(source.index('world.GetOrCreateSystemManaged<' + target + '>()'), sort)
+        self.assertEqual(2, source.count('world.initializationSystemGroup.AddSystemToUpdateList('))
+        self.assertNotIn('CoreBootstrap.InstallSceneManager(', source)
+        self.assertNotIn('BootstrapTools.InjectUnitySystems(', source)
+        playmode = (root / 'PlayMode/PlayModeTests.cs').read_text()
+        self.assertIn('LogAssert.NoUnexpectedReceived();', playmode)
 
     def test_product_manifest_remains_without_latios(self):
         data = json.loads((lab.PROJECT.parent / 'Packages/manifest.json').read_text())

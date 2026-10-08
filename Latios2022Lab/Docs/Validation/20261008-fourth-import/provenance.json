@@ -1,0 +1,178 @@
+{
+  "schema": 1,
+  "scope": "Fourth original control compiled all four owned assemblies, then failed during environment capture; not a native test pass.",
+  "run_url": "https://github.com/karosLi/SPGameFoundation/actions/runs/37750770157/attempts/1",
+  "source_commit": "8bca004c57ba1fe89cc7858372e233c3738982e6",
+  "source_tree": "6812a8aadb35594cc315123ae9ddef5cdaa8e6b1",
+  "local_equivalent": "2d71a819ed77445096910400ceee6ec21e88e68b",
+  "prepared_source_remote": "a1f85b53d8b49a3242dfde99f69944035b6ca575",
+  "prepared_source_local": "2233c4cbcb716a45f6716104db509b600e0e3ebb",
+  "native_job_id": 113223217650,
+  "native_status": "failure",
+  "phases": [
+    {
+      "phase": "import",
+      "burst": "on",
+      "status": "FAILED"
+    },
+    {
+      "phase": "editmode",
+      "burst": "on",
+      "status": "NOT_RUN"
+    },
+    {
+      "phase": "editmode",
+      "burst": "off",
+      "status": "NOT_RUN"
+    },
+    {
+      "phase": "playmode",
+      "burst": "on",
+      "status": "NOT_RUN"
+    },
+    {
+      "phase": "playmode",
+      "burst": "off",
+      "status": "NOT_RUN"
+    }
+  ],
+  "test_xml_count": 0,
+  "environment_inventory_count": 0,
+  "files": {
+    "manifest.json": {
+      "artifact_member": "lab-inputs/Packages/manifest.json",
+      "bytes": 1044,
+      "sha256": "23d86f1a2a637a6d3c943974b807b7b87cec6481ad8d9fd04086c0a9487cccce",
+      "identical_verbatim_snapshot": "../20261008-second-import/manifest.json"
+    },
+    "packages-lock.json": {
+      "artifact_member": "lab-inputs/Packages/packages-lock.json",
+      "bytes": 9648,
+      "sha256": "0226f8bb362698bb4dfab670ca76a49f260b08d248721bfe086c34ba9a0365e7",
+      "identical_verbatim_snapshot": "../20261008-second-import/packages-lock.json"
+    }
+  },
+  "unity_log": {
+    "bytes": 2848390,
+    "sha256": "eb006223e45d06088d0385c7ebb0245d69a48fee0039b4ac31863e18d771e161"
+  },
+  "restoration": {
+    "parts": 1,
+    "files": 42,
+    "original_files_hash_verified": 41,
+    "launch_inputs_hash_verified": 42,
+    "archive_bytes": 554830,
+    "archive_sha256": "9af05dd4e119b76168c189f07d38b9385ba3515908e11e48fa88a14db0056700"
+  },
+  "compiled_assemblies": {
+    "Latios2022Lab.Editor": {
+      "status": "COMPILED_AND_COPIED_IN_RECORDED_RUN",
+      "event_lines": {
+        "Csc": [
+          2612
+        ],
+        "ILPostProcess": [
+          2679
+        ],
+        "CopyFiles": [
+          2836
+        ]
+      },
+      "source_matches_native": true,
+      "asmdef_matches_native": true
+    },
+    "Latios2022Lab.EditorTools": {
+      "status": "COMPILED_AND_COPIED_IN_RECORDED_RUN",
+      "event_lines": {
+        "Csc": [
+          2599
+        ],
+        "ILPostProcess": [
+          2943
+        ],
+        "CopyFiles": [
+          2974
+        ]
+      },
+      "source_matches_native": true,
+      "asmdef_matches_native": true
+    },
+    "Latios2022Lab.PlayMode": {
+      "status": "COMPILED_AND_COPIED_IN_RECORDED_RUN",
+      "event_lines": {
+        "Csc": [
+          2598
+        ],
+        "ILPostProcess": [
+          2655
+        ],
+        "CopyFiles": [
+          2797
+        ]
+      },
+      "source_matches_native": true,
+      "asmdef_matches_native": true
+    },
+    "Latios2022Lab.Runtime": {
+      "status": "COMPILED_AND_COPIED_IN_RECORDED_RUN",
+      "event_lines": {
+        "Csc": [
+          2573
+        ],
+        "ILPostProcess": [
+          2631
+        ],
+        "CopyFiles": [
+          2768
+        ]
+      },
+      "source_matches_native": true,
+      "asmdef_matches_native": true
+    }
+  },
+  "compiler_snapshot": {
+    "files": 12,
+    "bytes": 138273,
+    "issues": [],
+    "missing_response_patterns": [],
+    "generated_source_counts": {
+      "Latios2022Lab.Editor": 0,
+      "Latios2022Lab.EditorTools": 0,
+      "Latios2022Lab.PlayMode": 0,
+      "Latios2022Lab.Runtime": 0
+    }
+  },
+  "runtime_failure": {
+    "line": 18817,
+    "message": "NotSupportedException: To avoid boxing, do not cast NoAllocReadOnlyCollection to IEnumerable<T>.",
+    "declaring_source": "Entities1.3.5 Unity.Entities/World.cs:1425 explicit IEnumerable<T>.GetEnumerator",
+    "owned_call": "LabEnvironment.CaptureEnvironment installedManagedSystems LINQ projection"
+  },
+  "ordering_warnings": [
+    {
+      "line": 18763,
+      "message": "Ignoring invalid [Unity.Entities.UpdateBeforeAttribute] attribute on Latios.Systems.PreSyncPointGroup targeting Unity.Entities.BeginInitializationEntityCommandBufferSystem.\nThis attribute can only order systems that are members of the same ComponentSystemGroup instance.\nMake sure that both systems are in the same system group with [UpdateInGroup(typeof(Unity.Entities.InitializationSystemGroup))],\nor by manually adding both systems to the same group's update list.",
+      "call_site": "LabWorld.Create:27 initializationSystemGroup.SortSystems; invoked by LabEnvironment.CaptureEnvironment:40"
+    },
+    {
+      "line": 18781,
+      "message": "Ignoring invalid [Unity.Entities.UpdateBeforeAttribute] attribute on Latios.Systems.SyncPointPlaybackSystemDispatch targeting Unity.Entities.BeginInitializationEntityCommandBufferSystem.\nThis attribute can only order systems that are members of the same ComponentSystemGroup instance.\nMake sure that both systems are in the same system group with [UpdateInGroup(typeof(Unity.Entities.InitializationSystemGroup))],\nor by manually adding both systems to the same group's update list.",
+      "call_site": "LabWorld.Create:27 initializationSystemGroup.SortSystems; invoked by LabEnvironment.CaptureEnvironment:40"
+    },
+    {
+      "line": 18799,
+      "message": "Ignoring invalid [Unity.Entities.UpdateAfterAttribute] attribute on Latios.Systems.LatiosWorldSyncGroup targeting Unity.Scenes.SceneSystemGroup.\nThis attribute can only order systems that are members of the same ComponentSystemGroup instance.\nMake sure that both systems are in the same system group with [UpdateInGroup(typeof(Unity.Entities.InitializationSystemGroup))],\nor by manually adding both systems to the same group's update list.",
+      "call_site": "LabWorld.Create:27 initializationSystemGroup.SortSystems; invoked by LabEnvironment.CaptureEnvironment:40"
+    }
+  ],
+  "safety_evidence": {
+    "configuration_checks": "CaptureEnvironment.Verify returned before the logged later call, inferred from the unchanged source and exception stack. No environment JSON was written.",
+    "query_execution_witness": "NOT_RUN",
+    "burst_off": "NOT_RUN"
+  },
+  "upstream_cleanup_assertion": "NOT_REACHED",
+  "paired_harness": {
+    "run_id": 37750769992,
+    "conclusion": "success per official job API; separate product suite"
+  }
+}

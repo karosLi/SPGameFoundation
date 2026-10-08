@@ -6,6 +6,7 @@
     "Latios.Transforms",
     "Latios.Psyshock",
     "Unity.Entities",
+    "Unity.Scenes",
     "Unity.Collections",
     "Unity.Mathematics",
     "Unity.Jobs",

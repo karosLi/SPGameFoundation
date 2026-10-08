@@ -39,6 +39,12 @@ namespace Latios2022Lab
             }).OrderBy(p => p.name).ToArray();
             using var world = LabWorld.Create("S1a environment inventory", true);
             world.Update();
+            // World.Systems forbids IEnumerable<T> enumeration in pinned Entities 1.3.5.
+            var systems = world.Systems;
+            var systemNames = new string[systems.Count];
+            for (int i = 0; i < systemNames.Length; i++)
+                systemNames[i] = systems[i].GetType().FullName;
+            Array.Sort(systemNames);
             var data = new EnvironmentRecord {
                 editor = Application.unityVersion,
                 cpu = SystemInfo.processorType,
@@ -51,8 +57,8 @@ namespace Latios2022Lab
                 packages = packages,
                 compiledAssemblies = CompilationPipeline.GetAssemblies().Select(a => a.name).OrderBy(a => a).ToArray(),
                 // Managed systems only. This list is not a complete unmanaged-system execution trace.
-                installedManagedSystems = world.Systems.Select(s => s.GetType().FullName).OrderBy(s => s).ToArray(),
-                executedScope = "Owned Core world and empty QVVS world update; Psyshock is tested separately via arrays. No optional renderer/audio installer."
+                installedManagedSystems = systemNames,
+                executedScope = "Owned Core world with initialization ECB and empty scene ordering group; empty QVVS update. Psyshock is tested separately via arrays. No scene streaming or optional renderer/audio installer."
             };
             Directory.CreateDirectory(output);
             File.WriteAllText(Path.Combine(output, "environment.json"), JsonUtility.ToJson(data, true));

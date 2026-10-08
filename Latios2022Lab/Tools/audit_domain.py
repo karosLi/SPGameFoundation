@@ -28,6 +28,7 @@ def audit(project, review_path, unity_log=None, artifact_root=None):
     launch = json.loads(launch_path.read_text()) if launch_path and launch_path.is_file() else {}
     report = {'scope': 'Static/source review plus observed log events; not a complete native compilation pass.',
               'reviewed_source_commit': review['reviewed_source_commit'], 'source_count': len(sources),
+              'reviewed_base_commit': review.get('reviewed_base_commit'), 'reviewed_changes': review.get('reviewed_changes', []),
               'source_sha256': observed, 'native_source_commit': launch.get('source_commit'),
               'unity_log_sha256': digest(unity_log) if unity_log else None, 'assemblies': {}}
     blocks = {}

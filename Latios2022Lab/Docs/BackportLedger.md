@@ -27,7 +27,7 @@ All source links below are the pinned old version, not 0.16 API guesses.
 | Known finite ray / signed-distance geometry | [Physics.Raycast.cs](https://github.com/Dreaming381/Latios-Framework/blob/381a77dbf774ff603014d5695ef6c06abaa25d96/PsyshockPhysics/Physics/Spatial/Queries/Physics.Raycast.cs), [Physics.DistanceBetween.cs](https://github.com/Dreaming381/Latios-Framework/blob/381a77dbf774ff603014d5695ef6c06abaa25d96/PsyshockPhysics/Physics/Spatial/Queries/Physics.DistanceBetween.cs), [QueryResults.cs](https://github.com/Dreaming381/Latios-Framework/blob/381a77dbf774ff603014d5695ef6c06abaa25d96/PsyshockPhysics/Physics/Types/QueryResults.cs) |
 | Exact 2022 API settings and IL2CPP setter | [Unity 2022.3.62f2 PlayerSettings](https://github.com/Unity-Technologies/UnityCsReference/blob/2022.3.62f2/Editor/Mono/PlayerSettings.bindings.cs): `NET_Standard` value 6, `SetIl2CppCodeGeneration(NamedBuildTarget, ...)` |
 
-The bootstrap is deliberately smaller than the upstream full template: it suppresses default runtime creation, while fixture-owned worlds install only Core constructor essentials and optional QVVS. `CoreBootstrap.InstallSceneManager` is optional and is not needed for these owned-world fixtures. Psyshock arrays use library algorithms directly, not a nonexistent general physics runtime installer.
+The bootstrap is deliberately smaller than the upstream full template: it suppresses broad default runtime creation. Fixture-owned worlds use the Core constructor essentials, explicit real BeginInitialization ECB and empty SceneSystemGroup ordering dependencies, and optional QVVS. `CoreBootstrap.InstallSceneManager` remains optional and unused; no SceneSystem/streaming children are injected. Psyshock arrays use library algorithms directly, not a nonexistent general physics runtime installer.
 
 ## Licence and distribution scope
 
@@ -58,6 +58,10 @@ The [third import](EditorToolsImportCorrection-20261008.md) compiled Runtime and
 ### Whole owned-domain review and bounded text evidence, 2026-10-08
 
 [CompilationDomainReview](CompilationDomainReview-20261008.md) freezes all 11 C# and four asmdef hashes at the corrected source, separates actual Runtime/PlayMode compilation from failed EditorTools and uncompiled Editor tests, and records the exact pinned public API/type/generator review. No new C# or package change was needed. The audit parser and bounded per-phase collection retain only owned compiler text and report missing/unemitted files without inventing a pass. Original native errors remain primary if collection also fails; the final hash manifest matches the final summary. Static checks are 29 Lab + 23 CI. Exact local Unity-reference compilation was unavailable; full native import/tests remain pending.
+
+### Fourth-run inventory and initialization composition correction, 2026-10-08
+
+[WorldInventoryCorrection](WorldInventoryCorrection-20261008.md) records all four owned assemblies compiling on original `8bca004`, the 42-file verified archive and all 12 real compiler inputs. Import then failed because environment capture used LINQ on World.Systems; pinned Entities deliberately throws from its interface enumerator. The owned correction uses Count/indexer and the same sorted name inventory. Three original ordering warnings exposed omitted real Unity targets in the smaller Lab construction; the factory now adds the standard initialization ECB and empty SceneSystemGroup before sorting, with a direct Runtime Unity.Scenes reference. This is an owned construction correction with the documented ECB allocator/singleton cost, not a dummy group, optional scene-manager install or warning waiver. The strict logging and cleanup assertions remain unchanged. Current source guards are 31 Lab + 23 CI; changed-source native import/tests remain pending.
 
 ## Source-identified control-group risk (not yet a native finding)
 

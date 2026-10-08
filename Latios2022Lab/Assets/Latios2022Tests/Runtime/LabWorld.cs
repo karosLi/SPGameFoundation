@@ -6,7 +6,8 @@ using UnityEngine.Scripting;
 namespace Latios2022Lab
 {
     // Suppress default game-world injection. Every fixture owns and disposes its world.
-    // No Myri, Kinemation, Calligraphics, Mimic or default Unity game systems are injected.
+    // No broad Unity injection or optional Myri/Kinemation/Calligraphics/Mimic installer.
+    // The owned world explicitly supplies its two standard initialization ordering targets.
     [Preserve]
     public sealed class LabBootstrap : ICustomBootstrap
     {
@@ -21,6 +22,10 @@ namespace Latios2022Lab
             try
             {
                 world.zeroToleranceForExceptions = true;
+                world.initializationSystemGroup.AddSystemToUpdateList(
+                    world.GetOrCreateSystemManaged<BeginInitializationEntityCommandBufferSystem>());
+                world.initializationSystemGroup.AddSystemToUpdateList(
+                    world.GetOrCreateSystemManaged<Unity.Scenes.SceneSystemGroup>());
                 world.ForceCreateNewSceneBlackboardEntityAndCallOnNewScene();
                 if (installTransforms)
                     TransformsBootstrap.InstallTransforms(world, world.simulationSystemGroup);

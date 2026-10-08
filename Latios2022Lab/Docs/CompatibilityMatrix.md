@@ -1,11 +1,11 @@
 # S1a compatibility and evidence matrix
 
-Updated 2026-10-08. The third native import **FAILED** in EditorTools at DC0061/CS0104, after Runtime/PlayMode compilation completed. The [third-run record](EditorToolsImportCorrection-20261008.md) retains complete original evidence and the two local corrections. All test/player cells remain **NOT RUN**. Prior failures are preserved. The original product's P0/CI results are separate and cannot be inherited by this project.
+Updated 2026-10-08. The fourth run **compiled all four owned assemblies**, then import **FAILED** at runtime inventory enumeration. The [fourth-run record](WorldInventoryCorrection-20261008.md) preserves the original failure and three ordering warnings; inventory and owned-world composition corrections remain unexecuted. All test/player cells remain **NOT RUN**. Prior failures are preserved. The original product's P0/CI results are separate and cannot be inherited by this project.
 
 | Scope | Prepared test/entry | Current evidence | Passing would mean |
 | --- | --- | --- | --- |
-| Isolated launcher and pin validation | `Tools/lab.py`, `Tools/test_lab.py`, `Tools/audit_domain.py` | Static preflight + 29 Lab and 23 CI Python tests passed; [four-assembly review](CompilationDomainReview-20261008.md) frozen | Launcher/parser/source-review behavior only; not complete Unity compilation |
-| Full pinned package + dependency compilation | `import` and genuine lock/inventory | Three preserved import failures; third reached Runtime/PlayMode compilation but EditorTools failed; current correction NOT RUN | Exact Editor/host/package graph imports; not every module's runtime behavior |
+| Isolated launcher and pin validation | `Tools/lab.py`, `Tools/test_lab.py`, `Tools/audit_domain.py` | Static preflight + 31 Lab and 23 CI Python tests passed; reviewed pending hashes recorded | Launcher/parser/source-review behavior only; not changed-source Unity execution |
+| Full pinned package + dependency compilation | `import` and genuine lock/inventory | Original fourth run has Csc/ILPostProcess/CopyFiles for all four owned assemblies; inventory execution FAILED; current correction NOT RUN | Exact Editor/host/package graph imports; not every module's runtime behavior |
 | Core collections/source generation | `TrackedWriterReaderAndDisposal`, exception case | NOT RUN | Generated pseudo-component and tracked jobs dispose correctly in tested paths |
 | Core lifecycle | two owned worlds; two domain-reloaded play entries; PlayMode repeat | NOT RUN | Tested create/update/destroy/reentry cycles; not arbitrary disabled-domain-reload settings |
 | QVVS | two explicitly installed empty-world updates | NOT RUN | Basic installer/update path; not transform hierarchy/content/animation acceptance |

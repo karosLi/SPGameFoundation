@@ -1,6 +1,6 @@
 # S1a owned compilation domain review
 
-2026-10-08. Review frozen against the **11 C# files and four asmdefs at `34376351165a7e44e63305c6c47c520f7ddd21bf`**. [Source/assembly hashes](Validation/20261008-compilation-domain/source-review.json) make reuse of this review conditional on identical inputs. No further C# or package correction was identified. This is source/API review plus partial native evidence, **not a claim that the complete corrected domain compiles**.
+2026-10-08. The original review below was frozen against **11 C# files and four asmdefs at `34376351165a7e44e63305c6c47c520f7ddd21bf`**. It found no further compile blocker, and the [fourth run](WorldInventoryCorrection-20261008.md) subsequently compiled all four. That run then exposed inventory enumeration and world-ordering issues. The live [source/assembly hashes](Validation/20261008-compilation-domain/source-review.json) now explicitly identify those pending corrections against native baseline `8bca004`, with no exact tested-commit claim for modified inputs. Historical log evidence below remains tied to its original source, not silently inherited by the pending correction.
 
 ## Four assemblies: actual evidence and direct closure
 

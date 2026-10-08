@@ -8,6 +8,8 @@ on:
 
 jobs:
   harness:
+    # The isolated storage probe must not run any normal CI steps, including on a PR/manual ref.
+    if: github.ref != 'refs/heads/dot/ci-disk-diagnostic' && github.head_ref != 'dot/ci-disk-diagnostic' && github.base_ref != 'dot/ci-disk-diagnostic'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:

@@ -1,0 +1,71 @@
+name: Read-only runner capacity snapshot
+
+# One isolated, authorized push; no checkout, Unity, directory scan, or cleanup.
+on:
+  push:
+    branches: [dot/ci-disk-diagnostic]
+
+permissions:
+  contents: read
+
+jobs:
+  project-storage:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/dot/ci-disk-diagnostic' && vars.UNITY_SELF_HOSTED == 'true'
+    runs-on: [self-hosted, unity]
+    timeout-minutes: 5
+    steps:
+      - name: Read project and runner-temp filesystem capacity
+        shell: bash --noprofile --norc -e -o pipefail {0}
+        run: |
+          python3 -I -B -u - <<'PY'
+          import datetime
+          import os
+          import pathlib
+          import platform
+          import signal
+          import stat
+
+          APPROVED_ROOTS = {
+              "GITHUB_WORKSPACE": "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/SPGameFoundation/SPGameFoundation",
+              "RUNNER_TEMP": "/Users/karosli/Documents/Study/Unity/SPGame/actions-runner/_work/_temp",
+          }
+
+          def deadline(signum, frame):
+              raise TimeoutError("capacity snapshot deadline reached")
+
+          def validate_root(variable, expected):
+              if os.environ.get(variable) != expected:
+                  raise ValueError(variable + " is not the approved runner location")
+              # Reject symlinks in every ancestor without resolving/following them.
+              path = pathlib.Path(expected)
+              current = pathlib.Path(path.anchor)
+              for component in path.parts[1:]:
+                  current /= component
+                  metadata = current.lstat()
+                  if not stat.S_ISDIR(metadata.st_mode):
+                      raise ValueError(variable + " has a non-directory or symlink component")
+              return path
+
+          signal.signal(signal.SIGALRM, deadline)
+          signal.alarm(30)
+          try:
+              if platform.system() != "Darwin":
+                  raise ValueError("only the approved Mac runner is supported")
+              if (os.environ.get("GITHUB_EVENT_NAME") != "push" or
+                      os.environ.get("GITHUB_REF") != "refs/heads/dot/ci-disk-diagnostic"):
+                  raise ValueError("only the isolated branch push is supported")
+              roots = {key: validate_root(key, value) for key, value in APPROVED_ROOTS.items()}
+              print("SNAPSHOT_UTC", datetime.datetime.now(datetime.timezone.utc).isoformat())
+              for label, path in roots.items():
+                  fs = os.statvfs(path)
+                  print("FILESYSTEM", label, "total_bytes=" + str(fs.f_blocks * fs.f_frsize),
+                        "free_bytes=" + str(fs.f_bfree * fs.f_frsize),
+                        "available_bytes=" + str(fs.f_bavail * fs.f_frsize))
+              print("RESULT complete; capacity snapshot only")
+          except (OSError, ValueError) as error:
+              # Do not print exception filenames, user paths, or environment values.
+              print("RESULT incomplete:", type(error).__name__)
+              raise SystemExit(1)
+          finally:
+              signal.alarm(0)
+          PY

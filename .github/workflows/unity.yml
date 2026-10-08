@@ -12,6 +12,7 @@ on:
 
 jobs:
   unity-tests:
+    if: github.ref != 'refs/heads/dot/ci-disk-diagnostic' && github.head_ref != 'dot/ci-disk-diagnostic' && github.base_ref != 'dot/ci-disk-diagnostic'
     runs-on: ubuntu-latest
     timeout-minutes: 120
     env:

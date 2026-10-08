@@ -230,36 +230,60 @@ class EvidencePartsTests(unittest.TestCase):
         self.assertFalse(self.restored.exists())
 
     def test_oversize_archive_fails_without_dropping_files(self):
-        self.write("profiler/large.raw", os.urandom((evidence.MAX_PARTS + 1) * 1024))
+        content = os.urandom(40 * 1024)
+        self.write("profiler/large.raw", content)
         with mock.patch.object(evidence, "PART_BYTES", 1024):
-            with self.assertRaisesRegex(ValueError, "limit is 32768 bytes.*No evidence was dropped"):
+            with self.assertRaisesRegex(ValueError, "limit is 40960 bytes \\(40 parts\\).*No evidence was dropped"):
                 evidence.package_evidence(self.source, self.parts)
         self.assertFalse(self.parts.exists())
         self.assertEqual({"Artifacts"}, {p.name for p in self.root.iterdir()})
-        self.assertEqual((evidence.MAX_PARTS + 1) * 1024, (self.source / "profiler/large.raw").stat().st_size)
+        self.assertEqual(content, (self.source / "profiler/large.raw").read_bytes())
+        # Verify this bounded fixture really needs exactly 41 parts, including ZIP
+        # overhead. Only the test overrides the cap; the production default is 40.
+        with mock.patch.object(evidence, "PART_BYTES", 1024), mock.patch.object(evidence, "MAX_PARTS", 41):
+            manifest = evidence.package_evidence(self.source, self.parts)
+        self.assertEqual(41, len(manifest["parts"]))
 
-    def test_legacy_eight_part_manifest_still_restores(self):
+    def test_legacy_eight_and_thirty_two_part_manifests_still_restore(self):
         self.package_small()
-        self.alter_manifest(lambda manifest: manifest.update(max_parts=8))
-        with mock.patch.object(evidence, "PART_BYTES", 1024):
-            evidence.restore_evidence(self.parts, self.restored)
-        self.assertEqual((self.source / "profiler/story.raw").read_bytes(),
-                         (self.restored / "Artifacts/profiler/story.raw").read_bytes())
+        for limit in (8, 32):
+            with self.subTest(max_parts=limit):
+                self.alter_manifest(lambda manifest: manifest.update(max_parts=limit))
+                restored = self.root / "restored-{}".format(limit)
+                with mock.patch.object(evidence, "PART_BYTES", 1024):
+                    evidence.restore_evidence(self.parts, restored)
+                self.assertEqual((self.source / "profiler/story.raw").read_bytes(),
+                                 (restored / "Artifacts/profiler/story.raw").read_bytes())
 
     def test_manifest_cannot_claim_unbounded_capacity(self):
         self.package_small()
-        self.alter_manifest(lambda manifest: manifest.update(max_parts=9999))
-        with mock.patch.object(evidence, "PART_BYTES", 1024):
-            with self.assertRaisesRegex(ValueError, "Unsupported evidence manifest"):
-                evidence.restore_evidence(self.parts, self.restored)
-        self.assertFalse(self.restored.exists())
+        for limit in (0, 9, 31, 33, 39, 41, 9999):
+            with self.subTest(max_parts=limit):
+                self.alter_manifest(lambda manifest: manifest.update(max_parts=limit))
+                with mock.patch.object(evidence, "PART_BYTES", 1024):
+                    with self.assertRaisesRegex(ValueError, "Unsupported evidence manifest"):
+                        evidence.restore_evidence(self.parts, self.restored)
+                self.assertFalse(self.restored.exists())
 
-    def test_new_capacity_retains_more_than_eight_parts(self):
-        self.write("captures/continuous.raw", os.urandom(9 * 1024))
+    def test_forty_parts_restore_and_legacy_limits_remain_enforced(self):
+        self.assertEqual(40, evidence.MAX_PARTS)
+        self.assertEqual(16 * 1024 * 1024, evidence.PART_BYTES)
+        self.write("captures/continuous.raw", os.urandom(39 * 1024))
         with mock.patch.object(evidence, "PART_BYTES", 1024):
             manifest = evidence.package_evidence(self.source, self.parts)
-            self.assertGreater(len(manifest["parts"]), 8)
-            self.assertLessEqual(len(manifest["parts"]), evidence.MAX_PARTS)
+            self.assertEqual(40, manifest["max_parts"])
+            self.assertEqual(40, len(manifest["parts"]))
+            self.assertEqual(["evidence.zip.part{:02d}".format(index) for index in range(40)],
+                             [part["name"] for part in manifest["parts"]])
+            for part in manifest["parts"]:
+                self.assertLessEqual(part["size"], 1024)
+            for limit in (8, 32):
+                with self.subTest(max_parts=limit):
+                    self.alter_manifest(lambda manifest: manifest.update(max_parts=limit))
+                    with self.assertRaisesRegex(ValueError, "Invalid evidence part count"):
+                        evidence.restore_evidence(self.parts, self.restored)
+                    self.assertFalse(self.restored.exists())
+            self.alter_manifest(lambda manifest: manifest.update(max_parts=40))
             evidence.restore_evidence(self.parts, self.restored)
         self.assertEqual((self.source / "captures/continuous.raw").read_bytes(),
                          (self.restored / "Artifacts/captures/continuous.raw").read_bytes())

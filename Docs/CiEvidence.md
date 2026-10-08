@@ -1,7 +1,7 @@
 # Unity CI evidence parts
 
 The self-hosted Unity job uploads `unity-test-results-self-hosted-part00` through
-`part31`, creating only the parts that are needed. Each artifact contains one binary
+`part39`, creating only the parts that are needed. Each artifact contains one binary
 part of at most 16 MiB and an identical `evidence-manifest.json` of at most 1 MiB.
 The cap accommodates paired before/after live gait captures with original painted backgrounds; individual downloads remain unchanged. Only nonempty parts are uploaded.
 The outer GitHub artifact uses no compression; the evidence ZIP is already compressed.
@@ -13,8 +13,11 @@ screenshots, raw profiler captures, JSON, logs, reports, and test results. It re
 symlinks rather than reading outside evidence. It does not collect `Library/`, caches,
 the repository, or credential directories. Screenshot branch publication is unchanged.
 
-The ZIP is limited to 32 parts (512 MiB compressed). Oversized evidence or a manifest
-over 1 MiB fails the packaging step explicitly; files are never silently omitted.
+The ZIP is limited to 40 parts (640 MiB compressed), increased from 32 parts (512 MiB).
+The individual 16 MiB part and 1 MiB manifest caps are unchanged: each artifact's
+payload plus ZIP wrapper metadata remains below the 32 MB download-tool cap.
+Oversized evidence or a manifest over 1 MiB fails the packaging step explicitly;
+files are never silently omitted.
 Packaging also runs after test failures, and does not change test assertions or outcomes.
 Output lives in the runner's temporary directory, outside `Artifacts/`. Only temporary
 files created by this invocation are cleaned up; existing output is never overwritten.
@@ -54,7 +57,14 @@ raw/nested/hidden evidence inclusion, missing/corrupt/duplicate parts, mixed man
 archive and file hashes, size-limit failure without dropped files, symlink rejection,
 safe extraction, and protection of existing output.
 
-The current restore helper also accepts the historical eight-part manifests. It still enforces their declared limit, verifies every part and file, and rejects unsupported/unbounded manifest capacities. Increasing this evidence transport cap does not change runtime memory, performance budgets, frame counts or test assertions.
+The current restore helper also accepts the historical eight- and 32-part manifests.
+It still enforces their declared limit, verifies every part and file, and rejects
+unsupported/unbounded manifest capacities. Small fixtures exercise exactly 40 parts,
+rejection of evidence requiring 41 parts, and restoration of historical manifests;
+the existing real 16 MiB boundary test is retained. Increasing this evidence transport
+cap does not change runtime memory, mobile performance budgets, capture quality/FPS,
+frame counts or test assertions. The workflow only adds uploads for `part32` through
+`part39`; runner, permissions, dispatch inputs and recording conditions are unchanged.
 
 ## Deferred motion-review encoding
 
@@ -175,7 +185,7 @@ Result filename and suffix matching are case-insensitive; within each tier the e
 relative POSIX path is the deterministic tie-breaker. Both ZIP member order and manifest order follow
 this key. No files are omitted, recompressed into a different image format by the
 packager, or excluded from the existing SHA-256 inventory. The archive size cap
-remains 32 x 16 MiB. Priority puts all result XML ahead of binary media, including
+is 40 x 16 MiB. Priority puts all result XML ahead of binary media, including
 reports over 1 MiB, but does not promise that every result fits in `part00`: a first
 member whose compressed bytes and ZIP header exceed 16 MiB necessarily spans parts,
 and several result files can also exceed that first part together. Files are never

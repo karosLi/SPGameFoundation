@@ -13,7 +13,7 @@ import zipfile
 
 
 PART_BYTES = 16 * 1024 * 1024
-MAX_PARTS = 32
+MAX_PARTS = 40
 BLOCK_BYTES = 1024 * 1024
 MAX_MANIFEST_BYTES = 1024 * 1024
 PRIORITY_METADATA_BYTES = 1024 * 1024
@@ -169,7 +169,7 @@ def restore_evidence(parts_directory, output):
         raise ValueError("Manifests disagree; do not mix different CI runs")
     manifest = json.loads(encoded)
     if (manifest["version"] != 1 or manifest["part_size_bytes"] != PART_BYTES
-            or manifest["max_parts"] not in (8, MAX_PARTS)
+            or manifest["max_parts"] not in (8, 32, MAX_PARTS)
             or manifest["archive"]["name"] != ARCHIVE_NAME):
         raise ValueError("Unsupported evidence manifest")
     parts = manifest["parts"]
@@ -228,7 +228,7 @@ def restore_evidence(parts_directory, output):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
-    package = commands.add_parser("package", help="Create at most 32 bounded 16 MiB evidence parts")
+    package = commands.add_parser("package", help="Create at most 40 bounded 16 MiB evidence parts")
     package.add_argument("--source", default="Artifacts")
     package.add_argument("--output", required=True)
     restore = commands.add_parser("restore", help="Verify, concatenate, and extract downloaded parts")

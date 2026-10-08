@@ -287,3 +287,59 @@ jobs:
           path: ${{ steps.evidence.outputs.directory }}/part31/
           compression-level: 0
           if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part32
+          path: ${{ steps.evidence.outputs.directory }}/part32/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part33
+          path: ${{ steps.evidence.outputs.directory }}/part33/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part34
+          path: ${{ steps.evidence.outputs.directory }}/part34/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part35
+          path: ${{ steps.evidence.outputs.directory }}/part35/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part36
+          path: ${{ steps.evidence.outputs.directory }}/part36/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part37
+          path: ${{ steps.evidence.outputs.directory }}/part37/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part38
+          path: ${{ steps.evidence.outputs.directory }}/part38/
+          compression-level: 0
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.evidence.outcome == 'success'
+        with:
+          name: unity-test-results-self-hosted-part39
+          path: ${{ steps.evidence.outputs.directory }}/part39/
+          compression-level: 0
+          if-no-files-found: ignore

@@ -124,7 +124,9 @@ namespace SPF.Tests.EditMode
                 Assert.Greater(low, .30f, "full blade tip must clear boots/ground through follow-through " + context);
                 Assert.Greater(highHand - idle.y, .20f, "diagonal cut retains visible anticipation " + context);
                 Assert.Greater(top - follow, .95f, "follow-through is retained " + context);
-                Assert.Less(follow, -.20f, context); Assert.Greater(follow, -.72f, "compact diagonal finish " + context);
+                // The user superseded the old below-contact finish: preserve the complete
+                // overhead cut, but recover from contact without another downward key.
+                Assert.GreaterOrEqual(follow, -.00001f, "no post-contact downward finish " + context);
                 Assert.Less(math.distance(Model(world[NaturalCharacterRig.Hand], input), idle), .05f, "returns to guard " + context);
             }
         }

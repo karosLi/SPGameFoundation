@@ -1,0 +1,144 @@
+{
+  "date": "2026-10-08",
+  "baseCommit": "d241971d09ddfc96465d186bef9b530d517f3054",
+  "runtimeSource": "Assets/SinglePlayerFoundation/Presentation/Animation/WeaponMotion.cs",
+  "runtimeSourceSha256": "82da3ee3ae1a7c7219091dcbcce58b09d8cd65f4b030216eebcd90bf858eac6a",
+  "scope": "Blade presentation only; unchanged authority, hit geometry, save layouts, art/atlas, packages, renderer instances, accepted other weapon outputs and general performance thresholds.",
+  "focusedResults": {
+    "baseline-red": {
+      "total": 12,
+      "passed": 3,
+      "failed": 9,
+      "notExecuted": 0
+    },
+    "presenter-first": {
+      "total": 4,
+      "passed": 0,
+      "failed": 4,
+      "notExecuted": 0
+    },
+    "turn-boundaries": {
+      "total": 4,
+      "passed": 0,
+      "failed": 4,
+      "notExecuted": 0
+    },
+    "immediate-reentry": {
+      "total": 6,
+      "passed": 2,
+      "failed": 4,
+      "notExecuted": 0
+    },
+    "rigid-turn-reentry": {
+      "total": 7,
+      "passed": 7,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "final-focused": {
+      "total": 162,
+      "passed": 160,
+      "failed": 2,
+      "notExecuted": 0
+    },
+    "upward-contact": {
+      "total": 3,
+      "passed": 3,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "final-focused-corrected": {
+      "total": 165,
+      "passed": 165,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "elevated-cancel-red": {
+      "total": 2,
+      "passed": 0,
+      "failed": 2,
+      "notExecuted": 0
+    },
+    "elevated-cancel-corrected": {
+      "total": 7,
+      "passed": 4,
+      "failed": 3,
+      "notExecuted": 0
+    },
+    "elevated-room-fit": {
+      "total": 11,
+      "passed": 8,
+      "failed": 3,
+      "notExecuted": 0
+    },
+    "elevated-cross-coverage": {
+      "total": 13,
+      "passed": 13,
+      "failed": 0,
+      "notExecuted": 0
+    },
+    "frozen-focused": {
+      "total": 167,
+      "passed": 167,
+      "failed": 0,
+      "notExecuted": 0
+    }
+  },
+  "finalFocused": {
+    "passed": 167,
+    "failed": 0,
+    "skipped": 0,
+    "fullAggregateRunHere": false,
+    "trx": "frozen-focused.trx"
+  },
+  "preservedOutputs": [
+    {
+      "weapon": 1002,
+      "samples": 10080,
+      "bytes": 8547840,
+      "bitwiseIdentical": true,
+      "sha256": "ba316ab85ea5e333311a9e16684b7bfbaafd62a09971700cf6737d5b7e4e3457"
+    },
+    {
+      "weapon": 1003,
+      "samples": 10080,
+      "bytes": 8547840,
+      "bitwiseIdentical": true,
+      "sha256": "3669570357e2a9f7944acfb560d81c35996faeb7613505228df5e856509f8d09"
+    },
+    {
+      "weapon": 1004,
+      "samples": 10080,
+      "bytes": 8547840,
+      "bitwiseIdentical": true,
+      "sha256": "46c41152f743008e2cc852eca55e344cbda72c933c8916db59473cf733cfd4be"
+    }
+  ],
+  "nativeConditionalCompile": {
+    "status": "passed",
+    "nunitPackage": "com.unity.ext.nunit 1.0.6",
+    "nunitAssemblyVersion": "3.5.0.0",
+    "nunitDllSha256": "e388e140954de12970384331d1730e95b4613ef53c3326b6f8fa0fffdbc9314f",
+    "warnings": 1,
+    "warning": "MSB3277: engine stubs reference host NUnit3.13.3, explicit official Unity NUnit selected",
+    "limits": "C#9 and native Editor/test defines, no SPF_DOTNET_HARNESS; Unity/Collections/Jobs/Burst still stubbed, .NET8 host. Not a native Unity compile/runtime pass.",
+    "log": "native-domain/compile-frozen.log"
+  },
+  "evidenceDirectory": "integration-validation/resume-20261008/blade-stable-contact",
+  "nativeVisualStatus": "NOT_RUN: production changed; prior da28905 recordings cannot validate this candidate. New parent-coordinated native capture, actual timestamp1x and labelled0.25x review, user acceptance and physical mobile remain pending.",
+  "sourceReview": {
+    "status": "No remaining material source blocker found in final read-only review",
+    "limits": "Does not constitute native visual/user acceptance."
+  },
+  "retainedLimitations": [
+    "Existing generic punch/skill body re-entry can move the shoulder on cancellation; displayed blade grip/angle/tip continuity is tested, whole-body C0 is not claimed.",
+    "The continuous shoulder room also makes small horizontal loaded-shoulder changes; canonical hand targets are retained.",
+    "Mobile pixel steadiness, visual firmness and physical Android/iOS performance require new actual evidence."
+  ],
+  "productionChanges": [
+    "Move blade braking before unchanged contact; remove downward tail key and recover immediately.",
+    "Read blade angle and pivot from final Hand on every stage.",
+    "Interpolate turning blade aim heading and projected length separately to prevent transient shortening.",
+    "Reuse existing shoulder glide with continuous held-target-height room, max additional0.22modelunits, same one arm solve and0.85rad wrist bound."
+  ]
+}

@@ -21,8 +21,8 @@ namespace SPF.Presentation.Animation
         public float Angle, Length, Draw, Weight, Visibility, Body, StringWeight;
     }
 
-    /// <summary>Small authored pose library. Hermite tangents pass through contact instead of stopping at
-    /// every key. Whole-action phase and release markers are authoritative; only aim/hold transitions ease.</summary>
+    /// <summary>Small authored pose library. Family-specific Hermite tangents connect preparation,
+    /// contact and recovery. Whole-action phase and release markers remain authoritative.</summary>
     public static class WeaponMotion
     {
         const float MarkerEpsilon=.00001f;
@@ -52,19 +52,24 @@ namespace SPF.Presentation.Animation
             if(phase<t3)return Hermite(impact,follow,v2,v3,(phase-t2)/(t3-t2),t3-t2);
             return Hermite(follow,rest,v3,0,(phase-t3)/(1-t3),1-t3);
         }
-        // Blade-only braking: preserve the incoming curve/contact tangent, then reduce the
-        // whole chain's velocity to zero on one shared clock. The settled key is derived
-        // from that tangent; a bounded vertical carry lets the forearm finish the cut
-        // instead of leaving a nearly level forearm with a long wrist-only flourish.
-        // This uses the same safe trajectory for hit and miss; phase is not a hit fact.
-        static float BladeCurve(float phase,float contact,float activeEnd,float rest,float windup,float impact,float follow,float windupFraction=.5f,float finishScale=1)
+        // The blade brakes INTO contact, on one clock for grip, angle and chest. Keep
+        // the loaded incoming curve until the existing braking-duration window begins;
+        // splice with its exact derivative, then immediately recover from contact.
+        // There is no below-contact key or hold. Hit and miss share this presentation.
+        static float BladeCurve(float phase,float contact,float activeEnd,float rest,float windup,float impact,float follow,float windupFraction=.5f)
         {
-            if(phase<=contact)return Curve(phase,contact,activeEnd,rest,windup,impact,follow,windupFraction);
-            float duration=(activeEnd-contact)*.45f,settle=contact+duration;
-            float tangent=(follow-windup)/(activeEnd-contact*windupFraction);
-            float finish=impact+tangent*duration*.5f*finishScale;
-            if(phase<settle)return Hermite(impact,finish,tangent,0,(phase-contact)/duration,duration);
-            return Hermite(finish,rest,0,0,(phase-settle)/(1-settle),1-settle);
+            if(phase>=contact)return Hermite(impact,rest,0,0,(phase-contact)/(1-contact),1-contact);
+            // The default profiles retain the old 67.5/75 ms braking duration. The cap
+            // only keeps custom very-early contacts inside their available anticipation.
+            float duration=math.min((activeEnd-contact)*.45f,contact*.5f),brake=contact-duration;
+            if(phase<brake)return Curve(phase,contact,activeEnd,rest,windup,impact,follow,windupFraction);
+            float loaded=contact*windupFraction,approach=contact-loaded;
+            float v1=(impact-rest)/contact,v2=(follow-windup)/(activeEnd-loaded);
+            float u=(brake-loaded)/approach,u2=u*u;
+            float value=Hermite(windup,impact,v1,v2,u,approach);
+            float velocity=((6*u2-6*u)*windup+(-6*u2+6*u)*impact)/approach
+                +(3*u2-4*u+1)*v1+(3*u2-2*u)*v2;
+            return Hermite(value,impact,velocity,0,(phase-brake)/duration,duration);
         }
         public static float2 Rotate(float2 p,float angle)
         {float c=math.cos(angle),s=math.sin(angle);return new float2(c*p.x-s*p.y,s*p.x+c*p.y);}
@@ -77,7 +82,19 @@ namespace SPF.Presentation.Animation
             float impactMarker=(w.Family==WeaponActionFamily.Cast||w.Family==WeaponActionFamily.Draw)?w.ReleasePhase:w.ContactPhase;
             float contact=math.clamp(impactMarker,MarkerEpsilon,1-2*MarkerEpsilon),end=math.clamp(w.ActiveEndPhase,contact+MarkerEpsilon,1-MarkerEpsilon);
             float reachWeight=acting?NaturalMotion.Ease(phase/contact)*(1-NaturalMotion.Ease((phase-end)/math.max(MarkerEpsilon,1-end))):0;
-            float2 aim=math.lerp(motion.WeaponAim,w.AimDirection,acting?NaturalMotion.Ease(phase/contact):0);
+            float aimWeight=acting?NaturalMotion.Ease(phase/contact):0;
+            float2 aim=math.lerp(motion.WeaponAim,w.AimDirection,aimWeight);
+            if(w.Family==WeaponActionFamily.Slash&&WeaponArt.Resolve(w.VisualId,w.Family)==1001&&aimWeight>0&&aimWeight<1)
+            {
+                // Blend the turning blade's heading and projected length separately. A
+                // chord between opposed directions shrinks its rigid length, then pops
+                // back on cancellation. Keep depth foreshortening and exact endpoints.
+                float from=math.atan2(motion.WeaponAim.y,motion.WeaponAim.x);
+                float to=math.atan2(w.AimDirection.y,w.AimDirection.x);
+                float heading=from+AngleDelta(from,to)*aimWeight;
+                float projectedLength=math.lerp(math.length(motion.WeaponAim),math.length(w.AimDirection),aimWeight);
+                aim=new float2(math.cos(heading),math.sin(heading))*projectedLength;
+            }
             if(math.lengthsq(aim)<.01f)aim=new float2(motion.Facing,0);
             // Preserve projected ground-aim length. It encodes belt depth foreshortening.
             float facing=motion.Facing;
@@ -88,11 +105,9 @@ namespace SPF.Presentation.Animation
             switch(w.Family)
             {
                 case WeaponActionFamily.Slash:
-                    // Preserve the loaded key and exact canonical contact, then brake grip,
-                    // blade and chest together into a compact low finish before returning to guard.
-                    // Extra vertical carry changes only this terminal key, not the overhead arc;
-                    // the contact position/velocity and the exact shared settling time stay fixed.
-                    offset=new float2(BladeCurve(phase,contact,end,-.23f,-.13f,0,.04f),BladeCurve(phase,contact,end,.16f,.40f,0,-.06f,.5f,2));
+                    // Preserve the loaded preparation and canonical contact. Grip, blade
+                    // and torso decelerate together before contact, then return to guard.
+                    offset=new float2(BladeCurve(phase,contact,end,-.23f,-.13f,0,.04f),BladeCurve(phase,contact,end,.16f,.40f,0,-.06f));
                     rotation=BladeCurve(phase,contact,end,.70f,1.30f,0,-.58f);
                     body=BladeCurve(phase,contact,end,0,.12f,-.10f,-.09f,.35f);break;
                 case WeaponActionFamily.Thrust:
@@ -182,10 +197,20 @@ namespace SPF.Presentation.Animation
             float2 primaryShoulder=NaturalMotion.BonePoint(rig,local,NaturalCharacterRig.NearArm,0,at);
             float primaryDistance=math.distance(NaturalMotion.ModelPoint(pose.Grip,input.Root,motion.Facing,motion.Scale),primaryShoulder);
             float primaryFold=1-NaturalMotion.Ease((primaryDistance-.12f)/.22f);
-            if(primaryFold>.001f)
+            float bladeSlide=0;
+            if(input.Weapon.Family==WeaponActionFamily.Slash&&WeaponArt.Resolve(input.Weapon.VisualId,input.Weapon.Family)==1001)
+            {
+                // A high held target needs scapular room for a rigid palm within the
+                // existing wrist limit. Derive room from the continuous target, not the
+                // action stage, so cancellation/equip keeps it while that hand is high.
+                // The hand path remains unchanged; reuse the same single arm solve.
+                float elevation=(pose.Grip.y-input.Root.y)/motion.Scale;
+                bladeSlide=.22f*NaturalMotion.Ease((elevation-1.60f)/.23f);
+            }
+            if(primaryFold>.001f||bladeSlide>0)
             {
                 var primaryArm=local[at+NaturalCharacterRig.NearArm];
-                primaryArm.Position+=Rotate(new float2(-.10f*primaryFold,0),-local[at+NaturalCharacterRig.Pelvis].Rotation-local[at+NaturalCharacterRig.Torso].Rotation);
+                primaryArm.Position+=Rotate(new float2(-.10f*primaryFold-bladeSlide,0),-local[at+NaturalCharacterRig.Pelvis].Rotation-local[at+NaturalCharacterRig.Torso].Rotation);
                 local[at+NaturalCharacterRig.NearArm]=primaryArm;
             }
             NaturalMotion.BlendAim(rig,local,NaturalCharacterRig.NearArm,NaturalCharacterRig.NearForearm,pose.Grip,input.Root,motion.Facing,motion.Scale,-1,pose.Weight,at);
@@ -242,10 +267,18 @@ namespace SPF.Presentation.Animation
             var p=Sample(input,motion);var w=input.Weapon;
             float2 grip=world[at+NaturalCharacterRig.Hand].Position;
             float2 support=world[at+NaturalCharacterRig.FarForearm].Transform(new float2(.42f*motion.Scale,0),motion.Facing);
-            float2 direction=new float2(math.cos(p.Angle),math.sin(p.Angle));
+            // The blade's final palm owns both attachment position and orientation on
+            // every stage, including turn -> attack and cancellation. Using the authored
+            // angle here would detach the blade when the bounded wrist cannot reach it.
+            // The existing arm solve reaches the canonical contact; other families retain
+            // their accepted attachment contract.
+            int visual=WeaponArt.Resolve(w.VisualId,w.Family);
+            float angle=w.Family==WeaponActionFamily.Slash&&visual==1001
+                ?world[at+NaturalCharacterRig.Hand].Rotation:p.Angle;
+            float2 direction=new float2(math.cos(angle),math.sin(angle));
             float2 tip=grip+direction*p.Length*motion.Scale;
             return new WeaponAttachmentSample {PrimaryGrip=grip,SupportGrip=support,Muzzle=tip,Tip=tip,Direction=direction,
-                Rotation=p.Angle,Draw=p.Draw,Visibility=p.Visibility,SupportWeight=(1-SupportRelease(input,motion))*p.StringWeight,VisualId=WeaponArt.Resolve(w.VisualId,w.Family),ActionPulse=w.ActionPulse,CueSequence=w.CueSequence,Cues=w.Cues};
+                Rotation=angle,Draw=p.Draw,Visibility=p.Visibility,SupportWeight=(1-SupportRelease(input,motion))*p.StringWeight,VisualId=visual,ActionPulse=w.ActionPulse,CueSequence=w.CueSequence,Cues=w.Cues};
         }
     }
 }

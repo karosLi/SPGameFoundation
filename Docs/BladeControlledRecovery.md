@@ -35,6 +35,14 @@ The conditional native syntax audit uses C# 9, native Editor/test defines and of
 
 Production changed, so da28905 recording reuse no longer applies to this candidate. A new native GPU/DataTexture run must provide source-timestamp 1× and separately labelled 0.25× footage, the real mobile-scale viewport, unobscured grip/weapon close views and the accepted sword comparison. Mathematical rigid attachment and subpixel packing tolerances do not establish absence of raster jitter, especially from the existing approximately 20 Hz recordings. Naturalness/user acceptance and physical Android/iOS remain open.
 
+## Integrated stable-contact software checkpoint (2026-10-08)
+
+The frozen integrated source includes the stable-contact correction, a separate bounded evidence transport increase from 32 to 40 unchanged 16 MiB parts, and the [isolated live-grip capture fixture](BladeGripCloseupDiagnostic.md). One aggregate passed **1,670 tests**, zero failures, with the same six Explicit NotExecuted diagnostics across 12 nonempty test assemblies. Fifteen empty PlayMode harness assemblies provide no native coverage. The initial 78-project build had zero warnings/errors. The new close-up body is excluded from the host domain and was separately checked against official Unity NUnit/UTF with native defines; engine APIs still use stubs. The final incremental 78-project build includes that file and also passes with zero warnings/errors; no duplicate aggregate was run. [Exact source, counters and limits](validation/BladeStableIntegration-20261008.json).
+
+The 18 bounded-archive tests pass; part bytes, restore hashes, old 8/32-part manifests, original workflow runner/permissions and all test budgets remain unchanged. The larger capacity preserves complete original evidence plus two new 128-frame isolated views, without deleting existing recordings.
+
+Fresh GPU/DataTexture native execution, actual whole-game and unobscured grip pixels, source-timestamp 1× playback, explicitly labelled slow diagnostics and user acceptance remain pending. Old da28905 downward-finish clips remain the failed preference baseline. This software checkpoint cannot establish that the final rendered blade never appears to shake, nor physical Android/iOS performance.
+
 ## Decision before implementation (2026-10-08)
 
 The user accepted the forward sword thrust and rejected the blade cut after contact. This design starts at local `f46c7651193186126bcaa9f3f6537002293b7e2c` (same tree as published `178d268de5e44783461f20c75324f2a3de503439`). The scope is blade presentation only. Sword, staff, bow, SmoothAttackV1 movement, fixed-tick contact/release/cooldown/hit geometry, saves, existing thresholds and packages are preserved. No new hitstop or outcome inference is introduced.

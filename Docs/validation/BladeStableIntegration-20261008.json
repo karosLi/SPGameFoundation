@@ -1,0 +1,73 @@
+{
+  "sourceCommit": "bc3cbeb4315eeb87cb62e8b610c21c0f84d80ae3",
+  "sourceTree": "9b85bbc8bce4cb82ece0d6e1f0d8f3bdce857830",
+  "runtimeSourceCommit": "79a5d3eca7f30f40e79d7d99304055e9d9d0d72f",
+  "runtimeSourceSha256": "82da3ee3ae1a7c7219091dcbcce58b09d8cd65f4b030216eebcd90bf858eac6a",
+  "build": {
+    "projects": 78,
+    "initialWarnings": 0,
+    "initialErrors": 0,
+    "finalIncrementalWarnings": 0,
+    "finalIncrementalErrors": 0,
+    "newNativeFixtureIncluded": true
+  },
+  "aggregate": {
+    "passed": 1670,
+    "failed": 0,
+    "retainedExplicitNotExecuted": 6,
+    "nonemptyTestAssemblies": 12,
+    "emptyNativeHarnessAssemblies": 15,
+    "exitCode": 0
+  },
+  "rawTrxCounters": {
+    "total": 1676,
+    "executed": 1670,
+    "passed": 1670,
+    "failed": 0,
+    "notExecuted": 0
+  },
+  "explicitResults": [
+    {
+      "name": "RecordDefaultRawSnapshotDigest",
+      "outcome": "NotExecuted",
+      "file": "_90cca2425273_2026-10-08_19_09_35.trx"
+    },
+    {
+      "name": "RecordConfigColdAllocationAndRetainedPayload",
+      "outcome": "NotExecuted",
+      "file": "_90cca2425273_2026-10-08_19_09_35.trx"
+    },
+    {
+      "name": "ExportFrames",
+      "outcome": "NotExecuted",
+      "file": "_90cca2425273_2026-10-08_19_09_35.trx"
+    },
+    {
+      "name": "SearchShots",
+      "outcome": "NotExecuted",
+      "file": "_90cca2425273_2026-10-08_19_09_34.trx"
+    },
+    {
+      "name": "RecordDefaultRawSnapshotDigest",
+      "outcome": "NotExecuted",
+      "file": "_90cca2425273_2026-10-08_19_04_55.trx"
+    },
+    {
+      "name": "RecordConfigColdAllocationAndRetainedPayload",
+      "outcome": "NotExecuted",
+      "file": "_90cca2425273_2026-10-08_19_04_55.trx"
+    }
+  ],
+  "sourceNote": "Runtime and all executable host test bodies were frozen before the one aggregate. The later close-up fixture is wholly !SPF_DOTNET_HARNESS, separately compiled with official Unity NUnit/UTF; final incremental 78-project build checks its inclusion. No second aggregate is needed for that excluded body.",
+  "conditionalNativeCompile": {
+    "motionErrors": 0,
+    "closeupErrors": 0,
+    "warnings": "One known MSB3277 host/official NUnit version conflict in each compile; explicit official3.5 selected. Engine APIs remain stubs, not native Unity."
+  },
+  "evidencePartsTests": {
+    "passed": 18,
+    "failed": 0
+  },
+  "native": "Pending; fresh production change invalidates da28905 video reuse as AFTER. Full required native tests plus existing normal recordings and 2 new isolated closeups must run on published head.",
+  "scope": "Blade runtime only; accepted sword/staff/bow retained; no authority, damage, cooldown, save, art, package, renderer-instance or general-performance threshold change."
+}

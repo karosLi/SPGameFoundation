@@ -238,9 +238,11 @@
     "weapon_body_delta": 0
   },
   "acceptance": {
-    "unity_native": "pending exact candidate run",
-    "normal_speed_visual": "unaccepted; requires same-camera real 1x review and user judgment",
-    "android_ios_devices": "pending"
+    "unity_native": "passed exact d2cc1f9 run37741504324 with original skips and thresholds retained",
+    "normal_speed_visual": "d2cc1f9 ordered frames reviewed and actual 1x files delivered. User accepts forward sword thrust; rejects downward blade contact/recovery as uncoordinated and appearing to drop. Blade redesign pending research and frame diagnosis.",
+    "android_ios_devices": "pending",
+    "sword_thrust_user_feedback": "accepted; preserve current thrust",
+    "blade_downward_cut_user_feedback": "rejected after contact; investigate grip and recovery before tuning"
   },
   "preserved_authority": [
     "weapon profiles and fingerprints",
@@ -249,5 +251,245 @@
     "damage",
     "SmoothAttackV1 movement",
     "all raw save domains"
-  ]
+  ],
+  "native": {
+    "published_commit": "d2cc1f976a517bba3d0b9fb05f81412d8c84f996",
+    "tree": "2dda7c646e7a212169d27f58a8f362e829d87083",
+    "run": {
+      "id": 37741504324,
+      "job": 113193017341,
+      "status": "completed",
+      "conclusion": "success",
+      "attempt": 1,
+      "url": "https://github.com/karosLi/SPGameFoundation/actions/runs/37741504324",
+      "created_at": "2026-10-08T07:07:16Z",
+      "updated_at": "2026-10-08T07:27:26Z",
+      "editor_exits": [
+        0,
+        0
+      ],
+      "crash_retry_seen": false,
+      "burst_disabled_fallback_seen": false,
+      "job_log_sha256": "a73f52baf18bab90dd411d2a23ca9904442493cf49714b3d2324604ab4953597",
+      "editmode_log_sha256": "77f704a610c91a2060ca19eb2f2baea5ce6df39c201c5252b7fd74128b670a07",
+      "playmode_log_sha256": "a3ee027a3532d5cd89cd88145877f6d2a35b74f56c488ccfe300a6b918f26770"
+    },
+    "harness_run": 37741504133,
+    "tests": {
+      "editmode": {
+        "total": 1669,
+        "passed": 1664,
+        "failed": 0,
+        "skipped": 5,
+        "root_result": "Skipped:Ignored",
+        "sha256": "bdd3e1825a40fee86f15b4b9ba426a31723a05e446f81d6374954cf05d3ece00",
+        "skips": [
+          {
+            "name": "SlingFoundation.Tests.SlTests.SearchShots",
+            "result": "Skipped",
+            "label": "Explicit",
+            "message": "tuning aid",
+            "stack": null,
+            "output": null
+          },
+          {
+            "name": "SnakeFoundation.Tests.SnakePreviewExport.ExportFrames",
+            "result": "Skipped",
+            "label": "Explicit",
+            "message": "Writes preview files; run on demand",
+            "stack": null,
+            "output": null
+          },
+          {
+            "name": "SPF.Tests.EditMode.BufferTextAllocationProbeTests.WarmSinglelineAndMultilineMeshes_ReportAllocations",
+            "result": "Skipped",
+            "label": "Explicit",
+            "message": "Allocation diagnostic: run this exact test in real Unity; leaves production behavior and GC budgets unchanged.",
+            "stack": null,
+            "output": null
+          },
+          {
+            "name": "SPF.Tests.EditMode.GameplayCharacterStreamTests.DataTexturePaddingDoesNotMasqueradeAsPackedPayloadSavings",
+            "result": "Skipped",
+            "label": "Ignored",
+            "message": "Actual shader resources/upload accounting needs a graphics device.",
+            "stack": null,
+            "output": null
+          },
+          {
+            "name": "SPF.Tests.EditMode.SpriteTests.GpuSpriteUploadAccountingIncludesArgumentsAndResetsOnReuse",
+            "result": "Skipped",
+            "label": "Ignored",
+            "message": "GPU-driven rendering is not supported on this test device.",
+            "stack": null,
+            "output": null
+          }
+        ]
+      },
+      "playmode": {
+        "total": 172,
+        "passed": 171,
+        "failed": 0,
+        "skipped": 1,
+        "root_result": "Passed",
+        "sha256": "26d6a79f62fd7e14ad33821da6a28c4d84d2fb40c69f8554a208cd243de2d53d",
+        "skips": [
+          {
+            "name": "SurvivorFoundation.Tests.PlayMode.SvAllocationCaptureTests.NormalGameplayAllocationCallstacks",
+            "result": "Skipped",
+            "label": "Explicit",
+            "message": "Allocation callstack investigation: six fresh normal-gameplay windows; writes local Artifacts/GC captures.",
+            "stack": null,
+            "output": null
+          }
+        ]
+      }
+    },
+    "archive": {
+      "parts": 31,
+      "official_wrappers": 31,
+      "members": 2823,
+      "archive_bytes": 509695261,
+      "archive_sha256": "121a56f81cc44ccfc99b4a4ed1ceca4a9ae5f4ad83aa94f86a6b27b2af11dd55",
+      "uncompressed_member_bytes": 527441839,
+      "wrapper_part_zip_member_sha256_and_crc_verified": true,
+      "all_prefix_members_agree_with_full_restoration": true,
+      "manifest_sha256": "2f8325a570b848dbf9f7afac10c57282b17d6f8f9f3059fac4f96500f43543c3"
+    },
+    "capture_counts": {
+      "directories": 12,
+      "jpeg_frames": 1000,
+      "movement_png_frames": 200,
+      "all_frames_and_metadata_verified": true
+    },
+    "controls": {
+      "backend_diagnostics": "=== Physics Burst backend diagnostics ===\nUnity 2022.3.62f2; processor Apple M5 Pro\nBurstCompiler.IsEnabled=True; Options.IsEnabled=True; EnableBurstCompilation=True\nJobsUtility.JobCompilerEnabled=True; compiler service initialized=True\ncompile synchronously=True; safety checks=True; force safety checks=False; debug=False\nEditorPrefs BurstCompilation: exists=True, value=True\nUNITY_BURST_DISABLE_COMPILATION=<unset>\ncommand-line disable=False; command-line force-sync=False\nphysics assembly=SPF.L1Simulation; MVID=c430528c-8e52-4b59-ab39-c6e7f0482db5; job synchronous attribute=True\neditor-disabled assemblies file: <absent>\ntrivial synchronous control: direct managed Execute=0; Run Burst=1; Schedule Burst=1 (expected 0/1/1)\nactual physics first step Burst=True\n",
+      "burst": {
+        "direct_managed": 0,
+        "Run": 1,
+        "Schedule": 1,
+        "physics_first_step": true,
+        "warmup_steps": "60/60",
+        "measured_steps": "300/300"
+      },
+      "physics": {
+        "mean_ms": 0.396,
+        "worst_ms": 0.661,
+        "budget_mean_ms_less_than": 4.0,
+        "case": {
+          "name": "SPF.Tests.EditMode.PhysicsTests.Benchmark",
+          "result": "Passed",
+          "output": "=== Physics2D: 600 bodies poured into a box ===\nstep ms mean 0.396  worst 0.661\nbodies 603  awake 598  pairs 1414  manifolds 1141 (peak 1142)  islands 3\nactual Burst execution: warmup 60/60 steps; measured 300/300 steps\n\n"
+        }
+      },
+      "allocation_calibration": {
+        "name": "SPF.Tests.EditMode.ManagedAllocationProbeTests.RetainedPositiveAndEmptyControlsCalibrateBothEnds",
+        "result": "Passed",
+        "output": "Managed allocation probe: AllocationSamples; controls before=32/0, after=32/0; empty=0, retained1024=1; independent process-wide gen0 collections=0.\n"
+      },
+      "moving_attack": {
+        "warmup_ticks": 360,
+        "measured_ticks": 360,
+        "case": {
+          "name": "BrawlerFoundation.Tests.BwBeltAttackMobilityTests.SustainedMovingAttackTicksRemainAllocationFreeWithCalibratedControls",
+          "result": "Passed",
+          "output": "Smooth attack movement: 0 AllocationSamples; controls 32/0, 32/0; current-thread logic only.\n"
+        },
+        "measurement_scope": "Current-thread managed logic only; excludes native, GPU, other threads and full Unity frame."
+      },
+      "weapon_fk_allocation": {
+        "warmup_poses": 120,
+        "measured_poses": 120,
+        "families": [
+          {
+            "name": "SPF.Tests.EditMode.WeaponMotionTests.WarmedWeaponPoseAndFkAllocateZeroWithCalibratedProbe(1001)",
+            "result": "Passed",
+            "output": null
+          },
+          {
+            "name": "SPF.Tests.EditMode.WeaponMotionTests.WarmedWeaponPoseAndFkAllocateZeroWithCalibratedProbe(1002)",
+            "result": "Passed",
+            "output": null
+          },
+          {
+            "name": "SPF.Tests.EditMode.WeaponMotionTests.WarmedWeaponPoseAndFkAllocateZeroWithCalibratedProbe(1003)",
+            "result": "Passed",
+            "output": null
+          },
+          {
+            "name": "SPF.Tests.EditMode.WeaponMotionTests.WarmedWeaponPoseAndFkAllocateZeroWithCalibratedProbe(1004)",
+            "result": "Passed",
+            "output": null
+          }
+        ],
+        "zero_budget_unchanged": true,
+        "positive_and_empty_controls_preserved": true
+      },
+      "existing_gc_report": "brawler (GpuDriven): 0 of 120 frames allocated, 0 bytes\nbrawler (DataTexture): 0 of 120 frames allocated, 0 bytes\ndefense wave (GpuDriven): 0 of 180 frames allocated, 0 bytes, process-wide generation-0 collections=0\ndefense wave (DataTexture): 0 of 180 frames allocated, 0 bytes, process-wide generation-0 collections=0\nplatformer run (GpuDriven): 0 of 180 frames allocated, 0 bytes\nplatformer run (DataTexture): 0 of 180 frames allocated, 0 bytes\nshooter steady (GpuDriven): 0 of 180 frames allocated, 0 bytes\nshooter steady (DataTexture): 0 of 180 frames allocated, 0 bytes\nsling collapse (GpuDriven): 0 of 90 frames allocated, 0 bytes\nsling collapse (DataTexture): 0 of 90 frames allocated, 0 bytes\nstory typewriter (second line): 0 of 30 frames allocated, 0 bytes\nsurvivor sources [everything]: 1 of 300 frames, 164 bytes, 1 level-ups: 1 of 300 frames allocated, 164 bytes, process-wide generation-0 collections=0\nsurvivor sources [no feedback handlers]: 6 of 300 frames, 984 bytes, 0 level-ups: 6 of 300 frames allocated, 984 bytes, process-wide generation-0 collections=0\nsurvivor sources [no feedback, no HUD]: 0 of 300 frames, 0 bytes, 0 level-ups: 0 of 300 frames allocated, 0 bytes, process-wide generation-0 collections=0\nsurvivor sources [no feedback, no HUD, no bot]: 1 of 300 frames, 122 bytes, 2 level-ups: 1 of 300 frames allocated, 122 bytes, process-wide generation-0 collections=0\nsurvivor auto-play (GpuDriven): 5 frames next to level-up / flow screens, 0 steady frames: 5 of 180 frames allocated, 820 bytes, process-wide generation-0 collections=0\nsurvivor auto-play (DataTexture): 9 frames next to level-up / flow screens, 3 steady frames f81:164B f82:164B f83:164B: 12 of 180 frames allocated, 1968 bytes, process-wide generation-0 collections=0\n",
+      "story_original_window": {
+        "frames": 30,
+        "budget_allocating_frames_max": 1,
+        "case": {
+          "name": "StoryFoundation.Tests.PlayMode.StPlayTests.TapThroughChooseSwitchLanguageUndoAndSave",
+          "result": "Passed",
+          "output": null
+        },
+        "allocating_frames": 0,
+        "allocated_bytes": 0
+      },
+      "survivor_stress": [
+        {
+          "name": "SurvivorFoundation.Tests.PlayMode.SvPlayTests.RenderStress(GpuDriven)",
+          "result": "Passed",
+          "output": "=== Survivor render stress (GpuDriven) ===\nenemies 3000  bullets 17654  gems 0\nframe ms mean 16.67  worst 16.72  (editor, vsync / target frame rate apply)\nsprites per frame up to 13022 (bullets drawn up to 10694); instance upload 213.8 KiB per frame\nGC: 0 of 240 frames allocated, 0 bytes total (HUD text included)\nsim: schedule 0.081 ms, sync wait 0.003 ms (last tick)\n\n=== Survivor render stress (GpuDriven) ===\nenemies 3000  bullets 17654  gems 0\nframe ms mean 16.67  worst 16.72  (editor, vsync / target frame rate apply)\nsprites per frame up to 13022 (bullets drawn up to 10694); instance upload 213.8 KiB per frame\nGC: 0 of 240 frames allocated, 0 bytes total (HUD text included)\nsim: schedule 0.081 ms, sync wait 0.003 ms (last tick)\n\n"
+        },
+        {
+          "name": "SurvivorFoundation.Tests.PlayMode.SvPlayTests.RenderStress(DataTexture)",
+          "result": "Passed",
+          "output": "=== Survivor render stress (DataTexture) ===\nenemies 3000  bullets 17654  gems 0\nframe ms mean 16.67  worst 16.71  (editor, vsync / target frame rate apply)\nsprites per frame up to 13064 (bullets drawn up to 10732); instance upload 256.4 KiB per frame\nGC: 0 of 240 frames allocated, 0 bytes total (HUD text included)\nsim: schedule 0.084 ms, sync wait 0.003 ms (last tick)\n\n=== Survivor render stress (DataTexture) ===\nenemies 3000  bullets 17654  gems 0\nframe ms mean 16.67  worst 16.71  (editor, vsync / target frame rate apply)\nsprites per frame up to 13064 (bullets drawn up to 10732); instance upload 256.4 KiB per frame\nGC: 0 of 240 frames allocated, 0 bytes total (HUD text included)\nsim: schedule 0.084 ms, sync wait 0.003 ms (last tick)\n\n"
+        }
+      ],
+      "limits": "AllocationSamples is not allocated-byte count. Native/driver work and unrelated threads are excluded by current-thread probes. Existing Survivor upgrade/UI allocations and diagnostic allocations are retained.",
+      "survivor_autoplay": {
+        "GpuDriven": {
+          "window_frames": 180,
+          "steady_allocating_frames": 0,
+          "steady_bytes": 0,
+          "ui_near_allocating_frames": 5,
+          "ui_near_bytes": 820,
+          "total_allocating_frames": 5,
+          "total_bytes": 820,
+          "steady_budget_bytes_max_per_3_seconds": 1024,
+          "case": "SurvivorFoundation.Tests.PlayMode.SvPlayTests.StartButtonAndAutoPlay(GpuDriven)"
+        },
+        "DataTexture": {
+          "window_frames": 180,
+          "steady_allocating_frames": 3,
+          "steady_frames": [
+            {
+              "frame": 81,
+              "bytes": 164
+            },
+            {
+              "frame": 82,
+              "bytes": 164
+            },
+            {
+              "frame": 83,
+              "bytes": 164
+            }
+          ],
+          "steady_bytes": 492,
+          "ui_near_allocating_frames": 9,
+          "ui_near_bytes": 1476,
+          "total_allocating_frames": 12,
+          "total_bytes": 1968,
+          "steady_budget_bytes_max_per_3_seconds": 1024,
+          "case": "SurvivorFoundation.Tests.PlayMode.SvPlayTests.StartButtonAndAutoPlay(DataTexture)"
+        },
+        "budget_source": "Assets/SurvivorFoundation/Tests/PlayMode/SvPlayTests.cs:132; unchanged in official source diff",
+        "scope": "Autoplay actual frame samples. UI-near classifications retain the existing adjacency logic. Kept separate from moving-attack/FK current-thread probes and render-only stress."
+      }
+    }
+  }
 }

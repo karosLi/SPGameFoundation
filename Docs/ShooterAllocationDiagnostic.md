@@ -95,8 +95,61 @@ Scene teardown still runs if restoration reports an error.
 complete attribution: missing stacks and unresolved addresses are counted, observer
 bytes are included, and omitted EditorLoop work cannot be excluded by elimination.
 [Allocation callstack recording adds overhead](https://docs.unity3d.com/2022.3/Documentation/ScriptReference/Profiling.Profiler-enableAllocationCallstacks.html).
-The optional `SPF_SHOOTER_GC_INCLUDE_EDITOR=1` is for an explicitly reviewed follow-on
-capture; the dedicated workflow uses the default PlayerLoop capture.
+The optional `SPF_SHOOTER_GC_INCLUDE_EDITOR=1` enables an explicitly reviewed follow-on
+capture. The dedicated workflow now enables it to investigate the measured coverage
+gap below; ordinary tests still force capture off.
+
+## First native capture and Editor-inclusive follow-on
+
+Native [run `37820933270`, attempt 1](https://github.com/karosLi/SPGameFoundation/actions/runs/37820933270)
+captured remote `a0fac55b88a68b0452acf12fe1040bc0daa75b42` (local
+`3c961dcb46e3bcde3f61341ea256abda6f41fc6c`, tree
+`99cfbce6666caaf0c58caa50e4e0d513c90e789f`). Unity 2022.3.62f2 on macOS/Metal
+reported Burst enabled and `includeEditor=False`. Both targeted cases failed the
+unchanged two-allocating-frame gate: each governor reported **180/180 frames and
+8,430 bytes**, with zero process-wide generation-0 collections. This is retained
+intrusive diagnostic failure evidence, not an ordinary acceptance result.
+
+All 204 source frames mapped uniquely in each tier; empty and retained controls in
+Update, LateUpdate and the coroutine passed and established a one-frame governor
+lag. In each original 180-frame window, the allocation CSV contains exactly
+**180 samples of 40 bytes = 7,200 bytes**, all with the same resolved managed path:
+`LogScope.EvaluateLogScope` (Test Framework 1.1.33, `LogScope.cs:179`) through
+`UnityLogCheckDelegatingCommand.CheckFailingLogs` (`:104`). There are no missing
+callstacks in those 180 samples; each also contains one unresolved native address.
+The capture observer's named scopes contain zero allocation bytes. This establishes
+the owner of those recorded 40-byte samples only.
+
+The governor exceeds the recorded samples by **1,230 bytes per tier**, equivalent
+to thirty 41-byte amounts. GPU differences are 82 bytes at source ordinals
+7, 19, 31, 43, 55, 67, 79, 91, 103, 115, 127, 139, 151, 163 and 175. DataTexture
+has eight 82-byte differences and fourteen 41-byte differences, with some pairs
+split across adjacent frames. No 41-byte allocation sample exists in either gate
+export. This cadence resembles the original ordinary failure but does not identify
+its allocation source. The larger all-phase stack totals also include post-gate CSV
+writing and positive controls; they must not be assigned to the steady window.
+
+Unity's [Profiler marker documentation](https://docs.unity3d.com/2022.3/Documentation/Manual/profiler-markers.html#main-thread)
+states that Play-mode profiling omits detailed EditorLoop samples and that targeting
+the Editor exposes them, with PlayerLoop nested inside EditorLoop. Omitted Editor
+work is therefore a hypothesis for this measured gap, not a proven attribution.
+The follow-on changes only the dedicated workflow's existing Editor-inclusion switch.
+It retains the 150/180 schedule, gate, six controls, 204 stamps, 300-frame history,
+64 MiB buffer, three drain frames, single invocation and no retry/fallback policy.
+The helper saves `ProfilerDriver.profileEditor` before setup and restores it in its
+independent cleanup steps, including when another restoration step fails. Expanded
+capture may consume more history or memory; missing frames or failed controls remain
+incomplete evidence and cannot support a source or zero-allocation conclusion.
+
+Both original artifact ZIPs, IDs `11569815015` and `11569705618`, were downloaded and
+their published hashes checked. Matching manifests, both binary parts, the restored
+archive and all 22 file hashes passed `evidence_parts.py restore`. The archive has
+18,885,016 bytes and SHA-256
+`53c84085432480c506cb20aa367c3c1bad6fd66e9e73926b62c6d1dd202ed70c`.
+The original XML, log, raw captures and CSVs remain preserved. No product-source
+change or allocation subtraction is justified by this first capture; the original
+uninstrumented failure remains open until attributed, fixed if necessary, and
+checked by the full ordinary native gate.
 
 ## Evidence and failures
 
@@ -147,4 +200,15 @@ binding is 3.5. Synthetic profiler data exercised the real extraction code in 21
 and negative cases, and three restoration cases verified saved settings including an
 injected history-setter failure. These checks preserve a synthetic failed three-frame
 budget rather than converting it to success. They establish exporter behavior only;
-the first native diagnostic and subsequent ordinary gate remain pending.
+the first native diagnostic's results are recorded above. The Editor-inclusive
+follow-on and subsequent ordinary gate remain pending.
+
+For the Editor-inclusive workflow change, shell syntax and all 10 launch-isolation
+checks passed. Two additional fake-editor checks verified the switch reaches the
+single diagnostic invocation and cannot enable capture in an ordinary invocation.
+The unchanged extraction helper passed 22 synthetic cases, including controls nested
+under EditorLoop/PlayerLoop and all prior negative cases. Sixteen restoration cases
+covered both original/requested Editor states, both history-preference states and
+an injected history-restoration failure; each preserved the fixed capture bounds
+and restored the original Editor state. These are compile/stub checks, not native
+proof that the expanded capture fits its buffer or identifies the missing bytes.

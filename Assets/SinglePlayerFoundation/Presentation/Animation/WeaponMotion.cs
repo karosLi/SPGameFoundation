@@ -18,7 +18,7 @@ namespace SPF.Presentation.Animation
     public struct WeaponPose
     {
         public float2 Grip, Support;
-        public float Angle, Length, Draw, Weight, Visibility, Body;
+        public float Angle, Length, Draw, Weight, Visibility, Body, StringWeight;
     }
 
     /// <summary>Small authored pose library. Hermite tangents pass through contact instead of stopping at
@@ -30,7 +30,7 @@ namespace SPF.Presentation.Animation
         public static float ActionWeight(in WeaponViewState w)
         {
             if(!Acting(w))return 0;
-            float marker=w.Family==WeaponActionFamily.Cast?w.ReleasePhase:w.ContactPhase;
+            float marker=(w.Family==WeaponActionFamily.Cast||w.Family==WeaponActionFamily.Draw)?w.ReleasePhase:w.ContactPhase;
             marker=math.clamp(marker,MarkerEpsilon,1-2*MarkerEpsilon);
             float end=math.clamp(w.ActiveEndPhase,marker+MarkerEpsilon,1-MarkerEpsilon);
             return NaturalMotion.Ease(w.Phase/marker)*(1-NaturalMotion.Ease((w.Phase-end)/math.max(MarkerEpsilon,1-end)));
@@ -42,10 +42,10 @@ namespace SPF.Presentation.Animation
             u=math.saturate(u);float u2=u*u,u3=u2*u;
             return (2*u3-3*u2+1)*a+(u3-2*u2+u)*duration*ta+(-2*u3+3*u2)*b+(u3-u2)*duration*tb;
         }
-        public static float Curve(float phase,float contact,float activeEnd,float rest,float windup,float impact,float follow)
+        public static float Curve(float phase,float contact,float activeEnd,float rest,float windup,float impact,float follow,float windupFraction=.55f)
         {
             contact=math.clamp(contact,MarkerEpsilon,1-2*MarkerEpsilon);activeEnd=math.clamp(activeEnd,contact+MarkerEpsilon,1-MarkerEpsilon);
-            float t1=contact*.55f,t2=contact,t3=activeEnd;
+            float t1=contact*math.clamp(windupFraction,.25f,.75f),t2=contact,t3=activeEnd;
             float v1=(impact-rest)/t2,v2=(follow-windup)/(t3-t1),v3=(rest-impact)/(1-t2);
             if(phase<t1)return Hermite(rest,windup,0,v1,phase/t1,t1);
             if(phase<t2)return Hermite(windup,impact,v1,v2,(phase-t1)/(t2-t1),t2-t1);
@@ -60,7 +60,7 @@ namespace SPF.Presentation.Animation
         {
             var w=input.Weapon;if(!w.Equipped)return default;
             bool acting=Acting(w);float phase=acting?math.saturate(w.Phase):0;
-            float impactMarker=w.Family==WeaponActionFamily.Cast?w.ReleasePhase:w.ContactPhase;
+            float impactMarker=(w.Family==WeaponActionFamily.Cast||w.Family==WeaponActionFamily.Draw)?w.ReleasePhase:w.ContactPhase;
             float contact=math.clamp(impactMarker,MarkerEpsilon,1-2*MarkerEpsilon),end=math.clamp(w.ActiveEndPhase,contact+MarkerEpsilon,1-MarkerEpsilon);
             float reachWeight=acting?NaturalMotion.Ease(phase/contact)*(1-NaturalMotion.Ease((phase-end)/math.max(MarkerEpsilon,1-end))):0;
             float2 aim=math.lerp(motion.WeaponAim,w.AimDirection,acting?NaturalMotion.Ease(phase/contact):0);
@@ -74,20 +74,28 @@ namespace SPF.Presentation.Animation
             switch(w.Family)
             {
                 case WeaponActionFamily.Slash:
-                    offset=new float2(Curve(phase,contact,end,-.23f,-.56f,0,-.16f),Curve(phase,contact,end,.08f,.36f,0,-.31f));
-                    rotation=Curve(phase,contact,end,.70f,2.1f,0,-1.35f);body=Curve(phase,contact,end,0,.14f,-.17f,-.22f);break;
+                    // The hand leads the cut, not only the blade angle. Lift the elbow through a
+                    // reachable high outside guard, cut across the body, then recover the guard.
+                    offset=new float2(Curve(phase,contact,end,-.23f,-.02f,0,-.16f,.5f),Curve(phase,contact,end,.16f,.58f,0,-.24f,.5f));
+                    rotation=Curve(phase,contact,end,.70f,1.65f,0,-1.25f,.5f);body=Curve(phase,contact,end,0,.17f,-.17f,-.22f,.5f);break;
                 case WeaponActionFamily.Thrust:
-                    offset=new float2(Curve(phase,contact,end,-.22f,-.39f,0,-.05f),Curve(phase,contact,end,.09f,.16f,0,-.055f));
-                    rotation=Curve(phase,contact,end,.26f,.48f,0,-.09f);body=Curve(phase,contact,end,0,.09f,-.15f,-.1f);break;
+                    // A compact shoulder-height chamber and forward extension distinguish a thrust
+                    // from the blade's high cross-body cut. The contact socket remains unchanged.
+                    offset=new float2(Curve(phase,contact,end,-.22f,-.10f,0,-.04f),Curve(phase,contact,end,.16f,.62f,0,-.08f));
+                    rotation=Curve(phase,contact,end,.26f,.32f,0,-.09f);body=Curve(phase,contact,end,0,.13f,-.15f,-.1f);break;
                 case WeaponActionFamily.Cast:
-                    offset=new float2(Curve(phase,contact,end,-.12f,-.21f,0,-.04f),Curve(phase,contact,end,-.06f,-.04f,0,.06f));
-                    rotation=Curve(phase,contact,end,.78f,1.1f,0,-.13f);body=Curve(phase,contact,end,0,.08f,-.09f,-.06f);break;
+                    // Gather the staff with both arms, lift, and direct the cast from the chest.
+                    offset=new float2(Curve(phase,contact,end,-.12f,-.22f,0,-.08f),Curve(phase,contact,end,-.02f,.58f,0,.10f));
+                    rotation=Curve(phase,contact,end,.78f,.90f,0,-.13f);body=Curve(phase,contact,end,0,.12f,-.09f,-.06f);break;
                 case WeaponActionFamily.Draw:
                     // Draw remains taut until the simulation's exact release marker. Recoil then settles.
                     float release=math.clamp(w.ReleasePhase,MarkerEpsilon,1-MarkerEpsilon);
                     draw=acting?(phase<release?NaturalMotion.Ease(phase/release):1-NaturalMotion.Ease((phase-release)/.09f)):0;
-                    offset=new float2(-.11f*(1-reachWeight),.035f*(1-reachWeight));
-                    rotation=.10f*(1-reachWeight);body=.08f*draw;break;
+                    // Raise before drawing; settle the bow arm at release rather than rotating it
+                    // like a melee swing. This lobe vanishes at the exact release socket.
+                    float raise=acting?math.max(0,Curve(phase,release,math.max(end,release+MarkerEpsilon),0,.30f,0,0)):0;
+                    offset=new float2(-.11f*(1-reachWeight),.035f*(1-reachWeight)+raise);
+                    rotation=.10f*(1-reachWeight);body=.10f*draw;break;
             }
             // Locomotion only perturbs the relaxed hold; contact/release stays on the canonical socket.
             float relaxed=1-reachWeight;
@@ -98,7 +106,14 @@ namespace SPF.Presentation.Animation
             float equip=w.Stage==WeaponStage.Equipping?NaturalMotion.Ease(w.StagePhase):0;
             offset+=new float2(-.12f,-.48f)*equip;
             rotation-=.8f*equip;
-            float2 grip=canonical+(aim*offset.x+new float2(0,offset.y))*input.Scale;
+            // A vertical aim otherwise drives the lifted wrist directly through its shoulder.
+            // Give the chamber a small forward arc in character space; it is zero at release/contact.
+            float chamber=acting?math.sin(math.PI*math.saturate(phase/contact)):0;chamber*=chamber;
+            float verticalAim=1-math.saturate(math.abs(aim.x));
+            float followArc=acting?math.sin(math.PI*math.saturate((phase-contact)/(1-contact))):0;followArc*=followArc;
+            float sideArc=verticalAim*(.48f*chamber+(w.Family==WeaponActionFamily.Slash?.42f:.30f)*followArc);
+            offset.y*=1-.30f*verticalAim;
+            float2 grip=canonical+(aim*offset.x+new float2(facing*sideArc,offset.y))*input.Scale;
             angle+=rotation*facing;
             var skill=motion.Skill.Pose;
             float2 skillGrip=input.Root+new float2(skill.NearHand.x*facing,skill.NearHand.y)*input.Scale;
@@ -116,20 +131,51 @@ namespace SPF.Presentation.Animation
                 body=Hermite(motion.ChangeWeaponBody,body,motion.ChangeWeaponBodyVelocity,0,blendTime,.2f);
             }
             float length=math.distance(canonical,muzzle)/math.max(.001f,input.Scale);
-            float2 support;
+            float2 support;float stringWeight=1;
             if(w.Family==WeaponActionFamily.Draw)
-                support=grip+math.lerp(-aim*.10f*input.Scale,WorldOffset(input,aim,w.SecondaryGripOffset)-canonical,draw);
+            {
+                // The string recoils quickly but the drawing hand follows through near the face
+                // before relaxing. Do not force that hand to traverse the shoulder with the string.
+                float release=math.clamp(w.ReleasePhase,MarkerEpsilon,1-MarkerEpsilon);
+                float handDraw=acting&&phase>=release?1-NaturalMotion.Ease((phase-release)/(1-release)):draw;
+                support=grip+math.lerp(-aim*.10f*input.Scale,WorldOffset(input,aim,w.SecondaryGripOffset)-canonical,handDraw);
+                stringWeight=handDraw>MarkerEpsilon?math.saturate(draw/handDraw):0;
+            }
             else
                 support=grip+Rotate(WorldOffset(input,aim,w.SecondaryGripOffset)-canonical,angle-canonicalAngle);
             return new WeaponPose {Grip=grip,Support=support,Angle=angle,Length=length,Draw=draw,
-                Weight=motion.WeaponWeight,Visibility=math.max(.04f,(1-equip)*(motion.ChangingWeapon?transition:1)),Body=body};
+                StringWeight=stringWeight,Weight=motion.WeaponWeight,Visibility=math.max(.04f,(1-equip)*(motion.ChangingWeapon?transition:1)),Body=body};
         }
 
         public static void ApplyArms(in SkeletonView rig,NativeArray<BoneLocal> local,in GameplayCharacterInput input,
             in GameplayCharacterMotion motion,int at)
         {
             var pose=Sample(input,motion);if(!input.Weapon.Equipped)return;
+            // Final IK consumes the phase-authored hand trajectory. It must never replace
+            // that trajectory with an idle socket, which would erase anticipation/arm lift.
+            float2 primaryShoulder=NaturalMotion.BonePoint(rig,local,NaturalCharacterRig.NearArm,0,at);
+            float primaryDistance=math.distance(NaturalMotion.ModelPoint(pose.Grip,input.Root,motion.Facing,motion.Scale),primaryShoulder);
+            float primaryFold=1-NaturalMotion.Ease((primaryDistance-.12f)/.22f);
+            if(primaryFold>.001f)
+            {
+                var primaryArm=local[at+NaturalCharacterRig.NearArm];
+                primaryArm.Position+=Rotate(new float2(-.10f*primaryFold,0),-local[at+NaturalCharacterRig.Pelvis].Rotation-local[at+NaturalCharacterRig.Torso].Rotation);
+                local[at+NaturalCharacterRig.NearArm]=primaryArm;
+            }
             NaturalMotion.BlendAim(rig,local,NaturalCharacterRig.NearArm,NaturalCharacterRig.NearForearm,pose.Grip,input.Root,motion.Facing,motion.Scale,-1,pose.Weight,at);
+            // The wrist is a separate degree of freedom from hand position. Keep a bounded
+            // grip angle instead of inheriting the forearm rotation at every attack phase.
+            float forearm=local[at+NaturalCharacterRig.Pelvis].Rotation+local[at+NaturalCharacterRig.Torso].Rotation+
+                local[at+NaturalCharacterRig.NearArm].Rotation+local[at+NaturalCharacterRig.NearForearm].Rotation;
+            float2 worldDirection=new float2(math.cos(pose.Angle)*motion.Facing,math.sin(pose.Angle));
+            float gripAngle=math.atan2(worldDirection.y,worldDirection.x);
+            var wrist=local[at+NaturalCharacterRig.Hand];
+            float wristDelta=AngleDelta(forearm,gripAngle);
+            // A grip directly behind the forearm cannot be reached by a human wrist. Ease
+            // toward neutral there instead of snapping between opposite joint limits at ±pi.
+            float wristReach=1-NaturalMotion.Ease((math.abs(wristDelta)-2f)/(math.PI-2f));
+            wrist.Rotation=math.clamp(wristDelta,-.85f,.85f)*pose.Weight*wristReach;
+            local[at+NaturalCharacterRig.Hand]=wrist;
             if(input.Weapon.Family!=WeaponActionFamily.Slash)
             {
                 // The secondary target follows the solved dominant hand, so both hands remain attached
@@ -140,6 +186,17 @@ namespace SPF.Presentation.Animation
                 float2 shoulder=NaturalMotion.BonePoint(rig,local,NaturalCharacterRig.FarArm,0,at);
                 float2 reach=NaturalMotion.ModelPoint(support,input.Root,motion.Facing,motion.Scale)-shoulder;
                 float distance=math.length(reach);
+                // A folding two-hand grip needs scapular room before the elbow approaches its
+                // inner singularity. The bounded glide eases in/out and never shifts the hand/socket.
+                float fold=1-NaturalMotion.Ease((distance-.12f)/.22f);
+                if(fold>.001f)
+                {
+                    var supportArm=local[at+NaturalCharacterRig.FarArm];
+                    supportArm.Position+=Rotate(new float2(-.14f*fold,0),-local[at+NaturalCharacterRig.Pelvis].Rotation-local[at+NaturalCharacterRig.Torso].Rotation);
+                    local[at+NaturalCharacterRig.FarArm]=supportArm;
+                    shoulder=NaturalMotion.BonePoint(rig,local,NaturalCharacterRig.FarArm,0,at);
+                    reach=NaturalMotion.ModelPoint(support,input.Root,motion.Facing,motion.Scale)-shoulder;distance=math.length(reach);
+                }
                 if(distance>.82f||distance<.035f)
                 {
                     // A small scapular glide keeps the target inside the reachable annulus: unequal
@@ -162,7 +219,7 @@ namespace SPF.Presentation.Animation
             float2 direction=new float2(math.cos(p.Angle),math.sin(p.Angle));
             float2 tip=grip+direction*p.Length*motion.Scale;
             return new WeaponAttachmentSample {PrimaryGrip=grip,SupportGrip=support,Muzzle=tip,Tip=tip,Direction=direction,
-                Rotation=p.Angle,Draw=p.Draw,Visibility=p.Visibility,SupportWeight=1-SupportRelease(input,motion),VisualId=WeaponArt.Resolve(w.VisualId,w.Family),ActionPulse=w.ActionPulse,CueSequence=w.CueSequence,Cues=w.Cues};
+                Rotation=p.Angle,Draw=p.Draw,Visibility=p.Visibility,SupportWeight=(1-SupportRelease(input,motion))*p.StringWeight,VisualId=WeaponArt.Resolve(w.VisualId,w.Family),ActionPulse=w.ActionPulse,CueSequence=w.CueSequence,Cues=w.Cues};
         }
     }
 }

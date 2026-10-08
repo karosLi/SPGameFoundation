@@ -45,7 +45,7 @@ namespace SPF.Presentation.Animation
         public float2 HeldGrip, ChangeGrip, HeldGripVelocity, ChangeGripVelocity;
         public float HeldAngle, ChangeAngle, HeldAngleVelocity, ChangeAngleVelocity, EquipAge;
         public float HeldWeaponBody, ChangeWeaponBody, HeldWeaponBodyVelocity, ChangeWeaponBodyVelocity;
-        public float Phase, Run, Attack, Hit, Death, Facing, Scale, FarSwingSeconds, NearSwingSeconds;
+        public float Phase, Run, Attack, Hit, Death, Facing, Scale, FarSwingSeconds, NearSwingSeconds, FreeGuard;
         public bool Initialized, Airborne, Moving, WeaponWasActing, ChangingWeapon;
         public float TransferDelay, SupportCeiling, WeaponAimDrop;
         public bool NextNearStep;
@@ -83,6 +83,11 @@ namespace SPF.Presentation.Animation
             float attack = input.State == GameplayCharacterState.Attack || input.State == GameplayCharacterState.Recovery ? Strike(input.Phase) : 0;
             // Action phase is already a continuous authoritative clock: filtering it delays contact.
             Attack = attack;
+            float guardTarget=input.Weapon.Equipped?(input.Weapon.Family==WeaponActionFamily.Slash&&WeaponMotion.Acting(input.Weapon)?math.saturate(WeaponMotion.Curve(input.Weapon.Phase,input.Weapon.ContactPhase,input.Weapon.ActiveEndPhase,0,.8f,1,.55f)):0):
+                (input.State==GameplayCharacterState.Attack||input.State==GameplayCharacterState.Recovery?math.saturate(WeaponMotion.Curve(input.Phase,.42f,.66f,0,.65f,1,.55f)):0);
+            // The balancing hand has no hit authority. Retain its weight through a cancellation
+            // and settle it rather than dropping a raised arm on the first non-action frame.
+            FreeGuard=math.lerp(FreeGuard,guardTarget,1-math.exp(-12f*dt));
             float hitWeight=math.isfinite(input.HitWeight)?math.saturate(input.HitWeight):0;
             Hit = math.lerp(Hit, input.State == GameplayCharacterState.Hit ? 1 : hitWeight, response);
             Death = math.lerp(Death, input.State == GameplayCharacterState.Death ? 1 : 0, 1f-math.exp(-7f*dt));
@@ -331,6 +336,11 @@ namespace SPF.Presentation.Animation
             in GameplayCharacterInput input,in GameplayCharacterMotion motion,int at)
         {
             var profile=GameplayMotionProfiles.Resolve(input);var skill=motion.Skill.Pose;
+            bool acting=input.State==GameplayCharacterState.Attack||input.State==GameplayCharacterState.Recovery;
+            float unarmedAction=!input.Weapon.Equipped&&acting?math.saturate(WeaponMotion.Curve(input.Phase,.42f,.66f,0,.65f,1,.55f)):0;
+            float anticipation=!input.Weapon.Equipped&&acting?math.max(0,WeaponMotion.Curve(input.Phase,.42f,.66f,0,.34f,0,0)):0;
+            float reaction=math.saturate(motion.Hit*profile.HitRecoil);
+            float collapse=NaturalMotion.Ease(motion.Death);
             float skillBodyWeight=1-WeaponMotion.ActionWeight(input.Weapon);
             float scale=motion.Scale,height=math.max(0,input.Root.y-input.Ground.y);
             float2 far=motion.FarFoot.Position*scale+new float2(0,height),near=motion.NearFoot.Position*scale+new float2(0,height);
@@ -342,7 +352,7 @@ namespace SPF.Presentation.Animation
             // an exceptional reversal compression; the moving footprint is planned to fit the rig.
             var pelvis=local[at+NaturalCharacterRig.Pelvis];
             float breathing=math.sin(motion.Breath*2*math.PI);
-            float baseHeight=rig.Bones[NaturalCharacterRig.Pelvis].Position.y-.045f*motion.Move+.015f*motion.Gait*motion.Gait*math.lerp(.6f,1.25f,motion.Run)-.065f*math.max(0,motion.Attack)+profile.Breath*breathing*(1-motion.Move)-skill.PelvisDrop*skillBodyWeight;
+            float baseHeight=rig.Bones[NaturalCharacterRig.Pelvis].Position.y-.045f*motion.Move+.015f*motion.Gait*motion.Gait*math.lerp(.6f,1.25f,motion.Run)-.065f*math.max(0,motion.Attack)+profile.Breath*breathing*(1-motion.Move)-skill.PelvisDrop*skillBodyWeight-.035f*reaction-.09f*collapse;
             pelvis.Position.x=motion.Support*motion.Turn*motion.Facing;
             pelvis.Rotation=profile.WeightShift*.65f*motion.Gait;
             pelvis.Position.y=baseHeight;
@@ -366,8 +376,11 @@ namespace SPF.Presentation.Animation
             var weapon=WeaponMotion.Sample(input,motion);
             var torso=local[at+NaturalCharacterRig.Torso];torso.Position=rig.Bones[NaturalCharacterRig.Torso].Position;
             torso.Position.x=-motion.Support*.38f;torso.Position.y+=depth*.18f;
+            // A near-vertical held aim passes close to the chest in this projected rig. A small
+            // backward chest shift leaves shoulder/elbow room at rest as well as during the lift.
+            if(input.Weapon.Equipped)torso.Position.x-=.14f*(1-math.saturate(math.abs(motion.WeaponAim.x)));
             torso.Rotation=-.035f-lean-depth-profile.BodySway*motion.Gait-pelvis.Rotation*.65f+weapon.Body+skill.Body*skillBodyWeight-.12f*motion.Attack+motion.Hit*.24f*profile.HitRecoil;
-            torso.Rotation+=.065f*(motion.Turn*motion.Facing-1);
+            torso.Rotation+=.065f*(motion.Turn*motion.Facing-1)+.08f*anticipation+.12f*collapse;
             torso.Rotation-=math.clamp(motion.Acceleration*motion.Facing*.004f,-.045f,.045f);
             local[at+NaturalCharacterRig.Torso]=torso;
             if(input.Weapon.Equipped)
@@ -385,7 +398,7 @@ namespace SPF.Presentation.Animation
                 }
             }
             var head=local[at+NaturalCharacterRig.Head];head.Position=rig.Bones[NaturalCharacterRig.Head].Position;head.Position.x*=motion.Turn*motion.Facing;
-            head.Rotation=-(torso.Rotation+pelvis.Rotation)*.76f+.028f*motion.Gait+profile.Breath*1.3f*breathing-motion.Hit*.15f*profile.HitRecoil+skill.Head;
+            head.Rotation=-(torso.Rotation+pelvis.Rotation)*.76f+.028f*motion.Gait+profile.Breath*1.3f*breathing-motion.Hit*.15f*profile.HitRecoil+skill.Head-.12f*collapse;
             local[at+NaturalCharacterRig.Head]=head;
             var arm=local[at+NaturalCharacterRig.FarArm];arm.Position=rig.Bones[NaturalCharacterRig.FarArm].Position;arm.Position.x*=motion.Turn*motion.Facing;
             arm.Rotation=math.radians(-84)+armStride*motion.Gait+.12f*(1-motion.Move);local[at+NaturalCharacterRig.FarArm]=arm;
@@ -394,15 +407,42 @@ namespace SPF.Presentation.Animation
             arm.Rotation=math.radians(-80)-armStride*motion.Gait;local[at+NaturalCharacterRig.NearArm]=arm;
             fore=local[at+NaturalCharacterRig.NearForearm];fore.Rotation=-.36f-.20f*motion.Move-.09f*motion.Run+.17f*motion.Gait;local[at+NaturalCharacterRig.NearForearm]=fore;
             // A genuinely relaxed run leaves both arms free. Aim affects only the requested layer.
-            float aimWeight=math.max(motion.AimWeight,math.abs(motion.Attack));
+            float aimWeight=math.max(motion.AimWeight,unarmedAction);
             if(!input.Weapon.Equipped&&aimWeight>.001f&&input.Action!=GameplayCharacterAction.Kick)
-                NaturalMotion.BlendAim(rig,local,NaturalCharacterRig.NearArm,NaturalCharacterRig.NearForearm,motion.Aim.Target,input.Root,motion.Facing,scale,-1,aimWeight,at);
+                BlendArmPose(rig,local,NaturalCharacterRig.NearArm,NaturalCharacterRig.NearForearm,motion.Aim.Target+new float2(.22f*anticipation*motion.Facing,anticipation)*scale,input,motion,aimWeight,at);
+            // The free arm counterbalances the working shoulder. It joins the guard during
+            // anticipation, then folds toward the ribs on recovery/hit rather than hanging inert.
+            // Two-handed weapons solve their support grip later and retain that ownership.
+            float freeGuard=motion.FreeGuard;
+            float guardWeight=math.max(freeGuard*.82f,math.max(reaction*.5f,collapse*.8f));
+            float2 guard=new float2(.18f+.04f*collapse,1.52f-.28f*collapse+.07f*freeGuard);
+            if(guardWeight>.001f)
+                BlendArmPose(rig,local,NaturalCharacterRig.FarArm,NaturalCharacterRig.FarForearm,input.Root+new float2(guard.x*motion.Facing,guard.y)*scale,input,motion,guardWeight,at);
+            if(!input.Weapon.Equipped)
+            {
+                float protect=math.max(reaction*.6f,collapse*.8f)*(1-unarmedAction);
+                if(protect>.001f)
+                    BlendArmPose(rig,local,NaturalCharacterRig.NearArm,NaturalCharacterRig.NearForearm,input.Root+new float2(.22f*motion.Facing,1.43f-.35f*collapse)*scale,input,motion,protect,at);
+            }
+            // CorrectContacts also runs on cached poses; never leave a previous weapon wrist
+            // behind after unequip, cancellation or a lower-frequency base-pose refresh.
+            var wrist=local[at+NaturalCharacterRig.Hand];wrist.Rotation=0;local[at+NaturalCharacterRig.Hand]=wrist;
             WeaponMotion.ApplyArms(rig,local,input,motion,at);
             if(!input.Weapon.Equipped&&skill.NearWeight>.001f)
                 NaturalMotion.BlendAim(rig,local,NaturalCharacterRig.NearArm,NaturalCharacterRig.NearForearm,input.Root+new float2(skill.NearHand.x*motion.Facing,skill.NearHand.y)*scale,input.Root,motion.Facing,scale,-1,skill.NearWeight,at);
             float offHand=skill.FarWeight*(input.Weapon.Equipped?WeaponMotion.SupportRelease(input,motion):1);
             if(offHand>.001f)
                 NaturalMotion.BlendAim(rig,local,NaturalCharacterRig.FarArm,NaturalCharacterRig.FarForearm,input.Root+new float2(skill.FarHand.x*motion.Facing,skill.FarHand.y)*scale,input.Root,motion.Facing,scale,-1,offHand,at);
+        }
+        // A non-gripping aim/guard layer may ease into its target. Blend the solved rotations so a
+        // tiny guard weight cannot instantly flip the relaxed elbow onto the IK bend branch.
+        static void BlendArmPose(in SkeletonView rig,NativeArray<BoneLocal> local,int upper,int lower,
+            float2 target,in GameplayCharacterInput input,in GameplayCharacterMotion motion,float weight,int at)
+        {
+            float fromUpper=local[at+upper].Rotation,fromLower=local[at+lower].Rotation;
+            NaturalMotion.BlendAim(rig,local,upper,lower,target,input.Root,motion.Facing,motion.Scale,-1,1,at);
+            var arm=local[at+upper];arm.Rotation=fromUpper+WeaponMotion.AngleDelta(fromUpper,arm.Rotation)*weight;local[at+upper]=arm;
+            var forearm=local[at+lower];forearm.Rotation=math.lerp(fromLower,forearm.Rotation,weight);local[at+lower]=forearm;
         }
         static float SupportHeight(in SkeletonView rig,int upper,int lower,float2 target,float pelvisRotation)
         {

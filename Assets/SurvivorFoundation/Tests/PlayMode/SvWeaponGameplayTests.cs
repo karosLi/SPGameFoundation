@@ -138,14 +138,16 @@ namespace SurvivorFoundation.Tests.PlayMode
                     Canvas.ForceUpdateCanvases();yield return null;yield return null;
                     using(var frames=new BufferedFrameCapture(capture.Target,90))
                     {
-                        game.Session.ManualClock=false;double next=Time.realtimeSinceStartupAsDouble;
+                        var trace=new GaitTrace(game.CameraRig.Camera);game.Session.ManualClock=false;double next=Time.realtimeSinceStartupAsDouble;
                         for(int i=0;i<90;i++)
                         {
                             while(Time.realtimeSinceStartupAsDouble<next)yield return null;
                             game.State.Input=InputFrame.Latch(game.State.Input,new InputFrame{Move=i<40?new float2(.8f,.6f):new float2(-.3f,-.2f),Pressed=i==40?1u<<SvWeapons.SwitchButton:0});
-                            double acquiredAt=Time.realtimeSinceStartupAsDouble;frames.Capture(weapons.Tick/30d);next=acquiredAt+1d/30;
+                            double acquiredAt=Time.realtimeSinceStartupAsDouble;frames.Capture(weapons.Tick/30d);
+                            trace.Capture(i,0,acquiredAt,game.Renderer.Characters,new EntityHandle(-1,1),action:weapons.View(game.Session.InterpolationAlpha));
+                            next=acquiredAt+1d/30;
                         }
-                        game.Session.ManualClock=true;frames.Write("weapon-horde-live-"+suffix,"Actual automatic-clock portrait horde: run/walk, pulse/blink in contact captures, staff charge/projectile, switch to bow draw/release while independent pulse/blink HUD remains. Target30Hz, measured timestamps retained.",BufferedFrameFormat.Jpeg95Review);
+                        game.Session.ManualClock=true;string actionDirectory=frames.Write("weapon-horde-live-"+suffix,"Actual automatic-clock portrait horde: run/walk, pulse/blink in contact captures, staff charge/projectile, switch to bow draw/release while independent pulse/blink HUD remains. Target30Hz, measured timestamps retained.",BufferedFrameFormat.Jpeg95Review);trace.Write(actionDirectory);
                     }
                     // Move actual agile/heavy enemies for locomotion evidence; the weapon fixture
                     // above intentionally freezes enemies and cannot demonstrate their walking.
@@ -229,13 +231,13 @@ namespace SurvivorFoundation.Tests.PlayMode
         // Test-only, fixed-capacity samples. Serialization happens after image acquisition.
         struct GaitSample
         {
-            public int Frame,Actor,SourceState,SourceAction,ScenarioPhase;public double Time;public GameplayCharacterMotion Motion;public float Pelvis,Head,SourcePhase,Hp,PelvisAngle,ChestAngle,HeadAngle,FreeElbowAngle,GuardAngle,HeadX;public EntityHandle Handle;public bool Visible;
+            public int Frame,Actor,SourceState,SourceAction,ScenarioPhase;public double Time;public GameplayCharacterMotion Motion;public float Pelvis,Head,SourcePhase,Hp,PelvisAngle,ChestAngle,HeadAngle,FreeElbowAngle,GuardAngle,HeadX;public EntityHandle Handle;public bool Visible;public float2 Shoulder,Elbow,Hand;public float UpperArmAngle,WorkingElbowAngle,WristAngle,WeaponPhase;public int WeaponId,WeaponStage;
         }
         sealed class GaitTrace
         {
             readonly GaitSample[] samples=new GaitSample[160*4];readonly Camera camera;int count;
             public GaitTrace(Camera camera){this.camera=camera;}
-            public void Capture(int frame,int actor,double time,GameplayCharacterPresenter presenter,EntityHandle handle,int sourceState=0,int sourceAction=0,float sourcePhase=0,float hp=0,int scenarioPhase=0)
+            public void Capture(int frame,int actor,double time,GameplayCharacterPresenter presenter,EntityHandle handle,int sourceState=0,int sourceAction=0,float sourcePhase=0,float hp=0,int scenarioPhase=0,WeaponViewState action=default)
             {
                 if(count==samples.Length||!presenter.TryReadCurrent(handle,out var motion))return;
                 float head=presenter.ReadBone(handle,NaturalCharacterRig.Head).Position.y;
@@ -248,7 +250,14 @@ namespace SurvivorFoundation.Tests.PlayMode
                     PelvisAngle=presenter.ReadBone(handle,NaturalCharacterRig.Pelvis).Rotation,ChestAngle=presenter.ReadBone(handle,NaturalCharacterRig.Torso).Rotation,
                     HeadAngle=presenter.ReadBone(handle,NaturalCharacterRig.Head).Rotation,
                     FreeElbowAngle=presenter.ReadBone(handle,NaturalCharacterRig.FarForearm).Rotation-presenter.ReadBone(handle,NaturalCharacterRig.FarArm).Rotation,
-                    GuardAngle=presenter.TryReadWeapon(handle,out var weapon)?weapon.Rotation:0};
+                    GuardAngle=presenter.TryReadWeapon(handle,out var weapon)?weapon.Rotation:0,
+                    Shoulder=presenter.ReadBone(handle,NaturalCharacterRig.NearArm).Position,
+                    Elbow=presenter.ReadBone(handle,NaturalCharacterRig.NearForearm).Position,
+                    Hand=presenter.ReadBone(handle,NaturalCharacterRig.Hand).Position,
+                    UpperArmAngle=presenter.ReadBone(handle,NaturalCharacterRig.NearArm).Rotation,
+                    WorkingElbowAngle=presenter.ReadBone(handle,NaturalCharacterRig.NearForearm).Rotation-presenter.ReadBone(handle,NaturalCharacterRig.NearArm).Rotation,
+                    WristAngle=presenter.ReadBone(handle,NaturalCharacterRig.Hand).Rotation-presenter.ReadBone(handle,NaturalCharacterRig.NearForearm).Rotation,
+                    WeaponId=action.ContentId,WeaponStage=(int)action.Stage,WeaponPhase=action.Phase};
             }
             public void AssertRoleCoverage()
             {
@@ -279,12 +288,12 @@ namespace SurvivorFoundation.Tests.PlayMode
             }
             public void Write(string directory)
             {
-                var csv=new System.Text.StringBuilder("frame,actor,acquisition_seconds,root_x,root_y,ground_y,velocity_x,velocity_depth,scale,locomotion,far_phase,near_phase,far_stance,near_stance,far_x,far_y,near_x,near_y,pelvis_above_ground,head_above_ground,authoritative_jump,entity_index,entity_generation,current_frame_visible,source_state,source_action,source_phase,hp,scenario_phase,hit_weight,attack_weight,facing,turn,far_air_seconds,near_air_seconds,far_support_seconds,near_support_seconds,far_toeoff_support,near_toeoff_support,support_ceiling,transfer_delay,weapon_aim_x,weapon_aim_y,weapon_aim_drop,skill_pelvis_drop,moving,pelvis_angle,chest_angle,head_angle,free_elbow_angle,guard_angle,head_x,far_path_clearance,near_path_clearance\n");
+                var csv=new System.Text.StringBuilder("frame,actor,acquisition_seconds,root_x,root_y,ground_y,velocity_x,velocity_depth,scale,locomotion,far_phase,near_phase,far_stance,near_stance,far_x,far_y,near_x,near_y,pelvis_above_ground,head_above_ground,authoritative_jump,entity_index,entity_generation,current_frame_visible,source_state,source_action,source_phase,hp,scenario_phase,hit_weight,attack_weight,facing,turn,far_air_seconds,near_air_seconds,far_support_seconds,near_support_seconds,far_toeoff_support,near_toeoff_support,support_ceiling,transfer_delay,weapon_aim_x,weapon_aim_y,weapon_aim_drop,skill_pelvis_drop,moving,pelvis_angle,chest_angle,head_angle,free_elbow_angle,guard_angle,head_x,far_path_clearance,near_path_clearance,shoulder_x,shoulder_y,elbow_x,elbow_y,hand_x,hand_y,upper_arm_angle,working_elbow_angle,wrist_angle,weapon_id,weapon_stage,weapon_phase\n");
                 for(int i=0;i<count;i++)
                 {
                     var s=samples[i];var m=s.Motion;float ground=m.FarFoot.PreviousRoot.y*m.Scale;
                     csv.Append(s.Frame).Append(',').Append(s.Actor).Append(',').Append((s.Time-samples[0].Time).ToString("F9",System.Globalization.CultureInfo.InvariantCulture));
-                    foreach(float value in new[]{m.PreviousRoot.x,m.PreviousRoot.y,ground,m.PreviousVelocity.x*m.Scale,m.PreviousVelocity.y*m.Scale,m.Scale,(float)m.Locomotion,m.FarFoot.Phase,m.NearFoot.Phase,m.FarFoot.InStance?1:0,m.NearFoot.InStance?1:0,m.FarFoot.Position.x*m.Scale,m.FarFoot.Position.y*m.Scale,m.NearFoot.Position.x*m.Scale,m.NearFoot.Position.y*m.Scale,s.Pelvis-ground,s.Head-ground,m.PreviousRoot.y-ground,s.Handle.Index,s.Handle.Generation,s.Visible?1:0,s.SourceState,s.SourceAction,s.SourcePhase,s.Hp,s.ScenarioPhase,m.Hit,m.Attack,m.Facing,m.Turn,m.FarFoot.AirSeconds,m.NearFoot.AirSeconds,m.FarFoot.SupportSeconds,m.NearFoot.SupportSeconds,m.FarFoot.ToeOffSupported?1:0,m.NearFoot.ToeOffSupported?1:0,m.SupportCeiling,m.TransferDelay,m.WeaponAim.x,m.WeaponAim.y,m.WeaponAimDrop,m.Skill.Pose.PelvisDrop,m.Moving?1:0,s.PelvisAngle,s.ChestAngle,s.HeadAngle,s.FreeElbowAngle,s.GuardAngle,s.HeadX,PathClearance(m.FarFoot)*m.Scale,PathClearance(m.NearFoot)*m.Scale})
+                    foreach(float value in new[]{m.PreviousRoot.x,m.PreviousRoot.y,ground,m.PreviousVelocity.x*m.Scale,m.PreviousVelocity.y*m.Scale,m.Scale,(float)m.Locomotion,m.FarFoot.Phase,m.NearFoot.Phase,m.FarFoot.InStance?1:0,m.NearFoot.InStance?1:0,m.FarFoot.Position.x*m.Scale,m.FarFoot.Position.y*m.Scale,m.NearFoot.Position.x*m.Scale,m.NearFoot.Position.y*m.Scale,s.Pelvis-ground,s.Head-ground,m.PreviousRoot.y-ground,s.Handle.Index,s.Handle.Generation,s.Visible?1:0,s.SourceState,s.SourceAction,s.SourcePhase,s.Hp,s.ScenarioPhase,m.Hit,m.Attack,m.Facing,m.Turn,m.FarFoot.AirSeconds,m.NearFoot.AirSeconds,m.FarFoot.SupportSeconds,m.NearFoot.SupportSeconds,m.FarFoot.ToeOffSupported?1:0,m.NearFoot.ToeOffSupported?1:0,m.SupportCeiling,m.TransferDelay,m.WeaponAim.x,m.WeaponAim.y,m.WeaponAimDrop,m.Skill.Pose.PelvisDrop,m.Moving?1:0,s.PelvisAngle,s.ChestAngle,s.HeadAngle,s.FreeElbowAngle,s.GuardAngle,s.HeadX,PathClearance(m.FarFoot)*m.Scale,PathClearance(m.NearFoot)*m.Scale,s.Shoulder.x,s.Shoulder.y,s.Elbow.x,s.Elbow.y,s.Hand.x,s.Hand.y,s.UpperArmAngle,s.WorkingElbowAngle,s.WristAngle,s.WeaponId,s.WeaponStage,s.WeaponPhase})
                         csv.Append(',').Append(value.ToString("R",System.Globalization.CultureInfo.InvariantCulture));
                     csv.Append('\n');
                 }

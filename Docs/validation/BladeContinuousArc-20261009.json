@@ -9,11 +9,24 @@
     "Assets/SinglePlayerFoundation/Presentation/Animation/GameplayCharacterMotion.cs": "9b55b1c6fb96a0a93e2d85a685eca171163ad532f660d5ada5345975ef45a747",
     "Assets/SinglePlayerFoundation/Presentation/Animation/WeaponMotion.cs": "1a5604438312b75bf9366a92c882e7cd1f201b5e7a869efd6691466ebb00a2ef"
   },
-  "native": "pending on corrected revision",
+  "native": {
+    "run": 37881878799,
+    "edit_passed": 127,
+    "play_passed": 2,
+    "failed": 0,
+    "skipped": 0,
+    "platform": "Mac Unity 2022.3.62f2, GPU/DataTexture"
+  },
   "full_regression": "pending on corrected revision",
   "physical_android_ios": "not tested",
   "max_logged_held_turn_hand_mps": 13.973758,
   "max_logged_elbow_mps": 11.595576,
   "unchanged_hand_gate_mps": 15,
-  "unchanged_elbow_gate_mps": 20
+  "unchanged_elbow_gate_mps": 20,
+  "corrected_commit": "3f9e6f75d1e91b94782112b19bbdc675a8749e27",
+  "full_dotnet_harness": {
+    "run": 37881878736,
+    "conclusion": "success"
+  },
+  "review": "Source frames only; continuous playback not reviewed, naturalness acceptance not assumed"
 }

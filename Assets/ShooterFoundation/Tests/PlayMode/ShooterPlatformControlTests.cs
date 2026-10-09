@@ -295,11 +295,17 @@ namespace ShooterFoundation.Tests.PlayMode
                 if (component == null) { output.AppendLine("<missing component>"); clean = false; continue; }
                 var type = component.GetType(); string assembly = type.Assembly.GetName().Name;
                 output.Append(type.FullName).Append(" | ").AppendLine(assembly);
-                if (type != typeof(Transform) && !AllowedRunnerComponent(type.FullName, assembly)) clean = false;
+                if (type != typeof(Transform) && !AllowedRunnerComponent(type.FullName, assembly)
+                    && !AllowedEngineComponent(type.FullName, assembly)) clean = false;
             }
             File.WriteAllText(Path.Combine(folder, "initial-components.txt"), output.ToString());
             Assert.IsTrue(clean, "Unexpected scene component invalidates the empty-scene control; preserve inventory without deleting unrelated objects.");
         }
+
+        // Core RP's Editor runtime initializer creates this component before A. Retain it in both
+        // conditions: recognizing engine background is not disabling it or attributing its allocations.
+        internal static bool AllowedEngineComponent(string fullName, string assembly) =>
+            fullName == "UnityEngine.Rendering.DebugUpdater" && assembly == "Unity.RenderPipelines.Core.Runtime";
 
         internal static bool AllowedRunnerComponent(string fullName, string assembly)
         {

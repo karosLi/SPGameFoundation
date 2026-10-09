@@ -41,9 +41,14 @@ retry, Burst-disabled fallback or automatic rerun of Shooter.
   is added; an effect unique to B could still be an engine response to its state.
 
 The observer enumerates existing scene components, including inactive ones, before
-each condition. Only transforms and the five named Test Framework 1.1.33 runner
-components are allowed; an unexpected camera, renderer, Canvas, collider, script or
-other component invalidates the empty scene without deleting unrelated objects.
+each condition. Only transforms, the five named Test Framework 1.1.33 runner
+components, and the exact engine type/assembly pair
+`UnityEngine.Rendering.DebugUpdater | Unity.RenderPipelines.Core.Runtime` are allowed.
+The latter is Core RP 14.0.12 engine background observed in the native inventory;
+it remains enabled and is not removed, mutated or blamed for the residual allocation.
+No namespace-wide or assembly-wide exemption is added. An unexpected camera,
+renderer, Canvas, collider, script or other component still invalidates the empty
+scene without deleting unrelated objects.
 It records that inventory and destroys only its own objects. A runs first to avoid
 prior governor/gameplay component lifetime, but
 fixed order and process age remain confounds. A negative finding cannot exclude a
@@ -149,3 +154,20 @@ platform observation without being relabelled as product acceptance. Fifteen
 launcher checks cover routing, single invocation, missing/bad outputs, default-off
 behavior and RSS-stop failures. None of these checks runs Unity or proves native
 counter correctness. One native experiment remains pending review/publication.
+
+
+## Inventory correction after the first native attempt
+
+Run [37832732235](https://github.com/karosLi/SPGameFoundation/actions/runs/37832732235)
+on `925ea6d5bcf04d95eb86c1237ee0155826f09027` stopped in A's initial component
+inventory, before creating the recorder or collecting any measurement. Its inventory
+contained the engine DebugUpdater above and a Transform. All six preflight profiler
+flags were false. This failure yields no A/B allocation result.
+
+The correction recognizes only that exact type and assembly as retained engine
+background. Unity's [Core RP DebugUpdater source](https://github.com/Unity-Technologies/Graphics/blob/2022.3/staging/Packages/com.unity.render-pipelines.core/Runtime/Debugging/DebugUpdater.cs)
+initializes it after scene load in the Editor. This test does not change that engine
+lifecycle. The raw observations, positive controls, profiler-off preflight, process
+limits and Shooter's original 150/180/maximum-two product gate remain unchanged.
+The corrected native run is pending; earlier local pure-check counts are historical
+and do not constitute native validation of this inventory correction.

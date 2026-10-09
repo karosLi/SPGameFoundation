@@ -1,5 +1,7 @@
 # SPGameFoundation
 
+当前统一待办、已完成里程碑及剩余验收门槛见 [Roadmap](Docs/Roadmap.md)；下文历史状态按其精确提交理解。
+
 > 历史原生检查点 `e86ee87` 的完整结果见[精确范围与限制](Docs/MobileFoundationFollowupValidation.md)，不覆盖后续音频、伤害字和参考视频步态修改。修正音频的 `d7f357a` 已完成[原生与完整归档闭环](Docs/NativeFeedbackAudioClosure.md)：1,474 EditMode、169 PlayMode 通过，0 失败、6 个原有跳过。新分支 A1–A3 已通过 [1,533 项集成逻辑与兼容检查](Docs/LatiosSpfExtensionsValidation.md)，其精确原生结果另行验证。现按用户授权分阶段实施 [Latios 综合方案](Docs/LatiosUnity2022IntegrationBlueprint.md)，进度、隔离边界及门槛见[实施记录](Docs/LatiosImplementationProgress.md)。Android/iOS 物理设备验收仍待完成。
 
 Unity 2022.3 2D 单机小游戏基座（面向移动端），保留贪吃蛇、ARPG、幸存者、平台跳跃、塔防、三消、弹弓、格斗、剧情九个验证玩法，新增非像素竖屏射击、守点怪潮、飞剑怪潮与横屏纵深动作变体，用于验证共享能力接入。

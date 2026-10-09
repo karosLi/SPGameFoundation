@@ -31,6 +31,15 @@ namespace SPF.Presentation.Animation
         public bool Aim, Teleported;
     }
 
+    /// <summary>One bounded residual, applied to a live blade pose rather than a frozen world target.</summary>
+    public struct BladePoseTransition
+    {
+        public float2 Grip, GripVelocity, ArmGrip, ArmGripVelocity;
+        public float Angle, AngleVelocity, Body, BodyVelocity, ArmBend, ArmBendVelocity;
+        public float SkillWeight, SkillWeightVelocity, Age, StartPhase;
+        public bool Active;
+    }
+
     /// <summary>One fixed slot of purely visual state; no simulation reference or RNG.</summary>
     public struct GameplayCharacterMotion
     {
@@ -47,6 +56,11 @@ namespace SPF.Presentation.Animation
         public float2 HeldArmGrip, ChangeArmGrip, HeldArmGripVelocity, ChangeArmGripVelocity;
         public float HeldArmBend, ChangeArmBend, HeldArmBendVelocity, ChangeArmBendVelocity;
         public float HeldWeaponBody, ChangeWeaponBody, HeldWeaponBodyVelocity, ChangeWeaponBodyVelocity;
+        public BladePoseTransition BladeTransition;
+        public float2 BladeHeldGrip, BladeHeldGripVelocity, BladeHeldArmGrip, BladeHeldArmGripVelocity;
+        public float BladeHeldSkillWeight, BladeHeldSkillVelocity, WeaponActionPhase, BladePhaseRate;
+        public uint WeaponActionPulse;
+        public bool WeaponWasBlade;
         public float Phase, Run, Attack, Hit, Death, Facing, Scale, FarSwingSeconds, NearSwingSeconds, FreeGuard;
         public bool Initialized, Airborne, Moving, WeaponWasActing, ChangingWeapon;
         public float TransferDelay, SupportCeiling, WeaponAimDrop;
@@ -55,6 +69,7 @@ namespace SPF.Presentation.Animation
         public void Step(in GameplayCharacterInput input, float dt)
         {
             dt = math.clamp(dt, 0, .1f);
+            var previousMotion=this;
             float scale = math.clamp(input.Scale, .1f, 4f);
             var profile=GameplayMotionProfiles.Resolve(input);float width=math.clamp(profile.FootWidth,.08f,.2f);
             float facing = input.Facing < 0 ? -1f : 1f;
@@ -69,6 +84,8 @@ namespace SPF.Presentation.Animation
                 Phase = ((uint)input.Handle.Index * 37u % 97) / 97f;
                 Breath=Phase;Turn=facing;WeaponTurn=WeaponMotion.AimFacing(input.Weapon,facing);WeaponAim=input.Weapon.Equipped?input.Weapon.AimDirection:new float2(facing,0);
                 WeaponWeight=input.Weapon.Equipped?1:0;WeaponVisualId=input.Weapon.VisualId;EquipAge=1;
+                WeaponWasBlade=WeaponMotion.Blade(input.Weapon);WeaponActionPulse=input.Weapon.ActionPulse;
+                WeaponActionPhase=input.Weapon.Phase;
                 WeaponAimDrop=input.Weapon.Equipped?.16f*math.saturate(-input.Weapon.AimDirection.y):0;
                 NaturalMotion.InitializeFoot(ref FarFoot, ground, ground + new float2(-width, .075f), 0);
                 NaturalMotion.InitializeFoot(ref NearFoot, ground, ground + new float2(width, .075f), .5f);
@@ -188,11 +205,38 @@ namespace SPF.Presentation.Animation
             // and interruption both happen between two presentation frames.
             float2 previousArmGrip=HeldArmGrip,previousArmVelocity=HeldArmGripVelocity;
             if(armMirror<0){previousArmGrip.x=2*input.Root.x-previousArmGrip.x;previousArmVelocity.x=-previousArmVelocity.x;}
-            if(changed||WeaponWasActing&&!WeaponMotion.Acting(input.Weapon))
+            bool blade=WeaponMotion.Blade(input.Weapon),weaponActing=WeaponMotion.Acting(input.Weapon);
+            bool newPulse=weaponActing&&(input.Weapon.ActionPulse!=WeaponActionPulse||input.Weapon.Phase+1e-5f<WeaponActionPhase);
+            bool bladeTransition=blade&&!reset&&(changed||!WeaponWasBlade||WeaponWasActing!=weaponActing||newPulse);
+            if(changed||WeaponWasActing&&!weaponActing||bladeTransition)
             {ChangeGrip=HeldGrip;ChangeAngle=HeldAngle;ChangeGripVelocity=HeldGripVelocity;ChangeAngleVelocity=HeldAngleVelocity;ChangeWeaponBody=HeldWeaponBody;ChangeWeaponBodyVelocity=HeldWeaponBodyVelocity;
                 ChangeArmGrip=previousArmGrip;ChangeArmGripVelocity=previousArmVelocity;ChangeArmBend=HeldArmBend*armMirror;ChangeArmBendVelocity=HeldArmBendVelocity*armMirror;EquipAge=0;ChangingWeapon=changed;}
             else EquipAge=math.min(1,EquipAge+dt/.2f);
-            WeaponWasActing=WeaponMotion.Acting(input.Weapon);WeaponVisualId=input.Weapon.VisualId;PreviousVelocity=velocity;
+            if(blade&&!reset)
+            {
+                if(armMirror<0)
+                {
+                    BladeTransition.ArmGrip.x=-BladeTransition.ArmGrip.x;
+                    BladeTransition.ArmGripVelocity.x=-BladeTransition.ArmGripVelocity.x;
+                    BladeTransition.ArmBend=-BladeTransition.ArmBend;
+                    BladeTransition.ArmBendVelocity=-BladeTransition.ArmBendVelocity;
+                }
+                if(weaponActing&&dt>0)
+                {
+                    float advance=newPulse||!WeaponWasActing?input.Weapon.Phase:input.Weapon.Phase-WeaponActionPhase;
+                    if(advance>0)BladePhaseRate=math.clamp(advance/dt,0,20);
+                }
+                if(bladeTransition)BeginBladeTransition(input,previousMotion,armMirror,dt);
+                else
+                {
+                    BladeTransition.Age=math.min(.2f,BladeTransition.Age+dt);
+                    if(BladeTransition.Age>=.2f||weaponActing&&input.Weapon.Phase>=input.Weapon.ContactPhase)
+                        BladeTransition.Active=false;
+                }
+            }
+            else BladeTransition=default;
+            WeaponWasActing=weaponActing;WeaponWasBlade=blade;WeaponActionPulse=input.Weapon.ActionPulse;
+            WeaponActionPhase=input.Weapon.Phase;WeaponVisualId=input.Weapon.VisualId;PreviousVelocity=velocity;
             var held=WeaponMotion.Sample(input,this);
             var arm=WeaponMotion.Blade(input.Weapon)?WeaponMotion.Sample(input,this,true):held;
             if(!reset&&dt>0)
@@ -202,9 +246,93 @@ namespace SPF.Presentation.Animation
             HeldArmGrip=arm.Grip;HeldArmBend=input.Weapon.Equipped?held.ArmBend:1;
             if(!input.Weapon.Equipped)HeldArmBendVelocity=0;
             HeldGrip=held.Grip;HeldAngle=held.Angle;HeldWeaponBody=held.Body;
+            float2 relativeGrip=(held.Grip-input.Root)/scale,relativeArm=(arm.Grip-input.Root)/scale;
+            float2 previousRelativeArm=previousMotion.BladeHeldArmGrip;
+            previousRelativeArm.x*=armMirror;
+            float skillWeight=WeaponSkillBodyWeight(input);
+            if(!reset&&dt>0)
+            {
+                BladeHeldGripVelocity=math.clamp((relativeGrip-previousMotion.BladeHeldGrip)/dt,new float2(-12),new float2(12));
+                BladeHeldArmGripVelocity=math.clamp((relativeArm-previousRelativeArm)/dt,new float2(-12),new float2(12));
+                BladeHeldSkillVelocity=math.clamp((skillWeight-previousMotion.BladeHeldSkillWeight)/dt,-12,12);
+            }
+            BladeHeldGrip=relativeGrip;BladeHeldArmGrip=relativeArm;BladeHeldSkillWeight=skillWeight;
             float2 target = input.Aim && input.Action!=GameplayCharacterAction.Kick ? input.AimTarget : input.Root + new float2(facing * math.lerp(.34f,.83f,math.max(0,Attack)), math.lerp(1.5f,1.65f,math.max(0,Attack))) * scale;
             NaturalMotion.SmoothAim(ref Aim,target,dt,24);
             PreviousRoot=input.Root;
+        }
+
+        void BeginBladeTransition(in GameplayCharacterInput input,in GameplayCharacterMotion previous,float armMirror,float dt)
+        {
+            var target=WeaponMotion.SampleRaw(input,this,false);
+            var armTarget=WeaponMotion.SampleRaw(input,this,true);
+            // Evaluate the incoming target on the previous locomotion sample. This separates
+            // root travel and ongoing gait from the discontinuity between action poses.
+            var oldInput=input;oldInput.Root=previous.PreviousRoot;
+            if(WeaponMotion.Acting(input.Weapon))oldInput.Weapon.Phase=math.max(0,input.Weapon.Phase-BladePhaseRate*dt);
+            var oldTarget=WeaponMotion.SampleRaw(oldInput,previous,false);
+            var oldArm=WeaponMotion.SampleRaw(oldInput,previous,true);
+            float2 grip=(target.Grip-input.Root)/Scale,armGrip=(armTarget.Grip-input.Root)/Scale;
+            float2 oldGrip=(oldTarget.Grip-oldInput.Root)/Scale,oldArmGrip=(oldArm.Grip-oldInput.Root)/Scale;
+            oldArmGrip.x*=armMirror;
+            float2 outgoingArm=previous.BladeHeldArmGrip,outgoingArmVelocity=previous.BladeHeldArmGripVelocity;
+            outgoingArm.x*=armMirror;outgoingArmVelocity.x*=armMirror;
+            float inverseDt=dt>0?1/dt:0;
+            float skill=1-WeaponMotion.ActionWeight(input.Weapon),oldSkill=1-WeaponMotion.ActionWeight(oldInput.Weapon);
+            BladeTransition=new BladePoseTransition
+            {
+                Active=true,StartPhase=WeaponMotion.Acting(input.Weapon)?input.Weapon.Phase:0,
+                Grip=previous.BladeHeldGrip-grip,
+                GripVelocity=previous.BladeHeldGripVelocity-(grip-oldGrip)*inverseDt,
+                ArmGrip=outgoingArm-armGrip,
+                ArmGripVelocity=outgoingArmVelocity-(armGrip-oldArmGrip)*inverseDt,
+                Angle=WeaponMotion.AngleDelta(target.Angle,previous.HeldAngle),
+                AngleVelocity=previous.HeldAngleVelocity-WeaponMotion.AngleDelta(oldTarget.Angle,target.Angle)*inverseDt,
+                Body=previous.HeldWeaponBody-target.Body,
+                BodyVelocity=previous.HeldWeaponBodyVelocity-(target.Body-oldTarget.Body)*inverseDt,
+                // Ownership is bounded, unlike a spatial residual. Keep its outgoing
+                // value and tangent so the live target cannot be extrapolated past a
+                // full turn and accidentally select a different IK branch.
+                ArmBend=previous.HeldArmBend*armMirror,
+                ArmBendVelocity=previous.HeldArmBendVelocity*armMirror,
+                SkillWeight=previous.BladeHeldSkillWeight-skill,
+                SkillWeightVelocity=previous.BladeHeldSkillVelocity-(skill-oldSkill)*inverseDt
+            };
+        }
+
+        float BladeTransitionGate(in GameplayCharacterInput input)
+        {
+            if(!BladeTransition.Active)return 0;
+            if(!WeaponMotion.Acting(input.Weapon))return 1;
+            // Both factors have zero derivative at their endpoints. Unlike max(age,phase),
+            // multiplying this contact gate cannot switch clocks with a velocity kink.
+            float remaining=input.Weapon.ContactPhase-BladeTransition.StartPhase;
+            if(remaining<=.00001f)return 0;
+            return 1-NaturalMotion.Ease((input.Weapon.Phase-BladeTransition.StartPhase)/remaining);
+        }
+
+        float BladeResidual(float value,float velocity,float gate)=>
+            WeaponMotion.Hermite(value,0,velocity,0,BladeTransition.Age/.2f,.2f)*gate;
+
+        internal WeaponPose ApplyBladeTransition(in GameplayCharacterInput input,WeaponPose target,bool armReference)
+        {
+            float gate=BladeTransitionGate(input);if(gate<=0)return target;
+            float2 offset=armReference?BladeTransition.ArmGrip:BladeTransition.Grip;
+            float2 velocity=armReference?BladeTransition.ArmGripVelocity:BladeTransition.GripVelocity;
+            float2 correction=new float2(BladeResidual(offset.x,velocity.x,gate),BladeResidual(offset.y,velocity.y,gate))*input.Scale;
+            target.Grip+=correction;target.Support+=correction;
+            target.Angle+=BladeResidual(BladeTransition.Angle,BladeTransition.AngleVelocity,gate);
+            target.Body+=BladeResidual(BladeTransition.Body,BladeTransition.BodyVelocity,gate);
+            float bend=WeaponMotion.Hermite(BladeTransition.ArmBend,target.ArmBend,BladeTransition.ArmBendVelocity,0,BladeTransition.Age/.2f,.2f);
+            target.ArmBend=math.lerp(target.ArmBend,math.clamp(bend,-1,1),gate);
+            return target;
+        }
+
+        internal float WeaponSkillBodyWeight(in GameplayCharacterInput input)
+        {
+            float weight=1-WeaponMotion.ActionWeight(input.Weapon);
+            if(WeaponMotion.Blade(input.Weapon))weight+=BladeResidual(BladeTransition.SkillWeight,BladeTransition.SkillWeightVelocity,BladeTransitionGate(input));
+            return weight;
         }
 
         // Projected ground has two contact coordinates; swing clearance alone adds screen height.
@@ -359,7 +487,7 @@ namespace SPF.Presentation.Animation
             float anticipation=!input.Weapon.Equipped&&acting?math.max(0,WeaponMotion.Curve(input.Phase,.42f,.66f,0,.34f,0,0)):0;
             float reaction=math.saturate(motion.Hit*profile.HitRecoil);
             float collapse=NaturalMotion.Ease(motion.Death);
-            float skillBodyWeight=1-WeaponMotion.ActionWeight(input.Weapon);
+            float skillBodyWeight=motion.WeaponSkillBodyWeight(input);
             float scale=motion.Scale,height=math.max(0,input.Root.y-input.Ground.y);
             float2 far=motion.FarFoot.Position*scale+new float2(0,height),near=motion.NearFoot.Position*scale+new float2(0,height);
             if(motion.Airborne){far=input.Root+new float2(-motion.Facing*(.15f+skill.FootTuck*.3f),.27f+skill.FootTuck)*scale;near=input.Root+new float2(motion.Facing*(.24f-skill.FootTuck*.3f),.17f+skill.FootTuck*.65f)*scale;}
@@ -370,7 +498,11 @@ namespace SPF.Presentation.Animation
             // an exceptional reversal compression; the moving footprint is planned to fit the rig.
             var pelvis=local[at+NaturalCharacterRig.Pelvis];
             float breathing=math.sin(motion.Breath*2*math.PI);
-            float baseHeight=rig.Bones[NaturalCharacterRig.Pelvis].Position.y-.045f*motion.Move+.015f*motion.Gait*motion.Gait*math.lerp(.6f,1.25f,motion.Run)-.065f*math.max(0,motion.Attack)+profile.Breath*breathing*(1-motion.Move)-skill.PelvisDrop*skillBodyWeight-.035f*reaction-.09f*collapse;
+            // The blade's authored torso/arm chain owns its loading. A generic punch
+            // compression otherwise resets underneath it on cancellation or the next pulse.
+            // A kick while holding the blade keeps the original lower-body action.
+            float bodyAttack=WeaponMotion.Blade(input.Weapon)&&input.Action!=GameplayCharacterAction.Kick?0:motion.Attack;
+            float baseHeight=rig.Bones[NaturalCharacterRig.Pelvis].Position.y-.045f*motion.Move+.015f*motion.Gait*motion.Gait*math.lerp(.6f,1.25f,motion.Run)-.065f*math.max(0,bodyAttack)+profile.Breath*breathing*(1-motion.Move)-skill.PelvisDrop*skillBodyWeight-.035f*reaction-.09f*collapse;
             pelvis.Position.x=motion.Support*motion.Turn*motion.Facing;
             pelvis.Rotation=profile.WeightShift*.65f*motion.Gait;
             pelvis.Position.y=baseHeight;

@@ -41,7 +41,7 @@ namespace SPF.Presentation.Animation
             return NaturalMotion.Ease(w.Phase/marker)*(1-NaturalMotion.Ease((w.Phase-end)/math.max(MarkerEpsilon,1-end)));
         }
         public static float SupportRelease(in GameplayCharacterInput input,in GameplayCharacterMotion motion)=>
-            math.saturate(motion.Skill.Pose.SupportRelease*(1-ActionWeight(input.Weapon)));
+            math.saturate(motion.Skill.Pose.SupportRelease*(Blade(input.Weapon)?motion.WeaponSkillBodyWeight(input):1-ActionWeight(input.Weapon)));
         public static float Hermite(float a,float b,float ta,float tb,float u,float duration)
         {
             u=math.saturate(u);float u2=u*u,u3=u2*u;
@@ -76,6 +76,44 @@ namespace SPF.Presentation.Animation
                 +(3*u2-4*u+1)*v1+(3*u2-2*u)*v2;
             return Hermite(value,impact,velocity,0,(phase-brake)/duration,duration);
         }
+        // Author the working chain in joint space, then derive the free hand trajectory.
+        // At the loaded key the upper arm is above horizontal, not pinned to the ribs.
+        // The two fixed-length links share the same C1 action clock as chest and blade.
+        // Real stance/aim correction is applied once below; it does not author the sweep.
+        static float2 BladeArmOffset(float phase,float contact,float end)
+        {
+            if(phase<=0)return new float2(-.23f,.16f);
+            if(phase>=contact)
+                return new float2(BladeCurve(phase,contact,end,-.23f,-.13f,0,.04f),
+                    BladeCurve(phase,contact,end,.16f,.40f,0,-.06f));
+            const float l1=.43f,l2=.42f;
+            float2 shoulder=new float2(.05f,1.65f),socket=new float2(.58f,1.25f);
+            float2 rest=socket+new float2(-.23f,.16f);
+            BladeJointKey(rest-shoulder,l1,l2,out float restUpper,out float restFore);
+            BladeJointKey(socket-shoulder,l1,l2,out float contactUpper,out float contactFore);
+            float upper=BladeJointArc(phase/contact,restUpper,-.5559563f,.55f,-.6742789f,contactUpper);
+            float fore=BladeJointArc(phase/contact,restFore,1.4891100f,1.25f,1.1315377f,contactFore);
+            return shoulder+new float2(math.cos(upper),math.sin(upper))*l1
+                +new float2(math.cos(fore),math.sin(fore))*l2-socket;
+        }
+        // The forearm leads the lift and lags the descent. Intermediate joint keys
+        // prevent independent angle interpolation from taking a long forward detour.
+        // Shared central tangents keep velocity through the loaded silhouette; only
+        // guard/contact have zero endpoint velocity. Values are authored in radians.
+        static float BladeJointArc(float phase,float rest,float lift,float loaded,float sweep,float impact)
+        {
+            float v1=2*(loaded-rest),v2=2*(sweep-lift),v3=2*(impact-loaded);
+            if(phase<.25f)return Hermite(rest,lift,0,v1,phase*4,.25f);
+            if(phase<.5f)return Hermite(lift,loaded,v1,v2,(phase-.25f)*4,.25f);
+            if(phase<.75f)return Hermite(loaded,sweep,v2,v3,(phase-.5f)*4,.25f);
+            return Hermite(sweep,impact,v3,0,(phase-.75f)*4,.25f);
+        }
+        static void BladeJointKey(float2 delta,float l1,float l2,out float upper,out float fore)
+        {
+            float d=math.length(delta);
+            upper=math.atan2(delta.y,delta.x)-math.acos(math.clamp((l1*l1+d*d-l2*l2)/(2*l1*d),-1,1));
+            fore=upper+math.PI-math.acos(math.clamp((l1*l1+l2*l2-d*d)/(2*l1*l2),-1,1));
+        }
         public static float2 Rotate(float2 p,float angle)
         {float c=math.cos(angle),s=math.sin(angle);return new float2(c*p.x-s*p.y,s*p.x+c*p.y);}
         public static float AngleDelta(float from,float to)=>math.atan2(math.sin(to-from),math.cos(to-from));
@@ -94,6 +132,11 @@ namespace SPF.Presentation.Animation
         // The turn's arm reference keeps the SAME authored action phase on the admitted
         // side. It is not an idle override; contact and cancellation own this reference too.
         internal static WeaponPose Sample(in GameplayCharacterInput input,in GameplayCharacterMotion motion,bool armReference)
+        {
+            var pose=SampleRaw(input,motion,armReference);
+            return Blade(input.Weapon)?motion.ApplyBladeTransition(input,pose,armReference):pose;
+        }
+        internal static WeaponPose SampleRaw(in GameplayCharacterInput input,in GameplayCharacterMotion motion,bool armReference)
         {
             var w=input.Weapon;if(!w.Equipped)return default;
             bool acting=Acting(w);float phase=acting?math.saturate(w.Phase):0;
@@ -129,7 +172,7 @@ namespace SPF.Presentation.Animation
                 case WeaponActionFamily.Slash:
                     // Preserve the loaded preparation and canonical contact. Grip, blade
                     // and torso decelerate together before contact, then return to guard.
-                    offset=new float2(BladeCurve(phase,contact,end,-.23f,-.13f,0,.04f),BladeCurve(phase,contact,end,.16f,.40f,0,-.06f));
+                    offset=Blade(w)?BladeArmOffset(phase,contact,end):new float2(BladeCurve(phase,contact,end,-.23f,-.13f,0,.04f),BladeCurve(phase,contact,end,.16f,.40f,0,-.06f));
                     rotation=BladeCurve(phase,contact,end,.70f,1.30f,0,-.58f);
                     body=BladeCurve(phase,contact,end,0,.12f,-.10f,-.09f,.35f);break;
                 case WeaponActionFamily.Thrust:
@@ -180,7 +223,7 @@ namespace SPF.Presentation.Animation
             grip=math.lerp(grip,skillGrip,skill.NearWeight*relaxed);
             angle+=skill.WeaponAngle*facing*relaxed;
             float transition=NaturalMotion.Ease(motion.EquipAge);
-            if(motion.EquipAge<1&&(!acting||phase<contact))
+            if(!Blade(w)&&motion.EquipAge<1&&(!acting||phase<contact))
             {
                 // Preserve outgoing hand/angular velocity. This is a bounded hand-space inertial
                 // transition, not independently damped IK joints or a claim of full-body inertialization.
@@ -223,7 +266,8 @@ namespace SPF.Presentation.Animation
             var pose=Sample(input,motion);if(!input.Weapon.Equipped)return;
             float armBend=math.lerp(1,pose.ArmBend,math.saturate(pose.Weight));
             var armTarget=pose;
-            if(armBend<.999999f)armTarget=Sample(input,motion,true);
+            bool referenceArm=armBend<.999999f||Blade(input.Weapon)&&motion.BladeTransition.Active;
+            if(referenceArm)armTarget=Sample(input,motion,true);
             // Final IK consumes the phase-authored hand trajectory. It must never replace
             // that trajectory with an idle socket, which would erase anticipation/arm lift.
             float2 primaryShoulder=NaturalMotion.BonePoint(rig,local,NaturalCharacterRig.NearArm,0,at);
@@ -238,7 +282,8 @@ namespace SPF.Presentation.Animation
                 // action stage, so cancellation/equip keeps it while that hand is high.
                 // The hand path remains unchanged; reuse the same single arm solve.
                 float elevation=(armTarget.Grip.y-input.Root.y)/motion.Scale;
-                bladeSlide=.22f*NaturalMotion.Ease((elevation-1.60f)/.23f);
+                float vertical=NaturalMotion.Ease(math.abs(input.Weapon.AimDirection.y)/.2f);
+                bladeSlide=.22f*vertical*NaturalMotion.Ease((elevation-1.60f)/.23f);
             }
             if(primaryFold>.001f||bladeSlide>0)
             {
@@ -248,7 +293,7 @@ namespace SPF.Presentation.Animation
                 primaryArm.Position+=Rotate(new float2((-.10f*primaryFold-bladeSlide)*referenceMirror,0),-local[at+NaturalCharacterRig.Pelvis].Rotation-local[at+NaturalCharacterRig.Torso].Rotation);
                 local[at+NaturalCharacterRig.NearArm]=primaryArm;
             }
-            if(armBend<.999999f)
+            if(referenceArm)
             {
                 // Mirroring the usual fixed IK bend at the facing edge flips the elbow.
                 // Carry the same phase-authored guard through a compact fold instead:

@@ -170,8 +170,15 @@ run_platform() {
   return $code
 }
 
-run_platform editmode -nographics; EDIT=$?
+# Explicit, reported narrow animation checkpoint. Ordinary branches retain full suites.
+EDIT_FILTER=(); PLAY_FILTER=()
+if [ "${SPF_BLADE_REVIEW:-0}" = "1" ]; then
+  echo "Blade visual checkpoint: focused EditMode and existing normal-speed native capture, NOT full regression."
+  EDIT_FILTER=(-testFilter 'SPF.Tests.EditMode.Blade;SPF.Tests.EditMode.WeaponMotionTests')
+  PLAY_FILTER=(-testFilter 'BrawlerFoundation.Tests.PlayMode.BwBladeGripCloseupCaptureTests')
+fi
+run_platform editmode -nographics "${EDIT_FILTER[@]}"; EDIT=$?
 for f in "$A"/perf-*.txt; do [ -f "$f" ] && { echo "::group::performance report $(basename "$f")"; cat "$f"; echo "::endgroup::"; }; done
-run_platform playmode; PLAY=$?
+run_platform playmode "${PLAY_FILTER[@]}"; PLAY=$?
 for f in "$A"/perf-render-*.txt; do [ -f "$f" ] && { echo "::group::performance report $(basename "$f")"; cat "$f"; echo "::endgroup::"; }; done
 [ $EDIT -eq 0 ] && [ $PLAY -eq 0 ]

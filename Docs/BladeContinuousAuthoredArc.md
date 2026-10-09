@@ -43,3 +43,7 @@ Compared with the incomplete first checkpoint, the previously failing 120-Hz rev
 Review limitation: source frames/contact sheets were inspected; continuous playback was not reviewed by the assistant. Naturalness is not declared accepted on test results alone. Equipment lowering is intentional, and physical Android/iOS remain untested.
 
 The branch-only narrow-test workflow opt-in is now removed. Production animation and test sources remain byte-identical to the corrected checkpoint for the ensuing full native regression. Its terminal result is recorded by that commit's GitHub Actions checks; no full-native result is claimed in advance here.
+
+### Full-suite launcher correction
+
+Full native attempt [37882357761](https://github.com/karosLi/SPGameFoundation/actions/runs/37882357761) at `ba60cb7` stopped before Unity executed: the Mac runner's older Bash rejected an empty test-filter array under `set -u`. No test result is claimed for that attempt. Both optional filter arrays now use the same safe conditional expansion already used by the script's `LAUNCH` array. Empty/nonempty argument checks and `bash -n` passed locally; animation and test sources remain unchanged for the retry. The unfiltered full suite is still required.

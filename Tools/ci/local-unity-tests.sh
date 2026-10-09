@@ -177,8 +177,8 @@ if [ "${SPF_BLADE_REVIEW:-0}" = "1" ]; then
   EDIT_FILTER=(-testFilter 'SPF.Tests.EditMode.Blade;SPF.Tests.EditMode.WeaponMotionTests;SPF.Tests.EditMode.HumanoidActionMotionTests')
   PLAY_FILTER=(-testFilter 'BrawlerFoundation.Tests.PlayMode.BwBladeGripCloseupCaptureTests')
 fi
-run_platform editmode -nographics "${EDIT_FILTER[@]}"; EDIT=$?
+run_platform editmode -nographics ${EDIT_FILTER[@]+"${EDIT_FILTER[@]}"}; EDIT=$?
 for f in "$A"/perf-*.txt; do [ -f "$f" ] && { echo "::group::performance report $(basename "$f")"; cat "$f"; echo "::endgroup::"; }; done
-run_platform playmode "${PLAY_FILTER[@]}"; PLAY=$?
+run_platform playmode ${PLAY_FILTER[@]+"${PLAY_FILTER[@]}"}; PLAY=$?
 for f in "$A"/perf-render-*.txt; do [ -f "$f" ] && { echo "::group::performance report $(basename "$f")"; cat "$f"; echo "::endgroup::"; }; done
 [ $EDIT -eq 0 ] && [ $PLAY -eq 0 ]

@@ -105,11 +105,60 @@ namespace SPF.Tests.EditMode
             float2 velocity=motion.BladeHeldGripVelocity;
             float angleVelocity=motion.HeldAngleVelocity;
             Action(ref input,0,2);motion.Step(input,0);var start=WeaponMotion.Sample(input,motion);
+            var startInput=input;var startMotion=motion;
             const float h=.0001f;float2 rootVelocity=new float2(.7f,.2f);
             input.Root=input.Ground+=rootVelocity*h;Action(ref input,h/.64f,2);motion.Step(input,h);
             var next=WeaponMotion.Sample(input,motion);
-            Assert.Less(math.distance(((next.Grip-start.Grip)/h-rootVelocity)/input.Scale,velocity),.06f,"root travel is not inherited a second time");
-            Assert.Less(math.abs(WeaponMotion.AngleDelta(start.Angle,next.Angle)/h-angleVelocity),.06f,"outgoing angular velocity is retained");
+            var halfInput=startInput;var halfMotion=startMotion;
+            halfInput.Root=halfInput.Ground+=rootVelocity*(h*.5f);Action(ref halfInput,h*.5f/.64f,2);halfMotion.Step(halfInput,h*.5f);
+            var half=WeaponMotion.Sample(halfInput,halfMotion);
+            // Cancel the forward difference's O(h) acceleration term. This assertion
+            // measures the instantaneous inherited tangent, not the acceleration of
+            // the new authored arc. Render-step speed bounds are tested separately.
+            float2 tangent=2*(half.Grip-start.Grip)/(h*.5f)-(next.Grip-start.Grip)/h;
+            float angularTangent=2*WeaponMotion.AngleDelta(start.Angle,half.Angle)/(h*.5f)-WeaponMotion.AngleDelta(start.Angle,next.Angle)/h;
+            Assert.Less(math.distance((tangent-rootVelocity)/input.Scale,velocity),.06f,"root travel is not inherited a second time");
+            Assert.Less(math.abs(angularTangent-angleVelocity),.06f,"outgoing angular velocity is retained");
+        }
+
+        [Test]
+        public void ActingTurnOwnershipKeepsVelocityAtBothRampJoinsAndContact()
+        {
+            var input=Input();var motion=Warm(input);Action(ref input,0,2);
+            motion.BladeTransition=new BladePoseTransition {Active=true,ArmBend=-1};
+            float contact=input.Weapon.ContactPhase,h=.00001f;
+            foreach(float join in new[]{.05f,.95f})
+            {
+                input.Weapon.Phase=contact*(join-h);var before=WeaponMotion.Sample(input,motion).ArmBend;
+                input.Weapon.Phase=contact*join;var at=WeaponMotion.Sample(input,motion).ArmBend;
+                input.Weapon.Phase=contact*(join+h);var after=WeaponMotion.Sample(input,motion).ArmBend;
+                Assert.Less(math.abs((at-before)-(after-at))/h,.04f,"C1 ownership ramp at "+join);
+            }
+            input.Weapon.Phase=contact*(1-h);float near=WeaponMotion.Sample(input,motion).ArmBend;
+            input.Weapon.Phase=contact;float end=WeaponMotion.Sample(input,motion).ArmBend;
+            Assert.That(end,Is.EqualTo(1));Assert.Less(math.abs(end-near)/h,.01f,"ownership stops at authoritative contact");
+            // A nonzero outgoing velocity is carried in physical seconds, even when
+            // the new action's first presentation phase provides no duration estimate.
+            motion.BladeTransition.ArmBend=-.4f;motion.BladeTransition.ArmBendVelocity=3;
+            input.Weapon.Phase=0;float start=WeaponMotion.Sample(input,motion).ArmBend;
+            const float dt=.00001f;motion.BladeTransition.Age=dt;input.Weapon.Phase=contact*dt/.2f;
+            Assert.That((WeaponMotion.Sample(input,motion).ArmBend-start)/dt,Is.EqualTo(3).Within(.02f));
+        }
+
+        [Test]
+        public void LongCustomAnticipationKeepsOwnershipBridgeUntilItsOwnContact()
+        {
+            var input=Input();input.Weapon.ContactPhase=.8f;input.Weapon.ActiveEndPhase=.9f;
+            var motion=Warm(input);input.Facing=-1;input.Weapon.AimDirection=new float2(-1,0);
+            Action(ref input,0,2);motion.Step(input,0);
+            for(int i=1;i<=30;i++){Action(ref input,i*.01f,2);motion.Step(input,.01f);}
+            Assert.IsTrue(motion.BladeTransition.Active,"a custom long windup is not cut off by the .2-second positional residual");
+            float bend=WeaponMotion.Sample(input,motion).ArmBend;
+            Assert.That(bend,Is.InRange(-.5f,0f),"side ownership still follows the custom precontact clock");
+            Action(ref input,input.Weapon.ContactPhase,2);motion.Step(input,0);
+            var contact=WeaponMotion.Sample(input,motion);
+            Assert.That(contact.ArmBend,Is.EqualTo(1).Within(.000001f));
+            Assert.Less(math.distance(contact.Grip,WeaponMotion.WorldOffset(input,input.Weapon.AimDirection,input.Weapon.GripOffset)),.00001f);
         }
 
         [TestCase(false)] [TestCase(true)]

@@ -230,7 +230,7 @@ namespace SPF.Presentation.Animation
                 else
                 {
                     BladeTransition.Age=math.min(.2f,BladeTransition.Age+dt);
-                    if(BladeTransition.Age>=.2f||weaponActing&&input.Weapon.Phase>=input.Weapon.ContactPhase)
+                    if(!weaponActing&&BladeTransition.Age>=.2f||weaponActing&&input.Weapon.Phase>=input.Weapon.ContactPhase)
                         BladeTransition.Active=false;
                 }
             }
@@ -323,8 +323,31 @@ namespace SPF.Presentation.Animation
             target.Grip+=correction;target.Support+=correction;
             target.Angle+=BladeResidual(BladeTransition.Angle,BladeTransition.AngleVelocity,gate);
             target.Body+=BladeResidual(BladeTransition.Body,BladeTransition.BodyVelocity,gate);
-            float bend=WeaponMotion.Hermite(BladeTransition.ArmBend,target.ArmBend,BladeTransition.ArmBendVelocity,0,BladeTransition.Age/.2f,.2f);
-            target.ArmBend=math.lerp(target.ArmBend,math.clamp(bend,-1,1),gate);
+            if(WeaponMotion.Acting(input.Weapon))
+            {
+                float remaining=input.Weapon.ContactPhase-BladeTransition.StartPhase;
+                float u=remaining>.00001f?math.saturate((input.Weapon.Phase-BladeTransition.StartPhase)/remaining):1;
+                // The folded chain is most sensitive to side ownership near its centre.
+                // Spread that ownership across the actual remaining anticipation, with
+                // short acceleration/deceleration ramps and an almost constant middle
+                // speed. Composing two ease curves with the moving turn target instead
+                // concentrated their peak velocity while the loaded arm was extending.
+                const float ramp=.05f;float turn;
+                if(u<ramp)turn=u*u/(2*ramp*(1-ramp));
+                else if(u>1-ramp)turn=1-(1-u)*(1-u)/(2*ramp*(1-ramp));
+                else turn=(u-ramp*.5f)/(1-ramp);
+                float end=WeaponMotion.AimFacing(input.Weapon,Facing)*Facing;
+                // Preserve the captured physical velocity without guessing an action
+                // duration from the first (possibly repeated) presentation phase. The
+                // common residual clock and contact factor both end with zero tangent.
+                float carry=BladeResidual(0,BladeTransition.ArmBendVelocity,(1-u)*(1-u));
+                target.ArmBend=math.clamp(math.lerp(BladeTransition.ArmBend,end,turn)+carry,-1,1);
+            }
+            else
+            {
+                float bend=WeaponMotion.Hermite(BladeTransition.ArmBend,target.ArmBend,BladeTransition.ArmBendVelocity,0,BladeTransition.Age/.2f,.2f);
+                target.ArmBend=math.lerp(target.ArmBend,math.clamp(bend,-1,1),gate);
+            }
             return target;
         }
 
@@ -488,6 +511,7 @@ namespace SPF.Presentation.Animation
             float reaction=math.saturate(motion.Hit*profile.HitRecoil);
             float collapse=NaturalMotion.Ease(motion.Death);
             float skillBodyWeight=motion.WeaponSkillBodyWeight(input);
+            var weapon=WeaponMotion.Sample(input,motion);
             float scale=motion.Scale,height=math.max(0,input.Root.y-input.Ground.y);
             float2 far=motion.FarFoot.Position*scale+new float2(0,height),near=motion.NearFoot.Position*scale+new float2(0,height);
             if(motion.Airborne){far=input.Root+new float2(-motion.Facing*(.15f+skill.FootTuck*.3f),.27f+skill.FootTuck)*scale;near=input.Root+new float2(motion.Facing*(.24f-skill.FootTuck*.3f),.17f+skill.FootTuck*.65f)*scale;}
@@ -502,7 +526,12 @@ namespace SPF.Presentation.Animation
             // compression otherwise resets underneath it on cancellation or the next pulse.
             // A kick while holding the blade keeps the original lower-body action.
             float bodyAttack=WeaponMotion.Blade(input.Weapon)&&input.Action!=GameplayCharacterAction.Kick?0:motion.Attack;
-            float baseHeight=rig.Bones[NaturalCharacterRig.Pelvis].Position.y-.045f*motion.Move+.015f*motion.Gait*motion.Gait*math.lerp(.6f,1.25f,motion.Run)-.065f*math.max(0,bodyAttack)+profile.Breath*breathing*(1-motion.Move)-skill.PelvisDrop*skillBodyWeight-.035f*reaction-.09f*collapse;
+            // Load the legs with the authored, already bridged chest preparation.
+            // This small weight transfer leaves room for the raised elbow instead of
+            // letting the high live shoulder tuck it back under the hand. The lobe is
+            // zero at guard/contact and survives cancellation without a stage reset.
+            float bladeLoad=WeaponMotion.Blade(input.Weapon)&&input.Action!=GameplayCharacterAction.Kick?.035f*NaturalMotion.Ease(math.max(0,weapon.Body)/.10f):0;
+            float baseHeight=rig.Bones[NaturalCharacterRig.Pelvis].Position.y-.045f*motion.Move+.015f*motion.Gait*motion.Gait*math.lerp(.6f,1.25f,motion.Run)-.065f*math.max(0,bodyAttack)+profile.Breath*breathing*(1-motion.Move)-skill.PelvisDrop*skillBodyWeight-.035f*reaction-.09f*collapse-bladeLoad;
             pelvis.Position.x=motion.Support*motion.Turn*motion.Facing;
             pelvis.Rotation=profile.WeightShift*.65f*motion.Gait;
             pelvis.Position.y=baseHeight;
@@ -523,7 +552,6 @@ namespace SPF.Presentation.Animation
             float depth=math.clamp(motion.BodyVelocity.y*.02f,-.08f,.08f);
             float lean=math.clamp(forward*profile.Lean,-.12f,.12f);
             float armStride=math.lerp(profile.WalkArm,profile.RunArm,motion.Run)*math.lerp(1,.76f,math.saturate(-forward*.25f));
-            var weapon=WeaponMotion.Sample(input,motion);
             var torso=local[at+NaturalCharacterRig.Torso];torso.Position=rig.Bones[NaturalCharacterRig.Torso].Position;
             torso.Position.x=-motion.Support*.38f;torso.Position.y+=depth*.18f;
             // A near-vertical held aim passes close to the chest in this projected rig. A small

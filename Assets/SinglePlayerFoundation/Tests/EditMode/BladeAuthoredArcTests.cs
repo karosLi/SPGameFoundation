@@ -38,7 +38,10 @@ namespace SPF.Tests.EditMode
                 float2 shoulder=world[NaturalCharacterRig.NearArm].Position;
                 float2 elbow=world[NaturalCharacterRig.NearForearm].Position;
                 float2 hand=world[NaturalCharacterRig.Hand].Position;
-                string context="hz="+hz+" face="+face+" role="+role+" moving="+moving;
+                string context="hz="+hz+" face="+face+" role="+role+" moving="+moving
+                    +" shoulder="+NaturalMotion.ModelPoint(shoulder,input.Root,input.Facing,input.Scale)
+                    +" elbow="+NaturalMotion.ModelPoint(elbow,input.Root,input.Facing,input.Scale)
+                    +" hand="+NaturalMotion.ModelPoint(hand,input.Root,input.Facing,input.Scale);
                 Assert.Greater((elbow.y-shoulder.y)/input.Scale,.17f,"upper arm visibly rises, not merely wrist "+context);
                 Assert.Greater((elbow.x-shoulder.x)*face/input.Scale,.20f,"elbow opens away from ribs "+context);
                 Assert.Greater((hand.y-shoulder.y)/input.Scale,.40f,"whole arm loads overhead "+context);

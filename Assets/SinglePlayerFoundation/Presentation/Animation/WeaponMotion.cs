@@ -91,10 +91,25 @@ namespace SPF.Presentation.Animation
             float2 rest=socket+new float2(-.23f,.16f);
             BladeJointKey(rest-shoulder,l1,l2,out float restUpper,out float restFore);
             BladeJointKey(socket-shoulder,l1,l2,out float contactUpper,out float contactFore);
-            float upper=BladeJointArc(phase/contact,restUpper,-.5559563f,.55f,-.6742789f,contactUpper);
-            float fore=BladeJointArc(phase/contact,restFore,1.4891100f,1.25f,1.1315377f,contactFore);
+            float upperPhase=phase/contact;
+            const float upperLoad=.495f;
+            float upper=upperPhase<upperLoad?math.lerp(restUpper,.515f,BladeTravelEase(upperPhase/upperLoad,.03f,.08f))
+                :math.lerp(.515f,contactUpper,BladeTravelEase((upperPhase-upperLoad)/(1-upperLoad),.08f,.03f));
+            float fore=BladeJointArc(phase/contact,restFore,.90f,1.01f,.55f,contactFore);
             return shoulder+new float2(math.cos(upper),math.sin(upper))*l1
                 +new float2(math.cos(fore),math.sin(fore))*l2-socket;
+        }
+        // Rounded constant-speed travel uses the full authored interval without the
+        // cubic endpoint acceleration peak that over-rotated the moving upper arm.
+        // Position and velocity are continuous at both ramp/cruise joins.
+        static float BladeTravelEase(float u,float startRamp,float endRamp)
+        {
+            u=math.saturate(u);float speed=1/(1-(startRamp+endRamp)*.5f);
+            if(u<startRamp)
+            {float s=u/startRamp;return speed*startRamp*(s*s*s-.5f*s*s*s*s);}
+            if(u>1-endRamp)
+            {float s=(1-u)/endRamp;return 1-speed*endRamp*(s*s*s-.5f*s*s*s*s);}
+            return speed*(u-startRamp*.5f);
         }
         // The forearm leads the lift and lags the descent. Intermediate joint keys
         // prevent independent angle interpolation from taking a long forward detour.
@@ -172,7 +187,16 @@ namespace SPF.Presentation.Animation
                 case WeaponActionFamily.Slash:
                     // Preserve the loaded preparation and canonical contact. Grip, blade
                     // and torso decelerate together before contact, then return to guard.
-                    offset=Blade(w)?BladeArmOffset(phase,contact,end):new float2(BladeCurve(phase,contact,end,-.23f,-.13f,0,.04f),BladeCurve(phase,contact,end,.16f,.40f,0,-.06f));
+                    offset=new float2(BladeCurve(phase,contact,end,-.23f,-.13f,0,.04f),BladeCurve(phase,contact,end,.16f,.40f,0,-.06f));
+                    if(Blade(w))
+                    {
+                        // Belt depth projection and steep aims need their own compact arc.
+                        // Preserve the full authored silhouette on the side-on slash while
+                        // reducing its screen-space height toward the vertical aim plane.
+                        float side=math.saturate(math.abs(w.AimDirection.x));
+                        float sidePlane=side*side;
+                        offset=math.lerp(offset,BladeArmOffset(phase,contact,end),sidePlane*sidePlane);
+                    }
                     rotation=BladeCurve(phase,contact,end,.70f,1.30f,0,-.58f);
                     body=BladeCurve(phase,contact,end,0,.12f,-.10f,-.09f,.35f);break;
                 case WeaponActionFamily.Thrust:

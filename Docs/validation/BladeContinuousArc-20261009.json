@@ -1,0 +1,19 @@
+{
+  "baseline_commit": "b2953b6efe88ead82bd3a8e7c9f487aae7dbc805",
+  "platform": "Linux .NET 8.0.425, repository Unity stubs",
+  "filter": "Blade OR WeaponMotionTests OR HumanoidActionMotionTests",
+  "passed": 126,
+  "failed": 0,
+  "skipped": 0,
+  "source_sha256": {
+    "Assets/SinglePlayerFoundation/Presentation/Animation/GameplayCharacterMotion.cs": "9b55b1c6fb96a0a93e2d85a685eca171163ad532f660d5ada5345975ef45a747",
+    "Assets/SinglePlayerFoundation/Presentation/Animation/WeaponMotion.cs": "1a5604438312b75bf9366a92c882e7cd1f201b5e7a869efd6691466ebb00a2ef"
+  },
+  "native": "pending on corrected revision",
+  "full_regression": "pending on corrected revision",
+  "physical_android_ios": "not tested",
+  "max_logged_held_turn_hand_mps": 13.973758,
+  "max_logged_elbow_mps": 11.595576,
+  "unchanged_hand_gate_mps": 15,
+  "unchanged_elbow_gate_mps": 20
+}

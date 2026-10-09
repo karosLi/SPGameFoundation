@@ -174,7 +174,7 @@ run_platform() {
 EDIT_FILTER=(); PLAY_FILTER=()
 if [ "${SPF_BLADE_REVIEW:-0}" = "1" ]; then
   echo "Blade visual checkpoint: focused EditMode and existing normal-speed native capture, NOT full regression."
-  EDIT_FILTER=(-testFilter 'SPF.Tests.EditMode.Blade;SPF.Tests.EditMode.WeaponMotionTests')
+  EDIT_FILTER=(-testFilter 'SPF.Tests.EditMode.Blade;SPF.Tests.EditMode.WeaponMotionTests;SPF.Tests.EditMode.HumanoidActionMotionTests')
   PLAY_FILTER=(-testFilter 'BrawlerFoundation.Tests.PlayMode.BwBladeGripCloseupCaptureTests')
 fi
 run_platform editmode -nographics "${EDIT_FILTER[@]}"; EDIT=$?
